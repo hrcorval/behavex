@@ -1,0 +1,853 @@
+        {%- set menu = 'report' -%}
+
+        {%- extends "base.jinja2" -%}
+        {%- block title -%}Test Execution Report{%- endblock -%}
+        {%- block iframe -%}
+            <div style="display: none" id="iframe-container">
+                <div id="div-iframe" style="width:97%;height:97%;border:1px solid
+                #ddd;position:absolute;z-index: 1;background-color:white;">
+                </div>
+                <div class="pull-right" style="padding-right: 3%">
+                    <a href="#" class="btn btn-xs btn-warning pull-left"
+                           data-close-iframe>Close X</a>
+                       <div class="navbar-static-top" style="z-index: 1;
+                    position:absolute;">
+                        <a href="#" class="btn btn-xs btn-warning"
+                           data-close-iframe>Close X</a>
+                    </div>
+                </div>
+                <div class="pull-left" style="padding-right: 3%">
+                    <a href="#" class="btn btn-xs btn-warning pull-left"
+                           data-close-iframe>Close X</a>
+                       <div class="navbar-static-top" style="z-index: 1;
+                    position:absolute;">
+                        <a href="#" class="btn btn-xs btn-warning"
+                           data-close-iframe>Close X</a>
+                    </div>
+                </div>
+            </div>
+        {%- endblock -%}
+        {%- block block_filter -%}
+            <div class="row">
+            {%- if scenarios -%}
+                <div class="col-sm-4 pull-left">
+                    <div class="form-group form-group-sm">
+                        <b>
+                        <label class="control-label pull-left"
+                               style="padding-top: 5px;padding-right:3px;font-size: 12px;">Search</label>
+                        <input placeholder="Scenario name..."
+                               type="text"
+                               class="input-group form-control-static input-search"
+                               style="height: 25px"
+                               data-search>
+                        </b>
+                    </div>
+                </div>
+            {%- endif -%}
+            {%- if tags -%}
+                <div class="col-sm-2 pull-left div-select">
+                <div class="form-group form-group-sm">
+                <b>
+                    <label class="control-label">
+                        {{ 'report.filter_tag.label'|get_text }}
+                    </label>
+                    <select class="select-filter  form-control-static"
+                            style="height: 25px"
+                            data-select-filter-tags>
+                        <option value="all">all</option>
+                        {%- for tag in tags|sort -%}
+                            <option value="{{ tag }}"> {{ tag }} </option>
+                        {%- endfor -%}
+                    </select>
+                </b>
+                </div>
+                </div>
+            {%- endif -%}
+            {%- if scenarios -%}
+                <div class="col-sm-2 pull-left div-select">
+                    <div class="form-group form-group-sm">
+                    <b>
+                        <label class="control-label">
+                            {{ 'report.filter_status.label'|get_text }}
+                        </label>
+                        <select class="select-filter  form-control-static"
+                                style="height: 25px"
+                                data-select-filter-status>
+                            <option value="all">all</option>
+                            <option value="failed">Failed</option>
+                            <option value="skipped">Skipped</option>
+                            <option value="passed">Passed</option>
+
+                        </select>
+                    </b>
+                    </div>
+                </div>
+            {% endif %}
+            {%- if tags or failed-%}
+                <div class="col-sm-1 pull-left" >
+                    <div class="form-group form-group-sm">
+                        <button type="button" class="btn btn-default btn-xs"
+                                id="button-clear-filter" data-clear-filter>
+                            <b>{{ 'report.clear_filter.label'|get_text }}</b>
+                        </button>
+                    </div>
+                </div>
+            {%- endif -%}
+
+
+            {%- if environments is defined and environments|count > 0 -%}
+                <div class="col-md-2  pull-right" style="vertical-align: middle" >
+                    {% set title_env = environments|sort|export_environments_title %}
+                    <span class="title-environment pull-right" data-title-environment>
+                        <b>Environment</b>
+                        <span class="glyphicon glyphicon-eye-open glyphicon-align-right"
+                              style="color: #333;font-size: 10px;"
+                              title="{{ title_env }}"
+                                data-title-environment data-change-title="0">
+                        </span>
+                    </span>
+                </div>
+            {%- endif -%}
+        </div>
+        {%- endblock -%}
+        {%- block body -%}
+            <table class="table table-bordered behavex_letter" id="summary">
+                <thead>
+                    <tr class="table-header">
+                        <th>Feature</th>
+                        <th>Total</th>
+                        <th>Executed</th>
+                        <th>Passed</th>
+                        <th>Failed</th>
+                        <th>Skipped</th>
+                        <th>Execution %</th>
+                        <th>Pass Rate</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                {%- for feature in features -%}
+                    <tr class="table_row_{{ feature.status }} data_feature"
+                        data-feature-tags="{{ feature|create_tags_set }}">
+                    <!-- iteritems has been changed to items -->
+                    {%- for field, value in summary[feature.name].items() -%}
+                        {%- if field != 'to_be_fixed' -%}
+                            <td title="{{ field }}">
+                        {%- endif -%}
+                        {%- if field == 'Feature' -%}
+                             <span class="glyphicon glyphicon-menu-right pull-left span-behavex"
+                                   data-feature-id="{{ feature.id }}"
+                                   data-feature title="{{ ('commons.expand'|get_text).format('scenarios') }}"></span>
+                            <b>&nbsp;{{ feature.name }}</b>
+                        {%- elif field == 'Total'-%}
+                            {{ value }}
+                            {%- set to_be_fixed = summary[feature.name]['to_be_fixed'] -%}
+                            {%- if to_be_fixed > 0 -%}
+                                &nbsp;&nbsp;<span class="glyphicon glyphicon-pushpin"
+                                                  data-to-be-fixed="{{ to_be_fixed }}"
+                                    title="There {{ 'is 1 scenario'  if to_be_fixed == 1 else 'are ' ~ to_be_fixed ~ ' scenarios'}} affected by a fix process">
+                            </span>{%- endif -%}
+                        {%- elif field == 'Duration' -%}
+                            {{ value|pretty_print_time }}
+                        {%- elif field == 'Failed' -%}
+                            {{ value }}
+                        {%- else -%}
+                            {%- if field != 'to_be_fixed' -%}
+                                {{ value }}
+                            {%- endif -%}
+                        {%- endif -%}
+                        {%- if field != 'to_be_fixed' -%}
+                            </td>
+                        {%- endif -%}
+                        {%- if loop.last -%}
+                            </tr>
+                            <tr style="display: None" data-feature-id="{{ feature.id }}">
+                                <td colspan="9">
+                                    {{ print_feature(feature) }}
+                                </td>
+                            </tr>
+                        {%- endif -%}
+                    {%- endfor -%}
+                {%- endfor -%}
+                <tr class="behavex-row-total">
+                    <!-- iteritems has been changed to items -->
+                    {%- for key, total in fields_total.items() -%}
+                        <td><b>
+                            {%- if key == 'Duration' -%}
+                                {{ total|pretty_print_time }}
+                            {%- elif key == 'Totals' -%}
+                                <div class="radio" style="margin: 0px">
+                                <span class="behavex-span-totals pull-left">
+                                    Totals
+                                </span>
+                                    <label class="checkbox-inline pull-right"
+                                           style="display: none">
+                                        <input type="checkbox" checked="checked"
+                                               data-checkbox-under-fix>
+                                        {{ 'report.skip_fix_process.label'|get_text }}
+                                        &nbsp;&nbsp;
+                                    </label>
+                                </div>
+                            {%- else -%}{{ total}}{%- endif -%}</b>
+                        </td>
+                    {%- endfor -%}
+                </tr>
+            </table>
+
+            {# Modal for logs and images   #}
+     <div class="modal fade " id="modal-logs" style="display: None">
+        <div class="modal-dialog modal-dialog-style">
+            <div class="modal-content modal-style">
+                <div class="modal-header">
+                    <a class="close" data-dismiss="modal">&times;</a>
+                    <h3>{{ (menu ~ '.modal.title')|get_text }}</h3>
+                </div>
+                <div class="modal-body modal-style-body">
+                </div>
+{#                <div class="modal-footer modal-style-footer">#}
+{#                    <a href="#" class="btn" data-dismiss="modal">Close</a>#}
+{#                </div>#}
+            </div>
+        </div>
+    </div>
+
+        {%- endblock -%}
+
+        {%- macro print_feature(feature) -%}
+            <div class="panel-default feature behavex_letter">
+                <div class="panel-body">
+                    <table class="table table-bordered behavex_letter" >
+                    {%- if feature.background.steps|count > 0  -%}
+                        <tr style="display: none" data-info-background="{{ feature.name }}"
+                            class="panel-header">
+                            <td colspan="5">
+                                <ul class="background-scenario list-unstyled behavex_letter ul-background-behavex">
+                                    {%- for step in feature.background.steps -%}
+                                        <li>{{ step|resolving_type(feature.background, True)~ ' ' }} {{step.name|e }}
+                                        {%- if 'table' in step -%}
+                                            <ul data-table>
+                                                <li class="list-group-item" style="padding:3px 3px">
+                                                <table class="table table-hover behavex_letter table-bordered">
+                                                    <tr class="table-header">
+                                                        {%- for key in step.table -%}
+                                                            <th>{{ key }}</th>
+                                                        {%- endfor -%}
+                                                    </tr>
+                                                    {%- for i in range(step.table.values()[0]|count) -%}
+                                                        <tr>
+                                                            {%- for key in step.table -%}
+                                                                <td>{{ step.table[key][i]|e }}</td>
+                                                            {%- endfor -%}
+                                                        </tr>
+                                                    {%- endfor -%}
+                                                </table>
+                                                </li>
+                                            </ul>
+                                        {%- endif -%}
+                                        </li>
+                                    {%- endfor -%}
+                                </ul>
+                            </td>
+                        </tr>
+                    {%- endif -%}
+                    <tr class="table-header">
+                        <th style="width: auto">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Scenario
+                            {%- if feature.background.steps|count > 0 -%}
+                                <a data-name-background="{{ feature.name}}" style="cursor:pointer;"
+                                   data-background data-show="false"
+                                   title="{{ ('commons.expand'|get_text).format('background') }}">
+                                    <small class="pull-right behavex-letter" data-name-background="{{ feature.name}}" data-background>
+                                        {{ 'report.show_background'|get_text }}&nbsp;&nbsp;
+                                    </small>
+                                </a>
+                            {%- endif -%}
+                        </th>
+                        <th style="width: 10%;height: 24px" class="text-center">Type</th>
+                        <th style="width: 80px;height: 24px" class="text-center">Status</th>
+                        <th style="width: 7%;height: 24px" class="text-center">Duration</th>
+                        <th style="width: 135px;height: 24px" class="text-center">Log</th>
+                    </tr>
+                    {%- for scenario in feature.scenarios -%}
+                        {%- set normalized_name = scenario.name|normalize -%}
+                        <!-- normalized_name has been forced to be a string -->
+                        {%- set normalized_name = normalized_name|string -%}
+                        <tr class="table_row_commons behavex_letter feature-scenario {{ [scenario.status]|calculate_color }}-behavex text-center"
+                                data-scenario-tags="{{ scenario.tags|to_string_list }}">
+                            <td class="text-left grey-behavex">
+                                <div class="alert-{{ scenario.status|resolving_color_class }} behavex_letter alert-behavex scenario-step">
+                                    <span class="glyphicon glyphicon-menu-right pull-left span-behavex" data-id-hash="{{ scenario.id_hash }}"
+                                          title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario></span>
+                                    <b>&nbsp;&nbsp;{{ scenario.name |e}}</b>
+                                     {% if scenario.retried is defined %}
+                                        <span class="glyphicon glyphicon-repeat btn-xs disabled pull-right red-behavex"
+                                          title="{{ 'report.icon_repeat.title'|get_text}}" data-duplicated data-id_hash="{{ scenario.id_hash }}"></span>
+                                    {% endif %}
+                                </div>
+                                <div data-div-id_hash="{{ scenario.id_hash }}"
+                                     style="display: None" class="pull-left">
+                                    <ul class="list-unstyled ul-tags-behavex label-behavex" style="width:100%;font-size: 10px">
+                                    <span class="label icon-skipped glyphicon glyphicon-tag table_row_{{ scenario.status}} label grey-behavex"></span>
+                                        {%- for tag in scenario.tags -%}
+                                            {% if loop.first %}
+                                                <li class="label grey-behavex" style="float:left;vertical-align: middle">
+                                                    <span class="glyphicon glyphicon-tag" style="font-size: 12px;padding-top: 3px">
+                                                    </span>
+                                                </li>
+                                            {% endif %}
+
+                                            {%- if [tag]|match_for_execution -%}
+                                                <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
+                                                    class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.label_matching'|get_text }}">
+{#                                                    <span class="label icon-skipped glyphicon glyphicon-tag table_row_{{ scenario.status}} label-behavex"#}
+{#                                                    title="{{ 'report.label_matching'|get_text }}">#}
+                                                    <b>{{ tag }}</b>
+{#                                                    </span>#}
+                                            {%- else -%}
+                                                <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
+{#                                                    <span class="label icon-skipped glyphicon glyphicon-tag label-behavex">#}
+                                                    {{ tag }}
+{#                                                    </span>#}
+                                            {%- endif -%}
+                                            </li>
+                                        {%- endfor -%}
+                                    </ul>
+                                    <br>
+                                    {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
+                                        <br>
+                                        <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
+                                            <span class="glyphicon glyphicon-warning-sign"></span>
+                                            <b>{{ 'commons.error_background'|get_text }}:</b>
+                                             <ul class='list-unstyled scenario-step'>
+                                                {{ print_step(scenario, scenario.error_step ) }}
+                                             </ul>
+                                            <br>
+                                        <hr class='line-behavex-background'>
+                                    {%- else -%}
+                                        <br>
+                                    {%- endif -%}
+                                    <ul class='list-unstyled scenario-step'
+                                        data-div-id_hash="{{ scenario.id_hash }}"
+                                        style="display: None;width: 100%">
+                                        {%- for step in scenario['steps'] -%}
+                                            {{ print_step(scenario, step)}}
+                                        {%- endfor -%}
+                                    </ul>
+                                </div>
+                                {%- if ('TEST_TO_FIX' in scenario.tags or 'BUG_TO_FIX' in scenario.tags) -%}
+                                    <div class="div-tag-fix scenario-step">
+                                        <div style="width: 100%">
+                                        {%- if 'TEST_TO_FIX' in scenario.tags -%}
+                                            <div class="div-pushpin-behavex row grey-behavex" style="width: 100%">
+                                                <span class="label glyphicon glyphicon-pushpin span-behavex-pushpin grey-behavex">
+                                                </span>
+                                            <b>&nbsp;{{ 'report.test_to_fix'|get_text }}</b>
+                                            </div>
+                                        {%- else -%}
+                                            <div class="div-pushpin-behavex row grey-behavex" style="width: 100%">
+                                                <span class="label glyphicon glyphicon-pushpin span-behavex-pushpin grey-behavex">
+                                                </span>
+                                                <b>&nbsp;{{ 'report.bug_to_fix'|get_text }}</b>
+                                            </div>
+                                        {%- endif -%}
+                                        </div>
+                                    </div>
+                                {%- endif -%}
+
+                            </td>
+                            <td>
+                                {%- if "MANUAL" in scenario.tags -%}
+                                    <p class="text-center">Manual</p>
+                                    </td>
+                                    <td>&nbsp;&nbsp;Skipped</td>
+                                    <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
+                                    <td><p></p></td>
+
+                                {%- elif "WIP" in scenario.tags -%}
+                                    <p class="text-center">Work In Progress</p>
+                                    </td>
+                                    <td>&nbsp;&nbsp;Skipped</td>
+                                    <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
+                                    <td><p></p></td>
+                                {%- else -%}
+                                    {%- set normalized_name = normalized_name|string -%}
+									{%- set log_dir_name = normalized_name -%}
+                                    {%- if scenario.outline_index > 0 -%}
+                                        {%- set log_dir_name = normalized_name ~ '_' ~ scenario.outline_index -%}
+										{%- set log_dir_name = log_dir_name|string -%}
+                                    {%- endif -%}
+                                    <p class="text-center">Automatic</p>
+                                    </td>
+                                    <td><p><b>&nbsp;{{ scenario.status|capitalize }}</b></p></td>
+                                    <td>
+                                        <p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>{{ scenario.duration|pretty_print_time }}</b></p>
+                                    </td>
+                                    <td style="width: 180px;">
+                                        <div class="btn-group text-left">
+                                            {%- set normalized_name = normalized_name|string -%}
+											{%- set normalized_name = normalized_name|replace("b'","" ) -%}
+											{%- set normalized_name = normalized_name|replace("'","" ) -%}
+											{%- set path_log = get_path_log(scenario) -%}
+											{%- set path_log = path_log|string -%}
+                                            {%- set path_log_scenario = path_join(path_log, normalized_name , 'scenario.log')-%}
+											{%- set path_log_scenario = path_log_scenario|string -%}
+                                            {%- set path_img_scenario = path_join(path_log, normalized_name, 'images.html')-%}
+											{%- set path_img_scenario = path_img_scenario|string -%}
+
+                                            {%- if path_log_scenario|path_exist_in_output -%}
+                                                <a href="{{  path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
+                                                   charset="utf-8" class="btn btn-default" title="View log"
+                                                   data-log>
+                                                   <span class="glyphicon glyphicon-zoom-in"
+                                                         style="font-size: 14px"></span></a>
+                                            {%- endif -%}
+                                            {%- if  path_img_scenario|path_exist_in_output -%}
+                                                <a href="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
+                                                   title="View screenshots"
+                                                   class="btn btn-default" data-image>
+                                                    <span class="glyphicon glyphicon-picture"
+                                                          style="font-size: 14px"></span></a>
+                                            {%- endif -%}
+                                            {%- if scenario|exist_extra_logs -%}
+                                                {% set path_extra = scenario|get_path_extra_logs %}
+                                                <a href=""
+                                                   data-path-extra="{{ path_extra}}"
+                                                   title="Additional Evidence"
+                                                   class="btn btn-default"  >
+                                                    <span class="glyphicon glyphicon-list"
+                                                          style="font-size: 14px"></span></a>
+                                                <div class="list-group list-extra-log"  style="display: None">
+                                                {% set path_extra_logs_relative = scenario|get_relative_extra_logs_path %}
+                                                {% for log in scenario|get_extra_logs_file %}
+                                                        <a data-name="{{ log}}" target="_blank" href="{{path_extra_logs_relative ~ log}}" title="{{ log }}" class="list-group-item list-extra-log-item">{{ log }}</a>
+                                                {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a>
+                                        </div>
+                                    </td>
+                                {%- endif -%}
+                        </tr>
+                    {%- endfor -%}
+                </table>
+            </div>
+        </div>
+        {%- endmacro -%}
+
+        {%- macro print_step(scenario, step) -%}
+            <li style="width: 100%">{{ step|resolving_type(scenario) }} {{ ((step.name) ~ test_status_text)|e }}
+            {%- if 'table' in step -%}
+                <table class="table table-hover behavex_letter table-step-value">
+                    <tr class="{{scenario.status|resolving_color_class}} table-header">
+                        {%- for key in step.table -%}
+                            <th>{{ key |e}}</th>
+                        {%- endfor -%}
+                    </tr>
+                    {% set table_values = step.table.values()|list %}
+                    {%- for i in range(table_values[0]|count) -%}
+                        <tr>
+                            {%- for key in step.table -%}
+                                <td>{{ step.table[key][i]|e }}</td>
+                            {%- endfor -%}
+                        </tr>
+                    {%- endfor -%}
+                </table>
+            {%- endif -%}
+            {% if step.text is defined and step.text != "None" %}
+            <div class="small attr_text">
+                {{ step.text|replace_enter|e|replace("&lt;br&gt;", "<br>")|replace(' ', '&nbsp;&nbsp;')}}
+            </div>
+
+            {% endif%}
+            {%- if step.status == 'failed' or step.status == 'undefined' -%}
+                <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
+                 {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
+                 {%- if error_msg or error_lines -%}
+                    <ul class="list-unstyled pull-left ul-step-error">
+                        <li>
+                            <small>
+                                {%- if error_msg -%}
+                                    {{ error_msg|e }} <br>
+                                {%- else -%}
+                                    {%- for line in error_lines -%}
+                                        {%- if line -%}
+                                            {{ line|print_error|e }}<br>
+                                        {%- endif -%}
+                                    {%- endfor -%}
+                                {%- endif -%}
+                            </small>
+                        </li>
+                    </ul>
+                 {%- endif -%}
+            {%- endif -%}
+            </li>
+        {%- endmacro -%}
+
+        {%- block javascript -%}
+
+        {{ super() }}
+            $(document).ready(function(){
+                iframe = false;
+{#                window.onbeforeunload = function(e) {#}
+{#                    e.preventDefault();#}
+{#                    if(!iframe){#}
+{#                        window.history.back();#}
+{#                    } else {#}
+{#                        return '';#}
+{#                    }#}
+{#                }#}
+
+            var ua = navigator.userAgent.toLowerCase();
+            if (ua.indexOf('safari') != -1) {
+                if (ua.indexOf('chrome') == -1) {
+                    $('span.glyphicon-copy').hide();
+                }
+            }
+            var url = $(location).attr('href');
+            var list_url = url.split('#');
+            if (list_url.length < 2 || (list_url.length == 2 && list_url[1] == '') ){
+                var aux= 0;
+                return 0;
+            }
+            if (list_url.length > 1) {
+                var filter = list_url[1].split('=');
+            } else {
+                return 0;
+            }
+            if (filter.length > 1) {
+                if (filter[0] == 'tag'){
+                    show_tag(filter[1]);
+                } else if (filter[0] == 'scenario'){
+                    show_scenario(filter[1]);
+                }
+            }
+        })
+
+        $("[data-path-extra]").click(function(e){
+            e.preventDefault();
+            var div = $($(this).find(" + div")[0]);
+
+            var modal = $('#modal-logs');
+            var body_modal = modal.find('div.modal-body');
+            var clone_div = div.clone();
+            clone_div.css('display', '');
+
+            body_modal.html(clone_div);
+            modal.modal('show');
+        })
+
+        $('[data-select-filter-status]').change(function(){
+            var selected = $(this).val();
+            if (selected == 'all') {
+                show_all();
+            } else {
+                filter_status(selected);
+            }
+        });
+
+        $('[data-select-filter-tags]').change(function(){
+            var selected = $(this).val();
+            if (selected == 'all') {
+                show_all();
+            } else {
+                show_tag(selected);
+            }
+        });
+
+        function filter_status(status){
+            show_all()
+            if (status == 'failed'){
+                $('tr.table_row_failed.data_feature  span').click();
+{#                $('tr.table_row_failed.data_feature + tr')#}
+                $('tr.table_row_passed.data_feature').hide();
+                $('tr.table_row_skipped.data_feature').hide();
+                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
+                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-success').hide();
+                $($('tr.table_row_failed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
+                $($('tr.table_row_failed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
+            } else if (status == 'passed'){
+                $('tr.table_row_passed.data_feature  span').click();
+                $('tr.table_row_failed.data_feature').hide();
+                $('tr.table_row_skipped.data_feature').hide();
+                $('tr.table_row_skipped.data_feature + tr[data-feature-id] td');
+                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
+                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
+                $('tr.table_row_failed.data_feature').each(function(){
+                    var clickear = false;
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
+                        div.find('span').click();
+                        div.show();
+                        div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
+                        div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
+                    }
+                });
+            } else if (status == 'skipped'){
+                $('tr.table_row_skipped.data_feature  span').click();
+                $('div.alert-danger').parents('tr.feature-scenario').hide();
+                $('div.alert-success').parents('tr.feature-scenario').hide();
+                $('tr.table_row_failed.data_feature').each(function(){
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
+                        div.find('span').click();
+                        div.show();
+                    } else {
+                        div.hide();
+                        div.next().hide();
+                    }
+                });
+                $('tr.table_row_passed.data_feature').each(function(){
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0) {
+                        div.find('span').click();
+                        div.show();
+                    } else {
+                        div.hide();
+                        div.next().hide();
+                    }
+                });
+
+            }
+        }
+
+        function clean_filters(filters){
+            var filters = filters || [];
+            if (!(filters.indexOf('tags') >= 0)){
+                $('select[data-select-filter-tags] option[selected]').removeAttr('selected');
+                $('select[data-select-filter-tags] option[value=all]').attr('selected', 'selected');
+            }
+            if (!(filters.indexOf('search') >= 0)){
+                $('[data-search]').val('');
+            }
+            if (!(filters.indexOf('status') >= 0)){
+                $('select[data-select-filter-status] option[selected]').removeAttr('selected');
+                $('select[data-select-filter-status] option[value=all]').attr('selected', 'selected');
+            }
+        }
+
+        $('[data-clear-filter]').click(function(){
+            clean_filters();
+            show_all();
+         });
+
+        function show_all(){
+            $('tr.table_row_passed.data_feature').show();
+            $('tr.table_row_failed.data_feature').show();
+            $('tr.table_row_skipped.data_feature').show();
+            $('tr[data-feature-tags]').show();
+            $('tr[data-feature-id]').hide();
+            $('span.glyphicon-menu-down').click();
+            $('tr[class=behavex-row-total]').show();
+            $('a[data-show=true]').click();
+            $('.feature-scenario').show();
+            $('span[data-feature-id]').parents('tr').find('tr').show();
+        }
+
+        function show_scenario(id_hash_){
+            $('.feature-scenario').hide();
+            $('span.glyphicon-menu-down').click();
+            $('a[data-show=true]').click();
+            clean_filters();
+            var id_feature = id_hash_.split('-')[0];
+            var id_hash = id_hash_.split('-')[1];
+            var span_feature = $('span[data-feature-id="'+ id_feature+'"]');
+            span_feature.parents('tr').show();
+            click_data_feature(span_feature, false);
+            var span_scenario = span_feature.parents('tr').find('+ tr').hide()
+            var span_scenario = span_feature.parents('tr').find('+ tr').find('span[data-id-hash='+ id_hash+']');
+            span_scenario.parents('tr').show();
+            span_scenario.click();
+            span_scenario.parents('tr').focus();
+
+            $('tr[class=behavex-row-total]').hide();
+        }
+
+        function show_tag(tag){
+            features = $('tr[data-feature-tags]');
+            features.show()
+            $('span.glyphicon-menu-down').click();
+            $('tr[data-scenario-tags]').show();
+            $('a[data-show=true]').click();
+            $('select[data-select-filter-tags] option[value='+ tag +']').attr('selected', 'selected');
+            clean_filters(['tags']);
+
+            for (index = 0; index < features.length; ++index) {
+                var feature = $(features[index]);
+                if (eval(feature.attr('data-feature-tags')).indexOf(tag) < 0) {
+                    feature.hide();
+                } else {
+                    feature.find('span[data-feature]').click();
+                }
+            }
+            scenarios = $('tr[data-scenario-tags]');
+            for (index = 0; index < scenarios.length; ++index) {
+                var scenario = $(scenarios[index]);
+                if (eval(scenario.attr('data-scenario-tags')).indexOf(tag) < 0){
+                    scenario.hide();
+                }
+            }
+            $('tr[class=behavex-row-total]').hide();
+        }
+
+        $('[data-scenario]').click(function(e){
+            e.stopPropagation();
+            var element = $(this);
+            var id = element.attr('data-id-hash');
+            var div = $('[data-div-id_hash='+ id +']');
+            if (element.hasClass('glyphicon-menu-right')) {
+                div.css('display', '');
+                element.removeClass('glyphicon-menu-right');
+                element.addClass('glyphicon-menu-down');
+                element.attr('title', "{{ ('commons.collapse'|get_text).format('scenario')}}");
+            } else {
+                div.css('display', 'None')
+                element.removeClass('glyphicon-menu-down');
+                element.addClass('glyphicon-menu-right');
+                element.attr('title', "{{ ('commons.expand'|get_text).format('scenario')}}");
+                element.parent().parent().parent().find('div.list-extra-log').css('display', 'none');
+            }
+
+        });
+        $('[data-background]').on('click',function(e){
+            e.stopPropagation();
+            var element = $(this);
+            var name = element.attr('data-name-background');
+            var tr = $('[data-info-background="'+ name +'"]');
+            if(element.hasClass('panel-header')) {
+                // this for click of the tr
+                var tr = element;
+                element = element.find('+ tr').find('small');
+            }
+            if (element.text().trim() == '{{ 'report.show_background'|get_text }}') {
+                tr.css('display', '')
+                element.text('{{ 'report.hide_background'|get_text }}')
+                element.attr('title', "{{ ('commons.collapse'|get_text).format
+                ('background')}}");
+                element.parent('a').attr('data-show', 'true');
+            } else {
+                tr.css('display', 'None')
+                element.text('{{ 'report.show_background'|get_text }}');
+                element.attr('title', "{{ ('commons.expand'|get_text).format
+                ('background')}}");
+                element.parent('a').attr('data-show', 'false');
+            }
+        });
+
+        $('[data-feature]').click(function(e){
+            e.stopPropagation();
+            var element = $(this);
+            click_data_feature(element, true);
+        });
+
+        function click_data_feature(element, all) {
+            element.children('tr .feature-scenario').show();
+
+            var id = element.attr('data-feature-id');
+            var tr = $('tr[data-feature-id='+ id +']');
+            if (element.hasClass('glyphicon-menu-right')) {
+                tr.css('display', '')
+                element.removeClass('glyphicon-menu-right');
+                element.addClass('glyphicon-menu-down');
+                element.attr('title', "{{ ('commons.collapse'|get_text).format('scenarios')}}");
+            } else {
+                tr.css('display', 'None')
+                element.removeClass('glyphicon-menu-down');
+                element.addClass('glyphicon-menu-right');
+                element.attr('title', "{{ ('commons.expand'|get_text).format('scenarios')}}");
+            }
+
+        }
+        $('.glyphicon-copy').click(function(){
+            var scenario = $(this).closest('tr').find("td:first").find('span:first');
+            var feature_id = scenario.parents('div.feature').parents('tr[data-feature-id]').attr('data-feature-id');
+            var url = $(location).attr('href').split('#')[0];
+            result = url + '#scenario=' + feature_id + '-' + scenario.attr('data-id-hash');
+            copyToClipboard(result);
+            alert("Test scenario link copied!");
+        });
+
+        function copyToClipboard(value) {
+              // Create a "hidden" input
+              var aux = document.createElement("input");
+
+              // Assign it the value of the specified element
+              aux.setAttribute("value", value);
+
+              // Append it to the body
+              document.body.appendChild(aux);
+
+              // Highlight its content
+              aux.select();
+
+              // Copy the highlighted text
+              document.execCommand("copy");
+
+              // Remove it from the body
+              document.body.removeChild(aux);
+        }
+
+        $('[view]').on('click', function(e){
+            e.stopPropagation();
+            var element = $(this);
+            var find  = element.attr('find');
+            var  finder = $(find);
+            var word = element.attr('word') || 'scenario';
+            if (element.hasClass('glyphicon-menu-right')) {
+                finder.css('display', '')
+                element.removeClass('glyphicon-menu-right');
+                element.addClass('glyphicon-menu-down');
+                element.attr('title', "{{ ('commons.collapse'|get_text).format(word)}}");
+            } else {
+                finder.css('display', 'None')
+                element.removeClass('glyphicon-menu-down');
+                element.addClass('glyphicon-menu-right');
+                element.attr('title', "{{ ('commons.expand'|get_text).format(word)}}");
+            }
+        });
+        var scenario_frame = '';
+        $('[data-log],[data-image]').click(function(e){
+            e.preventDefault();
+            iframe = true;
+            var link = $(this);
+            var url = decodeURI(link.attr('href')).replace('C:\\', 'file:///C:/');
+            var modal = $('#modal-logs');
+            var body_modal = modal.find('div.modal-body');
+            body_modal.html('<iframe style="width:100%;height:100%;" frameborder="0" src="' + url + '" />');
+            modal.modal('show');
+        });
+
+         $('[data-title-environment]').on('click mouseover', function(){
+            var span = $('span [data-title-environment]');
+            var change_title = parseInt(span.attr('data-change-title'));
+            if (change_title  < 3) {
+                span.attr('title', span.attr('title') + '  ');
+                span.attr('data-change-title', change_title + 1);
+            } else {
+                span.attr('title', span.attr('title').trim());
+                if (change_title > 5){
+                    change_title = 0;
+                }
+                span.attr('data-change-title', change_title + 1);
+            }
+            span.focus();
+        });
+
+        $('[data-close-iframe]').click(function(){
+            iframe = false;
+            $('#iframe-container').css('display', 'none');
+            $('div.container_body').show();
+            $('nav.nav-behavex').show();
+            $('html, body').animate({scrollTop: $('tr[data-feature-id='+ scenario_frame+']').offset().top});
+        });
+        var scenarios_autocomplete = Array();
+        {%- for scenario, id in scenarios -%}
+            scenarios_autocomplete.push({'label':'{{ scenario|replace("'",'"')|replace("\\", "\\\\") }}',
+            'desc':'{{ id }}','value': '{{ scenario|replace("'",'"')|replace("\\", "\\\\")  }}' });
+        {%- endfor -%}
+        var search = $('[data-search]');
+        search.autocomplete({
+            source: scenarios_autocomplete,
+            select: function(event, ui){
+                show_scenario(ui.item.desc);
+            }
+        });
+        {%- endblock -%}

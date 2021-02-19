@@ -1,0 +1,235 @@
+{#
+/*
+* BehaveX - BDD testing library based on Behave
+*/#}
+
+
+{% set menu = 'metrics' %}
+{% extends "base.jinja2" %}
+{% block title %} Metrics {% endblock %}
+{% block script %}
+     <script type="text/javascript">
+
+        var status_with_skipped_un_tbf = '{{ '%10.2f' % ((passed/(total or 1))|float * 100.0)|round }}';
+        var status_with_skipped_tbf = '{{ '%10.2f' % ((passed/((total - to_be_fixed) or 1))|float * 100.0)|round }}';
+        var status_without_skipped_un_tbf = '{{ '%10.2f' % ((passed/((total - skipped) or 1))|float * 100.0)|round }}';
+        var status_without_skipped_tbf = '{{ '%10.2f' % ((passed/((total - skipped - to_be_fixed ) or 1))|float * 100.0)|round }}';
+        green = '#71C176';
+        high_green = '#61B566';
+        red = '#F7819F';
+        high_red = '#E87296';
+        grey = '#999';
+        high_grey = '#777'
+        to_be_fixed_failed = '{{ to_be_fixed }}' || 1;
+
+        // skipped checked tbf unchecked
+        var pieData = [
+            {
+                value: {{ failed }},
+                color: red,
+                highlight: high_red,
+                label: "Failed"
+            },
+            {
+                value: {{ passed }},
+                color: green,
+                highlight: high_green,
+                label: "Passed"
+            },
+            {
+                value: {{ skipped }},
+                color: grey,
+                highlight: high_grey,
+                label: "Skipped"
+            }
+        ];
+
+        // skipped checked and tbf checked
+        var pieDataWithToBeFixed = [
+            {
+                value: {{ failed - to_be_fixed }},
+                color: red,
+                highlight: high_red,
+                label: "Failed"
+            },
+            {
+                value: {{ passed }},
+                color: green,
+                highlight: high_green,
+                label: "Passed"
+            },
+            {
+                value: {{ skipped }},
+                color: grey,
+                highlight: high_grey,
+                label: "Skipped"
+            }
+        ];
+
+        //skipped unchecked and tbf checked
+        var pieDataWithoutToBeFixedAndSkipped = [
+            {
+                value: {{ failed - to_be_fixed }},
+                color: red,
+                highlight: high_red,
+                label: "Failed"
+            },
+            {
+                value: {{ passed }},
+                color: green,
+                highlight: high_green,
+                label: "Passed"
+            }
+        ]
+
+        // skipped unchecked tbf unchecked
+        var pieDataWithToBeFixedWithoutSkipped = [
+            {
+                value: {{ failed }},
+                color: red,
+                highlight: high_red,
+                label: "Failed"
+            },
+            {
+                value: {{ passed }},
+                color: green,
+                highlight: high_green,
+                label: "Passed"
+            }
+        ]
+
+
+        var pieDataRate = [
+            {
+                value: {{ total - not_automated }},
+                color: green,
+                highlight: high_green,
+                label: "Automated"
+            },
+            {
+                value: {{ not_automated }},
+                color: grey,
+                highlight: high_grey,
+                label: "Without automate"
+            }
+        ];
+
+        window.onload = function() {
+            var ctx = document.getElementById("chart-status").getContext("2d");
+            var ctxRate = document.getElementById("chart-rate").getContext("2d");
+            window.myPie = new Chart(ctx).Pie(pieData);
+            window.myPie = new Chart(ctxRate).Pie(pieDataRate);
+
+            $('#input-skipped').on('click', function () {
+                input = $(this);
+                var ctx = document.getElementById("chart-status").getContext("2d");
+                var to_be_fixed = $('#input-to-be-fixed');
+                if (input.is(':checked')) {
+                    if (!to_be_fixed.is(':checked')) {
+                        window.myPie = new Chart(ctx).Pie(pieDataWithToBeFixed);
+                        $('#li-skipped').css('display', '');
+                        $('#li-failed').find('span').text('{{ failed - to_be_fixed }}')
+                        $('#h3-status').html('<b>Pass Rate ' + status_with_skipped_tbf + '%</b>');
+                    } else {
+                        window.myPie = new Chart(ctx).Pie(pieData);
+                        $('#li-failed').find('span').text('{{ failed  }}')
+                        $('#li-skipped').css('display', '');
+                        $('#h3-status').html('<b>Pass Rate ' + status_with_skipped_un_tbf + '%</b>');
+                    }
+                } else {
+                    if (!to_be_fixed.is(':checked')) {
+                        window.myPie = new Chart(ctx).Pie(pieDataWithoutToBeFixedAndSkipped);
+                        $('#li-skipped').css('display', 'None');
+                        $('#li-failed').find('span').text('{{ failed - to_be_fixed }}')
+                        $('#h3-status').html('<b>Pass Rate ' + status_without_skipped_tbf + '%</b>');
+                    } else {
+                        window.myPie = new Chart(ctx).Pie(pieDataWithToBeFixedWithoutSkipped);
+                        $('#li-skipped').css('display', 'None');
+                        $('#li-failed').find('span').text('{{ failed }}')
+                        $('#h3-status').html('<b>Pass Rate ' + status_without_skipped_un_tbf + '%</b>');
+                    }
+                }
+            });
+
+            $('#input-to-be-fixed').on('click', function () {
+                input = $(this);
+                var ctx = document.getElementById("chart-status").getContext("2d");
+                var skipped = $('#input-skipped');
+                if (!input.is(':checked')) {
+                    if (skipped.is(':checked')) {
+                        window.myPie = new Chart(ctx).Pie(pieDataWithToBeFixed);
+                        $('#li-skipped').css('display', '');
+                        $('#li-failed').find('span').text('{{ failed - to_be_fixed }}')
+                        $('#h3-status').html('<b>Pass Rate ' + status_with_skipped_tbf + '%</b>');
+                    } else {
+                        $('#li-failed').find('span').text('{{ failed - to_be_fixed }}')
+                        window.myPie = new Chart(ctx).Pie(pieDataWithoutToBeFixedAndSkipped);
+                        $('#h3-status').html('<b>Pass Rate ' + status_without_skipped_tbf + '%</b>');
+                        $('#li-skipped').css('display', 'None');
+                    }
+                } else {
+                    if (skipped.is(':checked')) {
+                        window.myPie = new Chart(ctx).Pie(pieData);
+                        $('#li-failed').find('span').text('{{ failed  }}')
+                        $('#li-skipped').css('display', '');
+                        $('#h3-status').html('<b>Pass Rate ' + status_with_skipped_un_tbf + '%</b>');
+                    } else {
+                        window.myPie = new Chart(ctx).Pie(pieDataWithToBeFixedWithoutSkipped);
+                        $('#li-skipped').css('display', 'None');
+                        $('#li-failed').find('span').text('{{ failed }}')
+                        $('#h3-status').html('<b>Pass Rate ' + status_without_skipped_un_tbf + '%</b>');
+                    }
+                }
+            });
+        };
+
+
+    </script>
+  </head>
+{% endblock %}
+{% block body %}
+
+<div class="row charts-div">
+    <div class="col-md-5 col-md-offset-1">
+        <h3><b>Test Automation Rate {{ '%10.2f' % (((total - not_automated)/ total)|float * 100.0)|round }}%</b></h3>
+        <canvas id="chart-rate" width="300" height="300"/>
+    </div>
+    <div class="pie-legend col-md-2">
+        <br>
+        <br>
+            <br>
+                <ul class="list-group">
+                    <li class="list-group-item green-background-behavex ">
+                        <span class="badge">{{ total - not_automated }}</span><b>Automated</b></li>
+                    <li class="list-group-item grey-background-behavex">
+                        <span class="badge">{{ not_automated }}</span><b>Not automated</b></li>
+                </ul>
+    </div>
+</div>
+<div class="row charts-div" >
+    <div class="col-md-5 col-md-offset-1">
+        <h3 id="h3-status"><b>Pass Rate {{ '%10.2f' % ((passed/(total or 1))|float * 100.0)|round }}%</b></h3>
+        <canvas id="chart-status" width="300" height="300"/>
+    </div>
+    <div class="pie-legend col-md-2">
+        <br>
+    <br>
+    <br>
+        <label class="checkbox" id="checkbox-skipped">
+            <input type="checkbox" checked="checked" id="input-skipped"> <b>{{ 'metrics.checkbox.include_skipped'|get_text }}</b>
+        </label>
+        <label class="checkbox" id="checkbox-skipped">
+            <input type="checkbox" checked="checked" id="input-to-be-fixed">
+            <b>{{ 'metrics.checkbox.include_fix_process'|get_text }}</b>
+        </label>
+        <ul class="list-group">
+            <li class="list-group-item red-background-behavex" id="li-failed"><span class="badge">{{ failed }}</span><b>Failed</b></li>
+            <li class="list-group-item green-background-behavex "><span
+                    class="badge">{{ passed }}</span><b>Passed</b></li>
+            <li class="list-group-item grey-background-behavex"
+                id="li-skipped"><span class="badge">{{ skipped }}</span><b>Skipped</b></li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
