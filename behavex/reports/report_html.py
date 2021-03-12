@@ -21,8 +21,6 @@ FUNCTIONS:
     - generate_report
     - _create_manifest
     - _create_files_report
-    - export_tags_to_html
-    - export_metrics_to_html
     - export_step_to_html
     - export_result_to_html
     - get_value_filters
@@ -39,7 +37,6 @@ from behavex import conf_mgr
 from behavex.reports.report_utils import (
     gather_steps_with_definition,
     get_total_steps,
-    get_scenarios_by_tag,
     get_save_function
 )
 from behavex.conf_mgr import get_env
@@ -54,8 +51,6 @@ CONFIG = conf_mgr.get_config()
 
 TEST_REPORT_TEMPLATE = 'report.jinja2'
 STEP_TEMPLATE_DEFINITION = 'steps.jinja2'
-METRICS_TEMPLATE = 'metrics.jinja2'
-TAGS_TEMPLATE = 'tags.jinja2'
 T_HANDLER = TemplateHandler(TEMPLATE_DIR)
 
 
@@ -66,17 +61,13 @@ def generate_report(output, joined=None, report=None):
     steps_definition = output["steps_definition"]
     all_scenarios = sum([feature['scenarios'] for feature in features], [])
     features.sort(key=lambda feature: feature['name'])
+    metrics_variables = get_metrics_variables(all_scenarios, joined, report)
     html = export_result_to_html(
-        environment, features, joined, report)
+        environment, features, metrics_variables, joined, report)
     step = export_step_to_html(features, steps_definition, joined, report)
-    metrics = export_metrics_to_html(
-        all_scenarios, joined, report)
-    tags = export_tags_to_html(all_scenarios, joined, report)
     content_to_file = {
         'report.html': html,
-        'steps.html': step,
-        'metrics.html': metrics,
-        'tags.html': tags
+        'steps.html': step
     }
     _create_files_report(content_to_file)
 
@@ -101,7 +92,7 @@ def _create_files_report(content_to_file):
     for name_file, content in content_to_file.items():
         if name_file == 'report.html':
             layout_path = os.path.join(
-                os.path.dirname(__file__), 'utils/bootstrap-3.3.2-dist', 'css',
+                os.path.dirname(__file__), 'utils/bootstrap-3.3.7-dist', 'css',
                 'layout.css')
             layout_file = open(layout_path, 'r')
             layout_min_path = os.path.join(get_env('OUTPUT'),
@@ -134,26 +125,8 @@ def _create_files_report(content_to_file):
         try_operate_descriptor(path_file, get_save_function(path_file, content))
 
 
-def export_tags_to_html(
-        all_scenarios, joined=None, report=None):
-    """Obtain all tags to publish them in tags.html file"""
-    tags_values = get_scenarios_by_tag(all_scenarios)
-
-    parameters_template = {
-        'tags_values': tags_values,
-        'joined': joined,
-        'report': report
-    }
-
-    output_text = T_HANDLER.render_template(TAGS_TEMPLATE, parameters_template)
-
-    return output_text
-
-
-def export_metrics_to_html(
-        scenarios, joined=None, report=None):
-    """Processing variable for generating metrics in charts and write in file
-    metrics.html"""
+def get_metrics_variables(scenarios, joined=None, report=None):
+    """Processing variable for generating metrics in charts"""
     skipped = sum([scenario['status'] not in ['passed', 'failed'] for scenario in scenarios])
     passed = sum([scenario['status'] == 'passed' for scenario in scenarios])
     failed = sum([scenario['status'] == 'failed' for scenario in scenarios])
@@ -169,15 +142,9 @@ def export_metrics_to_html(
         'failed': failed,
         'not_automated': len(scenarios) - len(scenario_auto),
         'total':  len(scenarios) or 1,
-        'joined': joined,
-        'report': report,
         'to_be_fixed': len(to_be_fixed)
     }
-
-    output_text = T_HANDLER.render_template(
-        METRICS_TEMPLATE, parameters_template)
-
-    return output_text
+    return parameters_template
 
 
 def export_step_to_html(features, steps_definition=None, joined=None, report=None):
@@ -200,7 +167,7 @@ def export_step_to_html(features, steps_definition=None, joined=None, report=Non
 
 
 def export_result_to_html(
-        environment, features, joined=None, report=None):
+        environment, features, metrics_variables, joined=None, report=None):
     """Create test_result.html file with feature information"""
     totals, summary = export_to_html_table_summary(features)
     tags, scenarios = get_value_filters(features)
@@ -214,7 +181,7 @@ def export_result_to_html(
         'tags': list(tags),
         'scenarios': scenarios
     }
-
+    parameters_template.update(metrics_variables)
     output_text = T_HANDLER.render_template(
         TEST_REPORT_TEMPLATE, parameters_template)
 

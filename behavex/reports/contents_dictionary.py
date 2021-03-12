@@ -44,12 +44,12 @@ TEXTS = {
                       '(@BUG_TO_FIX tag).</small>',
         'show_background': '(show background)',
         'hide_background': '(hide background)',
-        'label_matching': 'Matching tag',
+        'execution_tag': 'Execution Tag',
         'filter_tag': {
             'label': 'Tag'
         },
-        'clear_filter': {
-            'label': 'Clean filters'
+        'reset_filter': {
+            'label': 'Reset'
         },
         'skip_fix_process': {
             'label': 'Skip scenarios under fix process'

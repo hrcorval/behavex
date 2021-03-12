@@ -34,7 +34,7 @@
                     data-select-filter-status>
                 <option value="all">all</option>
                 <option value="failed">Failed</option>
-                <option value="skipped">Skipped</option>
+                <option value="skipped">Not&nbsp;Run</option>
                 <option value="passed">Passed</option>
 
             </select>
@@ -43,9 +43,9 @@
     </div>
     <div class="col-sm-1 pull-left" >
         <div class="form-group form-group-sm">
-            <button type="button" class="btn btn-default btn-xs"
-                    id="button-clear-filter" data-clear-filter>
-                <b>Clean filter</b>
+            <button type="button" class="btn btn-info btn-xs"
+                    id="button-reset-filter" data-reset-filter>
+                <b>Reset</b>
             </button>
         </div>
     </div>
@@ -143,7 +143,7 @@
 {%- block javascript -%}
     {{ super() }}
     $("#tableSteps").tablesorter();
-    $('[data-clear-filter]').click(function(){
+    $('[data-reset-filter]').click(function(){
         show_all_tr();
         $('[data-search]').val('');
         $('[data-select-filter-status]').val('all');

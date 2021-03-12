@@ -16,7 +16,7 @@
         <title>{% block title %} Test Execution Report {% endblock%}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <!-- Latest compiled and minified CSS -->
-        <link href="{{relative}}bootstrap/css/pace-theme-center-circle.css"
+        <link href="{{relative}}bootstrap/css/pace-theme-loading-bar.min.css"
               rel="stylesheet">
         <link rel="stylesheet" href="{{relative}}bootstrap/css/layout.min.css"
               rel="stylesheet">
@@ -24,12 +24,10 @@
               href="{{relative}}bootstrap/css/bootstrap-theme.min.css">
         <link href="{{relative}}bootstrap/css/bootstrap.min.css"
               rel="stylesheet">
-        <link href="{{relative}}bootstrap/css/pace-theme-center-circle.css"
-              rel="stylesheet">
         <link href="{{relative}}bootstrap/css/layout.min.css"
               rel="stylesheet">
-        <link href="{{relative}}bootstrap/css/jquery-ui.min.css"
-              rel="stylesheet">
+        <!-- <link href="{{relative}}bootstrap/css/jquery-ui.min.css"
+              rel="stylesheet">-->
         {% block link_css %}{% endblock %}
         <!-- Latest compiled and minified JavaScript -->
         <script src="{{relative}}bootstrap/js/jquery-1.11.0.min.js"
@@ -44,36 +42,29 @@
             type="application/javascript"></script>
         <script src="{{relative}}bootstrap/js/jquery-ui.min.js"
             type="application/javascript"></script>
-        <script src="{{relative}}bootstrap/js/pace.min.js"
-            type="application/javascript"></script>
         {% block script %}{% endblock %}
     </head>
     <body>
     {%- block iframe -%}{%- endblock -%}
-    <nav class="navbar navbar-default nav-behavex" style="display: none">
-        <div class="container pull-left" style="width: 100%">
+    <nav class="navbar navbar-inverse" style="margin-top:16px;">
+        <div class="container-fluid">
             <div class="navbar-header">
-                    <img src="{{relative}}bootstrap/behavex_icon.png"
-                     class="pull-left behavex-icon">
-                <ul class="nav nav-pills pull-left">
+                <a class="navbar-brand">BehaveX</a>
+            </div>
+            <div>
+                <ul class="nav navbar-nav">
                     <!-- icon behavex-->
-                    <li {% if menu == 'report' %} class="active" {% endif %}>
-                        <a href="{{ path_report}}">Test Report</a>
+                    <li class="nav-item {% if menu == 'report' %}active{% endif %}">
+                        <a class="nav-link" href="{{ path_report}}">Test Report</a>
                     </li>
-                    <li {% if menu == 'tags' %} class="active active-behavex"{% endif %}>
-                        <a href="{{ relative }}tags.html">Tags</a>
-                    </li>
-                    <li {% if menu == 'steps' %} class="active" {% endif %}>
-                        <a  href="{{ relative }}steps.html">Steps</a>
-                    </li>
-                    <li{% if menu == 'metrics' %} class="active" {% endif %}>
-                        <a href="{{ relative }}metrics.html">Metrics</a>
+                    <li class="nav-item {% if menu == 'steps' %}active{% endif %}">
+                        <a class="nav-link" href="{{ relative }}steps.html">Steps</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-    <div class="container_body navbar navbar-default" style="display: None">
+    <div class="container_body" style="display: None">
         <!--<div class="contained-title pull-left">-->
         <div class="row title-behavex">
             <div class="col-md-3">
@@ -97,8 +88,9 @@
             </div>
         {% endif %}
         </div>
-        {%- block block_filter -%} {%- endblock -%}
          <!--</div>-->
+        {% block metrics %}{% endblock %}
+        {% block filter %} {% endblock %}
         {% block body %}{% endblock %}
         <div id="fill-for-fix"></div>
     </div>
@@ -122,18 +114,6 @@
     <nav class="navbar navbar navbar-bottom"  style="display: none">
         <div class="container">
             <div class="row">
-                <!--
-                <div class="col-sm-4">
-                    <h5 id='footer-header'> SITEMAP </h3>
-                    <div class="col-sm-4" style="padding: 0 0 0 0px">
-                        <p>News</p>
-                        <p>contact</p>
-                    </div>
-                    <div class="col-sm-4" style="padding: 0 0 0 0px">
-                        <p>FAQ</p>
-                        <p>Privacy Policy</p>
-                    </div>
-                </div> -->
                 <div class="col-sm-12 text-center">
                     <h6 id='footer-header'>
                         {{ 'commons.framework_name'|get_text }} -
@@ -161,7 +141,7 @@
             $('.tr-progress').hover(
                 function(){
                     tr = $(this);
-                    tr.find('.progress').css('border', '2px solid #f1c132');
+                    tr.find('.progress').css('border', '2px solid #66c4e0');
                 },
                 function(){
                     tr = $(this);

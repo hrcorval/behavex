@@ -17,7 +17,6 @@ Functions;
     - _get_path_log
     - _quoteattr
     - _print_tag_xml
-    - _create_progress_html_tags
     - _create_progress_html
     - _resolving_color_class
     - _export_environments_title
@@ -96,7 +95,6 @@ class TemplateHandler(object):
         self.add_filter(resolving_type, 'resolving_type')
         self.add_filter(self._get_text, 'get_text')
         self.add_filter(_create_progress_html, 'create_progress_html')
-        self.add_filter(_create_progress_html_tags, 'create_progress_tags')
         self.add_filter(_export_environments_title, 'export_environments_title')
         self.add_filter(match_for_execution, 'match_for_execution')
         self.add_filter(create_tags_set, 'create_tags_set')
@@ -327,22 +325,12 @@ def _print_tag_xml(tags):
     return '   '.join(['@{0}'.format(tag) for tag in tags])
 
 
-# pylint: disable=W0141
-def _create_progress_html_tags(values):
-    """processing status of the scenarios in tags and create a progress
-    bar in html"""
-    total = len(values)
-
-    passed, failed, skipped = count_by_status(values, func=lambda x, y: x[1])
-    return _create_progress_html(total, passed, failed, skipped)
-
-
 def _create_progress_html(total, passed=0, failed=0, skipped=0):
     """creates a progress bar in html calculating each parcentage"""
     div = '<div class="progress-bar progress-bar-default progress-behavex-{}"' \
           ' role="progressbar" style="width:{}" title="{}"></div>'
 
-    title = 'Passed: {}, Failed: {}, Skipped: {} '.format(
+    title = 'Passed: {}, Failed: {}, Not&nbsp;Run: {} '.format(
         passed, failed, skipped)
 
     skipped = float(skipped)
