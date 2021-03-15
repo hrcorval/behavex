@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 {#/*#}
-{#* BehaveX - BDD testing library based on Behave#}
+{#* BehaveX - Agile test wrapper on top of Behave (BDD)#}
 {#*/#}
 {##}
 
@@ -64,36 +64,10 @@
             </div>
         </div>
     </nav>
-    <div class="container_body" style="display: None">
-        <!--<div class="contained-title pull-left">-->
-        <div class="row title-behavex">
-            <div class="col-md-3">
-                <span class="contained-title pull-left"><b>
-                    {{ (menu ~ '.title')|get_text}}</b>
-                </span>
-            </div>
-        {% if ((menu ~ '.modal.title')|get_text) %}
-            <div class="row">
-                <div class="col-sm-12">
-                <p class="p-help-block">
-                    <span class="help-block" >
-                        &nbsp;{{ (menu ~ '.description')|get_text }}
-                        <span class="glyphicon glyphicon-question-sign pull-right"
-                          id="help-{{ menu }}"
-                          title="{{ 'commons.help.title'|get_text }}">
-                        </span>
-                    </span>
-                </p>
-                </div>
-            </div>
-        {% endif %}
-        </div>
-         <!--</div>-->
-        {% block metrics %}{% endblock %}
-        {% block filter %} {% endblock %}
-        {% block body %}{% endblock %}
-        <div id="fill-for-fix"></div>
-    </div>
+    {% block metrics %}{% endblock %}
+    {% block filter %} {% endblock %}
+    {% block body %}{% endblock %}
+    <div id="fill-for-fix"></div>
     {# start modal #}
     <div class="modal fade" id="{{ menu }}_modal" style="display: None">
         <div class="modal-dialog">

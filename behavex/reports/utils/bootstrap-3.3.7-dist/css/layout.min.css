@@ -1,8 +1,3 @@
-.pie-legend{
-    float: left;
-    border: 0px solid black;
-}
-
 .table_row_passed {
     background: #DFF0D8;
     color: #3C7641;
@@ -28,10 +23,6 @@
     background-color: #F7F7F7;
     color: #3c3c3c;
 }
-.white-behavex {
-    color: #ffffff;
-}
-
 .grey-behavex{
     color: #3c3c3c;
 }
@@ -67,12 +58,12 @@
     padding-top: 2px;
 }
 .container_body {
-    padding-right: 19px;
-    padding-left: 19px;
+    padding-right: 0px;
+    padding-left: 0px;
     padding-top:0px ;
     margin-right: auto;
     margin-left: auto;
-    margin-bottom: 19px;
+    margin-bottom: 0px;
     background-color: #f8f8f8;
     float: none;
 }
@@ -105,9 +96,9 @@
 .blue-fix {
     color: #337ab7
 }
-.behavex-filters {
-    padding-top: 19px;
-    padding-bottom: 19px
+.behavex-big-row {
+    padding-right: 15px;
+    padding-bottom: 5px
 }
 .background {
     padding-left: 36px;
@@ -380,15 +371,16 @@ ul.list-unstyled.scenario-step > li {
     height:98%;
     width:98%;
     padding-left: 1.5%;
-
 }
-
 .modal-style-body{
     height: 94%;
     width: 100%;
 }
-
 .attr_text{
     margin: 2px;
     padding-left: 14px;
+}
+.ui-menu{
+    color: #4F4F4F;
+    background-color: #EEEEEE;
 }

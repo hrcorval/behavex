@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*e
 """
 /*
-* BehaveX - BDD testing library based on Behave
+* BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
 This module provides a dictionary with the contents that are displayed in
@@ -62,14 +62,6 @@ TEXTS = {
         },
         'filter_status': {
             'label': 'Status'
-        }
-    },
-    'tags': {
-        'title': 'Tags',
-        'description': '',
-        'modal': {
-            'title': '',
-            'body': ''
         }
     },
     'steps': {

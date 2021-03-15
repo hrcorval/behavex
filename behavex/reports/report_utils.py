@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*
 """
 /*
-* BehaveX - BDD testing library based on Behave
+* BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
 Test report utility methods for retrieving summarized test execution information
@@ -33,7 +33,6 @@ FUNCTIONS:
     - get_status
     - get_test_execution_tags
     - match_for_execution
-    - copy_screenshots_utilities
     - copy_bootstrap_html_generator
     - get_overall_status
     - get_save_function
@@ -498,19 +497,6 @@ def match_for_execution(tags):
             tags_filter = tags_filter.replace(tag + " ", "False ")
 
     return tags_filter == '' or eval(tags_filter)
-
-
-def copy_screenshot_utils(logs):
-    """Copy utilities for managing screenshots
-    in HTML report to the output folder"""
-    dest_path = os.path.join(logs, 'utils')
-    screenshots_path = ['reports', 'utils', 'screenshots', 'support_files']
-    screenshots_path = os.path.join(FWK_PATH, *screenshots_path)
-    if os.path.exists(dest_path):
-        try_operate_descriptor(dest_path, lambda: shutil.rmtree(dest_path))
-
-    def execution(): return shutil.copytree(screenshots_path, dest_path)
-    try_operate_descriptor(dest_path, execution)
 
 
 def copy_bootstrap_html_generator(output):

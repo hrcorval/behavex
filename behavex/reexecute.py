@@ -1,7 +1,7 @@
 # -*- coding: UTF -*-
 """
 /*
-* BehaveX - BDD testing library based on Behave
+* BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
 Provides support functionality to retry scenarios a number of times before

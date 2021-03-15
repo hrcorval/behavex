@@ -1,52 +1,62 @@
 {#
 /*
-* BehaveX - BDD testing library based on Behave
+* BehaveX - Agile test wrapper on top of Behave (BDD)
 */#}
 
 {%- set menu = 'steps' -%}
 {%- extends "base.jinja2" -%}
 {%- block title-%} Steps {%- endblock -%}
 {%- block body -%}
-
-
-<div id="table_div" >
-    <div class="col-sm-4 pull-left">
-        <div class="form-group form-group-sm">
-            <b>
-            <label class="control-label pull-left"
-                   style="padding-top: 5px;padding-right:3px;font-size: 12px;">Search</label>
-            <input placeholder="step"
-                   type="text"
-                   class="input-group form-control-static input-search"
-                   style="height: 25px"
-                   data-search>
-            </b>
+<div class="panel-group" id="accordion2" role="tablist" aria-multiselectable="true">
+    <div class="panel panel-default">
+        <div class="panel-heading" role="tab" id="headingOne">
+            <button class="btn btn-info btn-sm" type="button" data-toggle="collapse" data-target="#collapse-filters" aria-expanded="false" aria-controls="collapse-filters">Filters</button>
         </div>
     </div>
-     <div class="col-sm-2 pull-left div-select">
-        <div class="form-group form-group-sm">
-        <b>
-            <label class="control-label">
-                {{ 'report.filter_status.label'|get_text }}
-            </label>
-            <select class="select-filter  form-control-static"
-                    style="height: 25px"
-                    data-select-filter-status>
-                <option value="all">all</option>
-                <option value="failed">Failed</option>
-                <option value="skipped">Not&nbsp;Run</option>
-                <option value="passed">Passed</option>
+    <div id="collapse-filters" class="behavex-big-row panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+        <br>
+        <div class="panel-body">
+            <div class="container-fluid behavex-row-total"><br>
+                <div class="col-sm-4 pull-left">
+                    <div class="form-group form-group-sm">
+                        <b>
+                        <label class="control-label pull-left"
+                               style="padding-top: 5px;padding-right:3px;font-size: 12px;">Search</label>
+                        <input placeholder="step"
+                               type="text"
+                               class="input-group form-control-static input-search"
+                               style="height: 25px"
+                               data-search>
+                        </b>
+                    </div>
+                </div>
+                 <div class="col-sm-2 pull-left div-select">
+                    <div class="form-group form-group-sm">
+                    <b>
+                        <label class="control-label">
+                            {{ 'report.filter_status.label'|get_text }}
+                        </label>
+                        <select class="select-filter  form-control-static"
+                                style="height: 25px"
+                                data-select-filter-status>
+                            <option value="all">all</option>
+                            <option value="failed">Failed</option>
+                            <option value="skipped">Not&nbsp;Run</option>
+                            <option value="passed">Passed</option>
 
-            </select>
-        </b>
-        </div>
-    </div>
-    <div class="col-sm-1 pull-left" >
-        <div class="form-group form-group-sm">
-            <button type="button" class="btn btn-info btn-xs"
-                    id="button-reset-filter" data-reset-filter>
-                <b>Reset</b>
-            </button>
+                        </select>
+                    </b>
+                    </div>
+                </div>
+                <div class="col-sm-1 pull-left" >
+                    <div class="form-group form-group-sm">
+                        <button type="button" class="btn btn-info btn-xs"
+                                id="button-reset-filter" data-reset-filter>
+                            <b>Reset</b>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <table class="table behavex_letter table-bordered tablesorter" id="tableSteps" >

@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 # pylint: disable=W0703# pylint: disable=W0703
 """
-BehaveX - BDD testing library based on Behave
+BehaveX - Agile test wrapper on top of Behave (BDD)
 """
 import logging
 import os
@@ -73,13 +73,11 @@ def before_scenario(context, scenario):
 
 
 def before_step(context, step):
-    """Log step names"""
     if context.bhx_inside_scenario:
         logging.info("STEP: {}".format(step.name))
 
 
 def after_step(context, step):
-    """Captures a screenshot if browser is open"""
     if step.exception:
         step.error_message = step.error_message
         logging.exception(step.exception)
@@ -89,7 +87,6 @@ def after_step(context, step):
 
 @capture
 def after_scenario(context, scenario):
-    """Save scenario information after execution."""
     try:
         if scenario.status in ('failed', 'untested') and 'AUTORETRY' in scenario.tags \
                 and get_env('autoretry_attempt') == '0':
@@ -106,7 +103,6 @@ def after_scenario(context, scenario):
 
 # noinspection PyUnusedLocal
 def after_feature(context, feature):
-    """Enable behaving hooks."""
     if get_env('multiprocessing') and \
             get_param('parallel_element') == 'scenario':
         return
@@ -114,10 +110,8 @@ def after_feature(context, feature):
 
 
 def after_all(context):
-    """Save execution information in test."""
     try:
-        report_json.generate_execution_info(
-            context, context._runner.features)
+        report_json.generate_execution_info(context, context._runner.features)
     except Exception as exception:
         _log_exception_and_continue("after_all (json_report)", exception)
 

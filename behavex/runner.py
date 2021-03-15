@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 """
-BehaveX - BDD testing library based on Behave
+BehaveX - Agile test wrapper on top of Behave (BDD)
 """
 
 # pylint: disable=W0703
@@ -44,7 +44,6 @@ from behavex.utils import (
     set_environ_config,
     set_system_paths,
     set_behave_tags,
-    copy_screenshots_utilities,
     copy_bootstrap_html_generator,
     cleanup_folders,
     configure_logging,
@@ -110,7 +109,6 @@ def run(args):
     set_system_paths()
 
     cleanup_folders()
-    copy_screenshots_utilities()
     copy_bootstrap_html_generator()
     configure_logging(args_parsed)
     check_environment_file()

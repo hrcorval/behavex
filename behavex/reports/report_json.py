@@ -2,7 +2,7 @@
 
 """
 /*
-* BehaveX - BDD testing library based on Behave
+* BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
 JSON test execution report.

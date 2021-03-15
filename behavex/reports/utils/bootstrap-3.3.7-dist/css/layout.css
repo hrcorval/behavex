@@ -58,12 +58,12 @@
     padding-top: 2px;
 }
 .container_body {
-    padding-right: 19px;
-    padding-left: 19px;
+    padding-right: 0px;
+    padding-left: 0px;
     padding-top:0px ;
     margin-right: auto;
     margin-left: auto;
-    margin-bottom: 19px;
+    margin-bottom: 0px;
     background-color: #f8f8f8;
     float: none;
 }
@@ -97,7 +97,7 @@
     color: #337ab7
 }
 .behavex-big-row {
-    padding-top: 19px;
+    padding-right: 15px;
     padding-bottom: 5px
 }
 .background {

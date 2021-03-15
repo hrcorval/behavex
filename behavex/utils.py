@@ -1,7 +1,7 @@
 # -*- coding: UTF -*-
 """
 /*
-* BehaveX - BDD testing library based on Behave
+* BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
 This module it is a set  with functions used en common for some packages.
@@ -15,7 +15,6 @@ FUNCTIONS:
     - join_scenario_reports
     - explore_features
     - should_be_run
-    - copy_screenshots_utilities
     - copy_bootstrap_html_generator
     - cleanup_folders
     - set_env_variable
@@ -298,19 +297,6 @@ def match_any_name(feature):
             if IncludeNameMatch()(scenario.name):
                 return True
     return result
-
-
-def copy_screenshots_utilities():
-    """Copy utilities for managing screenshots
-    in HTML report to the output folder"""
-    destination_path = os.path.join(get_env('logs'), 'utils')
-    screenshots_path = ['reports', 'utils', 'screenshots', 'support_files']
-    screenshots_path = os.path.join(FWK_PATH, *screenshots_path)
-    if os.path.exists(destination_path):
-        try_operate_descriptor(destination_path, lambda: shutil.rmtree(destination_path))
-
-    def execution(): return shutil.copytree(screenshots_path, destination_path)
-    try_operate_descriptor(destination_path, execution)
 
 
 def copy_bootstrap_html_generator():
