@@ -316,7 +316,7 @@ def copy_screenshots_utilities():
 def copy_bootstrap_html_generator():
     """copy the bootstrap directory for portable html"""
     destination_path = os.path.join(get_env('OUTPUT'), 'reports', 'bootstrap')
-    bootstrap_path = ['reports', 'utils', 'bootstrap-3.3.2-dist']
+    bootstrap_path = ['reports', 'utils', 'bootstrap-3.3.7-dist']
     bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
     if os.path.exists(destination_path):
         try_operate_descriptor(destination_path, lambda: shutil.rmtree(destination_path))

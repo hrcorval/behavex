@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="behavex",
-    version="1.1.4",
+    version="1.2.0",
     python_requires=">=2.7",
 
     author="Hernan Rey",
