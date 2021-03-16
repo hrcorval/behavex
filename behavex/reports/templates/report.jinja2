@@ -135,7 +135,7 @@
                     <br>
                     <div class="panel-body">
                         <div class="container-fluid behavex-row-total">
-                            <span class="col-xs-12">
+                            <span class="col-xs-8">
                                 <div class="col-xs-4">
                                     <h5><b>Automation Rate {{ '%10.0f' % (((total - not_automated)/ total)|float * 100.0)|round }}%</b></h5>
                                     <canvas id="chart-automation-rate" width="150" height="150"/>
@@ -143,10 +143,6 @@
                                 <div class="col-xs-4">
                                     <h5 id="h5-status"><b>Pass Rate {{ '%10.0f' % ((passed/((passed + failed) or 1))|float * 100.0)|round }}%</b></h5>
                                     <canvas id="chart-pass-rate" width="150" height="150"/>
-                                </div>
-                                <div class="col-xs-4">
-                                    <h5 id="h5-status"><b>Execution Rate {{ '%10.0f' % (((passed + failed)/((total - not_automated) or 1))|float * 100.0)|round }}%</b></h5>
-                                    <canvas id="chart-execution-rate" width="150" height="150"/>
                                 </div>
                             </span>
                         </div>
@@ -914,38 +910,14 @@
                 color: red,
                 highlight: high_red,
                 label: "Failed"
-            },
-            {
-                value: {{ skipped }},
-                color: grey,
-                highlight: high_grey,
-                label: "Not Run"
-            }
-
-        ];
-
-        var pieDataExecutionRate = [
-            {
-                value: {{ passed + failed }},
-                color: green,
-                highlight: high_green,
-                label: "Passed"
-            },
-            {
-                value: {{ skipped }},
-                color: grey,
-                highlight: high_grey,
-                label: "Not Run"
             }
         ];
 
         window.onload = function() {
             var ctxAutomationRate = document.getElementById("chart-automation-rate").getContext("2d");
-            var ctxExecutionRate = document.getElementById("chart-execution-rate").getContext("2d");
             var ctxPassRate = document.getElementById("chart-pass-rate").getContext("2d");
             window.pieChart1 = new Chart(ctxAutomationRate).Pie(pieDataAutomationRate);
-            window.pieChart2 = new Chart(ctxExecutionRate).Pie(pieDataExecutionRate);
-            window.pieChart3 = new Chart(ctxPassRate).Pie(pieDataPassRate);
+            window.pieChart2 = new Chart(ctxPassRate).Pie(pieDataPassRate);
             document.querySelectorAll("button[aria-controls='collapse-metrics']")[0].click()
         };
     </script>
