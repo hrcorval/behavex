@@ -313,15 +313,10 @@
                                             {%- if [tag]|match_for_execution -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
                                                     class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-{#                                                    <span class="label icon-skipped glyphicon glyphicon-tag table_row_{{ scenario.status}} label-behavex"#}
-{#                                                    title="{{ 'report.execution_tag'|get_text }}">#}
-                                                            <p class="behave-link text-primary" onclick="show_tag('{{ tag }}');">{{ tag }}<p>
-{#                                                    </span>#}
+                                                            <a class="behave-link text-primary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
                                             {%- else -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-{#                                                    <span class="label icon-skipped glyphicon glyphicon-tag label-behavex">#}
-                                                            <p class="behave-link text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}<p>
-{#                                                    </span>#}
+                                                            <a class="behave-link text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
                                             {%- endif -%}
                                             </li>
                                         {%- endfor -%}
@@ -375,14 +370,14 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
-                                    <td><p><a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></p></td>
+                                    <td><a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
 
                                 {%- elif "WIP" in scenario.tags -%}
                                     <p class="text-center">Work In Progress</p>
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
-                                    <td><p><a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></p></td>
+                                    <td><a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
                                 {%- else -%}
                                     {%- set normalized_name = normalized_name|string -%}
 									{%- set log_dir_name = normalized_name -%}
@@ -405,7 +400,7 @@
                                         </td>
                                     {%- endif -%}
 
-                                    <td style="width: 180px;">
+                                    <td style="width: 190px;">
                                         <div class="btn-group text-left">
                                             {%- set normalized_name = normalized_name|string -%}
 											{%- set normalized_name = normalized_name|replace("b'","" ) -%}
