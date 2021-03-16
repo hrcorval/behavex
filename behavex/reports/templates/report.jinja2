@@ -50,10 +50,10 @@
                             <td title="{{ field }}">
                         {%- endif -%}
                         {%- if field == 'Feature' -%}
-                             <span class="glyphicon glyphicon-menu-right pull-left span-behavex"
+                             <span class="glyphicon glyphicon-menu-right pull-left"
                                    data-feature-id="{{ feature.id }}"
-                                   data-feature title="{{ ('commons.expand'|get_text).format('scenarios') }}"></span>
-                            <b>&nbsp;{{ feature.name }}</b>
+                                   data-feature title="{{ ('commons.expand'|get_text).format('scenarios') }}">
+                                   <b class="span-behavex">{{ feature.name }}</b></span>
                         {%- elif field == 'Total'-%}
                             {{ value }}
                             {%- set to_be_fixed = summary[feature.name]['to_be_fixed'] -%}
@@ -287,9 +287,9 @@
                                 data-scenario-tags="{{ scenario.tags|to_string_list }}">
                             <td class="text-left grey-behavex">
                                 <div class="alert-{{ scenario.status|resolving_color_class }} behavex_letter alert-behavex scenario-step">
-                                    <span class="glyphicon glyphicon-menu-right pull-left span-behavex" data-id-hash="{{ scenario.id_hash }}"
-                                          title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario></span>
-                                    <b>&nbsp;&nbsp;{{ scenario.name |e}}</b>
+                                    <span class="glyphicon glyphicon-menu-right pull-left" data-id-hash="{{ scenario.id_hash }}"
+                                          title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
+                                          <b class="span-behavex">{{ scenario.name |e}}</b></span>
                                      {% if scenario.retried is defined %}
                                         <span class="glyphicon glyphicon-repeat btn-xs disabled pull-right red-behavex"
                                           title="{{ 'report.icon_repeat.title'|get_text}}" data-duplicated data-id_hash="{{ scenario.id_hash }}"></span>
@@ -366,14 +366,14 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
-                                    <td><a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
+                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
 
                                 {%- elif "WIP" in scenario.tags -%}
                                     <p class="text-center">Work In Progress</p>
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
-                                    <td><a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
+                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
                                 {%- else -%}
                                     {%- set normalized_name = normalized_name|string -%}
 									{%- set log_dir_name = normalized_name -%}
@@ -410,7 +410,7 @@
 
                                             {%- if path_log_scenario|path_exist_in_output -%}
                                                 <a href="{{  path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
-                                                   charset="utf-8" class="btn btn-default" title="View log"
+                                                   charset="utf-8" class="btn btn-default btn-xs" title="View log"
                                                    data-log>
                                                    <span class="glyphicon glyphicon-zoom-in"
                                                          style="font-size: 14px"></span></a>
@@ -418,7 +418,7 @@
                                             {%- if  path_img_scenario|path_exist_in_output -%}
                                                 <a href="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    title="View screenshots"
-                                                   class="btn btn-default" data-image>
+                                                   class="btn btn-default btn-xs" data-image>
                                                     <span class="glyphicon glyphicon-picture"
                                                           style="font-size: 14px"></span></a>
                                             {%- endif -%}
@@ -427,7 +427,7 @@
                                                 <a href=""
                                                    data-path-extra="{{ path_extra}}"
                                                    title="Additional Evidence"
-                                                   class="btn btn-default"  >
+                                                   class="btn btn-default btn-xs"  >
                                                     <span class="glyphicon glyphicon-list"
                                                           style="font-size: 14px"></span></a>
                                                 <div class="list-group list-extra-log"  style="display: None">
@@ -437,7 +437,7 @@
                                                 {% endfor %}
                                                 </div>
                                             {% endif %}
-                                            <a charset=utf-8 class="btn btn-default" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a>
+                                            <a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a>
                                         </div>
                                     </td>
                                 {%- endif -%}
