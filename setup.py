@@ -1,5 +1,5 @@
 """
-Module setup for installation
+Setup module
 """
 from setuptools import setup, find_packages
 

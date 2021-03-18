@@ -1,0 +1,7 @@
+[settings]
+line_length=120
+indent='    '
+multi_line_output=4
+default_section=THIRDPARTY
+known_first_party=onetimepass,selenium
+sections=STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER
