@@ -14,7 +14,6 @@ repos:
       - id: debug-statements
       - id: detect-private-key
       - id: requirements-txt-fixer
-      - id: no-commit-to-branch
         args: [--branch, develop, --branch, master]
 
   - repo: https://github.com/PyCQA/bandit

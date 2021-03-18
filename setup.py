@@ -1,7 +1,7 @@
 """
-Setup module
+Behavex setup module
 """
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="behavex",
