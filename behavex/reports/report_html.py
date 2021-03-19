@@ -37,9 +37,12 @@ import htmlmin
 
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env
-from behavex.reports.report_utils import (gather_steps_with_definition,
-                                          get_save_function, get_total_steps,
-                                          try_operate_descriptor)
+from behavex.reports.report_utils import (
+    gather_steps_with_definition,
+    get_save_function,
+    get_total_steps,
+    try_operate_descriptor,
+)
 from behavex.reports.template_handler import TemplateHandler
 
 MANIFEST_TEMPLATE = "manifest.jinja2"
@@ -58,7 +61,7 @@ def generate_report(output, joined=None, report=None):
     environment = output["environment"]
     features = output["features"]
     steps_definition = output["steps_definition"]
-    all_scenarios = sum([feature["scenarios"] for feature in features], [])
+    all_scenarios = sum((feature["scenarios"] for feature in features), [])
     features.sort(key=lambda feature: feature["name"])
     metrics_variables = get_metrics_variables(all_scenarios, joined, report)
     html = export_result_to_html(
@@ -127,10 +130,10 @@ def _create_files_report(content_to_file):
 def get_metrics_variables(scenarios, joined=None, report=None):
     """Processing variable for generating metrics in charts"""
     skipped = sum(
-        [scenario["status"] not in ["passed", "failed"] for scenario in scenarios]
+        scenario["status"] not in ["passed", "failed"] for scenario in scenarios
     )
-    passed = sum([scenario["status"] == "passed" for scenario in scenarios])
-    failed = sum([scenario["status"] == "failed" for scenario in scenarios])
+    passed = sum(scenario["status"] == "passed" for scenario in scenarios)
+    failed = sum(scenario["status"] == "failed" for scenario in scenarios)
     scenario_auto = [
         scenario
         for scenario in scenarios

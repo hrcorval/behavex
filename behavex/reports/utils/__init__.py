@@ -1,3 +1,2 @@
-"""
-Module used to generate_gallery the html reports
-"""
+# -*- encoding: utf-8 -*
+"""Module used to generate_gallery the html reports"""

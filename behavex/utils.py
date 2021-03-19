@@ -1,4 +1,4 @@
-# -*- coding: UTF -*-
+# -*- encoding: utf-8 -*
 """
 /*
 * BehaveX - Agile test wrapper on top of Behave (BDD)
@@ -43,22 +43,19 @@ import sys
 from functools import reduce
 from tempfile import gettempdir
 
-import six
 from behave.model import ScenarioOutline
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
-from six.moves import map
 
-from behavex import conf_mgr
 from behavex.conf_mgr import Singleton, get_env, get_param, set_env
 from behavex.reports import report_html
 from behavex.reports.contents_dictionary import TEXTS
-from behavex.reports.report_utils import (get_save_function,
-                                          match_for_execution,
-                                          normalize_filename,
-                                          try_operate_descriptor)
-
-EVIDENCE_FOLDER = "evidence"
+from behavex.reports.report_utils import (
+    get_save_function,
+    match_for_execution,
+    normalize_filename,
+    try_operate_descriptor,
+)
 
 FWK_PATH = os.getenv("BEHAVEX_PATH")
 LOGGING_CFG = ConfigObj(os.path.join(FWK_PATH, "config", "logging.cfg"))
@@ -129,7 +126,7 @@ def join_feature_reports(json_reports):
         merged_json = {}
         merged_json["environment"] = join_list_dict(json_reports, "environment")
         merged_json["steps_definition"] = join_step_definitions(json_reports)
-        merged_json["features"] = sum([json_["features"] for json_ in json_reports], [])
+        merged_json["features"] = sum((json_["features"] for json_ in json_reports), [])
     if IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool():
         delete = []
         for index, feature in enumerate(merged_json["features"][:]):
@@ -163,7 +160,7 @@ def join_list_dict(json_reports, key):
     :return:
     """
     new_list_dict = sum(
-        [json_[key] for json_ in json_reports if isinstance(json_[key], dict)], []
+        (json_[key] for json_ in json_reports if isinstance(json_[key], dict)), []
     )
     return new_list_dict
 
@@ -184,7 +181,7 @@ def join_step_definitions(json_reports):
         elif isinstance(y, dict) and not isinstance(x, dict):
             return dict(list(y.items()))
         else:
-            return dict()
+            return {}
 
     list_definitions = [_json["steps_definition"] for _json in json_reports]
 
@@ -224,8 +221,8 @@ def join_scenario_reports(json_reports):
         result[filename]["features"][0]["duration"] = duration
 
     for feature, status_ in status.items():
-        skipped = all([st == "skipped" for st in status_])
-        failed = any([st == "failed" for st in status_])
+        skipped = all(st == "skipped" for st in status_)
+        failed = any(st == "failed" for st in status_)
         result[feature]["features"][0]["status"] = (
             "skipped" if skipped else "failed" if failed else "passed"
         )
@@ -269,7 +266,7 @@ def should_be_run(path_feature):
             if hasattr(feature, "scenarios")
         ]
         tags_list.append(feature.tags)
-    match_tag = any([match_for_execution(tags) for tags in tags_list])
+    match_tag = any(match_for_execution(tags) for tags in tags_list)
 
     filename = feature.filename
     if (
@@ -461,8 +458,7 @@ def get_text(key_chain):
     for i, key in enumerate(keys):
         msg = u'the key "{}" not found'.format(u".".join(keys[0 : i + 1]))
         result = dictionary.get(key, msg)
-        # six.text_type changed from unicode to maintain compatibility
-        if isinstance(result, str) or isinstance(result, six.text_type):
+        if isinstance(result, str) or isinstance(result, str):
             return result
         if isinstance(result, dict):
             dictionary = result
@@ -587,8 +583,9 @@ def generate_reports(json_output):
 
 def create_custom_log_when_called(self, key):
     """
-    If key is evidence_path then will create the evidence_path with value of log_path joined custom_logs and
-    will create the folder else will call the generic method __getattribute__.
+    If key is evidence_path then will create the evidence_path with value of
+    log_path joined custom_logs and will create the folder, else, will call
+    the generic method __getattribute__.
 
     :param self:
     :param key:
@@ -597,11 +594,10 @@ def create_custom_log_when_called(self, key):
     if key == "evidence_path":
         if not hasattr(self, "log_path"):
             if not hasattr(self, "scenario"):
-                raise Exception(
-                    '"evidence_path" variable is only accessible in the context of a test scenario'
-                )
+                ex_msg = '"evidence_path" is only accessible in the context of a test scenario'
+                raise Exception(ex_msg)
             self.log_path = normalize_filename(self.scenario.name)
-        evidence_path = os.path.join(getattr(self, "log_path"), EVIDENCE_FOLDER)
+        evidence_path = os.path.join(self.log_path, "evidence")
         self.evidence_path = evidence_path
         if not os.path.exists(evidence_path):
             os.makedirs(evidence_path)
@@ -617,8 +613,7 @@ def get_json_results():
     return json_results or {}
 
 
-# __metaclass__ changed to six.with_metaclass for compatibility
-class MatchInclude(six.with_metaclass(Singleton)):
+class MatchInclude(metaclass=Singleton):
     """
     This object is used to check if any scenario or feature should be filtered by PATTERN
     """
@@ -642,8 +637,7 @@ class MatchInclude(six.with_metaclass(Singleton)):
         return not self.reg.match(filename) is None
 
 
-# __metaclass__ changed to six.with_metaclass for compatibility
-class IncludePathsMatch(six.with_metaclass(Singleton)):
+class IncludePathsMatch(metaclass=Singleton):
     """
     This object is used for check if some scenario or feature should be filtered by paths.
     """
@@ -682,17 +676,14 @@ class IncludePathsMatch(six.with_metaclass(Singleton)):
         return (
             match_scenario
             or match_feature
-            or any([filename.startswith(folder) for folder in self.folders])
+            or any(filename.startswith(folder) for folder in self.folders)
         )
 
     def bool(self):
         return self.include_paths and self.features and self.folders
 
 
-# __metaclass__ changed to six.with_metaclass for compatibility
-
-
-class IncludeNameMatch(six.with_metaclass(Singleton)):
+class IncludeNameMatch(metaclass=Singleton):
     """
     This object is used to check if any scenario should be filtered by PATTERN
     """

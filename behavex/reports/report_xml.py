@@ -11,9 +11,12 @@ import os
 import re
 
 from behavex.conf_mgr import get_env
-from behavex.reports.report_utils import (get_save_function,
-                                          match_for_execution, text,
-                                          try_operate_descriptor)
+from behavex.reports.report_utils import (
+    get_save_function,
+    match_for_execution,
+    text,
+    try_operate_descriptor,
+)
 from behavex.reports.template_handler import TemplateHandler
 
 FWK_DIR = os.environ.get("BEHAVEX_PATH")
@@ -37,12 +40,12 @@ def _export_feature_to_xml(feature, isobject=True):
         :return:
         """
 
-        def flatter_scenarios(scenarios):
+        def flatter_scenarios(scenarios_list):
             return sum(
-                [
+                (
                     [scenario] if scenario.type == "scenario" else scenario._scenarios
-                    for scenario in scenarios
-                ],
+                    for scenario in scenarios_list
+                ),
                 [],
             )
 
@@ -93,10 +96,8 @@ def _export_feature_to_xml(feature, isobject=True):
 
     summary = {
         "time": sum(
-            [
-                scenario.duration if isobject else scenario["duration"]
-                for scenario in scenarios
-            ]
+            scenario.duration if isobject else scenario["duration"]
+            for scenario in scenarios
         ),
         "tests": len(scenarios),
         "failures": len(failures) - len(bug_to_fix_failed),

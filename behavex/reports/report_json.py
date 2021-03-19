@@ -38,8 +38,12 @@ from tempfile import gettempdir
 from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env
-from behavex.reports.report_utils import (RETRY_SCENARIOS, get_error_message,
-                                          match_for_execution, text)
+from behavex.reports.report_utils import (
+    RETRY_SCENARIOS,
+    get_error_message,
+    match_for_execution,
+    text,
+)
 from behavex.utils import try_operate_descriptor
 
 INFO_FILE = "report.json"
@@ -65,7 +69,7 @@ def add_step_info_background(step, parent_node):
     :param parent_node: parent node
     :return: None
     """
-    step_info = dict()
+    step_info = {}
     for attrib in ("step_type", "name", "text", "status"):
         step_info[attrib] = text(getattr(step, attrib))
     step_info["duration"] = step.duration or 0
@@ -107,7 +111,7 @@ def generate_execution_info(context, features, test=False):
             ]
 
         if scenario_list:
-            feature_info = dict()
+            feature_info = {}
             for attrib in ("name", "status", "duration"):
                 value = getattr(feature, attrib)
                 value = value.name if attrib == "status" else value
@@ -179,11 +183,7 @@ def _processing_background(scenario):
         for step in scenario._background_steps:
             step_back = add_step_info_background(step, steps)
             scenario_background["duration"] += step_back["duration"]
-        # In python 3 the decode option is not available so str is forced if the decode fails.
-        try:
-            scenario_background["name"] = scenario.background.name.decode("utf8")
-        except:
-            scenario_background["name"] = str(scenario.background.name)
+        scenario_background["name"] = str(scenario.background.name)
         scenario_background["steps"] = steps
     return scenario_background
 
@@ -200,11 +200,7 @@ def _processing_background_feature(feature):
         steps = []
         for step in feature.background.steps:
             add_step_info_background(step, steps)
-        # In python 3 the decode option is not available so str is forced if the decode fails.
-        try:
-            feature_background["name"] = feature.background.name.decode("utf8")
-        except:
-            feature_background["name"] = str(feature.background.name)
+        feature_background["name"] = str(feature.background.name)
         feature_background["steps"] = steps
     return feature_background
 
@@ -225,7 +221,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
         # pylint: disable=W0123
         if match_for_execution(scenario.tags):
             # Scenario was selectable
-            scenario_info = dict()
+            scenario_info = {}
             for attrib in ("name", "duration", "status", "tags"):
                 value = getattr(scenario, attrib)
                 value = value.name if attrib == "status" else value

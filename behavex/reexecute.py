@@ -1,4 +1,4 @@
-# -*- coding: UTF -*-
+# -*- encoding: utf-8 -*
 """
 /*
 * BehaveX - Agile test wrapper on top of Behave (BDD)
@@ -27,13 +27,11 @@ EXAMPLE:
     * https://github.com/hypothesis/smokey/blob/sauce-reliability/smokey/features/environment.py
 """
 
-# __future__ and six are added to maintain compatibility
 from __future__ import absolute_import, print_function
 
 import functools
 
 from behave.model import ScenarioOutline
-from six.moves import range
 
 from behavex.conf_mgr import set_env
 from behavex.reports.report_utils import normalize_filename

@@ -19,12 +19,10 @@ Functions:
 # pylint: disable=W0703
 # pylint: disable=W0603
 
-# __future__ and six added for compatibility
 from __future__ import absolute_import
 
 import os
 
-import six
 from configobj import ConfigObj
 from validate import Validator
 
@@ -68,7 +66,13 @@ def get_config():
     no_snippets=boolean(default=False)
     stop=boolean(default=False)
     tags_help=boolean(default=False)
-    logging_level=option('CRITICAL', 'ERROR', 'WARNING', 'INFO','DEBUG', 'NOTSET', default='INFO')
+    logging_level=option('CRITICAL',
+                         'ERROR',
+                         'WARNING',
+                         'INFO',
+                         'DEBUG',
+                         'NOTSET',
+                         default='INFO')
     parallel_processes=integer(default=1)
     parallel_element=option('feature', 'scenario', default='scenario')
     include_paths=list(default=list())
@@ -95,8 +99,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-# __metaclass__ has been changed to six.with_metaclass
-class ConfigRun(six.with_metaclass(Singleton)):
+class ConfigRun(metaclass=Singleton):
     def __init__(self):
         self.config = get_config()
         self.args = None

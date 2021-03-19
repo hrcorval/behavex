@@ -15,8 +15,7 @@ from behavex.conf_mgr import get_env, get_param
 from behavex.reexecute import run_scenario_with_retries
 from behavex.reports import report_json, report_xml
 from behavex.reports.report_utils import RETRY_SCENARIOS, create_log_path
-from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
-                           get_logging_level)
+from behavex.utils import LOGGING_CFG, create_custom_log_when_called, get_logging_level
 
 Context.__getattribute__ = create_custom_log_when_called
 

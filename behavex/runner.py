@@ -1,8 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-"""
-BehaveX - Agile test wrapper on top of Behave (BDD)
-"""
+"""BehaveX - Agile test wrapper on top of Behave (BDD)."""
 
 # pylint: disable=W0703
 
@@ -24,28 +22,42 @@ from operator import itemgetter
 from tempfile import gettempdir
 
 from behave import __main__ as behave_script
-# six has been added to maintain compatibility
-from six.moves import map, range
 
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, Singleton, get_env, get_param, set_env
 from behavex.reports import report_xml
 from behavex.reports.report_json import OVERALL_STATUS_FILE
-from behavex.reports.report_utils import (get_overall_status,
-                                          match_for_execution,
-                                          pretty_print_time, text,
-                                          try_operate_descriptor)
-from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
-                           check_environment_file, cleanup_folders,
-                           configure_logging, copy_bootstrap_html_generator,
-                           create_partial_function_append, explore_features,
-                           generate_reports, get_json_results,
-                           get_logging_level, join_feature_reports,
-                           join_scenario_reports, len_scenarios,
-                           print_env_variables, print_parallel,
-                           set_behave_tags, set_env_variable,
-                           set_environ_config, set_system_paths)
+from behavex.reports.report_utils import (
+    get_overall_status,
+    match_for_execution,
+    pretty_print_time,
+    text,
+    try_operate_descriptor,
+)
+from behavex.utils import (
+    IncludeNameMatch,
+    IncludePathsMatch,
+    MatchInclude,
+    check_environment_file,
+    cleanup_folders,
+    configure_logging,
+    copy_bootstrap_html_generator,
+    create_partial_function_append,
+    explore_features,
+    generate_reports,
+    get_json_results,
+    get_logging_level,
+    join_feature_reports,
+    join_scenario_reports,
+    len_scenarios,
+    print_env_variables,
+    print_parallel,
+    set_behave_tags,
+    set_env_variable,
+    set_environ_config,
+    set_system_paths,
+)
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -65,14 +77,14 @@ scenario_lines = {}
 
 
 def main():
+    """BehaveX starting point."""
     args = sys.argv[1:]
     exit_code = run(args)
     exit(exit_code)
 
 
 def run(args):
-    """Perform all the required actions in
-    order to do the test execution"""
+    """Perform all the required actions in order to do the test execution."""
     global match_include
     global include_path_match
     global include_name_match
@@ -101,8 +113,8 @@ def run(args):
 
 def setup_running_failures(args_parsed):
     """
-    Set the variable INCLUDE_PATHS whit content from file failures.txt
-      if the variable RUN_FAILURES is True.
+    Set the variable INCLUDE_PATHS with output set on failures.txt
+      if the variable RUN_FAILURES is set to True.
 
     :param args_parsed:
     :return: EXIT_OK|EXIT_ERROR
@@ -124,6 +136,7 @@ def setup_running_failures(args_parsed):
 
 
 def launch_behavex():
+    """Launch the BehaveX test execution in the specified parallel mode."""
     json_reports = None
     execution_codes = None
     time_init = time.time()
@@ -269,7 +282,7 @@ def launch_by_feature(features, process_pool):
 
     print_parallel("feature.running_parallels")
 
-    for filename, feature in features_dict.items():
+    for filename in features_dict.items():
 
         process_pool.apply_async(
             execute_tests,

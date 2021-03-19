@@ -4,39 +4,7 @@
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
-This module is template handler.
-
-Functions;
-    - _calculate_color
-    - _calculate_title_status
-    - _print_step
-    - _print_step_json
-    - get_error_message
-    - _path_exist_in_output
-    - _get_list_exception_steps
-    - _get_path_log
-    - _quoteattr
-    - _print_tag_xml
-    - _create_progress_html
-    - _resolving_color_class
-    - _export_environments_title
-    - create_tags_set
-    - to_string_list
-    - get_extra_logs_file
-Class:
-    - TemplateHandler
-        Properties:
-            - dictionary_texts
-            - template_env
-            - template_loader
-        Methods:
-            - get_filters
-            - get_template
-            - render_template
-            - exists_filter
-            - add_filter
-            - _get_text
-
+Jinja template handler.
 """
 # __future__ has been added to maintain compatibility
 from __future__ import absolute_import
@@ -48,19 +16,19 @@ import traceback
 from xml.sax.saxutils import quoteattr
 
 import jinja2
-from six import unichr
-# six has been added to maintain compatibility
-from six.moves import map
 
 from behavex.conf_mgr import get_env
 from behavex.reports.contents_dictionary import TEXTS
-from behavex.reports.report_utils import (calculate_status, count_by_status,
-                                          gather_errors, get_error_message,
-                                          match_for_execution,
-                                          normalize_filename,
-                                          pretty_print_time, resolving_type)
-
-EVIDENCE_FOLDER = "evidence"
+from behavex.reports.report_utils import (
+    calculate_status,
+    count_by_status,
+    gather_errors,
+    get_error_message,
+    match_for_execution,
+    normalize_filename,
+    pretty_print_time,
+    resolving_type,
+)
 
 
 class TemplateHandler(object):
@@ -194,22 +162,13 @@ def _exist_extra_logs(scenario):
     return False
 
 
-# For python 2.7 the code remains unchenged but for 3.X decode has been replaced with str()
 def get_path_extra_logs(scenario):
-    if sys.version_info < (3, 0):
-        extra_logs_folder = os.path.join(
-            get_env("logs").decode("utf8"),
-            normalize_filename(scenario.get("name")),
-            EVIDENCE_FOLDER,
-        )
-        return extra_logs_folder
-    else:
-        extra_logs_folder = os.path.join(
-            get_env("logs"),
-            str(normalize_filename(scenario.get("name"))),
-            EVIDENCE_FOLDER,
-        )
-        return extra_logs_folder
+    extra_logs_folder = os.path.join(
+        get_env("logs"),
+        str(normalize_filename(scenario.get("name"))),
+        "evidence",
+    )
+    return extra_logs_folder
 
 
 def get_relative_extra_logs_path(scenario):
@@ -219,7 +178,7 @@ def get_relative_extra_logs_path(scenario):
                 "reports",
                 "logs",
                 normalize_filename(scenario.get("name")),
-                EVIDENCE_FOLDER,
+                "evidence",
             ]
         )
         + os.path.sep
@@ -239,7 +198,7 @@ def _calculate_color(list_status):
     :param list_status:
     :return str: green|red|grey
     """
-    color = dict(passed="green", skipped="grey", failed="red")
+    color = {"passed": "green", "skipped": "grey", "failed": "red"}
     return color[calculate_status(list_status)]
 
 
@@ -250,13 +209,16 @@ def _calculate_title_status(list_status):
     :param list_status:
     :return str:
     """
+
+    def order(x):
+        return 0 if x[0] == "passed" else 1 if x[0] == "failed" else 2
+
     status = ("Passed", "Failed", "Skipped")
     status_calculated = {
         key: len([1 for status in list_status if status == key.lower()])
         for key in status
     }
     result = []
-    order = lambda x: 0 if x[0] == "passed" else 1 if x[0] == "failed" else 2
     # status_calculated.items() has been forced to be a list
     for key, value in sorted(list(status_calculated.items()), key=order):
         if value > 0:
@@ -303,7 +265,10 @@ def _path_exist_in_output(path):
 
 def _get_list_exception_steps(steps, backs_steps):
     """Return list of the step with that have exception set in your attribute"""
-    is_failing = lambda step: step.exception or step.status == "undefined"
+
+    def is_failing(step):
+        return step.exception or step.status == "undefined"
+
     backs_steps = [step for step in backs_steps or [] if is_failing(step)]
     return [step for step in steps if is_failing(step)] + backs_steps
 
@@ -385,7 +350,7 @@ def _resolving_color_class(status):
 def _export_environments_title(environments):
     """Export environments to string for title of the element html5"""
     result = ""
-    max_name = max([len(list(environment.keys())[0]) for environment in environments])
+    max_name = max(len(list(environment.keys())[0]) for environment in environments)
     row = "{} --{}>  {}\n"
     for environment in environments:
         result += row.format(
@@ -421,7 +386,7 @@ def clean_invalid_xml_chars(xml_content):
 
 
 def invalid_xml_remove(c):
-    # http://stackoverflow.com/questions/1707890/fast-way-to-filter-illegal-xml-unicode-chars-in-python
+    # stackoverflow: questions/1707890/fast-way-to-filter-illegal-xml-unicode-chars-in-python
     illegal_unichrs = [
         (0x00, 0x08),
         (0x0B, 0x0C),
@@ -454,7 +419,7 @@ def invalid_xml_remove(c):
         )
 
     illegal_ranges = [
-        "%s-%s" % (unichr(low), unichr(high))
+        "%s-%s" % (chr(low), chr(high))
         for (low, high) in illegal_unichrs
         if low < sys.maxunicode
     ]

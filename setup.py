@@ -1,17 +1,15 @@
-"""
-Behavex setup module
-"""
+# -*- encoding: utf-8 -*
 from setuptools import find_packages, setup
 
 setup(
     name="behavex",
     version="1.2.2",
-    python_requires=">=2.7",
+    python_requires=">=3",
     author="Hernan Rey",
     author_email="hernanrey@gmail.com",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
-    description="Agile testing wrapper based on Behave (BDD)",
+    description="Agile test wrapper on top of Behave (BDD).",
     entry_points={
         "console_scripts": [
             "behavex = behavex.runner:main",

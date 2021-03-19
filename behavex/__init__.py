@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*
 """ Create environment variables related to the framework path and config,
     that are needed in framework modules.
 """

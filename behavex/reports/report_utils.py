@@ -55,23 +55,17 @@ import traceback
 import unicodedata
 from operator import getitem
 
-import six
 from behave.model_core import Status
 from behave.step_registry import registry
-from six import unichr
-# six is added in order to maintain compatibility
-from six.moves import input, map, range
 
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param, set_env
 
 FWK_PATH = os.environ.get("BEHAVEX_PATH")
-
-
 RETRY_SCENARIOS = {}
 BEHAVE_TAGS_FILE = os.path.join("behave", "behave.tags")
-STEPS_EXECUTIONS = dict()
-STEPS_UNDEFINED = dict()
+STEPS_EXECUTIONS = {}
+STEPS_UNDEFINED = {}
 
 
 def add_information_from_steps(steps):
@@ -115,7 +109,7 @@ def gather_steps_with_definition(features, steps_definition):
     result = {}
     if steps_definition:
         for id_hash, definition in steps_definition.items():
-            result[definition] = dict(steps=[])
+            result[definition] = {"steps": []}
             for step in all_steps:
                 if step["hash"] == int(id_hash):
                     result[definition]["steps"].append(step)
@@ -138,16 +132,15 @@ def get_total_steps(steps_summary):
         - time
         - status
     """
-    result = dict(
-        definitions=0,
-        instances=0,
-        executions=0,
-        avg=0.0,
-        time=0.0,
-        status=[],
-        appearances=0,
-    )
-
+    result = {
+        "definitions": 0,
+        "instances": 0,
+        "executions": 0,
+        "avg": 0.0,
+        "time": 0.0,
+        "status": [],
+        "appearances": 0,
+    }
     for summary in steps_summary.values():
         result["definitions"] += 1
         result["appearances"] += summary["appearances"]
@@ -190,7 +183,7 @@ def get_summary_definition(steps):
         appearances:
     """
 
-    result = dict(steps={}, status=[])
+    result = {"steps": {}, "status": []}
     for step in steps:
         result["status"].append(step["status"])
         execution = 1 if step["status"] in ("failed", "passed") else 0
@@ -343,7 +336,7 @@ def get_scenarios_by_tag(all_scenarios):
     :param all_scenarios: list of the scenario
     :return: dict
     """
-    all_tags = set(sum([scenario["tags"] for scenario in all_scenarios], []))
+    all_tags = set(sum((scenario["tags"] for scenario in all_scenarios), []))
     scenarios_by_tag = {}
 
     for tag in all_tags:
@@ -362,8 +355,8 @@ def get_scenarios_by_tag(all_scenarios):
         {
             key: (
                 value,
-                set([status for name, status, row, id_hash, id_feature in value]),
-                set([row for name, status, row, id_hash, id_feature in value]),
+                {status for name, status, row, id_hash, id_feature in value},
+                {row for name, status, row, id_hash, id_feature in value},
             )
             for key, value in scenarios_by_tag.items()
         }
@@ -422,7 +415,7 @@ def resolving_type(step, scenario, background=True, white_space="&nbsp;"):
         # noinspection PyBroadException
         try:
             previous_type = steps[step["index"] - 1]["step_type"]
-        except:
+        except BaseException:
             previous_type = step["step_type"]
         if previous_type == step["step_type"]:
             return "{0}{0}And".format(white_space)
@@ -601,8 +594,7 @@ def create_log_path(name):
     while os.path.exists(path):
         if get_env("autoretry") == name and get_env("autoretry_attempt"):
             return path
-        #  unicode has been repla for six._text_type
-        path = initial_path + u"_" + six.text_type(scenario_outline_index)
+        path = initial_path + u"_" + str(scenario_outline_index)
         scenario_outline_index += 1
     os.makedirs(path)
     return path
@@ -617,12 +609,11 @@ def get_error_message(message_error):
             # noinspection PyBroadException
             try:
                 message_error = traceback.format_tb(message_error.message)
-            except:
+            except BaseException:
                 message_error = repr(message_error.message)
         if hasattr(message_error, "exc_traceback"):
             message_error = traceback.format_tb(message_error.exc_traceback)
-    #  basestring has been replaced for six._text_type
-    elif not isinstance(message_error, six.string_types):
+    elif not isinstance(message_error, str):
         message_error = repr(message_error)
     return u"\n".join(
         [16 * u" " + line for line in text(message_error).split("\n")]
@@ -643,11 +634,11 @@ def text(value, encoding=None, errors=None):
     if errors is None:
         errors = "replace"
 
-    if isinstance(value, six.text_type):
+    if isinstance(value, str):
         # -- PASS-THROUGH UNICODE (efficiency):
         return value
-    elif isinstance(value, six.binary_type):
-        return six.text_type(value, encoding, errors)
+    elif isinstance(value, bytes):
+        return str(value, encoding, errors)
     elif isinstance(value, bytes):
         # -- MAYBE: filename, path, etc.
         try:
@@ -657,13 +648,9 @@ def text(value, encoding=None, errors=None):
     else:
         # -- CONVERT OBJECT TO TEXT:
         try:
-            if six.PY2:
-                data = str(value)
-                output_text = six.text_type(data, "unicode-escape", "replace")
-            else:
-                output_text = six.text_type(value)
+            output_text = str(value)
         except UnicodeError as e:
-            output_text = six.text_type(e)
+            output_text = str(e)
         return output_text
 
 
@@ -675,8 +662,7 @@ def normalize_filename(input_name):
     valid_name = None
     try:
         if sys.version_info[0] == 2:
-            #  basestring has been replaced for six._text_type
-            if isinstance(input_name, six.string_types):
+            if isinstance(input_name, str):
                 if isinstance(input_name, str):
                     input_name = text(input_name)
             else:
@@ -684,7 +670,7 @@ def normalize_filename(input_name):
             if not input_name:
                 return u""
             # xrange has been replaced for range
-            characters = "".join(map(unichr, range(255)))
+            characters = "".join(map(chr, range(255)))
             reserved_characters = '<>:"/\\|?*'
             for character in reserved_characters:
                 characters = characters.replace(character, "")
