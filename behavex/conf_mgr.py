@@ -21,11 +21,12 @@ Functions:
 
 # __future__ and six added for compatibility
 from __future__ import absolute_import
+
 import os
+
+import six
 from configobj import ConfigObj
 from validate import Validator
-import six
-
 
 CONFIG = None
 CONFIG_PATH = None
@@ -75,9 +76,9 @@ def get_config():
     """
     global CONFIG
     global CONFIG_PATH
-    if CONFIG is None or CONFIG_PATH != os.environ.get('CONFIG'):
-        CONFIG_PATH = os.environ.get('CONFIG')
-        spec = config_spec.split('\n')
+    if CONFIG is None or CONFIG_PATH != os.environ.get("CONFIG"):
+        CONFIG_PATH = os.environ.get("CONFIG")
+        spec = config_spec.split("\n")
         validator = Validator()
         CONFIG = ConfigObj(CONFIG_PATH, configspec=spec)
         CONFIG.validate(validator, copy=True)
@@ -102,10 +103,10 @@ class ConfigRun(six.with_metaclass(Singleton)):
         self.environ = {}
 
     def prepare_environment(self):
-        output = self.get_param('output.path', 'output_folder')
-        self.environ['output'] = output
-        self.environ['temp'] = os.path.join(output, 'temp')
-        self.environ['logs'] = os.path.join(output, 'reports', 'logs')
+        output = self.get_param("output.path", "output_folder")
+        self.environ["output"] = output
+        self.environ["temp"] = os.path.join(output, "temp")
+        self.environ["logs"] = os.path.join(output, "reports", "logs")
 
     def set_args(self, args):
         self.args = args
@@ -116,25 +117,25 @@ class ConfigRun(six.with_metaclass(Singleton)):
 
     def get_param_config(self, key_chain):
         """Get text of the dictionary with annotation in chain"""
-        keys = key_chain.split('.')
+        keys = key_chain.split(".")
         if len(keys) == 1:
-            keys = ['params'] + keys
+            keys = ["params"] + keys
         dictionary = self.config
         for key in keys:
-            result = dictionary.get(key, '')
+            result = dictionary.get(key, "")
             if isinstance(result, str):
                 return result
             if isinstance(result, dict):
                 dictionary = result
             else:
                 return result
-        return ''
+        return ""
 
     def get_param(self, key_chain, arg=None):
         """Method for accessing parameters with logic between file config and
-         opt module."""
+        opt module."""
         if not arg:
-            arg = key_chain.split('.')[-1]
+            arg = key_chain.split(".")[-1]
         if getattr(self.args, arg):
             return getattr(self.args, arg)
         else:

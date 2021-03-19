@@ -29,45 +29,46 @@ FUNCTIONS:
     - generate_reports
 """
 # __future__ added for compatibility
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
+
 import codecs
+import functools
+import json
 import logging
+import multiprocessing
 import os
 import re
 import shutil
 import sys
-import json
-import multiprocessing
-import functools
+from functools import reduce
+from tempfile import gettempdir
 
+import six
 from behave.model import ScenarioOutline
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
-from behavex import conf_mgr
-from behavex.reports.contents_dictionary import TEXTS
-from behavex.reports import report_html
-from behavex.reports.report_utils import (
-    try_operate_descriptor,
-    match_for_execution,
-    get_save_function,
-    normalize_filename
-)
-from behavex.conf_mgr import get_env, get_param, Singleton, set_env
-from tempfile import gettempdir
-import six
 from six.moves import map
-from functools import reduce
 
-EVIDENCE_FOLDER = 'evidence'
+from behavex import conf_mgr
+from behavex.conf_mgr import Singleton, get_env, get_param, set_env
+from behavex.reports import report_html
+from behavex.reports.contents_dictionary import TEXTS
+from behavex.reports.report_utils import (get_save_function,
+                                          match_for_execution,
+                                          normalize_filename,
+                                          try_operate_descriptor)
 
-FWK_PATH = os.getenv('BEHAVEX_PATH')
+EVIDENCE_FOLDER = "evidence"
+
+FWK_PATH = os.getenv("BEHAVEX_PATH")
 LOGGING_CFG = ConfigObj(os.path.join(FWK_PATH, "config", "logging.cfg"))
-LOGGING_LEVELS = {'debug': logging.DEBUG,
-                  'info': logging.INFO,
-                  'warning': logging.WARNING,
-                  'error': logging.ERROR,
-                  'critical': logging.CRITICAL}
+LOGGING_LEVELS = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
 
 
 def append_results(codes, json_reports, tuple_values):
@@ -95,8 +96,8 @@ def create_partial_function_append(codes, json_reports):
 
 def get_logging_level():
     """Get logging level from file config or argument."""
-    if get_param('logging_level'):
-        log_level = get_param('logging_level')
+    if get_param("logging_level"):
+        log_level = get_param("logging_level")
     else:
         log_level = LOGGING_CFG["logger_root"]["level"]
         log_level = LOGGING_LEVELS.get(log_level.lower(), logging.DEBUG)
@@ -121,31 +122,35 @@ def join_feature_reports(json_reports):
     :param json_reports: list of reports
     :return: json united
     """
-    scenario_lines = get_env('scenario_lines')
+    scenario_lines = get_env("scenario_lines")
     if len(json_reports) == 1:
         merged_json = json_reports[0]
     else:
         merged_json = {}
-        merged_json['environment'] = join_list_dict(json_reports, 'environment')
-        merged_json['steps_definition'] = join_step_definitions(json_reports)
-        merged_json['features'] = sum([json_['features'] for json_ in json_reports], [])
+        merged_json["environment"] = join_list_dict(json_reports, "environment")
+        merged_json["steps_definition"] = join_step_definitions(json_reports)
+        merged_json["features"] = sum([json_["features"] for json_ in json_reports], [])
     if IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool():
         delete = []
-        for index, feature in enumerate(merged_json['features'][:]):
-            lines = scenario_lines.get(feature['filename'], {})
-            scenarios = [scenario for scenario in feature['scenarios']
-                         if IncludeNameMatch()(scenario['name'])
-                         and MatchInclude()(feature['filename'])
-                         and IncludePathsMatch()(scenario['filename'],
-                                                 lines.get(scenario['name'], -1))]
+        for index, feature in enumerate(merged_json["features"][:]):
+            lines = scenario_lines.get(feature["filename"], {})
+            scenarios = [
+                scenario
+                for scenario in feature["scenarios"]
+                if IncludeNameMatch()(scenario["name"])
+                and MatchInclude()(feature["filename"])
+                and IncludePathsMatch()(
+                    scenario["filename"], lines.get(scenario["name"], -1)
+                )
+            ]
             if not scenarios:
                 # create index list for delete after iterated the feature list.
                 delete.append(index - len(delete))
             else:
-                merged_json['features'][index]['scenarios'] = scenarios
+                merged_json["features"][index]["scenarios"] = scenarios
         if delete:
             for index in delete:
-                del merged_json['features'][index]
+                del merged_json["features"][index]
     return merged_json
 
 
@@ -157,8 +162,9 @@ def join_list_dict(json_reports, key):
     :param key:
     :return:
     """
-    new_list_dict = sum([json_[key] for json_ in json_reports
-                         if isinstance(json_[key], dict)], [])
+    new_list_dict = sum(
+        [json_[key] for json_ in json_reports if isinstance(json_[key], dict)], []
+    )
     return new_list_dict
 
 
@@ -169,7 +175,7 @@ def join_step_definitions(json_reports):
     :param json_reports:
     :return: dict
     """
-# the update function forced to return a list
+    # the update function forced to return a list
     def update(x, y):
         if isinstance(x, dict) and isinstance(y, dict):
             return dict(list(x.items()) + list(y.items()))
@@ -180,9 +186,10 @@ def join_step_definitions(json_reports):
         else:
             return dict()
 
-    list_definitions = [_json['steps_definition'] for _json in json_reports]
+    list_definitions = [_json["steps_definition"] for _json in json_reports]
 
     return {} if not list_definitions else reduce(update, list_definitions)
+
 
 # the join_scenario_reports function forced to return a list
 
@@ -196,28 +203,32 @@ def join_scenario_reports(json_reports):
     result = {}
     status = {}
     for json_ in json_reports:
-        if not json_['features']:
+        if not json_["features"]:
             continue
-        filename = json_['features'][0]['filename']
+        filename = json_["features"][0]["filename"]
         duration = 0
         if filename not in result:
-            status[filename] = [json_['features'][0]['status']]
+            status[filename] = [json_["features"][0]["status"]]
             result[filename] = json_
-            result[filename]['features'][0]['scenarios'] = json_['features'][0]['scenarios']
+            result[filename]["features"][0]["scenarios"] = json_["features"][0][
+                "scenarios"
+            ]
         else:
-            duration = result[filename]['features'][0]['duration']
-            result[filename]['features'][0]['scenarios'].extend(
-                json_['features'][0]['scenarios'])
-            status[filename].append(json_['features'][0]['status'])
-        for scenario in json_['features'][0]['scenarios']:
-            duration += round(scenario['duration'], 1)
-        result[filename]['features'][0]['duration'] = duration
+            duration = result[filename]["features"][0]["duration"]
+            result[filename]["features"][0]["scenarios"].extend(
+                json_["features"][0]["scenarios"]
+            )
+            status[filename].append(json_["features"][0]["status"])
+        for scenario in json_["features"][0]["scenarios"]:
+            duration += round(scenario["duration"], 1)
+        result[filename]["features"][0]["duration"] = duration
 
     for feature, status_ in status.items():
-        skipped = all([st == 'skipped' for st in status_])
-        failed = any([st == 'failed' for st in status_])
-        result[feature]['features'][0]['status'] = 'skipped' if skipped else \
-            'failed' if failed else 'passed'
+        skipped = all([st == "skipped" for st in status_])
+        failed = any([st == "failed" for st in status_])
+        result[feature]["features"][0]["status"] = (
+            "skipped" if skipped else "failed" if failed else "passed"
+        )
     return list(result.values())
 
 
@@ -234,7 +245,7 @@ def explore_features(features_path, features_list=None):
         if os.path.isdir(os.path.join(features_path, node)):
             explore_features(os.path.join(features_path, node), features_list)
         else:
-            if node.endswith('.feature'):
+            if node.endswith(".feature"):
                 path_feature = os.path.abspath(os.path.join(features_path, node))
                 feature = should_be_run(path_feature)
                 if feature:
@@ -252,14 +263,21 @@ def should_be_run(path_feature):
     if not feature:
         tags_list = []
     else:
-        tags_list = [scenario.tags for scenario in feature.scenarios
-                     if hasattr(feature, 'scenarios')]
+        tags_list = [
+            scenario.tags
+            for scenario in feature.scenarios
+            if hasattr(feature, "scenarios")
+        ]
         tags_list.append(feature.tags)
     match_tag = any([match_for_execution(tags) for tags in tags_list])
 
     filename = feature.filename
-    if match_tag and MatchInclude()(filename) and match_any_paths(feature) \
-            and match_any_name(feature):
+    if (
+        match_tag
+        and MatchInclude()(filename)
+        and match_any_paths(feature)
+        and match_any_name(feature)
+    ):
         return feature
     else:
         return False
@@ -268,7 +286,7 @@ def should_be_run(path_feature):
 def match_any_paths(feature):
     result = False
     for scenario in feature.scenarios:
-        if hasattr(scenario, 'scenarios'):
+        if hasattr(scenario, "scenarios"):
             for outline in scenario.scenarios:
                 if IncludePathsMatch()(outline.filename, outline.line):
                     return True
@@ -289,7 +307,7 @@ def match_any_name(feature):
         return True
     result = False
     for scenario in feature.scenarios:
-        if hasattr(scenario, 'scenarios'):
+        if hasattr(scenario, "scenarios"):
             for outline in scenario.scenarios:
                 if IncludeNameMatch()(outline.name):
                     return True
@@ -301,43 +319,48 @@ def match_any_name(feature):
 
 def copy_bootstrap_html_generator():
     """copy the bootstrap directory for portable html"""
-    destination_path = os.path.join(get_env('OUTPUT'), 'reports', 'bootstrap')
-    bootstrap_path = ['reports', 'utils', 'bootstrap-3.3.7-dist']
+    destination_path = os.path.join(get_env("OUTPUT"), "reports", "bootstrap")
+    bootstrap_path = ["reports", "utils", "bootstrap-3.3.7-dist"]
     bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
     if os.path.exists(destination_path):
-        try_operate_descriptor(destination_path, lambda: shutil.rmtree(destination_path))
+        try_operate_descriptor(
+            destination_path, lambda: shutil.rmtree(destination_path)
+        )
     try_operate_descriptor(
-        destination_path,
-        lambda: shutil.copytree(bootstrap_path, destination_path)
+        destination_path, lambda: shutil.copytree(bootstrap_path, destination_path)
     )
 
 
 def cleanup_folders():
     """ Cleanup folders before execution. """
     # output folder
-    output_folder = get_env('output')
+    output_folder = get_env("output")
 
-    def execution(): return shutil.rmtree(output_folder, ignore_errors=True)
+    def execution():
+        return shutil.rmtree(output_folder, ignore_errors=True)
+
     try_operate_descriptor(output_folder, execution)
     if not os.path.exists(output_folder):
-        try_operate_descriptor(output_folder,
-                               lambda: os.makedirs(output_folder))
+        try_operate_descriptor(output_folder, lambda: os.makedirs(output_folder))
     # temp folder
-    temp_folder = get_env('temp')
+    temp_folder = get_env("temp")
 
-    def execution(): return shutil.rmtree(temp_folder, ignore_errors=True)
+    def execution():
+        return shutil.rmtree(temp_folder, ignore_errors=True)
+
     try_operate_descriptor(temp_folder, execution)
     if not os.path.exists(temp_folder):
         try_operate_descriptor(temp_folder, lambda: os.makedirs(temp_folder))
 
     # behave folder
-    behave_folder = os.path.join(get_env('OUTPUT'), 'behave')
+    behave_folder = os.path.join(get_env("OUTPUT"), "behave")
 
-    def execution(): return shutil.rmtree(behave_folder, ignore_errors=True)
+    def execution():
+        return shutil.rmtree(behave_folder, ignore_errors=True)
+
     try_operate_descriptor(behave_folder, execution)
     if not os.path.exists(behave_folder):
-        try_operate_descriptor(behave_folder, lambda: os.makedirs(
-            behave_folder))
+        try_operate_descriptor(behave_folder, lambda: os.makedirs(behave_folder))
 
 
 def set_env_variable(key, value):
@@ -361,10 +384,19 @@ def print_env_variables(keys):
     key_length = 20
     value_length = 60
     print("|{}| {}|".format("".ljust(key_length, "-"), "".ljust(value_length, "-")))
-    print("|{}| {}|".format("ENV. VARIABLE".ljust(key_length), "VALUE".ljust(value_length)))
+    print(
+        "|{}| {}|".format(
+            "ENV. VARIABLE".ljust(key_length), "VALUE".ljust(value_length)
+        )
+    )
     print("|{}| {}|".format("".ljust(key_length, "-"), "".ljust(value_length, "-")))
     for key in keys:
-        print("|{}| {}|".format(key.upper().ljust(key_length), str(os.environ.get(key)).ljust(value_length)))
+        print(
+            "|{}| {}|".format(
+                key.upper().ljust(key_length),
+                str(os.environ.get(key)).ljust(value_length),
+            )
+        )
     print("|{}| {}|".format("".ljust(key_length, "-"), "".ljust(value_length, "-")))
 
 
@@ -381,30 +413,30 @@ def set_environ_config(args_parsed):
     if args_parsed.config:
         CONFIG_PATH = args_parsed.config
     if CONFIG_PATH is None:
-        fwk_path = os.environ.get('BEHAVEX_PATH')
+        fwk_path = os.environ.get("BEHAVEX_PATH")
         CONFIG_PATH = os.path.join(fwk_path, "config", "config.cfg")
-    set_env_variable('CONFIG', CONFIG_PATH)
+    set_env_variable("CONFIG", CONFIG_PATH)
 
 
 def print_parallel(msg, *args, **kwargs):
     """
-    Print for console when BehaveX is executing in parallel.
-    example:
-   print_parallel('example.chain', 'value1') this first find the content in
-    content_dictionary with key example and chain, then will print these
-    content for console with handler bhx_parallel, if there is  kwargs no_chain
-     then will print msg
-    :param msg: the msg or chain
-    :param args:
-    :param kwargs:
-    :return:
+     Print for console when BehaveX is executing in parallel.
+     example:
+    print_parallel('example.chain', 'value1') this first find the content in
+     content_dictionary with key example and chain, then will print these
+     content for console with handler bhx_parallel, if there is  kwargs no_chain
+      then will print msg
+     :param msg: the msg or chain
+     :param args:
+     :param kwargs:
+     :return:
     """
-    logger = logging.getLogger('bhx_parallel')
+    logger = logging.getLogger("bhx_parallel")
     if len(logger.handlers) == 0:
         console_log = logging.StreamHandler(sys.stdout)
         console_log.setLevel(get_logging_level())
         logger.addHandler(console_log)
-    if 'no_chain' in kwargs:
+    if "no_chain" in kwargs:
         logger.info(msg)
     else:
         logger.info(get_text(msg).format(*args))
@@ -424,12 +456,12 @@ def get_text(key_chain):
     :return:
     """
     dictionary = TEXTS
-    keys = key_chain.split('.')
+    keys = key_chain.split(".")
     result = None
     for i, key in enumerate(keys):
-        msg = u'the key "{}" not found'.format(u'.'.join(keys[0:i + 1]))
+        msg = u'the key "{}" not found'.format(u".".join(keys[0 : i + 1]))
         result = dictionary.get(key, msg)
-# six.text_type changed from unicode to maintain compatibility
+        # six.text_type changed from unicode to maintain compatibility
         if isinstance(result, str) or isinstance(result, six.text_type):
             return result
         if isinstance(result, dict):
@@ -442,15 +474,15 @@ def get_text(key_chain):
 
 def configure_logging(args_parse):
     """Configures the implemented 'logger'.
-        Implemented Handlers:
-            - StreamHandler: Writes logs to console
-            - FileHandler: Writes tests log in the folder specified
-                in the 'output' --> 'path' variable of the solution
-                configuration file
+    Implemented Handlers:
+        - StreamHandler: Writes logs to console
+        - FileHandler: Writes tests log in the folder specified
+            in the 'output' --> 'path' variable of the solution
+            configuration file
     """
     # Create log folder
-    if not os.path.exists(get_env('logs')):
-        os.makedirs(os.path.abspath(get_env('logs')))
+    if not os.path.exists(get_env("logs")):
+        os.makedirs(os.path.abspath(get_env("logs")))
     # get logging configuration
 
     logging_file = os.path.join(FWK_PATH, "config", "logging.cfg")
@@ -462,8 +494,8 @@ def configure_logging(args_parse):
         logger = logging.getLogger()  # this gets the root logger
         lh_stdout = logger.handlers[0]  # stdout is the only handler initially
         # ... here I add my own handlers
-        name = multiprocessing.current_process().name.split('-')[-1]
-        path_stdout = os.path.join(gettempdir(), 'std{}2.txt'.format(name))
+        name = multiprocessing.current_process().name.split("-")[-1]
+        path_stdout = os.path.join(gettempdir(), "std{}2.txt".format(name))
         if os.path.exists(path_stdout):
             try:
                 os.remove(path_stdout)
@@ -474,7 +506,7 @@ def configure_logging(args_parse):
         log_handler = logging.StreamHandler(file_stdout)
         logger.addHandler(log_handler)
         logger.removeHandler(lh_stdout)
-        logger = logging.getLogger('parallel_behavex')
+        logger = logging.getLogger("parallel_behavex")
         console_log = logging.StreamHandler(sys.stdout)
         console_log.setLevel(get_logging_level())
         logger.addHandler(console_log)
@@ -487,7 +519,7 @@ def len_scenarios(feature_file):
     :param feature_file: Feature filename
     :return: One integer with quantity of the scenarios
     """
-    data = codecs.open(feature_file, encoding='utf8').read()
+    data = codecs.open(feature_file, encoding="utf8").read()
     feature = parse_feature(data=data)
     amount_scenarios = 0
     for scenario in feature.scenarios:
@@ -506,8 +538,7 @@ def len_scenarios(feature_file):
 
 def check_environment_file():
     """Check  if exists file environment.py in folder feature"""
-    path_environment = os.path.join(
-        os.environ.get('FEATURES_PATH'), 'environment.py')
+    path_environment = os.path.join(os.environ.get("FEATURES_PATH"), "environment.py")
     if not os.path.exists(path_environment):
         raise Exception("environment.py module not found in 'features' folder")
 
@@ -516,13 +547,12 @@ def set_behave_tags():
     """
     Setting tags behave and recording in file
     """
-    behave_tags = os.path.join(
-        get_env('OUTPUT'), 'behave', "behave.tags")
+    behave_tags = os.path.join(get_env("OUTPUT"), "behave", "behave.tags")
     tags = []
     # Check for tags passed as arguments
     first_tag = True
-    if get_env('tags'):
-        for tag_param in get_env('tags').split(";"):
+    if get_env("tags"):
+        for tag_param in get_env("tags").split(";"):
             tags_args = tag_param.split(",")
             if first_tag:
                 first_tag = False
@@ -537,17 +567,18 @@ def set_behave_tags():
                 else:
                     tags.append("or " + tag.strip())
             tags.append(")")
-    tags_line = ' '.join(tags)
+    tags_line = " ".join(tags)
     tags_line = tags_line.replace("~", "not ")
     tags_line = tags_line.replace(",", " or ")
     try_operate_descriptor(
-        behave_tags, execution=get_save_function(behave_tags, tags_line))
+        behave_tags, execution=get_save_function(behave_tags, tags_line)
+    )
 
 
 def set_system_paths():
     """Add temporary folder to the system path"""
-    input_path = os.pathsep + get_env('temp')
-    os.environ['PATH'] += input_path
+    input_path = os.pathsep + get_env("temp")
+    os.environ["PATH"] += input_path
 
 
 def generate_reports(json_output):
@@ -563,13 +594,14 @@ def create_custom_log_when_called(self, key):
     :param key:
     :return:
     """
-    if key == 'evidence_path':
-        if not hasattr(self, 'log_path'):
-            if not hasattr(self, 'scenario'):
+    if key == "evidence_path":
+        if not hasattr(self, "log_path"):
+            if not hasattr(self, "scenario"):
                 raise Exception(
-                    '"evidence_path" variable is only accessible in the context of a test scenario')
+                    '"evidence_path" variable is only accessible in the context of a test scenario'
+                )
             self.log_path = normalize_filename(self.scenario.name)
-        evidence_path = os.path.join(getattr(self, 'log_path'), EVIDENCE_FOLDER)
+        evidence_path = os.path.join(getattr(self, "log_path"), EVIDENCE_FOLDER)
         self.evidence_path = evidence_path
         if not os.path.exists(evidence_path):
             os.makedirs(evidence_path)
@@ -579,8 +611,8 @@ def create_custom_log_when_called(self, key):
 
 
 def get_json_results():
-    path_json = os.path.join(get_env('OUTPUT'), 'report.json')
-    with open(path_json, 'r') as json_file:
+    path_json = os.path.join(get_env("OUTPUT"), "report.json")
+    with open(path_json, "r") as json_file:
         json_results = json.load(json_file)
     return json_results or {}
 
@@ -593,9 +625,9 @@ class MatchInclude(six.with_metaclass(Singleton)):
 
     def __init__(self, expr=None):
         if not expr:
-            expr = get_param('include').replace('\'', '"')
-        self.features_path = os.path.abspath(os.environ.get('FEATURES_PATH'))
-        expr = expr.replace(self.features_path, 'features').replace('\\', '\\\\')
+            expr = get_param("include").replace("'", '"')
+        self.features_path = os.path.abspath(os.environ.get("FEATURES_PATH"))
+        expr = expr.replace(self.features_path, "features").replace("\\", "\\\\")
         self.reg = re.compile(expr)
 
     def __call__(self, *args, **kwargs):
@@ -606,7 +638,7 @@ class MatchInclude(six.with_metaclass(Singleton)):
 
     def match(self, filename):
         filename = os.path.abspath(filename)
-        filename = 'features' + filename.replace(self.features_path, '')
+        filename = "features" + filename.replace(self.features_path, "")
         return not self.reg.match(filename) is None
 
 
@@ -618,14 +650,22 @@ class IncludePathsMatch(six.with_metaclass(Singleton)):
 
     def __init__(self, paths=None):
         if not paths:
-            paths = get_env('include_paths', get_param('include_paths'))
-        self.features_path = os.path.abspath(os.getenv('FEATURES_PATH'))
-        self.include_paths = [os.path.abspath(path).replace(
-            self.features_path, 'features') for path in paths]
-        self.features = [path for path in self.include_paths
-                         if not os.path.isdir(path) and ':' not in path]
+            paths = get_env("include_paths", get_param("include_paths"))
+        self.features_path = os.path.abspath(os.getenv("FEATURES_PATH"))
+        self.include_paths = [
+            os.path.abspath(path).replace(self.features_path, "features")
+            for path in paths
+        ]
+        self.features = [
+            path
+            for path in self.include_paths
+            if not os.path.isdir(path) and ":" not in path
+        ]
         self.scenarios = [
-            path for path in self.include_paths if not os.path.isdir(path) and ':' in path]
+            path
+            for path in self.include_paths
+            if not os.path.isdir(path) and ":" in path
+        ]
         self.folders = [path for path in paths if os.path.isdir(path)]
 
     def __call__(self, *args, **kwargs):
@@ -635,14 +675,19 @@ class IncludePathsMatch(six.with_metaclass(Singleton)):
         if not self.include_paths:
             return True
         match_scenario, match_feature = False, False
-        filename = os.path.abspath(filename).replace(self.features_path, 'features')
+        filename = os.path.abspath(filename).replace(self.features_path, "features")
         if scenario:
-            match_scenario = '{}:{}'.format(filename, scenario) in self.scenarios
+            match_scenario = "{}:{}".format(filename, scenario) in self.scenarios
         match_feature = filename in self.features
-        return match_scenario or match_feature or any([filename.startswith(folder) for folder in self.folders])
+        return (
+            match_scenario
+            or match_feature
+            or any([filename.startswith(folder) for folder in self.folders])
+        )
 
     def bool(self):
         return self.include_paths and self.features and self.folders
+
 
 # __metaclass__ changed to six.with_metaclass for compatibility
 
@@ -654,7 +699,7 @@ class IncludeNameMatch(six.with_metaclass(Singleton)):
 
     def __init__(self, expr=None):
         if not expr:
-            expr = get_param('name').replace('\'', '"')
+            expr = get_param("name").replace("'", '"')
         self.reg = re.compile(expr)
 
     def __call__(self, *args, **kwargs):

@@ -27,15 +27,16 @@ EXAMPLE:
     * https://github.com/hypothesis/smokey/blob/sauce-reliability/smokey/features/environment.py
 """
 
-from __future__ import print_function
 # __future__ and six are added to maintain compatibility
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
+
 import functools
 
 from behave.model import ScenarioOutline
-from behavex.reports.report_utils import normalize_filename
-from behavex.conf_mgr import set_env
 from six.moves import range
+
+from behavex.conf_mgr import set_env
+from behavex.reports.report_utils import normalize_filename
 
 
 def run_scenario_with_retries(scenario, max_attempts=3):
@@ -47,6 +48,7 @@ def run_scenario_with_retries(scenario, max_attempts=3):
     :param scenario:        Scenario or ScenarioOutline to patch.
     :param max_attempts:    How many times the scenario can be run.
     """
+
     def retry_scenario_on_failure(scenario_run, *args, **kwargs):
         """
         Scenario run with retries.
@@ -56,13 +58,13 @@ def run_scenario_with_retries(scenario, max_attempts=3):
         :param kwargs:
         :return:
         """
-        set_env('autoretry_attempt', str(0))
+        set_env("autoretry_attempt", str(0))
         for attempt in range(1, max_attempts + 1):
             if not scenario_run(*args, **kwargs):
-                return False    # -- NOT-FAILED = PASSED
+                return False  # -- NOT-FAILED = PASSED
             if attempt < max_attempts:
                 set_env("autoretry", normalize_filename(scenario.name))
-                set_env('autoretry_attempt', str(attempt))
+                set_env("autoretry_attempt", str(attempt))
         return True
 
     if isinstance(scenario, ScenarioOutline):
