@@ -522,7 +522,7 @@ def remove_temporary_files(parallel_processes):
         path_stdout = os.path.join(gettempdir(), "stdout{}.txt".format(i + 1))
         if os.path.exists(path_stdout):
             try:
-                os.chmod(path_stdout, 511)
+                os.chmod(path_stdout, 511)  # nosec
                 os.remove(path_stdout)
             except Exception as remove_ex:
                 print(remove_ex)
@@ -540,7 +540,7 @@ def remove_temporary_files(parallel_processes):
     console_log.setLevel(get_logging_level())
     logger.addHandler(console_log)
     if os.path.exists(stdout_file):
-        os.chmod(stdout_file, 511)
+        os.chmod(stdout_file, 511)  # nosec
         if not os.access(stdout_file, os.W_OK):
             os.remove(stdout_file)
 

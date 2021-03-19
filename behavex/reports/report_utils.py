@@ -498,7 +498,7 @@ def get_test_execution_tags():
         behave_tags_file = open(behave_tags_path, "r")
         behave_tags = behave_tags_file.readline().strip()
         behave_tags_file.close()
-        os.chmod(behave_tags_path, 511)
+        os.chmod(behave_tags_path, 511)  # nosec
         set_env("behave_tags", behave_tags.replace("@MANUAL", "False"))
         return get_env("behave_tags")
     else:
@@ -574,7 +574,7 @@ def get_save_function(path, content):
         """
         with codecs.open(path, "w", "utf8") as file_:
             file_.write(content)
-        os.chmod(path, 511)
+        os.chmod(path, 511)  # nosec
 
     return fun_save
 

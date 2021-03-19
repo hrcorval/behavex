@@ -13,7 +13,7 @@ import os
 import re
 import sys
 import traceback
-from xml.sax.saxutils import quoteattr
+from xml.sax.saxutils import quoteattr  # nosec
 
 import jinja2
 
