@@ -1,2 +1,2 @@
-# -*- encoding: utf-8 -*
+# -*- coding: utf-8 -*-
 """This module reports contains modules for generation of the reports"""

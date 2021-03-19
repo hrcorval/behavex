@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*
+# -*- coding: utf-8 -*-
 """
 /*
 * BehaveX - Agile test wrapper on top of Behave (BDD)
@@ -56,13 +56,13 @@ def run_scenario_with_retries(scenario, max_attempts=3):
         :param kwargs:
         :return:
         """
-        set_env("autoretry_attempt", str(0))
+        set_env('autoretry_attempt', str(0))
         for attempt in range(1, max_attempts + 1):
             if not scenario_run(*args, **kwargs):
                 return False  # -- NOT-FAILED = PASSED
             if attempt < max_attempts:
-                set_env("autoretry", normalize_filename(scenario.name))
-                set_env("autoretry_attempt", str(attempt))
+                set_env('autoretry', normalize_filename(scenario.name))
+                set_env('autoretry_attempt', str(attempt))
         return True
 
     if isinstance(scenario, ScenarioOutline):

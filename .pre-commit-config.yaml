@@ -8,8 +8,14 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-ast
       - id: check-added-large-files
       - id: check-json
+      - id: double-quote-string-fixer
+      - id: fix-encoding-pragma
+      - id: file-contents-sorter
+      - id: check-case-conflict
+      - id: check-symlinks
       - id: check-merge-conflict
       - id: debug-statements
       - id: detect-private-key
@@ -50,6 +56,7 @@ repos:
     rev: stable
     hooks:
       - id: black
+        args: [--skip-string-normalization]
         language_version: python3.8
 
   # - repo: https://github.com/PyCQA/pylint
