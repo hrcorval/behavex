@@ -3,30 +3,7 @@
 /*
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */
-
-Then module generate_gallery the files for report in html format.
-
-VARIABLES:
-    - MANIFEST_TEMPLATE
-    - FWK_DIR
-    - TEMPLATE_DIR
-    - CONFIG
-    - TEST_REPORT_TEMPLATE
-    - STEP_TEMPLATE_DEFINITION
-    - METRICS_TEMPLATE
-    - TAGS_TEMPLATE
-    - T_HANDLER
-
-FUNCTIONS:
-    - generate_report
-    - _create_manifest
-    - _create_files_report
-    - export_step_to_html
-    - export_result_to_html
-    - get_value_filters
-    - export_to_html_table_summary
 """
-# __future__ has been added in order to maintain compatibility
 from __future__ import absolute_import
 
 import os
@@ -111,15 +88,7 @@ def _create_files_report(content_to_file):
         try:
             content = htmlmin.minify(
                 input=content,
-                remove_comments=False,
-                remove_empty_space=False,
-                remove_all_empty_space=False,
-                reduce_empty_attributes=True,
-                reduce_boolean_attributes=False,
-                remove_optional_attribute_quotes=True,
-                keep_pre=False,
                 pre_tags=(u'pre', u'textarea'),
-                pre_attr='pre',
             )
         # pylint: disable= W0703
         except Exception as ex:

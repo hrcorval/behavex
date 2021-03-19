@@ -355,7 +355,7 @@ def execute_tests(list_features, scenario=None, multiprocessing=True, config=Non
     paths = config.get_env('include_paths', [])
     execution_codes, generate_report = [], False
     if multiprocessing:
-        Singleton.instances[ConfigRun] = config
+        Singleton._instances[ConfigRun] = config
     for feature in list_features:
         try:
             args = _set_behave_arguments(
