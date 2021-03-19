@@ -4,3 +4,5 @@
 - Remove utility to generate screenshots
 - Fix issue with scenario names - DONE
 - Review match_for_execution method, to ensure the mapping with TAGS is working properly
+- remove default values from configuration
+- update folders structure to do that in a different way
