@@ -29,7 +29,6 @@ FUNCTIONS:
     - normalize_path
     - resolving_type
     - try_operate_descriptor
-    - maps_to_bug
     - get_status
     - get_test_execution_tags
     - match_for_execution
@@ -404,7 +403,7 @@ def normalize_path(path):
     return os.path.join(*exp.split(path))
 
 
-def resolving_type(step, scenario, background=True, white_space='&nbsp;'):
+def resolving_type(step, scenario, background=True):
     """Resolving if have that put And or your step_type"""
     if step['index'] == 0:
         return step['step_type'].title()
@@ -418,7 +417,7 @@ def resolving_type(step, scenario, background=True, white_space='&nbsp;'):
         except BaseException:
             previous_type = step['step_type']
         if previous_type == step['step_type']:
-            return '{0}{0}And'.format(white_space)
+            return 'And'
         else:
             return step['step_type'].title()
 
@@ -467,15 +466,6 @@ def try_operate_descriptor(dest_path, execution, return_value=False):
                         "or 'a' to abort\n"
                     )
                     option = str(input(msg)).upper().strip()
-
-
-def maps_to_bug(number):
-    """Return true if number match with regular expression the config
-    in bug_to_fix"""
-    regex = conf_mgr.get_config()['bug_tag']['regex']
-    if not number:
-        return False
-    return False if not regex else re.match(regex, number)
 
 
 def get_status(dictionary):
@@ -531,8 +521,7 @@ def match_for_execution(tags):
     for tag in tag_re.findall(tags_filter):
         if tag not in ('not', 'and', 'or', 'True', 'False'):
             tags_filter = tags_filter.replace(tag + ' ', 'False ')
-
-    return tags_filter == '' or ast.literal_eval(tags_filter)
+    return tags_filter == '' or eval(tags_filter)
 
 
 def copy_bootstrap_html_generator(output):

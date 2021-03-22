@@ -43,9 +43,6 @@ def get_config():
     [screenshots]
     hash_detail=string(default="0")
 
-    [bug_tag]
-    regex=string(default="BUG-")
-
     [test_run]
     tags_to_skip=string(default="")
 
@@ -66,12 +63,12 @@ def get_config():
     no_snippets=boolean(default=False)
     stop=boolean(default=False)
     tags_help=boolean(default=False)
-    logging_level=option('CRITICAL',
-                         'ERROR',
-                         'WARNING',
-                         'INFO',
-                         'DEBUG',
-                         'NOTSET',
+    logging_level=option('CRITICAL', \
+                         'ERROR', \
+                         'WARNING', \
+                         'INFO', \
+                         'DEBUG', \
+                         'NOTSET', \
                          default='INFO')
     parallel_processes=integer(default=1)
     parallel_element=option('feature', 'scenario', default='scenario')

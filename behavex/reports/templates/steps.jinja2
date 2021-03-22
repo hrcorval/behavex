@@ -86,14 +86,17 @@
                 {% set instances = steps[step].steps|count %}
                 <td class="{{ letter }}-behavex">
                     {% set has_children = instances > 1 or (instances == 1 and step != first_instance) %}
-                    <b> <span  title="{{ step_selected.status|calculate_title_status }}"
-                            {%- if not (has_children) -%} style="padding-left: 20px" {%- endif -%}>
-                            {{ step|e }}
-                    </span></b>
-{#                    {% set arguments =  step_selected.steps.keys()[0] %}#}
+                    {% set arguments =  step_selected.steps.keys()[0] %}#}
                     {% if has_children %}
-                        <span class="glyphicon glyphicon-menu-right span-behavex pull-left" data-step
-                              title="{{ ('commons.expand'|get_text).format('steps') }}"></span>
+                        <span class="glyphicon glyphicon-menu-right pull-left" data-step
+                            title="{{ ('commons.expand'|get_text).format('steps') }}">
+                            <b class="span-behavex">
+                                <span  title="{{ step_selected.status|calculate_title_status }}"
+                                    {%- if not (has_children) -%} style="padding-left: 20px" {%- endif -%}>
+                                    {{ step|e }}
+                                </span>
+                            </b>
+                        </span>
                         <ul class="list-unstyled table_row_{{ step_selected.status|calculate_status }} ul_border_bottom" >
                             <!-- iteritems has been changed to items -->
                             {% for key, sub_step in steps[step].steps.items() %}
@@ -114,7 +117,7 @@
                     <div class="progress  progress-expand-steps">
                         {% set total_ = step_selected.status|count %}
                         {% set status = step_selected.status|count_by_status('first_value')%}
-                        {{ total_|create_progress_html(*status) }}
+                        {{ total_|create_progress_html(*status)|safe }}
                     </div>
                </td>
             </tr>

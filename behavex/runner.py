@@ -95,8 +95,8 @@ def run(args):
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
     _set_env_variables(args_parsed)
-    code_execution = setup_running_failures(args_parsed)
-    if EXIT_ERROR in code_execution:
+    execution_code = setup_running_failures(args_parsed)
+    if execution_code == EXIT_ERROR:
         return EXIT_ERROR
     set_system_paths()
 
