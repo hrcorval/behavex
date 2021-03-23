@@ -27,11 +27,9 @@ TEXTS = {
             'body': '',
         },
         'test_to_fix': 'There are some issues in this scenario that are under '
-        'fix process <small class="text-center">'
-        '(@TEST_TO_FIX tag).</small>',
+        'fix process (@TEST_TO_FIX tag)',
         'bug_to_fix': 'There is a product bug under fix process that affects '
-        'this scenario <small class="text-center">'
-        '(@BUG_TO_FIX tag).</small>',
+        'this scenario (@BUG_TO_FIX tag)',
         'show_background': '(show background)',
         'hide_background': '(hide background)',
         'execution_tag': 'Execution Tag',
