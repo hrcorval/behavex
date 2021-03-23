@@ -86,7 +86,7 @@
                 {% set instances = steps[step].steps|count %}
                 <td class="{{ letter }}-behavex">
                     {% set has_children = instances > 1 or (instances == 1 and step != first_instance) %}
-                    {% set arguments =  step_selected.steps.keys()[0] %}#}
+                    {% set arguments =  step_selected.steps.keys()[0] %}
                     {% if has_children %}
                         <span class="glyphicon glyphicon-menu-right pull-left" data-step
                             title="{{ ('commons.expand'|get_text).format('steps') }}">
