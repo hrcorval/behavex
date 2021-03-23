@@ -26,9 +26,9 @@ from behave import __main__ as behave_script
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, Singleton, get_env, get_param, set_env
-from behavex.reports import report_xml
-from behavex.reports.report_json import OVERALL_STATUS_FILE
-from behavex.reports.report_utils import (
+from behavex.outputs import report_xml
+from behavex.outputs.report_json import OVERALL_STATUS_FILE
+from behavex.outputs.report_utils import (
     get_overall_status,
     match_for_execution,
     pretty_print_time,
@@ -428,7 +428,7 @@ def _launch_behave(args):
 
 def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=False):
     """
-    Close process pool and generate_gallery reports
+    Close process pool and generate_gallery outputs
     :param process_pool: process pool
     :param json_reports: list of the json that result of the execution
     :param multi_process: Boolean indicating if execution is running in parallel
@@ -460,7 +460,7 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     with open(path_info, 'w') as file_info:
         file_info.write(json.dumps(merged_json))
     if get_param('dry_run'):
-        print('Generating reports...')
+        print('Generating outputs...')
     generate_reports(merged_json)
 
 
@@ -630,7 +630,7 @@ def _set_env_variables(args):
         set_env_variable(arg.upper(), get_param(arg))
 
     set_env_variable('TEMP', os.path.join(get_env('output'), 'temp'))
-    set_env_variable('LOGS', os.path.join(get_env('output'), 'reports', 'logs'))
+    set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     if get_param('logging_level'):
         set_env_variable('logging_level', get_param('logging_level'))
     if platform.system() == 'Windows':

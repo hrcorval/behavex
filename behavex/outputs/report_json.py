@@ -6,24 +6,8 @@
 */
 
 JSON test execution report.
-
-Variables:
-    - INFO_FILE
-    - OVERALL_STATUS_FILE
-    - STEPS_DEFINITIONS
-Functions:
-    - add_step_info
-    - add_step_info_background
-    - generate_execution_info
-    - save_info_json
-    - _processing_background
-    - _processing_background_feature
-    - _processing_scenarios
-    - _get_error_scenario
-    - _step_to_dict
-    - process_step_definition
-    - _generate_hash
 """
+
 # pylint: disable=W0212
 # Future added in order to maintain compatibility
 from __future__ import absolute_import
@@ -38,7 +22,7 @@ from tempfile import gettempdir
 from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env
-from behavex.reports.report_utils import (
+from behavex.outputs.report_utils import (
     RETRY_SCENARIOS,
     get_error_message,
     match_for_execution,

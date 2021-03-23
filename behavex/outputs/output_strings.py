@@ -5,10 +5,7 @@
 */
 
 This module provides a dictionary with the contents that are displayed in
-test execution reports.
-
-Variables:
-    - TEXTS
+test execution outputs.
 """
 
 TEXTS = {

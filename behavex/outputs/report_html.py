@@ -14,27 +14,27 @@ import htmlmin
 
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env
-from behavex.reports.report_utils import (
+from behavex.outputs.jinja_mgr import TemplateHandler
+from behavex.outputs.report_utils import (
     gather_steps_with_definition,
     get_save_function,
     get_total_steps,
     try_operate_descriptor,
 )
-from behavex.reports.template_handler import TemplateHandler
 
 MANIFEST_TEMPLATE = 'manifest.jinja2'
 
 FWK_DIR = os.environ.get('BEHAVEX_PATH')
-TEMPLATE_DIR = os.path.join(FWK_DIR, 'reports', 'templates')
+TEMPLATE_DIR = os.path.join(FWK_DIR, 'outputs', 'jinja')
 CONFIG = conf_mgr.get_config()
 
-TEST_REPORT_TEMPLATE = 'report.jinja2'
+TEST_REPORT_TEMPLATE = 'main.jinja2'
 STEP_TEMPLATE_DEFINITION = 'steps.jinja2'
 T_HANDLER = TemplateHandler(TEMPLATE_DIR)
 
 
 def generate_report(output, joined=None, report=None):
-    """Generate reports in html format"""
+    """Generate outputs in html format"""
     environment = output['environment']
     features = output['features']
     steps_definition = output['steps_definition']
@@ -53,7 +53,7 @@ def _create_manifest(relative, page):
     """Create file manifest from template"""
     parameters_template = {'relative': relative, 'page': page}
     output_text = T_HANDLER.render_template(MANIFEST_TEMPLATE, parameters_template)
-    folder = os.path.join(get_env('OUTPUT'), 'reports', 'bootstrap', 'manifest')
+    folder = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap', 'manifest')
     if not os.path.exists(folder):
         os.makedirs(folder)
     file_manifest = os.path.join(folder, page.replace('html', 'manifest'))
@@ -69,13 +69,13 @@ def _create_files_report(content_to_file):
         if name_file == 'report.html':
             layout_path = os.path.join(
                 os.path.dirname(__file__),
-                'utils/bootstrap-3.3.7-dist',
+                'bootstrap',
                 'css',
-                'layout.css',
+                'behavex.css',
             )
             layout_file = open(layout_path, 'r')
             layout_min_path = os.path.join(
-                get_env('OUTPUT'), 'reports', 'bootstrap', 'css', 'layout.min.css'
+                get_env('OUTPUT'), 'outputs', 'bootstrap', 'css', 'behavex.min.css'
             )
             _create_manifest('../', name_file)
             with open(layout_min_path, 'w') as layout_min:
@@ -83,7 +83,7 @@ def _create_files_report(content_to_file):
             path_file = os.path.join(get_env('OUTPUT'), name_file)
 
         else:
-            path_file = os.path.join(get_env('OUTPUT'), 'reports', name_file)
+            path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
         try:
             content = htmlmin.minify(

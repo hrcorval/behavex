@@ -6,36 +6,6 @@
 
 Test report utility methods for retrieving summarized test execution information
  from features and scenarios
-
-VARIABLES:
-    - FWK_PATH
-    - RETRY_SCENARIOS
-    - BEHAVE_TAGS_FILE
-    - STEPS_EXECUTIONS
-    - STEPS_UNDEFINED
-
-FUNCTIONS:
-    - add_information_from_steps
-    - gather_steps_with_definition
-    - gather_steps_without_definition
-    - get_summary_definition
-    - count_by_status
-    - calculate_status
-    - gather_steps
-    - get_scenarios_by_tag
-    - gather_errors
-    - pretty_print_time
-    - normalize_filename
-    - normalize_path
-    - resolving_type
-    - try_operate_descriptor
-    - get_status
-    - get_test_execution_tags
-    - match_for_execution
-    - copy_bootstrap_html_generator
-    - get_overall_status
-    - get_save_function
-    - create_log_path
 """
 # pylint: disable=W0703
 # pylint: disable=W0703 , E1101
@@ -526,8 +496,8 @@ def match_for_execution(tags):
 
 def copy_bootstrap_html_generator(output):
     """copy the bootstrap directory for portable html"""
-    dest_path = os.path.join(output, 'reports', 'bootstrap')
-    bootstrap_path = ['reports', 'utils', 'bootstrap-3.3.7-dist']
+    dest_path = os.path.join(output, 'outputs', 'bootstrap')
+    bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
     if os.path.exists(dest_path):
         try_operate_descriptor(dest_path, lambda: shutil.rmtree(dest_path))

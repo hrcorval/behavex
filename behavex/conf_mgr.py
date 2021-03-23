@@ -4,17 +4,8 @@
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
-
 This module process the configuration required by the framework. Default values
  are used if no config file is provided.
-
-Variables:
-    - CONFIG
-    - CONFIG_PATH
-
-Functions:
-    - get_config
-
 """
 # pylint: disable=W0703
 # pylint: disable=W0603
@@ -37,7 +28,7 @@ def get_config():
     [output]
     path=string(default="output")
 
-    [reports]
+    [outputs]
     types=string_list(default=list("html", "xml"))
 
     [screenshots]
@@ -106,7 +97,7 @@ class ConfigRun(metaclass=Singleton):
         output = self.get_param('output.path', 'output_folder')
         self.environ['output'] = output
         self.environ['temp'] = os.path.join(output, 'temp')
-        self.environ['logs'] = os.path.join(output, 'reports', 'logs')
+        self.environ['logs'] = os.path.join(output, 'outputs', 'logs')
 
     def set_args(self, args):
         self.args = args

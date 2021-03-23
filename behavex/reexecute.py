@@ -34,7 +34,7 @@ import functools
 from behave.model import ScenarioOutline
 
 from behavex.conf_mgr import set_env
-from behavex.reports.report_utils import normalize_filename
+from behavex.outputs.report_utils import normalize_filename
 
 
 def run_scenario_with_retries(scenario, max_attempts=3):

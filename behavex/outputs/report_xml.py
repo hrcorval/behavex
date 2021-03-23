@@ -11,17 +11,17 @@ import os
 import re
 
 from behavex.conf_mgr import get_env
-from behavex.reports.report_utils import (
+from behavex.outputs.jinja_mgr import TemplateHandler
+from behavex.outputs.report_utils import (
     get_save_function,
     match_for_execution,
     text,
     try_operate_descriptor,
 )
-from behavex.reports.template_handler import TemplateHandler
 
 FWK_DIR = os.environ.get('BEHAVEX_PATH')
 INFO_FILE = 'report.json'
-TEMPLATE_DIR = os.path.join(FWK_DIR, 'reports', 'templates')
+TEMPLATE_DIR = os.path.join(FWK_DIR, 'outputs', 'jinja')
 
 FEATURE_XML_TEMPLATE = 'xml.jinja2'
 FEATURE_XML_JSON_TEMPLATE = 'xml_json.jinja2'

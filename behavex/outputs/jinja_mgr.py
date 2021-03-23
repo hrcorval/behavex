@@ -18,8 +18,8 @@ from xml.sax.saxutils import quoteattr  # nosec
 import jinja2
 
 from behavex.conf_mgr import get_env
-from behavex.reports.contents_dictionary import TEXTS
-from behavex.reports.report_utils import (
+from behavex.outputs.output_strings import TEXTS
+from behavex.outputs.report_utils import (
     calculate_status,
     count_by_status,
     gather_errors,
@@ -83,7 +83,7 @@ class TemplateHandler(object):
             self.template_env.globals.update(path_join=os.path.join)
 
     def get_filters(self):
-        """return filters the templates
+        """return filters the jinja
         :return: list of the filters
         """
         return self.template_env.filters
@@ -175,7 +175,7 @@ def get_relative_extra_logs_path(scenario):
     return (
         os.path.sep.join(
             [
-                'reports',
+                'outputs',
                 'logs',
                 normalize_filename(scenario.get('name')),
                 'evidence',

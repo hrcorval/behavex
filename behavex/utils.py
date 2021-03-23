@@ -48,9 +48,9 @@ from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
 
 from behavex.conf_mgr import Singleton, get_env, get_param, set_env
-from behavex.reports import report_html
-from behavex.reports.contents_dictionary import TEXTS
-from behavex.reports.report_utils import (
+from behavex.outputs import report_html
+from behavex.outputs.output_strings import TEXTS
+from behavex.outputs.report_utils import (
     get_save_function,
     match_for_execution,
     normalize_filename,
@@ -58,7 +58,7 @@ from behavex.reports.report_utils import (
 )
 
 FWK_PATH = os.getenv('BEHAVEX_PATH')
-LOGGING_CFG = ConfigObj(os.path.join(FWK_PATH, 'config', 'logging.cfg'))
+LOGGING_CFG = ConfigObj(os.path.join(FWK_PATH, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
@@ -116,7 +116,7 @@ def escape_re(word):
 def join_feature_reports(json_reports):
     """
     Join intermediate values
-    :param json_reports: list of reports
+    :param json_reports: list of outputs
     :return: json united
     """
     scenario_lines = get_env('scenario_lines')
@@ -316,8 +316,8 @@ def match_any_name(feature):
 
 def copy_bootstrap_html_generator():
     """copy the bootstrap directory for portable html"""
-    destination_path = os.path.join(get_env('OUTPUT'), 'reports', 'bootstrap')
-    bootstrap_path = ['reports', 'utils', 'bootstrap-3.3.7-dist']
+    destination_path = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap')
+    bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
     if os.path.exists(destination_path):
         try_operate_descriptor(
@@ -400,7 +400,7 @@ def print_env_variables(keys):
 def set_environ_config(args_parsed):
     """Return the framework configuration values as a dictionary.
     If no config file is provided as execution argument, default
-    values are set from config/config.cfg
+    values are set from conf_behavex.cfg
     """
     global CONFIG
     global CONFIG_PATH
@@ -411,7 +411,7 @@ def set_environ_config(args_parsed):
         CONFIG_PATH = args_parsed.config
     if CONFIG_PATH is None:
         fwk_path = os.environ.get('BEHAVEX_PATH')
-        CONFIG_PATH = os.path.join(fwk_path, 'config', 'config.cfg')
+        CONFIG_PATH = os.path.join(fwk_path, 'conf_behavex.cfg')
     set_env_variable('CONFIG', CONFIG_PATH)
 
 
@@ -481,7 +481,7 @@ def configure_logging(args_parse):
         os.makedirs(os.path.abspath(get_env('logs')))
     # get logging configuration
 
-    logging_file = os.path.join(FWK_PATH, 'config', 'logging.cfg')
+    logging_file = os.path.join(FWK_PATH, 'conf_logging.cfg')
     try:
         logging.config.fileConfig(logging_file)
     except Exception as logging_ex:
