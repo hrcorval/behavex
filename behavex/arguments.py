@@ -147,6 +147,7 @@ def parse_arguments(args):
         help='Define user-specific data in config.userdata '
         'dictionary. Example: -D foo=bar to store it in '
         "config.userdata['foo'].",
+        action='append',
         required=False,
     )
     parser.add_argument(

@@ -691,47 +691,46 @@ def _set_behave_arguments(
      scenario
     :return:
     """
-    args = []
+    arguments = []
     output_folder = config.get_env('OUTPUT')
     if multiprocessing:
-        args.append(feature)
-        args.append('--no-summary')
+        arguments.append(feature)
+        arguments.append('--no-summary')
         if scenario:
-            args.append('--name')
-            args.append('{}(.?--.?@\\d*.\\d*\\s*)?$'.format(scenario))
+            arguments.append('--name')
+            arguments.append('{}(.?--.?@\\d*.\\d*\\s*)?$'.format(scenario))
         name = lib_multiprocessing.current_process().name.split('-')[-1]
-        args.append('--outfile')
-        args.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
+        arguments.append('--outfile')
+        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
     else:
-        set_paths_argument(args, paths)
+        set_paths_argument(arguments, paths)
         if get_param('dry_run'):
-            args.append('--no-summary')
+            arguments.append('--no-summary')
         else:
-            args.append('--summary')
-        args.append('--junit-directory')
-        args.append(output_folder)
-        args.append('--outfile')
-        args.append(os.path.join(output_folder, 'behave', 'behave.log'))
-    args.append('--no-skipped')
-    args.append('--no-junit')
+            arguments.append('--summary')
+        arguments.append('--junit-directory')
+        arguments.append(output_folder)
+        arguments.append('--outfile')
+        arguments.append(os.path.join(output_folder, 'behave', 'behave.log'))
+    arguments.append('--no-skipped')
+    arguments.append('--no-junit')
     run_wip_tests = False
     if get_env('tags'):
         tags = get_env('tags').split(';')
         for tag in tags:
-            args.append('--tags')
-            args.append(tag)
+            arguments.append('--tags')
+            arguments.append(tag)
             if tag.upper() in ['WIP', '@WIP']:
                 run_wip_tests = True
     if not run_wip_tests:
-        args.append('--tags')
-        args.append('~@WIP')
-    args.append('--tags')
-    args.append('~@MANUAL')
-
+        arguments.append('--tags')
+        arguments.append('~@WIP')
+    arguments.append('--tags')
+    arguments.append('~@MANUAL')
     args_sys = config.args
-    set_args_captures(args, args_sys)
+    set_args_captures(arguments, args_sys)
     if args_sys.no_snippets:
-        args.append('--no-snippets')
+        arguments.append('--no-snippets')
     for arg in BEHAVE_ARGS:
         value_arg = getattr(args_sys, arg) if hasattr(args_sys, arg) else False
         if arg == 'include':
@@ -742,15 +741,19 @@ def _set_behave_arguments(
                 value_arg = value_arg.replace(features_path, 'features').replace(
                     '\\', '\\\\'
                 )
-        if value_arg and arg not in BEHAVEX_ARGS:
-            args.append('--{}'.format(arg.replace('_', '-')))
+        if arg == 'define':
+            for key_value in value_arg:
+                arguments.append('--define')
+                arguments.append(key_value)
+        if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
+            arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):
-                args.append(value_arg)
-                if args == 'logging_level':
+                arguments.append(value_arg)
+                if arguments == 'logging_level':
                     set_env_variable(arg, value_arg)
                 else:
                     os.environ[arg] = str(value_arg)
-    return args
+    return arguments
 
 
 def set_args_captures(args, args_sys):
