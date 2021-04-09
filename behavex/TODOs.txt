@@ -6,7 +6,7 @@
 - Validate it is possible to reexecute failing test scenarios
 - Remove --include-paths arguments to run failing test scenarios
 - TEST_TO_FIX and BUG_TO_FIX should not generate exit code 1
-- Replace TEST_TO_FIX and BUG_TO_FIX by MUTED
+- Replace TEST_TO_FIX and BUG_TO_FIX by MUTED - DONE
 - Add a metric related to Test Steps (reusability maybe)
 - Remove utility to generate screenshots
 - Fix issue with scenario names - DONE

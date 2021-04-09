@@ -23,13 +23,13 @@
         {{ 16*' ' ~ step|print_step_json ~ '\n'}}
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
-{%- set is_to_be_fixed = (('TEST_TO_FIX' in scenario.tags or 'BUG_TO_FIX' in scenario.tags) and (scenario.status == 'failed')) -%}
-        <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr}} status="{{ 'skipped' if is_to_be_fixed else scenario.status }}"
-         classname={{scenario.feature|normalize|CIXC|quoteattr }} >
+{%- set is_to_be_fixed = (('MUTED' in scenario.tags) and (scenario.status == 'failed')) -%}
+        <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ 'skipped' if is_to_be_fixed else scenario.status }}"
+         classname={{scenario.feature|normalize|CIXC|quoteattr|safe }} >
             {% set step_with_exception = scenario.error_step %}
             {%- if step_with_exception -%}
 
-                <failure message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr }} type="AssertionError">
+                <failure message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }} type="AssertionError">
                     <![CDATA[ Failing step: {{step_with_exception|print_step_json}} Location:{{step_with_exception.index}}
                         {{step_with_exception}}
                     ]]>
@@ -55,7 +55,7 @@
         </testcase>
 {%- endmacro -%}
 <testsuite time="{{ summary.time }}" tests='{{ scenarios|count }}' skipped='{{ summary.skipped }}'
-name={{ feature.filename[9:-8]|normalize|CIXC|quoteattr }} failures='{{ summary.failures }}' errors='0'>
+name={{ feature.filename[9:-8]|normalize|CIXC|quoteattr|safe }} failures='{{ summary.failures }}' errors='0'>
 {%- for scenario in scenarios -%}
     {{ print_scenario(scenario)}}
 {%- endfor -%}

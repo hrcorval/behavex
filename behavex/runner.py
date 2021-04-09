@@ -181,6 +181,7 @@ def launch_behavex():
     remove_temporary_files(parallel_processes)
 
     results = get_json_results()
+    failing_non_muted_tests = False
     if results:
         failures = {}
         for feature in results['features']:
@@ -192,17 +193,21 @@ def launch_behavex():
             for scenario in feature['scenarios']:
                 if scenario['status'] == 'failed':
                     failures[filename].append(scenario['name'])
-
+                    if 'MUTED' not in scenario['tags']:
+                        failing_non_muted_tests = True
         if failures:
             failures_file_path = os.path.join(get_env('OUTPUT'), 'failures.txt')
             with open(failures_file_path, 'w') as failures_file:
                 parameters = create_test_list(failures)
                 failures_file.write(parameters)
-    # Calculates final exit code
+    # Calculates final exit code. execution_codes is 1 only if an execution exception arises
     if isinstance(execution_codes, list):
-        exit_code = EXIT_ERROR if sum(execution_codes) > EXIT_OK else EXIT_OK
+        execution_exception = True if sum(execution_codes) > 0 else False
     else:
-        exit_code = execution_codes
+        execution_exception = True if execution_codes > 0 else False
+    exit_code = (
+        EXIT_ERROR if execution_exception or failing_non_muted_tests else EXIT_OK
+    )
     print('Exit code: {}'.format(exit_code))
     return exit_code
 
@@ -412,8 +417,9 @@ def _launch_behave(args):
     # Save tags configuration to report only selected scenarios
     # Check for tags in config file
     generate_report = True
+    execution_code = 0
     try:
-        execution_code = behave_script.main(args)
+        behave_script.main(args)
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False

@@ -84,15 +84,13 @@ def _export_feature_to_xml(feature, isobject=True):
         if get_status(scenario) == 'failed' or get_status(scenario) == 'untested'
     ]
 
-    bug_to_fix = [
+    muted = [
         scenario
         for scenario in scenarios
-        if any(i in ['TEST_TO_FIX', 'BUG_TO_FIX'] for i in get_tags(scenario))
+        if any(i in ['MUTED'] for i in get_tags(scenario))
     ]
 
-    bug_to_fix_failed = [
-        scenario for scenario in bug_to_fix if get_status(scenario) == 'failed'
-    ]
+    muted_failed = [scenario for scenario in muted if get_status(scenario) == 'failed']
 
     summary = {
         'time': sum(
@@ -100,8 +98,8 @@ def _export_feature_to_xml(feature, isobject=True):
             for scenario in scenarios
         ),
         'tests': len(scenarios),
-        'failures': len(failures) - len(bug_to_fix_failed),
-        'skipped': len(skipped) + len(bug_to_fix_failed),
+        'failures': len(failures) - len(muted_failed),
+        'skipped': len(skipped) + len(muted_failed),
     }
     parameters_template = {
         'feature': feature,
@@ -109,7 +107,7 @@ def _export_feature_to_xml(feature, isobject=True):
         'skipped': skipped,
         'failures': failures,
         'scenarios': scenarios,
-        'to_be_fixed': bug_to_fix_failed,
+        'to_be_fixed': muted_failed,
     }
 
     output_text = T_HANDLER.render_template(

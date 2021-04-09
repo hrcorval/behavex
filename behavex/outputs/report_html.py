@@ -112,7 +112,7 @@ def get_metrics_variables(scenarios, joined=None, report=None):
     to_be_fixed = [
         scenario
         for scenario in scenarios
-        if any(i in ['TEST_TO_FIX', 'BUG_TO_FIX'] for i in scenario['tags'])
+        if any(i in ['MUTED'] for i in scenario['tags'])
         and scenario['status'] == 'failed'
     ]
     parameters_template = {
@@ -211,7 +211,7 @@ def export_to_html_table_summary(features):
         to_be_fixed = 0
         for scenario in feature['scenarios']:
             fields['Total'] += 1
-            if any(i in ['TEST_TO_FIX', 'BUG_TO_FIX'] for i in scenario['tags']):
+            if any(i in ['MUTED'] for i in scenario['tags']):
                 to_be_fixed += 1
             if scenario['status'] == 'passed':
                 fields['Executed'] += 1

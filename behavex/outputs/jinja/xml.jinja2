@@ -23,17 +23,17 @@
         {{ 16*' ' ~ step|print_step ~ '\n'}}
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
-{%- set is_to_be_fixed = (('TEST_TO_FIX' in scenario.tags or 'BUG_TO_FIX' in scenario.tags) and (scenario.status == 'failed'))-%}
+{%- set is_to_be_fixed = (('MUTED' in scenario.tags) and (scenario.status == 'failed'))-%}
 {%- set errors_step = 0-%}
         {%- for step in scenario.steps -%}
             {%- set errors_step = errors_step + (0 if step.error_message else 1) -%}
         {%- endfor -%}
-        <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr}} status="{{ scenario.status if not is_to_be_fixed else 'skipped'}}"
-         classname={{scenario.feature.name|normalize|CIXC|quoteattr }}>
+        <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ scenario.status if not is_to_be_fixed else 'skipped'}}"
+         classname={{scenario.feature.name|normalize|CIXC|quoteattr|safe }}>
             {%- set steps_with_exception = scenario.steps|get_list_exception_steps(scenario._background_steps) -%}
-            {%- if steps_with_exception and not ('TEST_TO_FIX' in scenario.tags or 'BUG_TO_FIX' in scenario.tags) -%}
+            {%- if steps_with_exception and not ('MUTED' in scenario.tags) -%}
                 {%- for step in steps_with_exception -%}
-                    <failure type={{ step.exception.__class__.__name__ |normalize|CIXC|quoteattr}} message={{step.exception.message|get_error_message|CIXC|quoteattr }}>
+                    <failure type={{ step.exception.__class__.__name__ |normalize|CIXC|quoteattr|safe}} message={{step.exception.message|get_error_message|CIXC|quoteattr|safe }}>
                         <![CDATA[ Failing step: {{step|print_step}} Location:{{step.filename|normalize}}
                          {{step|get_lines_exception }}
                         ]]>
@@ -60,7 +60,7 @@
         </testcase>
 {%- endmacro -%}
 <testsuite time="{{ summary.time }}" tests='{{ scenarios|count }}' skipped='{{ summary.skipped }}'
-name={{ feature.filename[9:-8]|normalize|CIXC|quoteattr }} failures='{{ summary.failures }}' errors='0'>
+name={{ feature.filename[9:-8]|normalize|CIXC|quoteattr|safe }} failures='{{ summary.failures }}' errors='0'>
 {%- for scenario in scenarios -%}
     {%- if scenario._scenarios is defined -%}
         {%- for _scenario in scenario._scenarios -%}

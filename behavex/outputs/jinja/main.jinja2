@@ -339,20 +339,14 @@
                                         {%- endfor -%}
                                     </ul>
                                 </div>
-                                {%- if ('TEST_TO_FIX' in scenario.tags or 'BUG_TO_FIX' in scenario.tags) -%}
+                                {%- if ('MUTED' in scenario.tags) -%}
                                     <div class="div-tag-fix scenario-step">
                                         <div style="width: 100%">
-                                        {%- if 'TEST_TO_FIX' in scenario.tags -%}
+                                        {%- if 'MUTED' in scenario.tags -%}
                                             <div class="div-pushpin-behavex row grey-behavex" style="width: 100%">
                                                 <span class="label glyphicon glyphicon-pushpin span-behavex-pushpin grey-behavex">
                                                 </span>
-                                            <b>&nbsp;{{ 'report.test_to_fix'|get_text }}</b>
-                                            </div>
-                                        {%- else -%}
-                                            <div class="div-pushpin-behavex row grey-behavex" style="width: 100%">
-                                                <span class="label glyphicon glyphicon-pushpin span-behavex-pushpin grey-behavex">
-                                                </span>
-                                                <b>&nbsp;{{ 'report.bug_to_fix'|get_text }}</b>
+                                            <b>&nbsp;{{ 'report.muted'|get_text }}</b>
                                             </div>
                                         {%- endif -%}
                                         </div>

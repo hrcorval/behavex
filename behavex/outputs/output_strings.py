@@ -26,10 +26,7 @@ TEXTS = {
             'title': '',
             'body': '',
         },
-        'test_to_fix': 'There are some issues in this scenario that are under '
-        'fix process (@TEST_TO_FIX tag)',
-        'bug_to_fix': 'There is a product bug under fix process that affects '
-        'this scenario (@BUG_TO_FIX tag)',
+        'muted': 'This scenario has been muted in build server reports (@MUTED tag)',
         'show_background': '(show background)',
         'hide_background': '(hide background)',
         'execution_tag': 'Execution Tag',
@@ -48,12 +45,6 @@ TEXTS = {
             'title': '',
             'body': '<b>Test Automation Rate:</b> % of automated scenarios.<br>'
             '<b>Pass Rate:</b>: % of passed scenarios.<br>',
-        },
-        'checkbox': {
-            'include_skipped': 'Include not executed tests',
-            'include_fix_process': 'Include failed scenarios under fix process'
-            '<br><small>(tagged as @TEST_TO_FIX or '
-            '@BUG_TO_FIX)</small></b>',
         },
     },
     'joined': {'title': '', 'description': '', 'modal': {'title': '', 'modal': 'the'}},
