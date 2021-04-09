@@ -23,15 +23,14 @@
         {{ 16*' ' ~ step|print_step_json ~ '\n'}}
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
-{%- set is_to_be_fixed = (('MUTED' in scenario.tags) and (scenario.status == 'failed')) -%}
+{%- set is_to_be_fixed = ('MUTED' in scenario.tags and scenario.status == 'failed') -%}
         <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ 'skipped' if is_to_be_fixed else scenario.status }}"
          classname={{scenario.feature|normalize|CIXC|quoteattr|safe }} >
             {% set step_with_exception = scenario.error_step %}
-            {%- if step_with_exception -%}
-
+            {%- if step_with_exception and 'MUTED' not in scenario.tags  -%}
                 <failure message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }} type="AssertionError">
                     <![CDATA[ Failing step: {{step_with_exception|print_step_json}} Location:{{step_with_exception.index}}
-                        {{step_with_exception}}
+                        {{step_with_exception|safe}}
                     ]]>
                 </failure>
             {%- endif -%}

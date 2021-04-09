@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='behavex',
-    version='1.2.6',
+    version='1.2.7',
     python_requires='>=3',
     author='Hernan Rey',
     author_email='hernanrey@gmail.com',
