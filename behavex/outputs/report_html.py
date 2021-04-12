@@ -109,10 +109,10 @@ def get_metrics_variables(scenarios, joined=None, report=None):
         if not ('MANUAL' in scenario['tags'] or 'WIP' in scenario['tags'])
     ]
 
-    to_be_fixed = [
+    muted = [
         scenario
         for scenario in scenarios
-        if any(i in ['MUTED'] for i in scenario['tags'])
+        if any(i in ['MUTE'] for i in scenario['tags'])
         and scenario['status'] == 'failed'
     ]
     parameters_template = {
@@ -121,7 +121,7 @@ def get_metrics_variables(scenarios, joined=None, report=None):
         'failed': failed,
         'not_automated': len(scenarios) - len(scenario_auto),
         'total': len(scenarios) or 1,
-        'to_be_fixed': len(to_be_fixed),
+        'muted': len(muted),
     }
     return parameters_template
 
@@ -208,11 +208,11 @@ def export_to_html_table_summary(features):
     summary = {}
     for feature in features:
         fields.update({field: 0 for field in list_fields[1:6]})
-        to_be_fixed = 0
+        muted = 0
         for scenario in feature['scenarios']:
             fields['Total'] += 1
-            if any(i in ['MUTED'] for i in scenario['tags']):
-                to_be_fixed += 1
+            if any(i in ['MUTE'] for i in scenario['tags']):
+                muted += 1
             if scenario['status'] == 'passed':
                 fields['Executed'] += 1
                 fields['Passed'] += 1
@@ -240,7 +240,7 @@ def export_to_html_table_summary(features):
 
         fields['Duration'] = feature['duration']
         summary[feature['name']] = fields.copy()
-        summary[feature['name']]['to_be_fixed'] = to_be_fixed
+        summary[feature['name']]['muted'] = muted
 
     if len(features) > 0:
         fields_total['Execution Status'] = '%.2f' % (

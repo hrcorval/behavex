@@ -87,7 +87,7 @@ def _export_feature_to_xml(feature, isobject=True):
     muted = [
         scenario
         for scenario in scenarios
-        if any(i in ['MUTED'] for i in get_tags(scenario))
+        if any(i in ['MUTE'] for i in get_tags(scenario))
     ]
 
     muted_failed = [scenario for scenario in muted if get_status(scenario) == 'failed']
@@ -107,7 +107,7 @@ def _export_feature_to_xml(feature, isobject=True):
         'skipped': skipped,
         'failures': failures,
         'scenarios': scenarios,
-        'to_be_fixed': muted_failed,
+        'muted': muted_failed,
     }
 
     output_text = T_HANDLER.render_template(

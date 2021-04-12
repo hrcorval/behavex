@@ -232,10 +232,11 @@ table th {
 .span-behavex {
     font-size:12px;
     cursor: pointer;
-    font-family: Arial
+    font-family: Arial;
+    vertical-align: bottom;
 }
 .alert-behavex {
-    padding-bottom: 8px;
+    padding-bottom: 5px;
     padding-top: 5px;
     margin-bottom: 1px;
     margin-top: 0px;

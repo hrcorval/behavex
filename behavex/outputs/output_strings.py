@@ -26,7 +26,7 @@ TEXTS = {
             'title': '',
             'body': '',
         },
-        'muted': 'This scenario has been muted in build server reports (@MUTED tag)',
+        'muted': 'This scenario has been muted in build server reports (@MUTE tag)',
         'show_background': '(show background)',
         'hide_background': '(hide background)',
         'execution_tag': 'Execution Tag',

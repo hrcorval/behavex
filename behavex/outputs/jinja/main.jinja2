@@ -46,32 +46,33 @@
                         data-feature-tags="{{ feature|create_tags_set }}">
                     <!-- iteritems has been changed to items -->
                     {%- for field, value in summary[feature.name].items() -%}
-                        {%- if field != 'to_be_fixed' -%}
+                        {%- if field != 'muted' -%}
                             <td title="{{ field }}">
                         {%- endif -%}
                         {%- if field == 'Feature' -%}
                              <span class="glyphicon glyphicon-menu-right pull-left"
                                    data-feature-id="{{ feature.id }}"
                                    data-feature title="{{ ('commons.expand'|get_text).format('scenarios') }}">
-                                   <b class="span-behavex">{{ feature.name }}</b></span>
+                                   <b class="span-behavex">{{ feature.name }}</b>
+                             </span>
                         {%- elif field == 'Total'-%}
                             {{ value }}
-                            {%- set to_be_fixed = summary[feature.name]['to_be_fixed'] -%}
-                            {%- if to_be_fixed > 0 -%}
-                                &nbsp;&nbsp;<span class="glyphicon glyphicon-pushpin"
-                                                  data-to-be-fixed="{{ to_be_fixed }}"
-                                    title="There {{ 'is 1 scenario'  if to_be_fixed == 1 else 'are ' ~ to_be_fixed ~ ' scenarios'}} affected by a fix process">
-                            </span>{%- endif -%}
+                            {%- set muted = summary[feature.name]['muted'] -%}
+                            {%- if muted > 0 -%}
+                                &nbsp;&nbsp;<span class="glyphicon glyphicon-volume-off" data-muted="{{ muted }}"
+                                    title="There {{ 'is 1 muted scenario' if muted == 1 else 'are ' ~ muted ~ ' muted scenarios'}}">
+                                </span>
+                            {%- endif -%}
                         {%- elif field == 'Duration' -%}
                             {{ value|pretty_print_time }}
                         {%- elif field == 'Failed' -%}
                             {{ value }}
                         {%- else -%}
-                            {%- if field != 'to_be_fixed' -%}
+                            {%- if field != 'muted' -%}
                                 {{ value }}
                             {%- endif -%}
                         {%- endif -%}
-                        {%- if field != 'to_be_fixed' -%}
+                        {%- if field != 'muted' -%}
                             </td>
                         {%- endif -%}
                         {%- if loop.last -%}
@@ -127,11 +128,16 @@
             <div id="accordion2" role="tablist" aria-multiselectable="true">
                 <div class="panel panel-default container_body">
                     <div class="panel-heading" role="tab" id="headingOne">
-                        <button class="btn btn-info btn-sm" type="button" data-toggle="collapse" data-target="#collapse-filters" aria-expanded="false" aria-controls="collapse-filters">Filters</button>
-                        <button class="btn btn-info btn-sm" type="button" data-toggle="collapse" data-target="#collapse-metrics" aria-expanded="false" aria-controls="collapse-metrics">Metrics</button>
+                        <button class="btn btn-info btn-sm" type="button" data-toggle="collapse"
+                                data-target="#collapse-filters" aria-expanded="false"
+                                aria-controls="collapse-filters">Filters</button>
+                        <button class="btn btn-info btn-sm" type="button" data-toggle="collapse"
+                                data-target="#collapse-metrics" aria-expanded="false"
+                                aria-controls="collapse-metrics">Metrics</button>
                     </div>
                 </div>
-                <div id="collapse-metrics" class="behavex-big-row panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                <div id="collapse-metrics" class="behavex-big-row panel-collapse collapse in"
+                     role="tabpanel" aria-labelledby="headingOne">
                     <br>
                     <div class="panel-body">
                         <div class="container-fluid behavex-row-total">
@@ -148,7 +154,8 @@
                         </div>
                     </div>
                 </div>
-                <div id="collapse-filters" class="behavex-big-row panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+                <div id="collapse-filters" class="behavex-big-row panel-collapse collapse"
+                     role="tabpanel" aria-labelledby="headingOne">
                     <br>
                     <div class="panel-body">
                         <div class="container-fluid behavex-row-total">
@@ -268,7 +275,8 @@
                                 <a data-name-background="{{ feature.name}}" style="cursor:pointer;"
                                    data-background data-show="false"
                                    title="{{ ('commons.expand'|get_text).format('background') }}">
-                                    <small class="pull-right behavex-letter" data-name-background="{{ feature.name}}" data-background>
+                                    <small class="pull-right behavex-letter" data-name-background="{{ feature.name}}"
+                                           data-background>
                                         {{ 'report.show_background'|get_text }}&nbsp;&nbsp;
                                     </small>
                                 </a>
@@ -287,10 +295,17 @@
                                 data-scenario-tags="{{ scenario.tags|to_string_list }}">
                             <td class="text-left grey-behavex">
                                 <div class="alert-{{ scenario.status|resolving_color_class }} behavex_letter alert-behavex scenario-step">
-                                    <span class="glyphicon glyphicon-menu-right pull-left" data-id-hash="{{ scenario.id_hash }}"
+                                    &nbsp;
+                                    <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
-                                          <b class="span-behavex">{{ scenario.name |e}}</b></span>
-                                     {% if scenario.retried is defined %}
+                                          <b class="span-behavex">{{ scenario.name |e}}</b>&nbsp;
+                                        {%- if ('MUTE' in scenario.tags) -%}
+                                            <b class="glyphicon glyphicon-volume-off"
+                                               title="{{ 'report.muted'|get_text }}">
+                                            </b>
+                                        {%- endif -%}
+                                    </span>
+                                    {% if scenario.retried is defined %}
                                         <span class="glyphicon glyphicon-repeat btn-xs disabled pull-right red-behavex"
                                           title="{{ 'report.icon_repeat.title'|get_text}}" data-duplicated data-id_hash="{{ scenario.id_hash }}"></span>
                                     {% endif %}
@@ -339,20 +354,6 @@
                                         {%- endfor -%}
                                     </ul>
                                 </div>
-                                {%- if ('MUTED' in scenario.tags) -%}
-                                    <div class="div-tag-fix scenario-step">
-                                        <div style="width: 100%">
-                                        {%- if 'MUTED' in scenario.tags -%}
-                                            <div class="div-pushpin-behavex row grey-behavex" style="width: 100%">
-                                                <span class="label glyphicon glyphicon-pushpin span-behavex-pushpin grey-behavex">
-                                                </span>
-                                            <b>&nbsp;{{ 'report.muted'|get_text }}</b>
-                                            </div>
-                                        {%- endif -%}
-                                        </div>
-                                    </div>
-                                {%- endif -%}
-
                             </td>
                             <td>
                                 {%- if "MANUAL" in scenario.tags -%}
@@ -360,14 +361,17 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
-                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
-
+                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                        <span class="glyphicon glyphicon-copy"></span></a>
+                                    </td>
                                 {%- elif "WIP" in scenario.tags -%}
                                     <p class="text-center">Work In Progress</p>
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
-                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a></td>
+                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                        <span class="glyphicon glyphicon-copy"></span></a>
+                                    </td>
                                 {%- else -%}
                                     {%- set normalized_name = normalized_name|string -%}
 									{%- set log_dir_name = normalized_name -%}
@@ -386,7 +390,9 @@
                                     {%- else -%}
                                         <td><p><b>&nbsp;{{ scenario.status|capitalize }}</b></p></td>
                                         <td>
-                                            <p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>{{ scenario.duration|pretty_print_time }}</b></p>
+                                            <p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">
+                                                <b>{{ scenario.duration|pretty_print_time }}</b>
+                                            </p>
                                         </td>
                                     {%- endif -%}
 
@@ -431,7 +437,9 @@
                                                 {% endfor %}
                                                 </div>
                                             {% endif %}
-                                            <a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}"><span class="glyphicon glyphicon-copy"></span></a>
+                                            <a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                                <span class="glyphicon glyphicon-copy"></span>
+                                            </a>
                                         </div>
                                     </td>
                                 {%- endif -%}
@@ -874,7 +882,7 @@
         high_red = '#E87296';
         grey = '#999';
         high_grey = '#777'
-        to_be_fixed_failed = '{{ to_be_fixed }}' || 1;
+        muted_failed = '{{ muted }}' || 1;
 
         // skipped checked tbf unchecked
         var pieDataAutomationRate = [
