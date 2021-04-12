@@ -193,7 +193,7 @@ def launch_behavex():
             for scenario in feature['scenarios']:
                 if scenario['status'] == 'failed':
                     failures[filename].append(scenario['name'])
-                    if 'MUTED' not in scenario['tags']:
+                    if 'MUTE' not in scenario['tags']:
                         failing_non_muted_tests = True
         if failures:
             failures_file_path = os.path.join(get_env('OUTPUT'), 'failures.txt')
