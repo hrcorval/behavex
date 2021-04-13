@@ -10,11 +10,12 @@ from __future__ import absolute_import, print_function
 import codecs
 import json
 import logging.config
-import multiprocessing as lib_multiprocessing
+import multiprocessing
 import os
 import os.path
 import platform
 import re
+import signal
 import sys
 import time
 import traceback
@@ -151,63 +152,75 @@ def launch_behavex():
     notify_missing_features()
     features_list = explore_features(features_path)
     create_scenario_line_references(features_list)
-    process_pool = lib_multiprocessing.Pool(parallel_processes)
-    if parallel_processes == 1:
-        # when it is not multiprocessing
+    original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    process_pool = multiprocessing.Pool(parallel_processes)
+    signal.signal(signal.SIGINT, original_sigint_handler)
+    try:
+        if parallel_processes == 1:
+            # when it is not multiprocess
+            if get_param('dry_run'):
+                print('Obtaining information about the reporting scope...')
+            execution_codes, json_reports = execute_tests(
+                [True], multiprocess=False, config=ConfigRun()
+            )
+        elif parallel_element == 'scenario':
+            execution_codes, json_reports = launch_by_scenario(
+                features_list, process_pool
+            )
+            scenario = True
+        elif parallel_element == 'feature':
+            execution_codes, json_reports = launch_by_feature(
+                features_list, process_pool
+            )
+        wrap_up_process_pools(process_pool, json_reports, multiprocess, scenario)
+        time_end = time.time()
+
         if get_param('dry_run'):
-            print('Obtaining information about the reporting scope...')
-        execution_codes, json_reports = execute_tests(
-            [True], multiprocessing=False, config=ConfigRun()
+            msg = '\nDry run completed. Please, see the report in {0}' ' folder.\n\n'
+            print(msg.format(get_env('OUTPUT')))
+        if multiprocess:
+            print_parallel(
+                '\nTotal execution time: {}'.format(
+                    pretty_print_time(time_end - time_init)
+                ),
+                no_chain=True,
+            )
+
+        remove_temporary_files(parallel_processes)
+
+        results = get_json_results()
+        failing_non_muted_tests = False
+        if results:
+            failures = {}
+            for feature in results['features']:
+                if feature['status'] == 'failed':
+                    filename = feature['filename']
+                    failures[filename] = []
+                else:
+                    continue
+                for scenario in feature['scenarios']:
+                    if scenario['status'] == 'failed':
+                        failures[filename].append(scenario['name'])
+                        if 'MUTE' not in scenario['tags']:
+                            failing_non_muted_tests = True
+            if failures:
+                failures_file_path = os.path.join(get_env('OUTPUT'), 'failures.txt')
+                with open(failures_file_path, 'w') as failures_file:
+                    parameters = create_test_list(failures)
+                    failures_file.write(parameters)
+        # Calculates final exit code. execution_codes is 1 only if an execution exception arises
+        if isinstance(execution_codes, list):
+            execution_exception = True if sum(execution_codes) > 0 else False
+        else:
+            execution_exception = True if execution_codes > 0 else False
+        exit_code = (
+            EXIT_ERROR if execution_exception or failing_non_muted_tests else EXIT_OK
         )
-    elif parallel_element == 'scenario':
-        execution_codes, json_reports = launch_by_scenario(features_list, process_pool)
-        scenario = True
-    elif parallel_element == 'feature':
-        execution_codes, json_reports = launch_by_feature(features_list, process_pool)
-    wrap_up_process_pools(process_pool, json_reports, multiprocess, scenario)
-    time_end = time.time()
-
-    if get_param('dry_run'):
-        msg = '\nDry run completed. Please, see the report in {0}' ' folder.\n\n'
-        print(msg.format(get_env('OUTPUT')))
-    if multiprocess:
-        print_parallel(
-            '\nTotal execution time: {}'.format(
-                pretty_print_time(time_end - time_init)
-            ),
-            no_chain=True,
-        )
-
-    remove_temporary_files(parallel_processes)
-
-    results = get_json_results()
-    failing_non_muted_tests = False
-    if results:
-        failures = {}
-        for feature in results['features']:
-            if feature['status'] == 'failed':
-                filename = feature['filename']
-                failures[filename] = []
-            else:
-                continue
-            for scenario in feature['scenarios']:
-                if scenario['status'] == 'failed':
-                    failures[filename].append(scenario['name'])
-                    if 'MUTE' not in scenario['tags']:
-                        failing_non_muted_tests = True
-        if failures:
-            failures_file_path = os.path.join(get_env('OUTPUT'), 'failures.txt')
-            with open(failures_file_path, 'w') as failures_file:
-                parameters = create_test_list(failures)
-                failures_file.write(parameters)
-    # Calculates final exit code. execution_codes is 1 only if an execution exception arises
-    if isinstance(execution_codes, list):
-        execution_exception = True if sum(execution_codes) > 0 else False
-    else:
-        execution_exception = True if execution_codes > 0 else False
-    exit_code = (
-        EXIT_ERROR if execution_exception or failing_non_muted_tests else EXIT_OK
-    )
+    except KeyboardInterrupt:
+        print('Caught KeyboardInterrupt, terminating workers')
+        process_pool.terminate()
+        process_pool.join()
+        exit_code = 1
     print('Exit code: {}'.format(exit_code))
     return exit_code
 
@@ -345,12 +358,12 @@ def launch_by_scenario(features, process_pool):
     return execution_codes, json_reports
 
 
-def execute_tests(list_features, scenario=None, multiprocessing=True, config=None):
+def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
     """
     Trigger one process with behave
     :param list_features: List of the feature
     :param scenario: if the parallel-element is scenario
-    :param multiprocessing: if is running in parallel
+    :param multiprocess: if is running in parallel
     :param config: configuration file
 
     :return:
@@ -359,13 +372,11 @@ def execute_tests(list_features, scenario=None, multiprocessing=True, config=Non
     json_reports = []
     paths = config.get_env('include_paths', [])
     execution_codes, generate_report = [], False
-    if multiprocessing:
+    if multiprocess:
         Singleton._instances[ConfigRun] = config
     for feature in list_features:
         try:
-            args = _set_behave_arguments(
-                multiprocessing, feature, scenario, paths, config
-            )
+            args = _set_behave_arguments(multiprocess, feature, scenario, paths, config)
         except Exception as exception:
             traceback.print_exc()
             print(exception)
@@ -507,7 +518,7 @@ def filter_by_paths(merged_json_reports):
 
 def remove_temporary_files(parallel_processes):
     """
-    Remove files generated for multiprocessing
+    Remove files generated for multiprocess
     :param parallel_processes: quantity of processes
     """
     path_info = os.path.join(os.path.join(get_env('OUTPUT'), 'report.json'))
@@ -533,7 +544,7 @@ def remove_temporary_files(parallel_processes):
             except Exception as remove_ex:
                 print(remove_ex)
 
-    name = lib_multiprocessing.current_process().name.split('-')[-1]
+    name = multiprocessing.current_process().name.split('-')[-1]
     stdout_file = os.path.join(gettempdir(), 'std{}2.txt'.format(name))
     logger = logging.getLogger()
     logger.propagate = False
@@ -685,12 +696,12 @@ def _store_tags_to_env_variable(tags):
 
 
 def _set_behave_arguments(
-    multiprocessing, feature=None, scenario=None, paths=None, config=None
+    multiprocess, feature=None, scenario=None, paths=None, config=None
 ):
     """
     Recreate command line arguments in order to
     call behave framework with the expected values
-    :param multiprocessing: if the mode is in parallel
+    :param multiprocess: if the mode is in parallel
     :param feature: The specific feature to run if parallel element is feature
      or scenario
     :param scenario: The specific name of the scenario if parallel element is
@@ -699,13 +710,13 @@ def _set_behave_arguments(
     """
     arguments = []
     output_folder = config.get_env('OUTPUT')
-    if multiprocessing:
+    if multiprocess:
         arguments.append(feature)
         arguments.append('--no-summary')
         if scenario:
             arguments.append('--name')
             arguments.append('{}(.?--.?@\\d*.\\d*\\s*)?$'.format(scenario))
-        name = lib_multiprocessing.current_process().name.split('-')[-1]
+        name = multiprocessing.current_process().name.split('-')[-1]
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
     else:
@@ -740,7 +751,7 @@ def _set_behave_arguments(
     for arg in BEHAVE_ARGS:
         value_arg = getattr(args_sys, arg) if hasattr(args_sys, arg) else False
         if arg == 'include':
-            if multiprocessing or not value_arg:
+            if multiprocess or not value_arg:
                 continue
             else:
                 features_path = os.path.abspath(os.environ['FEATURES_PATH'])
@@ -790,10 +801,10 @@ def set_paths_argument(args, paths):
 
 def dump_json_results():
     """ Do reporting. """
-    if lib_multiprocessing.current_process().name == 'MainProcess':
+    if multiprocessing.current_process().name == 'MainProcess':
         path_info = os.path.join(os.path.abspath(get_env('OUTPUT')), 'report.json')
     else:
-        process_name = lib_multiprocessing.current_process().name.split('-')[-1]
+        process_name = multiprocessing.current_process().name.split('-')[-1]
         path_info = os.path.join(gettempdir(), 'result{}.tmp'.format(process_name))
 
     def _load_json():
