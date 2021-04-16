@@ -3,124 +3,139 @@
 /*
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */
+
+This module process the configuration required by the framework. Default values
+ are used if no config file is provided.
 """
-# __future__ has been added in order to maintain compatibility
+# pylint: disable=W0703
+# pylint: disable=W0603
+
 from __future__ import absolute_import
 
 import os
-import re
 
-from behavex.conf_mgr import get_env
-from behavex.execution_context import ExecutionContext
-from behavex.outputs.report_utils import (
-    get_save_function,
-    match_for_execution,
-    text,
-    try_operate_descriptor,
-)
+from configobj import ConfigObj
+from validate import Validator
+
+from behavex.execution_singleton import ExecutionSingleton
+
+CONFIG = None
+CONFIG_PATH = None
 
 
-def _export_feature_to_xml(feature, isobject=True):
-    """This function generate_gallery one file xml with information of the scenario"""
+def get_config():
+    """Returns a dictionary containing
+    the framework configuration values"""
+    config_spec = """
+    [output]
+    path=string(default="output")
 
-    def get_scenarios(feature_):
-        """
-        Access to attribute scenarios depend if is object then accessing
-        as attribute else accessing to dictionary
-        :param feature_:
-        :return:
-        """
+    [outputs]
+    types=string_list(default=list("html", "xml"))
 
-        def flatter_scenarios(scenarios_list):
-            return sum(
-                (
-                    [scenario] if scenario.type == 'scenario' else scenario._scenarios
-                    for scenario in scenarios_list
-                ),
-                [],
-            )
+    [screenshots]
+    hash_detail=string(default="0")
 
-        return (
-            flatter_scenarios(feature_.scenarios) if isobject else feature_['scenarios']
-        )
+    [test_run]
+    tags_to_skip=string(default="")
 
-    def get_tags(scenario_):
-        """
-        Access to attribute scenarios depend if is object then accessing
-        as attribute else accessing to dictionary
-        :param scenario_:
-        :return:
-        """
-        return scenario_.tags if isobject else scenario_['tags']
+    [params]
+    requirements_config=string(default="")
+    tags=list(default=list())
+    dry_run=boolean(default=False)
+    no_color=boolean(default=False)
+    define=string(default="")
+    exclude=string(default="")
+    include=string(default="")
+    name=string(default="")
+    no_capture=boolean(default=False)
+    capture=boolean(default=True)
+    capture_stderr=boolean(default=False)
+    no_logcapture=boolean(default=False)
+    logcapture=boolean(default=True)
+    no_snippets=boolean(default=False)
+    stop=boolean(default=False)
+    tags_help=boolean(default=False)
+    logging_level=option('CRITICAL', \
+                         'ERROR', \
+                         'WARNING', \
+                         'INFO', \
+                         'DEBUG', \
+                         'NOTSET', \
+                         default='INFO')
+    parallel_processes=integer(default=1)
+    parallel_element=option('feature', 'scenario', default='scenario')
+    include_paths=list(default=list())
+    run_failures=boolean(default=False)
+    """
+    global CONFIG
+    global CONFIG_PATH
+    if CONFIG is None or CONFIG_PATH != os.environ.get('CONFIG'):
+        CONFIG_PATH = os.environ.get('CONFIG')
+        spec = config_spec.split('\n')
+        validator = Validator()
+        CONFIG = ConfigObj(CONFIG_PATH, configspec=spec)
+        CONFIG.validate(validator, copy=True)
 
-    def get_status(scenario_):
-        """
-        Access to attribute scenarios depend if is object then accessing
-        as attribute else accessing to dictionary
-        :param scenario_:
-        :return:
-        """
-        return scenario_.status if isobject else scenario_['status']
-
-    scenarios = [
-        scenario
-        for scenario in get_scenarios(feature)
-        if match_for_execution(get_tags(scenario))
-    ]
-
-    skipped = [scenario for scenario in scenarios if get_status(scenario) == 'skipped']
-    failures = [
-        scenario
-        for scenario in scenarios
-        if get_status(scenario) == 'failed' or get_status(scenario) == 'untested'
-    ]
-
-    muted = [
-        scenario
-        for scenario in scenarios
-        if any(i in ['MUTE'] for i in get_tags(scenario))
-    ]
-
-    muted_failed = [scenario for scenario in muted if get_status(scenario) == 'failed']
-
-    summary = {
-        'time': sum(
-            scenario.duration if isobject else scenario['duration']
-            for scenario in scenarios
-        ),
-        'tests': len(scenarios),
-        'failures': len(failures) - len(muted_failed),
-        'skipped': len(skipped) + len(muted_failed),
-    }
-    parameters_template = {
-        'feature': feature,
-        'summary': summary,
-        'skipped': skipped,
-        'failures': failures,
-        'scenarios': scenarios,
-        'muted': muted_failed,
-    }
-
-    template_handler = ExecutionContext().jinja_template_handler
-    output_text = template_handler.render_template(
-        ExecutionContext().jinja_templates['xml']
-        if isobject
-        else ExecutionContext().jinja_templates['xml_json'],
-        parameters_template,
-    )
-    output_text = output_text.replace('Status.', '')
-    exp = re.compile('\\\\|/')
-    filename = feature.filename if isobject else feature['filename']
-    filename = text(filename)
-    name = u'.'.join(exp.split(filename.partition('features')[2][1:-8]))
-    junit_path = os.path.join(get_env('OUTPUT'), 'behave')
-    path_output = os.path.join(junit_path, u'TESTS-' + name + u'.xml')
-
-    try_operate_descriptor(
-        path_output + '.xml', get_save_function(path_output, output_text)
-    )
+    return CONFIG
 
 
-def export_feature_to_xml(feature, isobject=True):
-    """This function generate_gallery one file xml with information of the scenario"""
-    _export_feature_to_xml(feature, isobject)
+class ConfigRun(metaclass=ExecutionSingleton):
+    def __init__(self):
+        self.config = get_config()
+        self.args = None
+        self.environ = {}
+
+    def prepare_environment(self):
+        output = self.get_param('output.path', 'output_folder')
+        self.environ['output'] = output
+        self.environ['temp'] = os.path.join(output, 'temp')
+        self.environ['logs'] = os.path.join(output, 'outputs', 'logs')
+
+    def set_args(self, args):
+        self.args = args
+        self.prepare_environment()
+
+    def set_env(self, key, value):
+        self.environ[key] = value
+
+    def get_param_config(self, key_chain):
+        """Get text of the dictionary with annotation in chain"""
+        keys = key_chain.split('.')
+        if len(keys) == 1:
+            keys = ['params'] + keys
+        dictionary = self.config
+        for key in keys:
+            result = dictionary.get(key, '')
+            if isinstance(result, str):
+                return result
+            if isinstance(result, dict):
+                dictionary = result
+            else:
+                return result
+        return ''
+
+    def get_param(self, key_chain, arg=None):
+        """Method for accessing parameters with logic between file config and
+        opt module."""
+        if not arg:
+            arg = key_chain.split('.')[-1]
+        if getattr(self.args, arg):
+            return getattr(self.args, arg)
+        else:
+            return self.get_param_config(key_chain)
+
+    def get_env(self, key, optional=None):
+        return self.environ.get(key.lower(), optional)
+
+
+def get_param(key_chain, arg=None):
+    return ConfigRun().get_param(key_chain, arg)
+
+
+def get_env(key, optional=None):
+    return ConfigRun().get_env(key, optional)
+
+
+def set_env(key, value):
+    ConfigRun().set_env(key, value)
