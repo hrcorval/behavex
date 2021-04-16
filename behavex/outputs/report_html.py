@@ -14,6 +14,7 @@ import htmlmin
 
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env
+from behavex.execution_context import ExecutionContext
 from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (
     gather_steps_with_definition,
@@ -21,16 +22,6 @@ from behavex.outputs.report_utils import (
     get_total_steps,
     try_operate_descriptor,
 )
-
-MANIFEST_TEMPLATE = 'manifest.jinja2'
-
-FWK_DIR = os.environ.get('BEHAVEX_PATH')
-TEMPLATE_DIR = os.path.join(FWK_DIR, 'outputs', 'jinja')
-CONFIG = conf_mgr.get_config()
-
-TEST_REPORT_TEMPLATE = 'main.jinja2'
-STEP_TEMPLATE_DEFINITION = 'steps.jinja2'
-T_HANDLER = TemplateHandler(TEMPLATE_DIR)
 
 
 def generate_report(output, joined=None, report=None):
@@ -52,7 +43,10 @@ def generate_report(output, joined=None, report=None):
 def _create_manifest(relative, page):
     """Create file manifest from template"""
     parameters_template = {'relative': relative, 'page': page}
-    output_text = T_HANDLER.render_template(MANIFEST_TEMPLATE, parameters_template)
+    template_handler = ExecutionContext().jinja_template_handler
+    output_text = template_handler.render_template(
+        ExecutionContext().jinja_templates['manifest'], parameters_template
+    )
     folder = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap', 'manifest')
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -140,8 +134,9 @@ def export_step_to_html(features, steps_definition=None, joined=None, report=Non
         'total': total,
     }
 
-    output_text = T_HANDLER.render_template(
-        STEP_TEMPLATE_DEFINITION, parameter_template
+    template_handler = ExecutionContext().jinja_template_handler
+    output_text = template_handler.render_template(
+        ExecutionContext().jinja_templates['steps'], parameter_template
     )
 
     return output_text
@@ -164,7 +159,10 @@ def export_result_to_html(
         'scenarios': scenarios,
     }
     parameters_template.update(metrics_variables)
-    output_text = T_HANDLER.render_template(TEST_REPORT_TEMPLATE, parameters_template)
+    template_handler = ExecutionContext().jinja_template_handler
+    output_text = template_handler.render_template(
+        ExecutionContext().jinja_templates['main'], parameters_template
+    )
 
     return output_text
 

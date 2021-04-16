@@ -26,9 +26,10 @@ from behave import __main__ as behave_script
 
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
-from behavex.conf_mgr import ConfigRun, Singleton, get_env, get_param, set_env
+from behavex.conf_mgr import ConfigRun, get_env, get_param, set_env
+from behavex.execution_context import ExecutionContext
+from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs import report_xml
-from behavex.outputs.report_json import OVERALL_STATUS_FILE
 from behavex.outputs.report_utils import (
     get_overall_status,
     match_for_execution,
@@ -66,9 +67,6 @@ EXECUTION_BLOCKED_MSG = (
     'Some of the folders or files are being used by another '
     'program. Please, close them and try again...'
 )
-
-FWK_PATH = os.environ.get('BEHAVEX_PATH')
-INFO_FILE = 'report.json'
 
 os.environ.setdefault('EXECUTION_CODE', '1')
 match_include = None
@@ -136,6 +134,10 @@ def setup_running_failures(args_parsed):
             return EXIT_OK
 
 
+def init_multiprocessing():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
 def launch_behavex():
     """Launch the BehaveX test execution in the specified parallel mode."""
     json_reports = None
@@ -152,9 +154,7 @@ def launch_behavex():
     notify_missing_features()
     features_list = explore_features(features_path)
     create_scenario_line_references(features_list)
-    original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-    process_pool = multiprocessing.Pool(parallel_processes)
-    signal.signal(signal.SIGINT, original_sigint_handler)
+    process_pool = multiprocessing.Pool(parallel_processes, init_multiprocessing)
     try:
         if parallel_processes == 1:
             # when it is not multiprocess
@@ -373,7 +373,7 @@ def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
     paths = config.get_env('include_paths', [])
     execution_codes, generate_report = [], False
     if multiprocess:
-        Singleton._instances[ConfigRun] = config
+        ExecutionSingleton._instances[ConfigRun] = config
     for feature in list_features:
         try:
             args = _set_behave_arguments(multiprocess, feature, scenario, paths, config)
@@ -466,12 +466,14 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     except KeyboardInterrupt:
         process_pool.terminate()
         process_pool.join()
-    status_info = os.path.join(output, OVERALL_STATUS_FILE)
+    status_info = os.path.join(
+        output, ExecutionContext().report_filenames['report_overall']
+    )
 
     with open(status_info, 'w') as file_info:
         over_status = {'status': get_overall_status(merged_json)}
         file_info.write(json.dumps(over_status))
-    path_info = os.path.join(output, 'report.json')
+    path_info = os.path.join(output, ExecutionContext().report_filenames['report_json'])
     if get_env('include_paths'):
         filter_by_paths(merged_json)
     with open(path_info, 'w') as file_info:
@@ -518,10 +520,14 @@ def filter_by_paths(merged_json_reports):
 
 def remove_temporary_files(parallel_processes):
     """
-    Remove files generated for multiprocess
+    Remove files generated for multiprocessing
     :param parallel_processes: quantity of processes
     """
-    path_info = os.path.join(os.path.join(get_env('OUTPUT'), 'report.json'))
+    path_info = os.path.join(
+        os.path.join(
+            get_env('OUTPUT'), ExecutionContext().report_filenames['report_json']
+        )
+    )
     if os.path.exists(path_info):
         with open(path_info, 'r') as json_file:
             results_json = json.load(json_file)
@@ -802,7 +808,10 @@ def set_paths_argument(args, paths):
 def dump_json_results():
     """ Do reporting. """
     if multiprocessing.current_process().name == 'MainProcess':
-        path_info = os.path.join(os.path.abspath(get_env('OUTPUT')), 'report.json')
+        path_info = os.path.join(
+            os.path.abspath(get_env('OUTPUT')),
+            ExecutionContext().report_filenames['report_json'],
+        )
     else:
         process_name = multiprocessing.current_process().name.split('-')[-1]
         path_info = os.path.join(gettempdir(), 'result{}.tmp'.format(process_name))

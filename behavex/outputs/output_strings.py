@@ -34,7 +34,9 @@ TEXTS = {
         'reset_filter': {'label': 'Reset'},
         'skip_fix_process': {'label': 'Skip scenarios under fix process'},
         'icon_duplicate': {'title': 'Copy link to this scenario'},
-        'icon_repeat': {'title': 'This scenario was executed two times'},
+        'icon_repeat': {
+            'title': 'This scenario was executed more than once (see @AUTORETRY tag)'
+        },
         'filter_status': {'label': 'Status'},
     },
     'steps': {'title': 'Steps', 'description': '', 'modal': {'title': '', 'body': ''}},

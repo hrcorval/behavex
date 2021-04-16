@@ -25,42 +25,9 @@ import unicodedata
 from operator import getitem
 
 from behave.model_core import Status
-from behave.step_registry import registry
 
-from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param, set_env
-
-FWK_PATH = os.environ.get('BEHAVEX_PATH')
-RETRY_SCENARIOS = {}
-BEHAVE_TAGS_FILE = os.path.join('behave', 'behave.tags')
-STEPS_EXECUTIONS = {}
-STEPS_UNDEFINED = {}
-
-
-def add_information_from_steps(steps):
-    """
-    Add information about execution step.
-
-    This information will store in STEPS_EXECUTIONS variable for will process
-    and calculate the avg time and other.
-
-    :param steps: list of behave.model.step
-    :return None:
-    """
-
-    for step in steps:
-        definition = registry.find_step_definition(step)
-        if definition:
-            name = definition
-            if name in STEPS_EXECUTIONS:
-                STEPS_EXECUTIONS[name].append(step)
-            else:
-                STEPS_EXECUTIONS[name] = [step]
-        else:
-            if step.name in STEPS_UNDEFINED:
-                STEPS_UNDEFINED[step.name].append(step)
-            else:
-                STEPS_UNDEFINED[step.name] = [step]
+from behavex.execution_context import ExecutionContext
 
 
 def gather_steps_with_definition(features, steps_definition):
@@ -118,18 +85,6 @@ def get_total_steps(steps_summary):
         result['time'] += summary['time']
         result['status'] += summary['status']
 
-    return result
-
-
-def gather_steps_without_definition():
-    """
-    Gather steps with definition.
-
-    :return dict:
-    """
-    result = {}
-    for step_name, steps in STEPS_UNDEFINED.items():
-        result[step_name] = get_summary_definition(steps)
     return result
 
 
@@ -453,7 +408,7 @@ def get_test_execution_tags():
     """
     if not get_env('behave_tags'):
         behave_tags_path = os.path.join(
-            os.path.abspath(get_env('OUTPUT')), BEHAVE_TAGS_FILE
+            os.path.abspath(get_env('OUTPUT')), ExecutionContext().behave_tags_file
         )
         behave_tags_file = open(behave_tags_path, 'r')
         behave_tags = behave_tags_file.readline().strip()
@@ -498,7 +453,7 @@ def copy_bootstrap_html_generator(output):
     """copy the bootstrap directory for portable html"""
     dest_path = os.path.join(output, 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
-    bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
+    bootstrap_path = os.path.join(ExecutionContext().execution_path, *bootstrap_path)
     if os.path.exists(dest_path):
         try_operate_descriptor(dest_path, lambda: shutil.rmtree(dest_path))
     try_operate_descriptor(
@@ -538,7 +493,7 @@ def get_save_function(path, content):
     return fun_save
 
 
-def create_log_path(name):
+def create_log_path(name, execution_retry=False):
     """
     Creating a new folder in configured log path.
     If folder exists, a suffix number is added to that folder.
@@ -551,7 +506,7 @@ def create_log_path(name):
     initial_path = path
     scenario_outline_index = 1
     while os.path.exists(path):
-        if get_env('autoretry') == name and get_env('autoretry_attempt'):
+        if execution_retry:
             return path
         path = initial_path + u'_' + str(scenario_outline_index)
         scenario_outline_index += 1

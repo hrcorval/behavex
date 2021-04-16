@@ -10,7 +10,7 @@ executed in a unreliable server/network infrastructure.
 EXAMPLE:
 .. sourcecode:: gherkin
     # -- FILE: features/alice.feature
-    # TAG:  Feature or Scenario/ScenarioOutline with @autoretry
+    # TAG:  Feature or Scenario/ScenarioOutline with @retry_<number_of_retries>
     # NOTE: If you tag the feature, all its scenarios are retried.
     @autoretry
     Feature: Use unreliable Server infrastructure
@@ -30,11 +30,21 @@ EXAMPLE:
 from __future__ import absolute_import, print_function
 
 import functools
+import re
 
 from behave.model import ScenarioOutline
 
 from behavex.conf_mgr import set_env
 from behavex.outputs.report_utils import normalize_filename
+
+
+def retries_set_in_tags(tags):
+    pattern = '^RETRY_\\d+$'
+    for tag in tags:
+        result = re.match(pattern, tag)
+        if result:
+            return True
+    return False
 
 
 def run_scenario_with_retries(scenario, max_attempts=3):

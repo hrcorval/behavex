@@ -47,7 +47,9 @@ from behave.model import ScenarioOutline
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
 
-from behavex.conf_mgr import Singleton, get_env, get_param, set_env
+from behavex.conf_mgr import get_env, get_param, set_env
+from behavex.execution_context import ExecutionContext
+from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (
@@ -57,8 +59,9 @@ from behavex.outputs.report_utils import (
     try_operate_descriptor,
 )
 
-FWK_PATH = os.getenv('BEHAVEX_PATH')
-LOGGING_CFG = ConfigObj(os.path.join(FWK_PATH, 'conf_logging.cfg'))
+LOGGING_CFG = ConfigObj(
+    os.path.join(ExecutionContext().execution_path, 'conf_logging.cfg')
+)
 LOGGING_LEVELS = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
@@ -318,7 +321,7 @@ def copy_bootstrap_html_generator():
     """copy the bootstrap directory for portable html"""
     destination_path = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
-    bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
+    bootstrap_path = os.path.join(ExecutionContext().execution_path, *bootstrap_path)
     if os.path.exists(destination_path):
         try_operate_descriptor(
             destination_path, lambda: shutil.rmtree(destination_path)
@@ -481,7 +484,7 @@ def configure_logging(args_parse):
         os.makedirs(os.path.abspath(get_env('logs')))
     # get logging configuration
 
-    logging_file = os.path.join(FWK_PATH, 'conf_logging.cfg')
+    logging_file = os.path.join(ExecutionContext().execution_path, 'conf_logging.cfg')
     try:
         logging.config.fileConfig(logging_file)
     except Exception as logging_ex:
@@ -607,13 +610,15 @@ def create_custom_log_when_called(self, key):
 
 
 def get_json_results():
-    path_json = os.path.join(get_env('OUTPUT'), 'report.json')
+    path_json = os.path.join(
+        get_env('OUTPUT'), ExecutionContext().report_filenames['report_json']
+    )
     with open(path_json, 'r') as json_file:
         json_results = json.load(json_file)
     return json_results or {}
 
 
-class MatchInclude(metaclass=Singleton):
+class MatchInclude(metaclass=ExecutionSingleton):
     """
     This object is used to check if any scenario or feature should be filtered by PATTERN
     """
@@ -637,7 +642,7 @@ class MatchInclude(metaclass=Singleton):
         return not self.reg.match(filename) is None
 
 
-class IncludePathsMatch(metaclass=Singleton):
+class IncludePathsMatch(metaclass=ExecutionSingleton):
     """
     This object is used for check if some scenario or feature should be filtered by paths.
     """
@@ -683,7 +688,7 @@ class IncludePathsMatch(metaclass=Singleton):
         return self.include_paths and self.features and self.folders
 
 
-class IncludeNameMatch(metaclass=Singleton):
+class IncludeNameMatch(metaclass=ExecutionSingleton):
     """
     This object is used to check if any scenario should be filtered by PATTERN
     """
@@ -701,3 +706,14 @@ class IncludeNameMatch(metaclass=Singleton):
 
     def match(self, scenario):
         return not self.reg.match(scenario) is None
+
+
+def get_autoretry_attempts(tags):
+    pattern = '^AUTORETRY(_(\\d+))*$'
+    attempts = 0
+    for tag in tags:
+        result = re.search(pattern, tag, re.IGNORECASE)
+        if result:
+            attempts_in_tag = result.group(2)
+            attempts = int(attempts_in_tag) if attempts_in_tag else 2
+    return attempts
