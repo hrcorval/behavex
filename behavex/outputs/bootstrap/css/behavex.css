@@ -384,3 +384,7 @@ ul.list-unstyled.scenario-step > li {
     color: #4F4F4F;
     background-color: #EEEEEE;
 }
+.metrics-hidden{
+    position: fixed;
+    top: -1000px;
+}
