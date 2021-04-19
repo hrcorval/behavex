@@ -13,7 +13,7 @@ from behave.runner import Context
 
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param
-from behavex.execution_context import ExecutionContext
+from behavex.global_vars import global_vars
 from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import create_log_path
 from behavex.utils import (
@@ -41,9 +41,9 @@ def before_all(context):
 # noinspection PyUnusedLocal
 def before_feature(context, feature):
     try:
-        context.execution_attempts = {}
+        context.bhx_execution_attempts = {}
         for scenario in feature.scenarios:
-            context.execution_attempts[scenario.name] = 0
+            context.bhx_execution_attempts[scenario.name] = 0
             scenario.tags += feature.tags
             if get_param('dry_run'):
                 if 'MANUAL' not in scenario.tags:
@@ -60,11 +60,10 @@ def before_scenario(context, scenario):
     """Initialize logs for current scenario."""
     try:
         context.bhx_inside_scenario = True
-        execution_attempt = context.execution_attempts[scenario.name]
+        execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-        context.log_path, context.bhx_log_handler = _add_log_handler(
-            str(scenario.name), retrying_execution
-        )
+        context.log_path = create_log_path(str(scenario.name), retrying_execution)
+        context.bhx_log_handler = _add_log_handler(context.log_path)
         if retrying_execution:
             logging.info('Retrying scenario...\n'.format())
             shutil.rmtree(context.evidence_path)
@@ -91,11 +90,11 @@ def after_scenario(context, scenario):
         configured_attempts = get_autoretry_attempts(scenario.tags)
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
             feature_name = scenario.feature.name
-            if feature_name not in ExecutionContext().retried_scenarios:
-                ExecutionContext().retried_scenarios[feature_name] = [scenario.name]
+            if feature_name not in global_vars.retried_scenarios:
+                global_vars.retried_scenarios[feature_name] = [scenario.name]
             else:
-                ExecutionContext().retried_scenarios[feature_name].append(scenario.name)
-            context.execution_attempts[scenario.name] += 1
+                global_vars.retried_scenarios[feature_name].append(scenario.name)
+            context.bhx_execution_attempts[scenario.name] += 1
         _close_log_handler(context.bhx_log_handler)
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
@@ -115,9 +114,8 @@ def after_all(context):
         _log_exception_and_continue('after_all (json_report)', exception)
 
 
-def _add_log_handler(scenario_name, retrying_execution=False):
+def _add_log_handler(log_path):
     """Adding a new log handler to logger"""
-    log_path = create_log_path(scenario_name, retrying_execution)
     log_filename = os.path.join(log_path, 'scenario.log')
     file_handler = logging.FileHandler(
         log_filename, mode='+a', encoding=LOGGING_CFG['file_handler']['encoding']
@@ -126,7 +124,7 @@ def _add_log_handler(scenario_name, retrying_execution=False):
     logging.getLogger().setLevel(log_level)
     file_handler.setFormatter(_get_log_formatter())
     logging.getLogger().addHandler(file_handler)
-    return log_path, file_handler
+    return file_handler
 
 
 def _close_log_handler(handler):

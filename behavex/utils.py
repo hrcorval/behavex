@@ -48,8 +48,8 @@ from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
 
 from behavex.conf_mgr import get_env, get_param, set_env
-from behavex.execution_context import ExecutionContext
 from behavex.execution_singleton import ExecutionSingleton
+from behavex.global_vars import global_vars
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (
@@ -59,9 +59,7 @@ from behavex.outputs.report_utils import (
     try_operate_descriptor,
 )
 
-LOGGING_CFG = ConfigObj(
-    os.path.join(ExecutionContext().execution_path, 'conf_logging.cfg')
-)
+LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
@@ -321,7 +319,7 @@ def copy_bootstrap_html_generator():
     """copy the bootstrap directory for portable html"""
     destination_path = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
-    bootstrap_path = os.path.join(ExecutionContext().execution_path, *bootstrap_path)
+    bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(destination_path):
         try_operate_descriptor(
             destination_path, lambda: shutil.rmtree(destination_path)
@@ -484,7 +482,7 @@ def configure_logging(args_parse):
         os.makedirs(os.path.abspath(get_env('logs')))
     # get logging configuration
 
-    logging_file = os.path.join(ExecutionContext().execution_path, 'conf_logging.cfg')
+    logging_file = os.path.join(global_vars.execution_path, 'conf_logging.cfg')
     try:
         logging.config.fileConfig(logging_file)
     except Exception as logging_ex:
@@ -611,7 +609,7 @@ def create_custom_log_when_called(self, key):
 
 def get_json_results():
     path_json = os.path.join(
-        get_env('OUTPUT'), ExecutionContext().report_filenames['report_json']
+        get_env('OUTPUT'), global_vars.report_filenames['report_json']
     )
     with open(path_json, 'r') as json_file:
         json_results = json.load(json_file)

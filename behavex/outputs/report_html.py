@@ -12,10 +12,8 @@ from collections import OrderedDict
 import csscompressor
 import htmlmin
 
-from behavex import conf_mgr
 from behavex.conf_mgr import get_env
-from behavex.execution_context import ExecutionContext
-from behavex.outputs.jinja_mgr import TemplateHandler
+from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (
     gather_steps_with_definition,
     get_save_function,
@@ -43,9 +41,9 @@ def generate_report(output, joined=None, report=None):
 def _create_manifest(relative, page):
     """Create file manifest from template"""
     parameters_template = {'relative': relative, 'page': page}
-    template_handler = ExecutionContext().jinja_template_handler
+    template_handler = global_vars.jinja_template_handler
     output_text = template_handler.render_template(
-        ExecutionContext().jinja_templates['manifest'], parameters_template
+        global_vars.jinja_templates['manifest'], parameters_template
     )
     folder = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap', 'manifest')
     if not os.path.exists(folder):
@@ -134,9 +132,9 @@ def export_step_to_html(features, steps_definition=None, joined=None, report=Non
         'total': total,
     }
 
-    template_handler = ExecutionContext().jinja_template_handler
+    template_handler = global_vars.jinja_template_handler
     output_text = template_handler.render_template(
-        ExecutionContext().jinja_templates['steps'], parameter_template
+        global_vars.jinja_templates['steps'], parameter_template
     )
 
     return output_text
@@ -159,11 +157,10 @@ def export_result_to_html(
         'scenarios': scenarios,
     }
     parameters_template.update(metrics_variables)
-    template_handler = ExecutionContext().jinja_template_handler
+    template_handler = global_vars.jinja_template_handler
     output_text = template_handler.render_template(
-        ExecutionContext().jinja_templates['main'], parameters_template
+        global_vars.jinja_templates['main'], parameters_template
     )
-
     return output_text
 
 

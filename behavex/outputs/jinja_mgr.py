@@ -18,6 +18,7 @@ from xml.sax.saxutils import quoteattr  # nosec
 import jinja2
 
 from behavex.conf_mgr import get_env
+from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (
     calculate_status,
@@ -31,7 +32,7 @@ from behavex.outputs.report_utils import (
 )
 
 
-class TemplateHandler(object):
+class TemplateHandler(metaclass=ExecutionSingleton):
     """This class template handler"""
 
     def __init__(self, template_path):

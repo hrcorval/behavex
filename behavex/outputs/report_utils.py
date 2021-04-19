@@ -13,7 +13,6 @@ Test report utility methods for retrieving summarized test execution information
 # __future__ is added in order to maintain compatibility
 from __future__ import absolute_import, print_function
 
-import ast
 import codecs
 import os
 import re
@@ -27,7 +26,7 @@ from operator import getitem
 from behave.model_core import Status
 
 from behavex.conf_mgr import get_env, get_param, set_env
-from behavex.execution_context import ExecutionContext
+from behavex.global_vars import global_vars
 
 
 def gather_steps_with_definition(features, steps_definition):
@@ -408,7 +407,7 @@ def get_test_execution_tags():
     """
     if not get_env('behave_tags'):
         behave_tags_path = os.path.join(
-            os.path.abspath(get_env('OUTPUT')), ExecutionContext().behave_tags_file
+            os.path.abspath(get_env('OUTPUT')), global_vars.behave_tags_file
         )
         behave_tags_file = open(behave_tags_path, 'r')
         behave_tags = behave_tags_file.readline().strip()
@@ -453,7 +452,7 @@ def copy_bootstrap_html_generator(output):
     """copy the bootstrap directory for portable html"""
     dest_path = os.path.join(output, 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
-    bootstrap_path = os.path.join(ExecutionContext().execution_path, *bootstrap_path)
+    bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(dest_path):
         try_operate_descriptor(dest_path, lambda: shutil.rmtree(dest_path))
     try_operate_descriptor(

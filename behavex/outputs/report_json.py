@@ -22,7 +22,7 @@ from tempfile import gettempdir
 from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env
-from behavex.execution_context import ExecutionContext
+from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import get_error_message, match_for_execution, text
 from behavex.utils import try_operate_descriptor
 
@@ -111,12 +111,12 @@ def save_info_json(context, feature_list):
     output = {
         'environment': environment_info,
         'features': feature_list,
-        'steps_definition': ExecutionContext().all_steps_definitions,
+        'steps_definition': global_vars.steps_definitions,
     }
     if multiprocessing.current_process().name == 'MainProcess':
         path_info = os.path.join(
             os.path.abspath(get_env('OUTPUT')),
-            ExecutionContext().report_filenames['report_json'],
+            global_vars.report_filenames['report_json'],
         )
     else:
         path_info = os.path.join(
@@ -139,7 +139,7 @@ def save_info_json(context, feature_list):
             'The file {0} is apparently being used. Please, close it and '
             'then try again'
         )
-        raise Exception(msg.format(ExecutionContext().report_filenames['report_json']))
+        raise Exception(msg.format(global_vars.report_filenames['report_json']))
     except Exception as exc_json:
         msg = (
             'An error occurred trying to generate_gallery file report.json '
@@ -221,10 +221,10 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
             scenario_info['id_hash'] = _generate_hash(scenario.name)
-            if scenario.feature.name in ExecutionContext().retried_scenarios:
+            if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name
-                    in ExecutionContext().retried_scenarios[scenario.feature.name]
+                    in global_vars.retried_scenarios[scenario.feature.name]
                 ):
                     scenario_info['retried'] = True
 
@@ -304,8 +304,8 @@ def process_step_definition(step, step_info):
     definition = registry.find_step_definition(step)
     if definition:
         hash_step = _generate_hash(definition.string)
-        if hash_step not in ExecutionContext().all_steps_definitions:
-            ExecutionContext().all_steps_definitions[hash_step] = definition.string
+        if hash_step not in global_vars.steps_definitions:
+            global_vars.steps_definitions[hash_step] = definition.string
         step_info['hash'] = hash_step
     else:
         step_info['hash'] = 0

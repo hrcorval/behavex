@@ -24,11 +24,12 @@ from tempfile import gettempdir
 
 from behave import __main__ as behave_script
 
+import behavex.outputs.report_json
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, get_env, get_param, set_env
-from behavex.execution_context import ExecutionContext
 from behavex.execution_singleton import ExecutionSingleton
+from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
 from behavex.outputs.report_utils import (
     get_overall_status,
@@ -120,7 +121,9 @@ def setup_running_failures(args_parsed):
     """
     if args_parsed.run_failures:
         set_env_variable('RUN_FAILURES', args_parsed.run_failures)
-        failures_path = os.path.join(get_env('OUTPUT'), 'failures.txt')
+        failures_path = os.path.join(
+            get_env('OUTPUT'), global_vars.report_filenames['report_failures']
+        )
 
         if not os.path.exists(failures_path):
             print('\nThere are no failing test scenarios to run.')
@@ -204,7 +207,9 @@ def launch_behavex():
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
             if failures:
-                failures_file_path = os.path.join(get_env('OUTPUT'), 'failures.txt')
+                failures_file_path = os.path.join(
+                    get_env('OUTPUT'), global_vars.report_filenames['report_failures']
+                )
                 with open(failures_file_path, 'w') as failures_file:
                     parameters = create_test_list(failures)
                     failures_file.write(parameters)
@@ -466,14 +471,12 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     except KeyboardInterrupt:
         process_pool.terminate()
         process_pool.join()
-    status_info = os.path.join(
-        output, ExecutionContext().report_filenames['report_overall']
-    )
+    status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
 
     with open(status_info, 'w') as file_info:
         over_status = {'status': get_overall_status(merged_json)}
         file_info.write(json.dumps(over_status))
-    path_info = os.path.join(output, ExecutionContext().report_filenames['report_json'])
+    path_info = os.path.join(output, global_vars.report_filenames['report_json'])
     if get_env('include_paths'):
         filter_by_paths(merged_json)
     with open(path_info, 'w') as file_info:
@@ -524,9 +527,7 @@ def remove_temporary_files(parallel_processes):
     :param parallel_processes: quantity of processes
     """
     path_info = os.path.join(
-        os.path.join(
-            get_env('OUTPUT'), ExecutionContext().report_filenames['report_json']
-        )
+        os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_json'])
     )
     if os.path.exists(path_info):
         with open(path_info, 'r') as json_file:
@@ -810,7 +811,7 @@ def dump_json_results():
     if multiprocessing.current_process().name == 'MainProcess':
         path_info = os.path.join(
             os.path.abspath(get_env('OUTPUT')),
-            ExecutionContext().report_filenames['report_json'],
+            global_vars.report_filenames['report_json'],
         )
     else:
         process_name = multiprocessing.current_process().name.split('-')[-1]

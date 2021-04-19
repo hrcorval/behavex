@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 
-from behavex.execution_singleton import ExecutionSingleton
 
-
-class ExecutionContext(metaclass=ExecutionSingleton):
+class GlobalVars:
     def __init__(self):
         self._execution_path = os.environ.get('BEHAVEX_PATH')
         self._report_filenames = {
             'report_json': 'report.json',
             'report_overall': 'overall_status.json',
+            'report_failures': 'failures.txt',
         }
         self._behave_tags_file = os.path.join('behave', 'behave.tags')
         self._jinja_templates_path = os.path.join(
@@ -26,7 +25,7 @@ class ExecutionContext(metaclass=ExecutionSingleton):
 
         self._jinja_template_handler = TemplateHandler(self._jinja_templates_path)
         self._retried_scenarios = {}
-        self._all_steps_definitions = {}
+        self._steps_definitions = {}
 
     @property
     def execution_path(self):
@@ -61,5 +60,8 @@ class ExecutionContext(metaclass=ExecutionSingleton):
         self._retried_scenarios[feature_name] = []
 
     @property
-    def all_steps_definitions(self):
-        return self._all_steps_definitions
+    def steps_definitions(self):
+        return self._steps_definitions
+
+
+global_vars = GlobalVars()

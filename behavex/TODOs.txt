@@ -3,7 +3,7 @@
 - Scenarios with parenthesis and special chars in description are failing
 - Restrict parallel executions with duplicated scenario names
 - Add a chart about test execution times, splitted by the longest scenario divided by 4
-- Validate it is possible to reexecute failing test scenarios
+- Validate it is possible to reexecute failing test scenarios - DONE
 - Remove --include-paths arguments to run failing test scenarios
 - TEST_TO_FIX and BUG_TO_FIX should not generate exit code 1 - DONE
 - Replace TEST_TO_FIX and BUG_TO_FIX by MUTE - DONE

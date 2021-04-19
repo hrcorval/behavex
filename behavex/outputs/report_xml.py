@@ -11,7 +11,7 @@ import os
 import re
 
 from behavex.conf_mgr import get_env
-from behavex.execution_context import ExecutionContext
+from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (
     get_save_function,
     match_for_execution,
@@ -101,11 +101,11 @@ def _export_feature_to_xml(feature, isobject=True):
         'muted': muted_failed,
     }
 
-    template_handler = ExecutionContext().jinja_template_handler
+    template_handler = global_vars.jinja_template_handler
     output_text = template_handler.render_template(
-        ExecutionContext().jinja_templates['xml']
+        global_vars.jinja_templates['xml']
         if isobject
-        else ExecutionContext().jinja_templates['xml_json'],
+        else global_vars.jinja_templates['xml_json'],
         parameters_template,
     )
     output_text = output_text.replace('Status.', '')
