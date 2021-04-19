@@ -136,7 +136,7 @@
                                 aria-controls="collapse-metrics">Metrics</button>
                     </div>
                 </div>
-                <div id="collapse-metrics" class="behavex-big-row panel-collapse collapse in"
+                <div id="collapse-metrics" class="metrics-hidden behavex-big-row panel-collapse collapse in"
                      role="tabpanel" aria-labelledby="headingOne">
                     <div class="panel-body">
                         <div class="container-fluid behavex-row-total">
@@ -869,8 +869,16 @@
                 show_scenario(ui.item.desc);
             }
         });
+
+        $(document.querySelectorAll("button[aria-controls='collapse-metrics']")).on('click', function(e){
+            metrics_panel = document.getElementById("collapse-metrics")
+            if(metrics_panel.classList.contains('metrics-hidden')) {
+                e.stopPropagation();
+                metrics_panel.classList.remove('metrics-hidden');
+            }
+         });
         {%- endblock -%}
-{% block script %}
+    {% block script %}
      <script type="text/javascript">
 
         var
@@ -918,7 +926,7 @@
             var ctxPassRate = document.getElementById("chart-pass-rate").getContext("2d");
             window.pieChart1 = new Chart(ctxAutomationRate).Pie(pieDataAutomationRate);
             window.pieChart2 = new Chart(ctxPassRate).Pie(pieDataPassRate);
-            document.querySelectorAll("button[aria-controls='collapse-metrics']")[0].click()
         };
+
     </script>
 {% endblock %}

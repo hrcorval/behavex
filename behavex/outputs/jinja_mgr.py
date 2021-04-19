@@ -337,11 +337,12 @@ def _create_progress_html(total, passed=0, failed=0, skipped=0):
 
 def _resolving_color_class(status):
     """returns the class depending on the status code"""
-    if status.upper() in ('FAILED', 'ERROR'):
+    status_lower = status.lower()
+    if status_lower in ('failed', 'error'):
         return 'danger'
-    elif status.upper() == 'PASSED':
+    elif status_lower == 'passed':
         return 'success'
-    elif status.upper() == 'SKIPPED':
+    elif status_lower in ('skipped', 'untested'):
         return 'warning'
     else:
         return 'active'
