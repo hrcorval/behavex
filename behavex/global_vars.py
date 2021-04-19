@@ -21,9 +21,6 @@ class GlobalVars:
             'xml_json': 'xml_json.jinja2',
             'manifest': 'manifest.jinja2',
         }
-        from behavex.outputs.jinja_mgr import TemplateHandler
-
-        self._jinja_template_handler = TemplateHandler(self._jinja_templates_path)
         self._retried_scenarios = {}
         self._steps_definitions = {}
 
@@ -46,10 +43,6 @@ class GlobalVars:
     @property
     def jinja_templates(self):
         return self._jinja_templates
-
-    @property
-    def jinja_template_handler(self):
-        return self._jinja_template_handler
 
     @property
     def retried_scenarios(self):

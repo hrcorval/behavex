@@ -14,6 +14,7 @@ import htmlmin
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
+from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (
     gather_steps_with_definition,
     get_save_function,
@@ -41,7 +42,7 @@ def generate_report(output, joined=None, report=None):
 def _create_manifest(relative, page):
     """Create file manifest from template"""
     parameters_template = {'relative': relative, 'page': page}
-    template_handler = global_vars.jinja_template_handler
+    template_handler = TemplateHandler(global_vars.jinja_templates_path)
     output_text = template_handler.render_template(
         global_vars.jinja_templates['manifest'], parameters_template
     )
@@ -132,7 +133,7 @@ def export_step_to_html(features, steps_definition=None, joined=None, report=Non
         'total': total,
     }
 
-    template_handler = global_vars.jinja_template_handler
+    template_handler = TemplateHandler(global_vars.jinja_templates_path)
     output_text = template_handler.render_template(
         global_vars.jinja_templates['steps'], parameter_template
     )
@@ -157,7 +158,7 @@ def export_result_to_html(
         'scenarios': scenarios,
     }
     parameters_template.update(metrics_variables)
-    template_handler = global_vars.jinja_template_handler
+    template_handler = TemplateHandler(global_vars.jinja_templates_path)
     output_text = template_handler.render_template(
         global_vars.jinja_templates['main'], parameters_template
     )
