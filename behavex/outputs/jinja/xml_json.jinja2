@@ -29,7 +29,7 @@
             {% set step_with_exception = scenario.error_step %}
             {%- if step_with_exception and 'MUTE' not in scenario.tags  -%}
                 <failure message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }} type="AssertionError">
-                    <![CDATA[ Failing step: {{step_with_exception|print_step_json}} Location:{{step_with_exception.index}}
+                    <![CDATA[ Failing step: {{step_with_exception|print_step_json|safe}} Location:{{step_with_exception.index}}
                         {{step_with_exception|safe}}
                     ]]>
                 </failure>
@@ -38,7 +38,7 @@
             <![CDATA[
             @scenario.begin
                 {{ (scenario.tags)|print_tag_xml}}
-                scenario: {{ (scenario.name|CIXC) ~'\n'}}
+                scenario: {{ (scenario.name|CIXC|safe) ~'\n'}}
                 {%- if scenario.background.steps is iterable -%}
                     {%- for step in scenario.background.steps -%}
                         {{ print_step_xml(step)}}

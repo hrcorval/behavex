@@ -43,7 +43,6 @@ def before_feature(context, feature):
     try:
         context.bhx_execution_attempts = {}
         for scenario in feature.scenarios:
-            context.bhx_execution_attempts[scenario.name] = 0
             scenario.tags += feature.tags
             if get_param('dry_run'):
                 if 'MANUAL' not in scenario.tags:
@@ -60,6 +59,8 @@ def before_scenario(context, scenario):
     """Initialize logs for current scenario."""
     try:
         context.bhx_inside_scenario = True
+        if scenario.name not in context.bhx_execution_attempts:
+            context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
         context.log_path = create_log_path(str(scenario.name), retrying_execution)

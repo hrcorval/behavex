@@ -171,9 +171,10 @@
                                         </b>
                                     </div>
                                 </div>
-                                <div class="col-sm-4 pull-left div-select">
+                                <div class="col-sm-4 pull-left">
                                     <div class="form-group form-group-sm">
-                                        <label class="control-label">
+                                        <label class="control-label pull-left"
+                                               style="padding-top: 5px;padding-right:3px;font-size: 12px;">
                                             {{ 'report.filter_tag.label'|get_text }}
                                         </label>
                                         <select class="select-filter  form-control-static"
@@ -186,9 +187,10 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-sm-2 pull-left div-select">
+                                <div class="col-sm-2 pull-left">
                                     <div class="form-group form-group-sm">
-                                        <label class="control-label">
+                                        <label class="control-label pull-left"
+                                               style="padding-top: 5px;padding-right:3px;font-size: 12px;">
                                             {{ 'report.filter_status.label'|get_text }}
                                         </label>
                                         <select class="select-filter  form-control-static"
@@ -359,7 +361,7 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
-                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                    <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
                                     </td>
                                 {%- elif "WIP" in scenario.tags -%}
@@ -367,7 +369,7 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
-                                    <td><a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                    <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
                                     </td>
                                 {%- else -%}
@@ -408,26 +410,23 @@
 
                                             {%- if path_log_scenario|path_exist_in_output -%}
                                                 <a href="{{  path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
-                                                   charset="utf-8" class="btn btn-default btn-xs" title="View log"
+                                                   charset="utf-8" class="btn btn-info btn-xs" title="View Test Logs"
                                                    data-log>
-                                                   <span class="glyphicon glyphicon-zoom-in"
-                                                         style="font-size: 14px"></span></a>
+                                                   <span class="glyphicon glyphicon-zoom-in"></span></a>
                                             {%- endif -%}
                                             {%- if  path_img_scenario|path_exist_in_output -%}
                                                 <a href="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    title="View screenshots"
-                                                   class="btn btn-default btn-xs" data-image>
-                                                    <span class="glyphicon glyphicon-picture"
-                                                          style="font-size: 14px"></span></a>
+                                                   class="btn btn-info btn-xs" data-image>
+                                                    <span class="glyphicon glyphicon-picture"></span></a>
                                             {%- endif -%}
                                             {%- if scenario|exist_extra_logs -%}
                                                 {% set path_extra = scenario|get_path_extra_logs %}
                                                 <a href=""
                                                    data-path-extra="{{ path_extra}}"
                                                    title="Additional Evidence"
-                                                   class="btn btn-default btn-xs"  >
-                                                    <span class="glyphicon glyphicon-list"
-                                                          style="font-size: 14px"></span></a>
+                                                   class="btn btn-info btn-xs"  >
+                                                    <span class="glyphicon glyphicon-list"></span></a>
                                                 <div class="list-group list-extra-log"  style="display: None">
                                                 {% set path_extra_logs_relative = scenario|get_relative_extra_logs_path %}
                                                 {% for log in scenario|get_extra_logs_file %}
@@ -435,7 +434,7 @@
                                                 {% endfor %}
                                                 </div>
                                             {% endif %}
-                                            <a charset=utf-8 class="btn btn-default btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                            <a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                                 <span class="glyphicon glyphicon-copy"></span>
                                             </a>
                                         </div>
@@ -500,16 +499,8 @@
         {%- block javascript -%}
 
         {{ super() }}
-            $(document).ready(function(){
-                iframe = false;
-{#                window.onbeforeunload = function(e) {#}
-{#                    e.preventDefault();#}
-{#                    if(!iframe){#}
-{#                        window.history.back();#}
-{#                    } else {#}
-{#                        return '';#}
-{#                    }#}
-{#                }#}
+        $(document).ready(function(){
+            iframe = false;
 
             var ua = navigator.userAgent.toLowerCase();
             if (ua.indexOf('safari') != -1) {
@@ -572,7 +563,6 @@
             show_all()
             if (status == 'failed'){
                 $('tr.table_row_failed.data_feature  span').click();
-{#                $('tr.table_row_failed.data_feature + tr')#}
                 $('tr.table_row_passed.data_feature').hide();
                 $('tr.table_row_skipped.data_feature').hide();
                 $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
@@ -859,8 +849,8 @@
         });
         var scenarios_autocomplete = Array();
         {%- for scenario, id in scenarios -%}
-            scenarios_autocomplete.push({'label':'{{ scenario|replace("'",'"')|replace("\\", "\\\\") }}',
-            'desc':'{{ id }}','value': '{{ scenario|replace("'",'"')|replace("\\", "\\\\")  }}' });
+            scenarios_autocomplete.push({'label':'{{ scenario|replace("'",'"')|replace("\\", "\\\\")|safe }}',
+            'desc':'{{ id }}','value': '{{ scenario|replace("'",'"')|replace("\\", "\\\\")|safe  }}' });
         {%- endfor -%}
         var search = $('[data-search]');
         search.autocomplete({
@@ -875,12 +865,14 @@
             if(metrics_panel.classList.contains('metrics-hidden')) {
                 e.stopPropagation();
                 metrics_panel.classList.remove('metrics-hidden');
+                var ctxAutomationRate = document.getElementById("chart-automation-rate").getContext("2d");
+                var ctxPassRate = document.getElementById("chart-pass-rate").getContext("2d");
+                window.pieChart1 = new Chart(ctxAutomationRate).Pie(pieDataAutomationRate);
+                window.pieChart2 = new Chart(ctxPassRate).Pie(pieDataPassRate);
             }
          });
-        {%- endblock -%}
-    {% block script %}
-     <script type="text/javascript">
 
+        //CHARTS SECTION
         var
         green = '#71C176';
         high_green = '#61B566';
@@ -920,13 +912,4 @@
                 label: "Failed"
             }
         ];
-
-        window.onload = function() {
-            var ctxAutomationRate = document.getElementById("chart-automation-rate").getContext("2d");
-            var ctxPassRate = document.getElementById("chart-pass-rate").getContext("2d");
-            window.pieChart1 = new Chart(ctxAutomationRate).Pie(pieDataAutomationRate);
-            window.pieChart2 = new Chart(ctxPassRate).Pie(pieDataPassRate);
-        };
-
-    </script>
 {% endblock %}
