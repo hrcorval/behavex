@@ -687,15 +687,15 @@ def _store_tags_to_env_variable(tags):
         tags_skip = [tags_skip]
     else:
         tags_skip = tags_skip
-
     tags = tags if tags is not None else []
     tags_skip = [tag for tag in tags_skip if tag not in tags]
     tags = tags + ['~@{0}'.format(tag) for tag in tags_skip] if tags else []
     if tags:
         # TODO: review this logic
         for tag in tags:
-            if get_param('tags'):
-                set_env_variable('TAGS', ';'.join(get_param('tags')) + ';' + tag)
+            # import pdb;pdb.set_trace()
+            if get_env('TAGS'):
+                set_env_variable('TAGS', get_env('tags') + ';' + tag)
             else:
                 set_env_variable('TAGS', tag)
     else:

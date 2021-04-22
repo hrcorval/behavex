@@ -33,84 +33,78 @@
                         <th>Feature</th>
                         <th>Total</th>
                         <th>Executed</th>
-                        <th>Passed</th>
-                        <th>Failed</th>
-                        <th>Not&nbsp;Run</th>
-                        <th>Execution&nbsp;%</th>
-                        <th>Pass&nbsp;Rate</th>
+                        <th>%&nbsp;Passed</th>
                         <th>Duration</th>
                     </tr>
                 </thead>
                 {%- for feature in features -%}
                     <tr class="table_row_{{ feature.status }} data_feature feature-scenario"
                         data-feature-tags="{{ feature|create_tags_set }}">
-                    <!-- iteritems has been changed to items -->
-                    {%- for field, value in summary[feature.name].items() -%}
-                        {%- if field != 'muted' -%}
-                            <td title="{{ field }}">
-                        {%- endif -%}
-                        {%- if field == 'Feature' -%}
+                        <td title="Feature">
                              <span class="glyphicon glyphicon-menu-right pull-left"
                                    data-feature-id="{{ feature.id }}"
                                    data-feature title="{{ ('commons.expand'|get_text).format('scenarios') }}">
                                    <b class="span-behavex">{{ feature.name }}</b>
                              </span>
-                        {%- elif field == 'Total'-%}
-                            {{ value }}
+                        </td>
+                        <td title="Total">
+                            {{summary[feature.name]['Total']}}
                             {%- set muted = summary[feature.name]['muted'] -%}
                             {%- if muted > 0 -%}
                                 &nbsp;&nbsp;<span class="glyphicon glyphicon-volume-off" data-muted="{{ muted }}"
                                     title="There {{ 'is 1 muted scenario' if muted == 1 else 'are ' ~ muted ~ ' muted scenarios'}}">
                                 </span>
                             {%- endif -%}
-                        {%- elif field == 'Duration' -%}
-                            {{ value|pretty_print_time }}
-                        {%- elif field == 'Failed' -%}
-                            {{ value }}
-                        {%- else -%}
-                            {%- if field != 'muted' -%}
-                                {{ value }}
-                            {%- endif -%}
-                        {%- endif -%}
-                        {%- if field != 'muted' -%}
-                            </td>
-                        {%- endif -%}
-                        {%- if loop.last -%}
-                            </tr>
-                            <tr style="display: None" data-feature-id="{{ feature.id }}">
-                                <td colspan="9">
-                                    {{ print_feature(feature) }}
+                        </td>
+                        <td title="Executed">
+                            {{summary[feature.name]['Executed']}} ({{summary[feature.name]['Execution Status']|int}}%)
+                        </td>
+                        <td title="Status">
+                            <table><tr>
+                                <td width="15%">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
+                                <td>
+                                    <div class="progress  progress-expand-steps">
+                                        {%- set fe_total = summary[feature.name]['Total'] -%}
+                                        {%- set fe_passed = summary[feature.name]['Passed'] -%}
+                                        {%- set fe_failed = summary[feature.name]['Failed'] -%}
+                                        {%- set fe_skipped = summary[feature.name]['Skipped'] -%}
+                                        {{ fe_total|create_progress_html(fe_passed,fe_failed,fe_skipped)|safe }}
+                                    </div>
                                 </td>
-                            </tr>
-                        {%- endif -%}
-                    {%- endfor -%}
+                            </tr></table>
+                        </td>
+                        <td title="Duration">{{summary[feature.name]['Duration']|pretty_print_time }}</td>
+                    </tr>
+                    <tr style="display: None" data-feature-id="{{ feature.id }}">
+                        <td colspan="5">
+                            {{ print_feature(feature) }}
+                        </td>
+                    </tr>
                 {%- endfor -%}
                 <tr class="behavex-row-total">
                     <!-- iteritems has been changed to items -->
-                    {%- for key, total in fields_total.items() -%}
-                        <td><b>
-                            {%- if key == 'Duration' -%}
-                                {{ total|pretty_print_time }}
-                            {%- elif key == 'Totals' -%}
-                                <div class="radio" style="margin: 0px">
-                                <span class="behavex-span-totals pull-left">
-                                    Totals
-                                </span>
-                                    <label class="checkbox-inline pull-right"
-                                           style="display: none">
-                                        <input type="checkbox" checked="checked"
-                                               data-checkbox-under-fix>
-                                        {{ 'report.skip_fix_process.label'|get_text }}
-                                        &nbsp;&nbsp;
-                                    </label>
+                    <td><b>{{fields_total['Totals']}}</b></td>
+                    <td><b>{{fields_total['Total']}}</b></td>
+                    <td><b>{{fields_total['Executed']}} ({{fields_total['Execution Status']|int}}%)</b></td>
+                    <td>
+                        <table><tr>
+                            <td width="15%"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
+                            <td>
+                                <div class="progress progress-expand-steps">
+                                    {%- set fe_total = fields_total['Total'] -%}
+                                    {%- set fe_passed = fields_total['Passed'] -%}
+                                    {%- set fe_failed = fields_total['Failed'] -%}
+                                    {%- set fe_skipped = fields_total['Skipped'] -%}
+                                    {{ fe_total|create_progress_html(fe_passed,fe_failed,fe_skipped)|safe }}
                                 </div>
-                            {%- else -%}{{ total}}{%- endif -%}</b>
-                        </td>
-                    {%- endfor -%}
+                            </td>
+                        </tr></table>
+                    </td>
+                    <td><b>{{fields_total['Duration']}}</b></td>
                 </tr>
             </table>
 
-            {# Modal for logs and images   #}
+            {# Modal dialog related to logs and additional evidence #}
              <div class="modal fade " id="modal-logs" style="display: None">
                 <div class="modal-dialog modal-dialog-style">
                     <div class="modal-content modal-style">
@@ -242,7 +236,7 @@
                             <td colspan="5">
                                 <ul class="background-scenario list-unstyled behavex_letter ul-background-behavex">
                                     {%- for step in feature.background.steps -%}
-                                        <li>{{ step|resolving_type(feature.background, True)~ ' ' }} {{step.name|e }}
+                                        <li><b>{{ step|resolving_type(feature.background, True)|safe~ ' ' }}</b> {{step.name|e }}
                                         {%- if 'table' in step -%}
                                             <ul data-table>
                                                 <li class="list-group-item" style="padding:3px 3px">
@@ -314,25 +308,17 @@
                                      style="display: None" class="pull-left">
                                     <ul class="list-unstyled ul-tags-behavex label-behavex" style="width:100%;height:20px;font-size: 10px">
                                         {%- for tag in scenario.tags -%}
-                                            {% if loop.first %}
-                                                <li class="label grey-behavex" style="float:left;vertical-align: middle">
-                                                    <span class="glyphicon glyphicon-tag" style="font-size: 12px;padding-top: 3px">
-                                                    </span>
-                                                </li>
-                                            {% endif %}
-
                                             {%- if [tag]|match_for_execution -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
                                                     class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-                                                            <a class="behave-link text-primary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
+                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
                                             {%- else -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-                                                            <a class="behave-link text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
+                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
                                             {%- endif -%}
                                             </li>
                                         {%- endfor -%}
                                     </ul>
-                                    <br>
                                     {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
                                         <br>
                                         <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
@@ -446,9 +432,8 @@
             </div>
         </div>
         {%- endmacro -%}
-
         {%- macro print_step(scenario, step) -%}
-            <li style="width: 100%">{{ step|resolving_type(scenario) }} {{ ((step.name) ~ test_status_text)|e }}
+            <li style="width: 100%"><b>{{ step|resolving_type(scenario)|safe }}</b> {{ ((step.name) ~ test_status_text)|e }}
             {%- if 'table' in step -%}
                 <table class="table table-hover behavex_letter table-step-value">
                     <tr class="{{scenario.status|resolving_color_class}} table-header">

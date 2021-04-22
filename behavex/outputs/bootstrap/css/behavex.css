@@ -80,7 +80,10 @@
     float: top;
     width: 100%;
 }
-.behave-link {
+.link-cursor {
+    cursor: pointer;
+}
+.behavex-link {
     cursor: pointer;
     color: #444444;
 }

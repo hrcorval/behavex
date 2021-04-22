@@ -314,11 +314,13 @@ def pretty_print_time(seconds_float, sec_decimals=1):
     def _pretty_format(cant, unit):
         return '{}{}'.format(cant, unit) if cant > 0 else ''
 
-    return '{} {} {}'.format(
+    time_string = '{} {} {}'.format(
         _pretty_format(int(hours), 'h'),
         _pretty_format(int(minutes), 'm'),
         _pretty_format(seconds, 's'),
     )
+    time_string = '0s' if time_string.strip() == '' else time_string
+    return time_string
 
 
 def normalize_path(path):
