@@ -99,7 +99,7 @@
                         <ul class="list-unstyled table_row_{{ step_selected.status|calculate_status }} ul_border_bottom" >
                             <!-- iteritems has been changed to items -->
                             {% for key, sub_step in steps[step].steps.items() %}
-                                <li class=" table_row_{{ sub_step.status|calculate_status }} li_border_bottom" title="{{ sub_step.status|calculate_title_status }}">
+                                <li class=" table_row_{{ sub_step.status|calculate_status }} li_border_bottom {{ sub_step.status|calculate_color }}-behavex" title="{{ sub_step.status|calculate_title_status }}">
                                  {% set current_step = steps[step].steps.keys()[0] %}
                                     {{ key|e }}
                                     </li>

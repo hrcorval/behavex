@@ -31,16 +31,18 @@
                 <thead>
                     <tr class="table-header">
                         <th>Feature</th>
-                        <th>Total</th>
-                        <th>Executed</th>
-                        <th>%&nbsp;Passed</th>
-                        <th>Duration</th>
+                        <th style="width:160px">Total</th>
+                        <th style="width:160px">Executed</th>
+                        <th style="width:180px">Status</th>
+                        <th style="width:160px">Duration</th>
                     </tr>
                 </thead>
                 {%- for feature in features -%}
+                    <!--<tr class="table_row_{{ feature.status }} data_feature feature-scenario"
+                        data-feature-tags="{{ feature|create_tags_set }}">-->
                     <tr class="table_row_{{ feature.status }} data_feature feature-scenario"
-                        data-feature-tags="{{ feature|create_tags_set }}">
-                        <td title="Feature">
+                        data-feature-tags="{{ feature|create_tags_set }}" feature_{{ feature.status }}>
+                        <td title="Feature" class="{{ [feature.status]|calculate_color }}-behavex">
                              <span class="glyphicon glyphicon-menu-right pull-left"
                                    data-feature-id="{{ feature.id }}"
                                    data-feature title="{{ ('commons.expand'|get_text).format('scenarios') }}">
@@ -61,8 +63,8 @@
                         </td>
                         <td title="Status">
                             <table><tr>
-                                <td width="15%">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
-                                <td>
+                                <td style="width:40px" class="green-behavex">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
+                                <td style="width:140px">
                                     <div class="progress  progress-expand-steps">
                                         {%- set fe_total = summary[feature.name]['Total'] -%}
                                         {%- set fe_passed = summary[feature.name]['Passed'] -%}
@@ -88,8 +90,8 @@
                     <td><b>{{fields_total['Executed']}} ({{fields_total['Execution Status']|int}}%)</b></td>
                     <td>
                         <table><tr>
-                            <td width="15%"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
-                            <td>
+                            <td style="width:40px" class="green-behavex"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
+                            <td style="width:140px">
                                 <div class="progress progress-expand-steps">
                                     {%- set fe_total = fields_total['Total'] -%}
                                     {%- set fe_passed = fields_total['Passed'] -%}
@@ -276,19 +278,19 @@
                                 </a>
                             {%- endif -%}
                         </th>
-                        <th style="width: 10%;height: 24px" class="text-center">Type</th>
-                        <th style="width: 80px;height: 24px" class="text-center">Status</th>
-                        <th style="width: 7%;height: 24px" class="text-center">Duration</th>
-                        <th style="width: 135px;height: 24px" class="text-center">Log</th>
+                        <th style="width: 160px;height: 24px" class="text-center">Type</th>
+                        <th style="width: 160px;height: 24px" class="text-center">Status</th>
+                        <th style="width: 160px;height: 24px" class="text-center">Duration</th>
+                        <th style="height: 24px" class="text-center">Evidence</th>
                     </tr>
                     {%- for scenario in feature.scenarios -%}
                         {%- set normalized_name = scenario.name|normalize -%}
                         <!-- normalized_name has been forced to be a string -->
                         {%- set normalized_name = normalized_name|string -%}
-                        <tr class="table_row_commons behavex_letter feature-scenario {{ [scenario.status]|calculate_color }}-behavex text-center"
+                        <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario.tags|to_string_list }}">
                             <td class="text-left grey-behavex">
-                                <div class="alert-{{ scenario.status|resolving_color_class }} behavex_letter alert-behavex scenario-step">
+                                <div class="{{ [scenario.status]|calculate_color }}-behavex alert-{{ scenario.status|resolving_color_class }} behavex_letter alert-behavex scenario-step">
                                     &nbsp;
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
@@ -547,38 +549,38 @@
         function filter_status(status){
             show_all()
             if (status == 'failed'){
-                $('tr.table_row_failed.data_feature  span').click();
-                $('tr.table_row_passed.data_feature').hide();
-                $('tr.table_row_skipped.data_feature').hide();
-                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
-                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-success').hide();
-                $($('tr.table_row_failed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
-                $($('tr.table_row_failed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
+                $('tr[feature_failed] span').click();
+                $('tr[feature_passed]').hide();
+                $('tr[feature_skipped]').hide();
+                $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
+                $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-success').hide();
+                $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
+                $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
             } else if (status == 'passed'){
-                $('tr.table_row_passed.data_feature  span').click();
-                $('tr.table_row_failed.data_feature').hide();
-                $('tr.table_row_skipped.data_feature').hide();
-                $('tr.table_row_skipped.data_feature + tr[data-feature-id] td');
-                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
-                $($('tr.table_row_passed.data_feature + tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
-                $('tr.table_row_failed.data_feature').each(function(){
+                $('tr[feature_passed]   span').click();
+                $('tr[feature_failed]').hide();
+                $('tr[feature_skipped]').hide();
+                $('tr[feature_skipped] + tr[data-feature-id] td');
+                $($('tr[feature_passed] e + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
+                $($('tr[feature_passed]  + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
+                $('tr[feature_failed]').each(function(){
                     var clickear = false;
                     var div = $(this);
-                    if (div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
                         div.find('span').click();
                         div.show();
-                        div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
-                        div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
-                        div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
                     }
                 });
             } else if (status == 'skipped'){
-                $('tr.table_row_skipped.data_feature  span').click();
+                $('tr[feature_skipped]  span').click();
                 $('div.alert-danger').parents('tr.feature-scenario').hide();
                 $('div.alert-success').parents('tr.feature-scenario').hide();
-                $('tr.table_row_failed.data_feature').each(function(){
+                $('tr[feature_failed]').each(function(){
                     var div = $(this);
-                    if (div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
                         div.find('span').click();
                         div.show();
                     } else {
@@ -586,9 +588,9 @@
                         div.next().hide();
                     }
                 });
-                $('tr.table_row_passed.data_feature').each(function(){
+                $('tr[feature_passed]').each(function(){
                     var div = $(this);
-                    if (div.find(' +  tr[data-feature-id] td[colspan=9] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0) {
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0) {
                         div.find('span').click();
                         div.show();
                     } else {
@@ -621,9 +623,9 @@
          });
 
         function show_all(){
-            $('tr.table_row_passed.data_feature').show();
-            $('tr.table_row_failed.data_feature').show();
-            $('tr.table_row_skipped.data_feature').show();
+            $('tr.feature_passed').show();
+            $('tr.feature_failed').show();
+            $('tr.feature_skipped').show();
             $('tr[data-feature-tags]').show();
             $('tr[data-feature-id]').hide();
             $('span.glyphicon-menu-down').click();
