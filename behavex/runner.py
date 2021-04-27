@@ -416,7 +416,9 @@ def filter_feature_executed(json_output, filename, scenario_name):
         if feature.get('filename', '') == filename:
             mapping_scenarios = []
             for scenario in feature['scenarios']:
-                pattern = re.compile('{}(.--.@\\d+.\\d+)?'.format(scenario_name))
+                pattern = re.compile(
+                    '{}(.--.@\\d+.\\d+)?'.format(re.escape(scenario_name))
+                )
                 if pattern.match(scenario['name']):
                     mapping_scenarios.append(scenario)
             feature['scenarios'] = mapping_scenarios
@@ -722,7 +724,7 @@ def _set_behave_arguments(
         arguments.append('--no-summary')
         if scenario:
             arguments.append('--name')
-            arguments.append('{}(.?--.?@\\d*.\\d*\\s*)?$'.format(scenario))
+            arguments.append('{}(.?--.?@\\d*.\\d*\\s*)?$'.format(re.escape(scenario)))
         name = multiprocessing.current_process().name.split('-')[-1]
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
