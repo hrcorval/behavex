@@ -32,7 +32,7 @@ def generate_report(output, joined=None, report=None):
     features.sort(key=lambda feature: feature['name'])
     metrics_variables = get_metrics_variables(all_scenarios, joined, report)
     html = export_result_to_html(
-        environment, features, metrics_variables, joined, report
+        environment, features, metrics_variables, steps_definition, joined, report
     )
     step = export_step_to_html(features, steps_definition, joined, report)
     content_to_file = {'report.html': html, 'steps.html': step}
@@ -142,14 +142,16 @@ def export_step_to_html(features, steps_definition=None, joined=None, report=Non
 
 
 def export_result_to_html(
-    environment, features, metrics_variables, joined=None, report=None
+    environment, features, metrics_variables, steps_definition, joined=None, report=None
 ):
     """Create test_result.html file with feature information"""
     totals, summary = export_to_html_table_summary(features)
     tags, scenarios = get_value_filters(features)
+    steps_summary = gather_steps_with_definition(features, steps_definition)
     parameters_template = {
         'environments': environment,
         'features': features,
+        'steps': steps_summary,
         'fields_total': totals,
         'summary': summary,
         'joined': joined,

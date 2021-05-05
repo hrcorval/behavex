@@ -116,7 +116,6 @@ def get_summary_definition(steps):
             result['steps'][step['name']]['status'].append(step['status'])
             result['steps'][step['name']]['appearances'] += 1
         else:
-
             result['steps'][step['name']] = {
                 'executions': execution,
                 'time': step['duration'],
@@ -124,21 +123,32 @@ def get_summary_definition(steps):
                 'appearances': 1,
             }
     total_time = 0.0
-    avg_time_total = 0.0
     executions = 0
     appearances = 0
+    any_status_failed = False
+    any_status_passed = False
     for step_instanced in result['steps'].values():
-        avg_time = step_instanced['time'] / step_instanced['appearances']
-        avg_time_total += avg_time
         total_time += step_instanced['time']
-        step_instanced['avg'] = avg_time
         executions += step_instanced['executions']
         appearances += step_instanced['appearances']
-    result['avg'] = avg_time_total
+        if 'passed' in step_instanced['status']:
+            any_status_passed = True
+        elif 'failed' in step_instanced['status']:
+            any_status_failed = True
+    if any_status_failed:
+        result['overall_status'] = 'failed'
+    elif any_status_passed:
+        result['overall_status'] = 'passed'
+    else:
+        result['overall_status'] = 'skipped'
+    if executions > 0:
+        avg_time = total_time / executions
+    else:
+        avg_time = 0
+    result['avg'] = avg_time
     result['time'] = total_time
     result['executions'] = executions
     result['appearances'] = appearances
-
     return result
 
 
