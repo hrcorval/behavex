@@ -7,7 +7,8 @@
 - Remove --include-paths arguments to run failing test scenarios
 - TEST_TO_FIX and BUG_TO_FIX should not generate exit code 1 - DONE
 - Replace TEST_TO_FIX and BUG_TO_FIX by MUTE - DONE
-- Add a metric related to Test Steps (reusability maybe)
+- Add a metric related to Test Steps and remove Steps report - DONE
+- Add a metric related to Test Steps reusability
 - Remove utility to generate screenshots
 - Fix issue with scenario names - DONE
 - Review match_for_execution method, to ensure the mapping with TAGS is working properly - DONE

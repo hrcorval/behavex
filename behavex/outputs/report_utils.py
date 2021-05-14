@@ -54,39 +54,6 @@ def gather_steps_with_definition(features, steps_definition):
     return result
 
 
-def get_total_steps(steps_summary):
-    """
-    Get return dictionary with total.
-
-    :param steps_summary: The dictionary of step definition.
-    :return:  dictionary with follow keys:
-        - definitions
-        - appearances
-        - executions
-        - avg
-        - time
-        - status
-    """
-    result = {
-        'definitions': 0,
-        'instances': 0,
-        'executions': 0,
-        'avg': 0.0,
-        'time': 0.0,
-        'status': [],
-        'appearances': 0,
-    }
-    for summary in steps_summary.values():
-        result['definitions'] += 1
-        result['appearances'] += summary['appearances']
-        result['executions'] += summary['executions']
-        result['avg'] += summary['avg']
-        result['time'] += summary['time']
-        result['status'] += summary['status']
-
-    return result
-
-
 def get_summary_definition(steps):
     """
     Get summary for a step definitions.
@@ -257,50 +224,6 @@ def gather_steps(features):
                 steps[step['name']]['total_duration'] += step['duration']
 
     return steps
-
-
-def get_scenarios_by_tag(all_scenarios):
-    """
-    return one dict with each key contain one tuple with following format:
-    in position zero have list of the dict each dict have tuple with the name
-    scenario in position 0, status in position 1, number row in position 2,
-    id_hash in position 3, and id_feature position 4
-
-    :param all_scenarios: list of the scenario
-    :return: dict
-    """
-    all_tags = set(sum((scenario['tags'] for scenario in all_scenarios), []))
-    scenarios_by_tag = {}
-
-    for tag in all_tags:
-        scenarios_by_tag[tag] = [
-            (
-                scenario['name'],
-                scenario['status'],
-                scenario.get('row', ''),
-                scenario['id_hash'],
-                scenario['id_feature'],
-            )
-            for scenario in all_scenarios
-            if tag in scenario['tags']
-        ]
-    scenarios_by_tag.update(
-        {
-            key: (
-                value,
-                {status for name, status, row, id_hash, id_feature in value},
-                {row for name, status, row, id_hash, id_feature in value},
-            )
-            for key, value in scenarios_by_tag.items()
-        }
-    )
-
-    processed_tags = {
-        key: (value[0], get_status({key: key for key in value[1]}), value[2])
-        for key, value in scenarios_by_tag.items()
-    }
-
-    return processed_tags
 
 
 def gather_errors(scenario, retrieve_step_name=False):

@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='behavex',
-    version='1.3.1',
+    version='1.3.3',
     python_requires='>=3',
     author='Hernan Rey',
     author_email='hernanrey@gmail.com',
@@ -16,17 +16,10 @@ setup(
         ],
     },
     install_requires=[
-        'requests',
         'behave==1.2.6',
         'jinja2',
         'configobj',
-        'openpyxl',
-        'beautifulsoup4',
         'htmlmin',
         'csscompressor',
-        'lxml',
-        'numpy==1.19.3',
-        'pillow',
-        'markupsafe',
     ],
 )

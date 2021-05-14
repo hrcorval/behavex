@@ -8,7 +8,6 @@ This module it is a set  with functions used en common for some packages.
 
 FUNCTIONS:
     - get_logging_level
-    - escape_re
     - join_feature_reports
     - join_list_dict
     - join_step_definitions
@@ -100,17 +99,6 @@ def get_logging_level():
         log_level = LOGGING_CFG['logger_root']['level']
         log_level = LOGGING_LEVELS.get(log_level.lower(), logging.DEBUG)
     return log_level
-
-
-def escape_re(word):
-    """
-    Escape expression for module_re.
-
-    :param word:
-    :return:
-    """
-    regex = re.compile('({})'.format('|'.join(map(re.escape, '.\\[]{()*+?^$|'))))
-    return regex.sub(lambda x: re.escape(x.group(1)), word)
 
 
 # noinspection PyDictCreation
