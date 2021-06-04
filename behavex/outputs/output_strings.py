@@ -34,7 +34,9 @@ TEXTS = {
         'reset_filter': {'label': 'Reset'},
         'skip_fix_process': {'label': 'Skip scenarios under fix process'},
         'icon_duplicate': {'title': 'Copy link to this scenario'},
-        'icon_repeat': {'title': 'This scenario was executed two times'},
+        'icon_repeat': {
+            'title': 'This scenario was executed more than once (see @AUTORETRY tag)'
+        },
         'filter_status': {'label': 'Status'},
     },
     'steps': {'title': 'Steps', 'description': '', 'modal': {'title': '', 'body': ''}},
@@ -59,6 +61,9 @@ TEXTS = {
         u'\n\n{0}'.format('*' * 60),
         'running_parallels': u'{0}\nRunning parallel scenarios\n\n{0}'.format('*' * 60),
         'run_behave': u"Running feature '{}' with scenario '{}'.",
+        'duplicated_scenarios': '{0}\nThere are duplicate scenario names to run.\n'
+        'Parallel test execution by scenario cannot be performed.\n'
+        'Duplicated scenario names: \n{1}.\n\n{0}'.format('*' * 60, {}),
     },
     'folder': {'run_behave': u"Running folder: '{}' and feature '{}'."},
     'path': {'not_found': u'\nThe path "{}" was not found.\n'},

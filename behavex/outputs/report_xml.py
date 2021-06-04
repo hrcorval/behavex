@@ -11,6 +11,7 @@ import os
 import re
 
 from behavex.conf_mgr import get_env
+from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (
     get_save_function,
@@ -18,15 +19,6 @@ from behavex.outputs.report_utils import (
     text,
     try_operate_descriptor,
 )
-
-FWK_DIR = os.environ.get('BEHAVEX_PATH')
-INFO_FILE = 'report.json'
-TEMPLATE_DIR = os.path.join(FWK_DIR, 'outputs', 'jinja')
-
-FEATURE_XML_TEMPLATE = 'xml.jinja2'
-FEATURE_XML_JSON_TEMPLATE = 'xml_json.jinja2'
-
-T_HANDLER = TemplateHandler(TEMPLATE_DIR)
 
 
 def _export_feature_to_xml(feature, isobject=True):
@@ -110,8 +102,11 @@ def _export_feature_to_xml(feature, isobject=True):
         'muted': muted_failed,
     }
 
-    output_text = T_HANDLER.render_template(
-        FEATURE_XML_TEMPLATE if isobject else FEATURE_XML_JSON_TEMPLATE,
+    template_handler = TemplateHandler(global_vars.jinja_templates_path)
+    output_text = template_handler.render_template(
+        global_vars.jinja_templates['xml']
+        if isobject
+        else global_vars.jinja_templates['xml_json'],
         parameters_template,
     )
     output_text = output_text.replace('Status.', '')

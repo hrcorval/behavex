@@ -18,6 +18,7 @@ from xml.sax.saxutils import quoteattr  # nosec
 import jinja2
 
 from behavex.conf_mgr import get_env
+from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (
     calculate_status,
@@ -31,7 +32,7 @@ from behavex.outputs.report_utils import (
 )
 
 
-class TemplateHandler(object):
+class TemplateHandler(metaclass=ExecutionSingleton):
     """This class template handler"""
 
     def __init__(self, template_path):
@@ -67,7 +68,6 @@ class TemplateHandler(object):
         self.add_filter(to_string_list, 'to_string_list')
         self.add_filter(_calculate_color, 'calculate_color')
         self.add_filter(calculate_status, 'calculate_status')
-        self.add_filter(_calculate_title_status, 'calculate_title_status')
         self.add_filter(count_by_status, 'count_by_status')
         self.add_filter(_exist_extra_logs, 'exist_extra_logs')
         self.add_filter(get_extra_logs_file, 'get_extra_logs_file')
@@ -107,14 +107,6 @@ class TemplateHandler(object):
             parameter_template = {}
         # This function has been forced to return a string type
         return str(self.get_template(str(template_name)).render(parameter_template))
-
-    def exists_filter(self, filter_name):
-        """return true if filter_name is a filters of the template
-        :param filter_name: name filters
-        :return: boolean
-        """
-        # self.template_env.globals.keys() has been forced to be a list
-        return filter_name in list(self.template_env.filters.keys())
 
     def add_filter(self, function_filter, name_function=None):
         """
@@ -200,31 +192,6 @@ def _calculate_color(list_status):
     """
     color = {'passed': 'green', 'skipped': 'grey', 'failed': 'red'}
     return color[calculate_status(list_status)]
-
-
-def _calculate_title_status(list_status):
-    """
-    Create title information from status.
-
-    :param list_status:
-    :return str:
-    """
-
-    def order(x):
-        return 0 if x[0] == 'passed' else 1 if x[0] == 'failed' else 2
-
-    status = ('Passed', 'Failed', 'Skipped')
-    status_calculated = {
-        key: len([1 for status in list_status if status == key.lower()])
-        for key in status
-    }
-    result = []
-    # status_calculated.items() has been forced to be a list
-    for key, value in sorted(list(status_calculated.items()), key=order):
-        if value > 0:
-            result.append('{}: {}'.format(key, value))
-
-    return ', '.join(result)
 
 
 def _print_step(step):
@@ -336,11 +303,12 @@ def _create_progress_html(total, passed=0, failed=0, skipped=0):
 
 def _resolving_color_class(status):
     """returns the class depending on the status code"""
-    if status.upper() in ('FAILED', 'ERROR'):
+    status_lower = status.lower()
+    if status_lower in ('failed', 'error'):
         return 'danger'
-    elif status.upper() == 'PASSED':
+    elif status_lower == 'passed':
         return 'success'
-    elif status.upper() == 'SKIPPED':
+    elif status_lower in ('skipped', 'untested'):
         return 'warning'
     else:
         return 'active'

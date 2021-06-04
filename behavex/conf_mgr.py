@@ -17,6 +17,8 @@ import os
 from configobj import ConfigObj
 from validate import Validator
 
+from behavex.execution_singleton import ExecutionSingleton
+
 CONFIG = None
 CONFIG_PATH = None
 
@@ -62,7 +64,7 @@ def get_config():
                          'NOTSET', \
                          default='INFO')
     parallel_processes=integer(default=1)
-    parallel_element=option('feature', 'scenario', default='scenario')
+    parallel_scheme=option('feature', 'scenario', default='scenario')
     include_paths=list(default=list())
     run_failures=boolean(default=False)
     """
@@ -78,16 +80,7 @@ def get_config():
     return CONFIG
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class ConfigRun(metaclass=Singleton):
+class ConfigRun(metaclass=ExecutionSingleton):
     def __init__(self):
         self.config = get_config()
         self.args = None

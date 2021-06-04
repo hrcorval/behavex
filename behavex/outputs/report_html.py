@@ -12,25 +12,14 @@ from collections import OrderedDict
 import csscompressor
 import htmlmin
 
-from behavex import conf_mgr
 from behavex.conf_mgr import get_env
+from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (
     gather_steps_with_definition,
     get_save_function,
-    get_total_steps,
     try_operate_descriptor,
 )
-
-MANIFEST_TEMPLATE = 'manifest.jinja2'
-
-FWK_DIR = os.environ.get('BEHAVEX_PATH')
-TEMPLATE_DIR = os.path.join(FWK_DIR, 'outputs', 'jinja')
-CONFIG = conf_mgr.get_config()
-
-TEST_REPORT_TEMPLATE = 'main.jinja2'
-STEP_TEMPLATE_DEFINITION = 'steps.jinja2'
-T_HANDLER = TemplateHandler(TEMPLATE_DIR)
 
 
 def generate_report(output, joined=None, report=None):
@@ -40,19 +29,21 @@ def generate_report(output, joined=None, report=None):
     steps_definition = output['steps_definition']
     all_scenarios = sum((feature['scenarios'] for feature in features), [])
     features.sort(key=lambda feature: feature['name'])
-    metrics_variables = get_metrics_variables(all_scenarios, joined, report)
+    metrics_variables = get_metrics_variables(all_scenarios)
     html = export_result_to_html(
-        environment, features, metrics_variables, joined, report
+        environment, features, metrics_variables, steps_definition, joined, report
     )
-    step = export_step_to_html(features, steps_definition, joined, report)
-    content_to_file = {'report.html': html, 'steps.html': step}
+    content_to_file = {'report.html': html}
     _create_files_report(content_to_file)
 
 
 def _create_manifest(relative, page):
     """Create file manifest from template"""
     parameters_template = {'relative': relative, 'page': page}
-    output_text = T_HANDLER.render_template(MANIFEST_TEMPLATE, parameters_template)
+    template_handler = TemplateHandler(global_vars.jinja_templates_path)
+    output_text = template_handler.render_template(
+        global_vars.jinja_templates['manifest'], parameters_template
+    )
     folder = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap', 'manifest')
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -81,7 +72,6 @@ def _create_files_report(content_to_file):
             with open(layout_min_path, 'w') as layout_min:
                 layout_min.write(csscompressor.compress(layout_file.read()))
             path_file = os.path.join(get_env('OUTPUT'), name_file)
-
         else:
             path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
@@ -96,7 +86,7 @@ def _create_files_report(content_to_file):
         try_operate_descriptor(path_file, get_save_function(path_file, content))
 
 
-def get_metrics_variables(scenarios, joined=None, report=None):
+def get_metrics_variables(scenarios):
     """Processing variable for generating metrics in charts"""
     skipped = sum(
         scenario['status'] not in ['passed', 'failed'] for scenario in scenarios
@@ -126,36 +116,17 @@ def get_metrics_variables(scenarios, joined=None, report=None):
     return parameters_template
 
 
-def export_step_to_html(features, steps_definition=None, joined=None, report=None):
-    """Generate file steps.html with step of the all scenarios"""
-    steps_summary = gather_steps_with_definition(features, steps_definition)
-    total = get_total_steps(steps_summary)
-
-    # steps_summary.keys() has been forced to be list type
-    parameter_template = {
-        'steps': steps_summary,
-        'steps_sorted': sorted(list(steps_summary.keys()), key=lambda x: x.lower()),
-        'joined': joined,
-        'report': report,
-        'total': total,
-    }
-
-    output_text = T_HANDLER.render_template(
-        STEP_TEMPLATE_DEFINITION, parameter_template
-    )
-
-    return output_text
-
-
 def export_result_to_html(
-    environment, features, metrics_variables, joined=None, report=None
+    environment, features, metrics_variables, steps_definition, joined=None, report=None
 ):
     """Create test_result.html file with feature information"""
     totals, summary = export_to_html_table_summary(features)
     tags, scenarios = get_value_filters(features)
+    steps_summary = gather_steps_with_definition(features, steps_definition)
     parameters_template = {
         'environments': environment,
         'features': features,
+        'steps': steps_summary,
         'fields_total': totals,
         'summary': summary,
         'joined': joined,
@@ -164,8 +135,10 @@ def export_result_to_html(
         'scenarios': scenarios,
     }
     parameters_template.update(metrics_variables)
-    output_text = T_HANDLER.render_template(TEST_REPORT_TEMPLATE, parameters_template)
-
+    template_handler = TemplateHandler(global_vars.jinja_templates_path)
+    output_text = template_handler.render_template(
+        global_vars.jinja_templates['main'], parameters_template
+    )
     return output_text
 
 

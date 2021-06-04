@@ -13,7 +13,6 @@ Test report utility methods for retrieving summarized test execution information
 # __future__ is added in order to maintain compatibility
 from __future__ import absolute_import, print_function
 
-import ast
 import codecs
 import os
 import re
@@ -25,42 +24,9 @@ import unicodedata
 from operator import getitem
 
 from behave.model_core import Status
-from behave.step_registry import registry
 
-from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param, set_env
-
-FWK_PATH = os.environ.get('BEHAVEX_PATH')
-RETRY_SCENARIOS = {}
-BEHAVE_TAGS_FILE = os.path.join('behave', 'behave.tags')
-STEPS_EXECUTIONS = {}
-STEPS_UNDEFINED = {}
-
-
-def add_information_from_steps(steps):
-    """
-    Add information about execution step.
-
-    This information will store in STEPS_EXECUTIONS variable for will process
-    and calculate the avg time and other.
-
-    :param steps: list of behave.model.step
-    :return None:
-    """
-
-    for step in steps:
-        definition = registry.find_step_definition(step)
-        if definition:
-            name = definition
-            if name in STEPS_EXECUTIONS:
-                STEPS_EXECUTIONS[name].append(step)
-            else:
-                STEPS_EXECUTIONS[name] = [step]
-        else:
-            if step.name in STEPS_UNDEFINED:
-                STEPS_UNDEFINED[step.name].append(step)
-            else:
-                STEPS_UNDEFINED[step.name] = [step]
+from behavex.global_vars import global_vars
 
 
 def gather_steps_with_definition(features, steps_definition):
@@ -85,51 +51,6 @@ def gather_steps_with_definition(features, steps_definition):
         for definition, value in result.items():
             result[definition] = get_summary_definition(value['steps'])
 
-    return result
-
-
-def get_total_steps(steps_summary):
-    """
-    Get return dictionary with total.
-
-    :param steps_summary: The dictionary of step definition.
-    :return:  dictionary with follow keys:
-        - definitions
-        - appearances
-        - executions
-        - avg
-        - time
-        - status
-    """
-    result = {
-        'definitions': 0,
-        'instances': 0,
-        'executions': 0,
-        'avg': 0.0,
-        'time': 0.0,
-        'status': [],
-        'appearances': 0,
-    }
-    for summary in steps_summary.values():
-        result['definitions'] += 1
-        result['appearances'] += summary['appearances']
-        result['executions'] += summary['executions']
-        result['avg'] += summary['avg']
-        result['time'] += summary['time']
-        result['status'] += summary['status']
-
-    return result
-
-
-def gather_steps_without_definition():
-    """
-    Gather steps with definition.
-
-    :return dict:
-    """
-    result = {}
-    for step_name, steps in STEPS_UNDEFINED.items():
-        result[step_name] = get_summary_definition(steps)
     return result
 
 
@@ -162,7 +83,6 @@ def get_summary_definition(steps):
             result['steps'][step['name']]['status'].append(step['status'])
             result['steps'][step['name']]['appearances'] += 1
         else:
-
             result['steps'][step['name']] = {
                 'executions': execution,
                 'time': step['duration'],
@@ -170,21 +90,32 @@ def get_summary_definition(steps):
                 'appearances': 1,
             }
     total_time = 0.0
-    avg_time_total = 0.0
     executions = 0
     appearances = 0
+    any_status_failed = False
+    any_status_passed = False
     for step_instanced in result['steps'].values():
-        avg_time = step_instanced['time'] / step_instanced['appearances']
-        avg_time_total += avg_time
         total_time += step_instanced['time']
-        step_instanced['avg'] = avg_time
         executions += step_instanced['executions']
         appearances += step_instanced['appearances']
-    result['avg'] = avg_time_total
+        if 'passed' in step_instanced['status']:
+            any_status_passed = True
+        elif 'failed' in step_instanced['status']:
+            any_status_failed = True
+    if any_status_failed:
+        result['overall_status'] = 'failed'
+    elif any_status_passed:
+        result['overall_status'] = 'passed'
+    else:
+        result['overall_status'] = 'skipped'
+    if executions > 0:
+        avg_time = total_time / executions
+    else:
+        avg_time = 0
+    result['avg'] = avg_time
     result['time'] = total_time
     result['executions'] = executions
     result['appearances'] = appearances
-
     return result
 
 
@@ -295,50 +226,6 @@ def gather_steps(features):
     return steps
 
 
-def get_scenarios_by_tag(all_scenarios):
-    """
-    return one dict with each key contain one tuple with following format:
-    in position zero have list of the dict each dict have tuple with the name
-    scenario in position 0, status in position 1, number row in position 2,
-    id_hash in position 3, and id_feature position 4
-
-    :param all_scenarios: list of the scenario
-    :return: dict
-    """
-    all_tags = set(sum((scenario['tags'] for scenario in all_scenarios), []))
-    scenarios_by_tag = {}
-
-    for tag in all_tags:
-        scenarios_by_tag[tag] = [
-            (
-                scenario['name'],
-                scenario['status'],
-                scenario.get('row', ''),
-                scenario['id_hash'],
-                scenario['id_feature'],
-            )
-            for scenario in all_scenarios
-            if tag in scenario['tags']
-        ]
-    scenarios_by_tag.update(
-        {
-            key: (
-                value,
-                {status for name, status, row, id_hash, id_feature in value},
-                {row for name, status, row, id_hash, id_feature in value},
-            )
-            for key, value in scenarios_by_tag.items()
-        }
-    )
-
-    processed_tags = {
-        key: (value[0], get_status({key: key for key in value[1]}), value[2])
-        for key, value in scenarios_by_tag.items()
-    }
-
-    return processed_tags
-
-
 def gather_errors(scenario, retrieve_step_name=False):
     """Retrieve the error message related to a particular failing scenario"""
     if retrieve_step_name:
@@ -360,11 +247,13 @@ def pretty_print_time(seconds_float, sec_decimals=1):
     def _pretty_format(cant, unit):
         return '{}{}'.format(cant, unit) if cant > 0 else ''
 
-    return '{} {} {}'.format(
+    time_string = '{} {} {}'.format(
         _pretty_format(int(hours), 'h'),
         _pretty_format(int(minutes), 'm'),
         _pretty_format(seconds, 's'),
     )
+    time_string = '0s' if time_string.strip() == '' else time_string
+    return time_string
 
 
 def normalize_path(path):
@@ -453,7 +342,7 @@ def get_test_execution_tags():
     """
     if not get_env('behave_tags'):
         behave_tags_path = os.path.join(
-            os.path.abspath(get_env('OUTPUT')), BEHAVE_TAGS_FILE
+            os.path.abspath(get_env('OUTPUT')), global_vars.behave_tags_file
         )
         behave_tags_file = open(behave_tags_path, 'r')
         behave_tags = behave_tags_file.readline().strip()
@@ -498,7 +387,7 @@ def copy_bootstrap_html_generator(output):
     """copy the bootstrap directory for portable html"""
     dest_path = os.path.join(output, 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
-    bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
+    bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(dest_path):
         try_operate_descriptor(dest_path, lambda: shutil.rmtree(dest_path))
     try_operate_descriptor(
@@ -538,7 +427,7 @@ def get_save_function(path, content):
     return fun_save
 
 
-def create_log_path(name):
+def create_log_path(name, execution_retry=False):
     """
     Creating a new folder in configured log path.
     If folder exists, a suffix number is added to that folder.
@@ -551,7 +440,7 @@ def create_log_path(name):
     initial_path = path
     scenario_outline_index = 1
     while os.path.exists(path):
-        if get_env('autoretry') == name and get_env('autoretry_attempt'):
+        if execution_retry:
             return path
         path = initial_path + u'_' + str(scenario_outline_index)
         scenario_outline_index += 1

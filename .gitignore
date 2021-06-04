@@ -27,6 +27,7 @@ pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
+TODO.txt
 *.egg
 *.bat
 debug.log

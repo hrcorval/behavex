@@ -4,6 +4,7 @@
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */#}
 
+
 {%- macro print_step_xml(step) -%}
     {%- if step.table -%}
         {{ 20*' ' }}
@@ -30,10 +31,10 @@
         <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ scenario.status if not is_muted else 'skipped'}}"
          classname={{scenario.feature.name|normalize|CIXC|quoteattr|safe }}>
             {%- set steps_with_exception = scenario.steps|get_list_exception_steps(scenario._background_steps) -%}
-            {%- if steps_with_exception and not is_muted -%}
+            {%- if steps_with_exception and 'MUTE' not in scenario.tags -%}
                 {%- for step in steps_with_exception -%}
                     <failure type={{ step.exception.__class__.__name__ |normalize|CIXC|quoteattr|safe}} message={{step.exception.message|get_error_message|CIXC|quoteattr|safe }}>
-                        <![CDATA[ Failing step: {{step|print_step}} Location:{{step.filename|normalize}}
+                        <![CDATA[ Failing step: {{step|print_step|safe}} Location:{{step.filename|normalize|safe}}
                          {{step|get_lines_exception|safe}}
                         ]]>
                     </failure>
@@ -43,7 +44,7 @@
             <![CDATA[
             @scenario.begin
                 {{ (scenario.tags)|print_tag_xml}}
-                scenario: {{ scenario.name|CIXC ~'\n'}}
+                scenario: {{ scenario.name|CIXC|safe ~'\n'}}
                 {%- if scenario._background_steps is iterable -%}
                     {%- for step in scenario._background_steps -%}
                         {{ print_step_xml(step)}}

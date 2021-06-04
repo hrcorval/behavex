@@ -8,7 +8,6 @@ This module it is a set  with functions used en common for some packages.
 
 FUNCTIONS:
     - get_logging_level
-    - escape_re
     - join_feature_reports
     - join_list_dict
     - join_step_definitions
@@ -47,7 +46,9 @@ from behave.model import ScenarioOutline
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
 
-from behavex.conf_mgr import Singleton, get_env, get_param, set_env
+from behavex.conf_mgr import get_env, get_param, set_env
+from behavex.execution_singleton import ExecutionSingleton
+from behavex.global_vars import global_vars
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (
@@ -57,8 +58,7 @@ from behavex.outputs.report_utils import (
     try_operate_descriptor,
 )
 
-FWK_PATH = os.getenv('BEHAVEX_PATH')
-LOGGING_CFG = ConfigObj(os.path.join(FWK_PATH, 'conf_logging.cfg'))
+LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
     'debug': logging.DEBUG,
     'info': logging.INFO,
@@ -99,17 +99,6 @@ def get_logging_level():
         log_level = LOGGING_CFG['logger_root']['level']
         log_level = LOGGING_LEVELS.get(log_level.lower(), logging.DEBUG)
     return log_level
-
-
-def escape_re(word):
-    """
-    Escape expression for module_re.
-
-    :param word:
-    :return:
-    """
-    regex = re.compile('({})'.format('|'.join(map(re.escape, '.\\[]{()*+?^$|'))))
-    return regex.sub(lambda x: re.escape(x.group(1)), word)
 
 
 # noinspection PyDictCreation
@@ -318,7 +307,7 @@ def copy_bootstrap_html_generator():
     """copy the bootstrap directory for portable html"""
     destination_path = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
-    bootstrap_path = os.path.join(FWK_PATH, *bootstrap_path)
+    bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(destination_path):
         try_operate_descriptor(
             destination_path, lambda: shutil.rmtree(destination_path)
@@ -417,16 +406,7 @@ def set_environ_config(args_parsed):
 
 def print_parallel(msg, *args, **kwargs):
     """
-     Print for console when BehaveX is executing in parallel.
-     example:
-    print_parallel('example.chain', 'value1') this first find the content in
-     content_dictionary with key example and chain, then will print these
-     content for console with handler bhx_parallel, if there is  kwargs no_chain
-      then will print msg
-     :param msg: the msg or chain
-     :param args:
-     :param kwargs:
-     :return:
+    Print to console when BehaveX is executing in parallel.
     """
     logger = logging.getLogger('bhx_parallel')
     if len(logger.handlers) == 0:
@@ -481,7 +461,7 @@ def configure_logging(args_parse):
         os.makedirs(os.path.abspath(get_env('logs')))
     # get logging configuration
 
-    logging_file = os.path.join(FWK_PATH, 'conf_logging.cfg')
+    logging_file = os.path.join(global_vars.execution_path, 'conf_logging.cfg')
     try:
         logging.config.fileConfig(logging_file)
     except Exception as logging_ex:
@@ -510,10 +490,10 @@ def configure_logging(args_parse):
 
 def len_scenarios(feature_file):
     """
-    The quantity of the scenarios that should be executed in the feature
-     with name filename
+    The amount of scenarios that should be executed for
+    the specified feature filename
     :param feature_file: Feature filename
-    :return: One integer with quantity of the scenarios
+    :return: Total scenarios
     """
     data = codecs.open(feature_file, encoding='utf8').read()
     feature = parse_feature(data=data)
@@ -533,7 +513,7 @@ def len_scenarios(feature_file):
 
 
 def check_environment_file():
-    """Check  if exists file environment.py in folder feature"""
+    """Check if environment.py module exists"""
     path_environment = os.path.join(os.environ.get('FEATURES_PATH'), 'environment.py')
     if not os.path.exists(path_environment):
         raise Exception("environment.py module not found in 'features' folder")
@@ -607,13 +587,15 @@ def create_custom_log_when_called(self, key):
 
 
 def get_json_results():
-    path_json = os.path.join(get_env('OUTPUT'), 'report.json')
+    path_json = os.path.join(
+        get_env('OUTPUT'), global_vars.report_filenames['report_json']
+    )
     with open(path_json, 'r') as json_file:
         json_results = json.load(json_file)
     return json_results or {}
 
 
-class MatchInclude(metaclass=Singleton):
+class MatchInclude(metaclass=ExecutionSingleton):
     """
     This object is used to check if any scenario or feature should be filtered by PATTERN
     """
@@ -637,7 +619,7 @@ class MatchInclude(metaclass=Singleton):
         return not self.reg.match(filename) is None
 
 
-class IncludePathsMatch(metaclass=Singleton):
+class IncludePathsMatch(metaclass=ExecutionSingleton):
     """
     This object is used for check if some scenario or feature should be filtered by paths.
     """
@@ -683,7 +665,7 @@ class IncludePathsMatch(metaclass=Singleton):
         return self.include_paths and self.features and self.folders
 
 
-class IncludeNameMatch(metaclass=Singleton):
+class IncludeNameMatch(metaclass=ExecutionSingleton):
     """
     This object is used to check if any scenario should be filtered by PATTERN
     """
@@ -701,3 +683,14 @@ class IncludeNameMatch(metaclass=Singleton):
 
     def match(self, scenario):
         return not self.reg.match(scenario) is None
+
+
+def get_autoretry_attempts(tags):
+    pattern = '^AUTORETRY(_(\\d+))*$'
+    attempts = 0
+    for tag in tags:
+        result = re.search(pattern, tag, re.IGNORECASE)
+        if result:
+            attempts_in_tag = result.group(2)
+            attempts = int(attempts_in_tag) if attempts_in_tag else 2
+    return attempts
