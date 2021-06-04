@@ -147,11 +147,11 @@ def launch_behavex():
     execution_codes = None
     time_init = time.time()
     features_path = os.environ.get('FEATURES_PATH')
-    parallel_element = get_param('parallel_element')
+    parallel_scheme = get_param('parallel_scheme')
     parallel_processes = get_param('parallel_processes')
     multiprocess = True if get_param('parallel_processes') > 1 else False
     if not multiprocess:
-        parallel_element = ''
+        parallel_scheme = ''
     set_behave_tags()
     scenario = False
     notify_missing_features()
@@ -166,12 +166,12 @@ def launch_behavex():
             execution_codes, json_reports = execute_tests(
                 [True], multiprocess=False, config=ConfigRun()
             )
-        elif parallel_element == 'scenario':
+        elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
                 features_list, process_pool
             )
             scenario = True
-        elif parallel_element == 'feature':
+        elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(
                 features_list, process_pool
             )
@@ -331,6 +331,7 @@ def launch_by_scenario(features, process_pool):
     json_reports = []
     filenames = []
     execution_codes = []
+    duplicated_scenarios = []
 
     for feature in features:
         for scenario in feature.scenarios:
@@ -339,9 +340,20 @@ def launch_by_scenario(features, process_pool):
             ) and include_name_match(scenario.name):
                 scenario.tags += feature.tags
                 if 'SERIAL' in scenario.tags:
+                    scenario_tuple = (feature.filename, scenario.name)
+                    if scenario_tuple in serial_scenarios:
+                        duplicated_scenarios.append(scenario.name)
                     serial_scenarios.append((feature.filename, scenario.name))
                 else:
+                    scenario_tuple = ([feature.filename], scenario.name)
+                    if scenario_tuple in filenames:
+                        duplicated_scenarios.append(scenario.name)
                     filenames.append(([feature.filename], scenario.name))
+    if duplicated_scenarios:
+        print_parallel(
+            'scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4)
+        )
+        exit()
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
         json_serial_reports = [
@@ -367,7 +379,7 @@ def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
     """
     Trigger one process with behave
     :param list_features: List of the feature
-    :param scenario: if the parallel-element is scenario
+    :param scenario: if the parallel-scheme is scenario
     :param multiprocess: if is running in parallel
     :param config: configuration file
 
@@ -456,7 +468,7 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     :param process_pool: process pool
     :param json_reports: list of the json that result of the execution
     :param multi_process: Boolean indicating if execution is running in parallel
-    :param scenario: True or False if the param element is scenario
+    :param scenario: True or False if the parallel scheme is scenario
     :return: None
     """
     merged_json = None
@@ -668,7 +680,7 @@ def _set_env_variables(args):
             'CONFIG',
             'OUTPUT',
             'TAGS',
-            'PARALLEL_ELEMENT',
+            'PARALLEL_SCHEME',
             'PARALLEL_PROCESSES',
             'TEMP',
             'LOGS',
@@ -695,7 +707,6 @@ def _store_tags_to_env_variable(tags):
     if tags:
         # TODO: review this logic
         for tag in tags:
-            # import pdb;pdb.set_trace()
             if get_env('TAGS'):
                 set_env_variable('TAGS', get_env('tags') + ';' + tag)
             else:
@@ -711,9 +722,9 @@ def _set_behave_arguments(
     Recreate command line arguments in order to
     call behave framework with the expected values
     :param multiprocess: if the mode is in parallel
-    :param feature: The specific feature to run if parallel element is feature
+    :param feature: The specific feature to run if parallel scheme is feature
      or scenario
-    :param scenario: The specific name of the scenario if parallel element is
+    :param scenario: The specific name of the scenario if parallel scheme is
      scenario
     :return:
     """

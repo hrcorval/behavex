@@ -73,7 +73,7 @@ BEHAVEX_ARGS = [
     'config',
     'dry_run',
     'tags',
-    'parallel_element',
+    'parallel_scheme',
     'parallel_processes',
 ]
 
@@ -286,7 +286,7 @@ def parse_arguments(args):
         required=False,
     )
     parser.add_argument(
-        '--parallel-element',
+        '--parallel-scheme',
         choices=['feature', 'scenario'],
         default='scenario',
         required=False,

@@ -406,16 +406,7 @@ def set_environ_config(args_parsed):
 
 def print_parallel(msg, *args, **kwargs):
     """
-     Print for console when BehaveX is executing in parallel.
-     example:
-    print_parallel('example.chain', 'value1') this first find the content in
-     content_dictionary with key example and chain, then will print these
-     content for console with handler bhx_parallel, if there is  kwargs no_chain
-      then will print msg
-     :param msg: the msg or chain
-     :param args:
-     :param kwargs:
-     :return:
+    Print to console when BehaveX is executing in parallel.
     """
     logger = logging.getLogger('bhx_parallel')
     if len(logger.handlers) == 0:
@@ -499,10 +490,10 @@ def configure_logging(args_parse):
 
 def len_scenarios(feature_file):
     """
-    The quantity of the scenarios that should be executed in the feature
-     with name filename
+    The amount of scenarios that should be executed for
+    the specified feature filename
     :param feature_file: Feature filename
-    :return: One integer with quantity of the scenarios
+    :return: Total scenarios
     """
     data = codecs.open(feature_file, encoding='utf8').read()
     feature = parse_feature(data=data)
@@ -522,7 +513,7 @@ def len_scenarios(feature_file):
 
 
 def check_environment_file():
-    """Check  if exists file environment.py in folder feature"""
+    """Check if environment.py module exists"""
     path_environment = os.path.join(os.environ.get('FEATURES_PATH'), 'environment.py')
     if not os.path.exists(path_environment):
         raise Exception("environment.py module not found in 'features' folder")
