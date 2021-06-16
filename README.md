@@ -18,7 +18,7 @@ Basically, using this wrapper you will be able to:
 * Execute dry runs and see the full list of scenarios into the HTML report
   * This is an override of the Behave dry run implementation
 
-### Constraints
+## Constraints
 
 * BehaveX is currently implemented over Behave **v1.2.6**, and not all Behave arguments are yet supported.
 * To perform parallel test executions the implementation triggers parallel Behave processes. So, whatever you have in the **before_all** and **after_all** methods in **environment.py** module, it will be re-executed on every parallel process. Also, the same will happen with the **before_feature** and **after_feature** methods when the parallel execution schema is set by scenario.
@@ -27,7 +27,7 @@ Basically, using this wrapper you will be able to:
 * The library is provided as is, and no tests over the framework have been implemented yet (there were tests at the beginning but they got deprecated). Any contribution on that end will help on delivering with confidence new library versions.
 * Some english translations might not be correct (even in docstrings) so we will be working on fixing this.
 
-### Supported Behave arguments
+## Supported Behave arguments
 The following Behave arguments are currently supported:
 * no_color
 * color
@@ -51,7 +51,7 @@ The following Behave arguments are currently supported:
 
 There might be more arguments that can be supported, it is just a matter of adapting the wrapper implementation to use these.
 
-### Additional BehaveX arguments
+## Additional BehaveX arguments
 * output_folder
   * Specifies the output folder for all execution reports
     * JUnit: <output_folfer>/behave/*.xml
@@ -65,8 +65,8 @@ There might be more arguments that can be supported, it is just a matter of adap
 * parallel_scheme
   * Performs the parallel test execution by [scenario|feature]
 
-### Parallel test executions
-Parallel test implementation is based on parallel Behave instances executed in multiple processes.
+## Parallel test executions
+The implementation for running tests in parallel is based on concurrent Behave instances executed in multiple processes.
 
 As mentioned as part of the wrapper constraints, this approach implies that whatever you have in the Python Behave hooks in **environment.py** module, it will be re-executed on every parallel process.
 
@@ -81,10 +81,28 @@ Examples:
 
 When the parallel-schema is set by **feature**, all tests within each feature will be run sequentially.
 
-### Additional test execution reports
+## Test execution reports
+### HTML report
+This is a friendly test execution report that contains information related to test scenarios, execution status, execution evidence and metrics. A filters bar is also provided to filter scenarios by name, tag or status.
+
+It should be available at the following path:
+> <output_folfer>/report.html
+
+### JSON report
+Contains information about test scenarios and execution status.
+
+It should be available at the following path:
+> <output_folfer>/report.json
+
+The report is provided to enable exporting test execution data and to simplify the integration with third party tools.
+
+### JUnit report
+It is an override of the Behave JUnit report, just to enable dealing with muted test scenarios
 
 
-### Additional evidence
-### Metrics
-### Dry runs
-### Mute test scenarios
+## Additional evidence
+
+
+## Metrics
+## Dry runs
+## Mute test scenarios
