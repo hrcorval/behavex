@@ -21,7 +21,7 @@ Basically, using this wrapper you will be able to:
 ## Constraints
 
 * BehaveX is currently implemented over Behave **v1.2.6**, and not all Behave arguments are yet supported.
-* To perform parallel test executions the implementation triggers parallel Behave processes. So, whatever you have in the **before_all** and **after_all** methods in **environment.py** module, it will be re-executed on every parallel process. Also, the same will happen with the **before_feature** and **after_feature** methods when the parallel execution schema is set by scenario.
+* Parallel execution implementation is based on concurrent Behave processes. So, whatever you have into the **before_all** and **after_all** methods in **environment.py** module, it will be re-executed on every parallel process. Also, the same will happen with the **before_feature** and **after_feature** methods when the parallel execution schema is set by scenario.
 * The stop argument does not work when performing parallel test executions.
 * The JUnit reports have been replaced by the ones created by the test wrapper, just to support muting tests
 * The library is provided as is, and no tests over the framework have been implemented yet (there were tests at the beginning but they got deprecated). Any contribution on that end will help on delivering with confidence new library versions.
