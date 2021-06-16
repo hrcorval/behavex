@@ -6,7 +6,7 @@ Basically, using this wrapper you will be able to:
   * By scenario
 * Get additional test execution reports.
   * Friendly HTML report
-  * JSON report (to enable exporting test execution information)
+  * JSON report (enable exporting|integrating test execution information)
 * Provide additional evidence as part of execution reports
   * Any testing evidence you get, you can paste it to a predefined folder path (by scenario) to be part of the HTML report
 * Generate test logs per scenario
@@ -49,4 +49,26 @@ The following Behave arguments are currently supported:
 * tags
 * tags-help
 
-There might be probably more arguments that can be supported, is just a matter of adapting the wrapper implementation to use it.
+There might be more arguments that can be supported, it is just a matter of adapting the wrapper implementation to use these.
+
+### Additional BehaveX arguments
+
+* output_folder
+  * Specifies the output folder for all execution reports
+    * JUnit: <output_folfer>/behave/*.xml
+    * HTML: <output_folfer>/report.html
+    * JSON: <output_folfer>/report.json
+* dry-run
+  * Overwrites the Behave dry-run implementation
+  * Performs a dry-run by listing the scenarios in the output reports
+* parallel_processes
+  * Specified the number of parallel Behave processes
+* parallel_scheme
+  * Performs the parallel test execution by [scenario|feature]
+
+### Parallel test executions
+### Additional test execution reports
+### Additional evidence
+### Metrics
+### Dry runs
+### Mute test scenarios
