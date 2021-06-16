@@ -4,7 +4,7 @@ Basically, using this wrapper you will be able to:
 * Perform parallel test executions (multi-process executions)
   * By feature
   * By scenario
-* Get additional test execution reports.
+* Get additional test execution reports
   * Friendly HTML report
   * JSON report (enable exporting|integrating test execution information)
 * Provide additional evidence as part of execution reports
@@ -25,7 +25,7 @@ Basically, using this wrapper you will be able to:
 * The stop argument does not work when performing parallel test executions.
 * The JUnit reports have been replaced by the ones created by the test wrapper, just to support muting tests
 * The library is provided as is, and no tests over the framework have been implemented yet (there were tests at the beginning but they got deprecated). Any contribution on that end will help on delivering with confidence new library versions.
-* Some english translations might not be correct (even in docstrings) so we will be working on fixing this.
+* Some english translations might not be correct (even in docstrings) so it is expected this is fixed soon.
 
 ## Supported Behave arguments
 The following Behave arguments are currently supported:
@@ -53,10 +53,7 @@ There might be more arguments that can be supported, it is just a matter of adap
 
 ## Additional BehaveX arguments
 * output_folder
-  * Specifies the output folder for all execution reports
-    * JUnit: <output_folfer>/behave/*.xml
-    * HTML: <output_folfer>/report.html
-    * JSON: <output_folfer>/report.json
+  * Specifies the output folder for all execution reports (JUnit, HTML and JSon)
 * dry-run
   * Overwrites the Behave dry-run implementation
   * Performs a dry-run by listing the scenarios as part of the output reports
@@ -64,6 +61,31 @@ There might be more arguments that can be supported, it is just a matter of adap
   * Specifies the number of parallel Behave processes
 * parallel_scheme
   * Performs the parallel test execution by [scenario|feature]
+
+## Installing BehaveX
+
+Execute the following command to install BehaveX with pip:
+
+> pip install behavex
+
+TODO: 1) Add behavex library to Pypi, 2) Behavex setup in environment.py
+
+## Executing BehaveX
+
+The execution is performed in the same way as you do when executing the behave from command line, but using the "behavex" command.
+
+Examples:
+
+> behavex -t @TAG_1  -t ~@TAG_2
+
+> behavex -t @TAG_1,@TAG_2
+
+> behavex -t @TAG --parallel-processes 4 --parallel-scheme scenario
+
+> behavex -t @TAG --parallel-processes 3
+
+> behavex -t @TAG --dry-run
+
 
 ## Parallel test executions
 The implementation for running tests in parallel is based on concurrent Behave instances executed in multiple processes.
@@ -75,9 +97,9 @@ BehaveX will be in charge of managing each parallel process, and consolidate all
 Parallel test executions can be performed by **feature** or by **scenario**.
 
 Examples:
-> behavex -t \<TAG\> --parallel-processes 2 --parallel-schema scenario
+> behavex -t @\<TAG\> --parallel-processes 2 --parallel-schema scenario
 
-> behavex -t \<TAG\> --parallel-processes 5 --parallel-schema feature
+> behavex -t @\<TAG\> --parallel-processes 5 --parallel-schema feature
 
 When the parallel-schema is set by **feature**, all tests within each feature will be run sequentially.
 
@@ -97,12 +119,43 @@ It should be available at the following path:
 The report is provided to enable exporting test execution data and to simplify the integration with third party tools.
 
 ### JUnit report
-It is an override of the Behave JUnit report, just to enable dealing with muted test scenarios
 
+The wrapper overwrites the Behave JUnit reports, just to enable dealing with parallel executions and muted test scenarios
 
-## Additional evidence
+By default, there will be one JUnit file per feature, unless the parallel execution is performed by scenario, in which there will be one JUnit file per scenario.
 
+Reports are available at the following path:
+> <output_folfer>/behave/*.xml
+
+## Attaching execution evidence
+
+It is considered a good practice to provide as much as evidence as possible in test executions reports to properly identify the root cause of issues.
+
+Any evidence file you generate when executing a test scenario, it can be stored into a folder path that the wrapper provides for each scenario.
+
+The evidence folter path is stored into the "evidence_path" context variable (or "context.evidence_path"). This variable is updated by the wrapper before executing each scenario, and all the files you copy into that path will be accesible from the HTML report linked to the executed scenario
+
+## Test logs per scenario
+
+The HTML report provides test execution logs per scenario. Everything that is being logged using the **logging** library will be stored into a test execution log file linked to the test scenario.
 
 ## Metrics
+
+There are a few metrics that can be easily calculated for the executed suite:
+* Automation Rate
+* Pass Rate
+* Steps execution counter and average execution time
+
+That metrics are provided as part of the HTML report
+
 ## Dry runs
-## Mute test scenarios
+
+The wrapper overwrites the Behave dry run implementation just to be able to provide the outputs into the wrapper reports.
+
+The HTML report generated as part of the dry run can be used to share the scenarios specifications with any stakeholder.
+
+## Muting test scenarios
+
+Sometimes it is necessary to have failing test scenarios to continue being executed in all build server plans, but having them muted until the test or product fix is provided.
+
+Tests are muted by adding the @MUTE tag to each test scenario. Muted scenarios will be run but the execution will not be notified in the JUnit reports. However, you will see the execution information in the HTML report.
