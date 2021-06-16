@@ -75,9 +75,9 @@ BehaveX will be in charge of managing each parallel process, and consolidate all
 Parallel test executions can be performed by **feature** or by **scenario**.
 
 Examples:
-> behavex -t <TAG> --parallel-processes 2 --parallel-schema scenario
+> behavex -t \<TAG\> --parallel-processes 2 --parallel-schema scenario
 
-> behavex -t <TAG> --parallel-processes 5 --parallel-schema feature
+> behavex -t \<TAG\> --parallel-processes 5 --parallel-schema feature
 
 When the parallel-schema is set by **feature**, all tests within each feature will be run sequentially.
 
