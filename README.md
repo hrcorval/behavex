@@ -60,9 +60,9 @@ There might be more arguments that can be supported, it is just a matter of adap
     * JSON: <output_folfer>/report.json
 * dry-run
   * Overwrites the Behave dry-run implementation
-  * Performs a dry-run by listing the scenarios in the output reports
+  * Performs a dry-run by listing the scenarios as part of the output reports
 * parallel_processes
-  * Specified the number of parallel Behave processes
+  * Specifies the number of parallel Behave processes
 * parallel_scheme
   * Performs the parallel test execution by [scenario|feature]
 
