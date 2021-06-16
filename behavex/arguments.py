@@ -272,6 +272,7 @@ def parse_arguments(args):
     # -------------------- adding lastly ---------------------------------------
     parser.add_argument(
         '--logging-level',
+        '--logging_level',
         default='INFO',
         choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'],
         help='Specify a level to capture logging at. The '
