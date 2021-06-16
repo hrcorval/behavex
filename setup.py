@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 setup(
     name='behavex',
     version='1.3.4',
-    python_requires='>=3',
+    python_requires='>=3, !=3.9.*',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',
     packages=find_packages(exclude=['tests']),
@@ -21,5 +21,19 @@ setup(
         'configobj',
         'htmlmin',
         'csscompressor',
+    ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Topic :: Software Development :: Testing',
     ],
 )
