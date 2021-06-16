@@ -81,7 +81,7 @@ BEHAVEX_ARGS = [
 def parse_arguments(args):
     """Process all command line arguments"""
     parser = argparse.ArgumentParser(
-        description='BehaveX - test automation wrapper on top of behave'
+        description='BehaveX - test automation wrapper on top of Behave'
     )
     parser.add_argument(
         '-c',
@@ -152,13 +152,13 @@ def parse_arguments(args):
     )
     parser.add_argument(
         '--exclude',
-        help="Don't run feature files matching regular ex" 'pression PATTERN.',
+        help="Don't run feature files matching regular expression PATTERN.",
         required=False,
     )
     parser.add_argument(
         '-i',
         '--include',
-        help='Only run feature files matching regular ' 'expression PATTERN.',
+        help='Only run feature files matching regular expression PATTERN.',
         required=False,
     )
     parser.add_argument(
@@ -172,7 +172,7 @@ def parse_arguments(args):
     parser.add_argument(
         '--no-capture',
         '--no_capture',
-        help="Don't capture stdout (any stdout output will" ' be printed immediately.)',
+        help="Don't capture stdout (any stdout output will be printed immediately.)",
         default=False,
         action='store_true',
         required=False,
@@ -189,7 +189,7 @@ def parse_arguments(args):
     parser.add_argument(
         '--no-capture-stderr',
         '--no_capture_stderr',
-        help="Don't capture stderr (any stderr output wil" 'l be printed immediately.)',
+        help="Don't capture stderr (any stderr output will be printed immediately.)",
         default=False,
         action='store_true',
         required=False,
@@ -208,7 +208,7 @@ def parse_arguments(args):
     parser.add_argument(
         '--no-logcapture',
         '--no_logcapture',
-        help="Don't capture logging. Logging configuration" 'will be left intact.',
+        help="Don't capture logging. Logging configuration will be left intact.",
         action='store_true',
         default=False,
         required=False,
