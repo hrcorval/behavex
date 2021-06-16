@@ -293,7 +293,7 @@ def launch_by_feature(features, process_pool):
     serial = [feature.filename for feature in features if 'SERIAL' in feature.tags]
 
     features_dict = {
-        feature.filename: feature
+        feature.filename: feature.name
         for feature in features
         if feature.filename not in serial
     }
@@ -305,8 +305,7 @@ def launch_by_feature(features, process_pool):
 
     print_parallel('feature.running_parallels')
 
-    for filename in features_dict.items():
-
+    for filename, _scenario_name in features_dict.items():
         process_pool.apply_async(
             execute_tests,
             ([filename], None, True, ConfigRun()),
@@ -343,12 +342,12 @@ def launch_by_scenario(features, process_pool):
                     scenario_tuple = (feature.filename, scenario.name)
                     if scenario_tuple in serial_scenarios:
                         duplicated_scenarios.append(scenario.name)
-                    serial_scenarios.append((feature.filename, scenario.name))
+                    serial_scenarios.append(scenario_tuple)
                 else:
                     scenario_tuple = ([feature.filename], scenario.name)
                     if scenario_tuple in filenames:
                         duplicated_scenarios.append(scenario.name)
-                    filenames.append(([feature.filename], scenario.name))
+                    filenames.append(scenario_tuple)
     if duplicated_scenarios:
         print_parallel(
             'scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4)
