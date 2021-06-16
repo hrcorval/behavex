@@ -52,7 +52,6 @@ The following Behave arguments are currently supported:
 There might be more arguments that can be supported, it is just a matter of adapting the wrapper implementation to use these.
 
 ### Additional BehaveX arguments
-
 * output_folder
   * Specifies the output folder for all execution reports
     * JUnit: <output_folfer>/behave/*.xml
@@ -67,7 +66,24 @@ There might be more arguments that can be supported, it is just a matter of adap
   * Performs the parallel test execution by [scenario|feature]
 
 ### Parallel test executions
+Parallel test implementation is based on parallel Behave instances executed in multiple processes.
+
+As mentioned as part of the wrapper constraints, this approach implies that whatever you have in the Python Behave hooks in **environment.py** module, it will be re-executed on every parallel process.
+
+BehaveX will be in charge of managing each parallel process, and consolidate all the information into the execution reports
+
+Parallel test executions can be performed by **feature** or by **scenario**.
+
+Examples:
+> behavex -t <TAG> --parallel-processes 2 --parallel-schema scenario
+
+> behavex -t <TAG> --parallel-processes 5 --parallel-schema feature
+
+When the parallel-schema is set by **feature**, all tests within each feature will be run sequentially.
+
 ### Additional test execution reports
+
+
 ### Additional evidence
 ### Metrics
 ### Dry runs
