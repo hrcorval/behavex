@@ -15,5 +15,15 @@ Basically, using this wrapper you will be able to:
   * By just adding the @MUTE tag to test scenarios, they will be executed, but they will not be part of the JUnit reports
 * Generate metrics in HTML report for the executed test suite
   * Automation Rate, Pass Rate and Steps executions & duration
+* Execute dry runs and see the full list of scenarios into the HTML report
+  * This is an override of the Behave dry run implementation
 
-It is important to mention that this wrapper is currently implemented over Behave 1.2.6, and not all Behave arguments are yet supported.
+### Constraints
+
+* BehaveX is currently implemented over Behave **v1.2.6**, and not all Behave arguments are yet supported.
+* To perform parallel test executions the implementation triggers parallel Behave processes. So, whatever you have in the **before_all** and **after_all** methods in **environment.py** module, it will be re-executed on every parallel process. Also, the same will happen with the **before_feature** and **after_feature** methods when the parallel execution schema is set by scenario.
+* The stop argument does not work when performing parallel test executions.
+* The library is provided as is, and no tests over the framework have been implemented yet (there were tests at the beginning but they got deprecated). Any contribution on that end will help on delivering with confidence new library versions.
+* Some english translations might not be correct (even in docstrings) so we will be working on fixing this.
+
+### Supported Behave arguments
