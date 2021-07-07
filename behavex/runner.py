@@ -24,10 +24,12 @@ from tempfile import gettempdir
 
 from behave import __main__ as behave_script
 
+# noinspection PyUnresolvedReferences
 import behavex.outputs.report_json
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, get_env, get_param, set_env
+from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
@@ -318,7 +320,7 @@ def launch_by_feature(features, process_pool):
 def launch_by_scenario(features, process_pool):
     """
     Split the test execution in multiple behave instances (processes) to
-    generate_gallery parallel test executions.
+    perform parallel test executions.
     In this case, parallelism is performed at scenario level, meaning that each
     parallel behave instance will pick up a scenario and execute it.
     As soon as the execution finishes, another scenario will be picked up to run
@@ -334,6 +336,7 @@ def launch_by_scenario(features, process_pool):
 
     for feature in features:
         for scenario in feature.scenarios:
+            # noinspection PyCallingNonCallable
             if include_path_match(
                 feature.filename, scenario.line
             ) and include_name_match(scenario.name):
@@ -448,6 +451,7 @@ def _launch_behave(args):
     generate_report = True
     execution_code = 0
     try:
+        extend_behave_hooks()
         behave_script.main(args)
     except KeyboardInterrupt:
         execution_code = 1
@@ -704,7 +708,6 @@ def _store_tags_to_env_variable(tags):
     tags_skip = [tag for tag in tags_skip if tag not in tags]
     tags = tags + ['~@{0}'.format(tag) for tag in tags_skip] if tags else []
     if tags:
-        # TODO: review this logic
         for tag in tags:
             if get_env('TAGS'):
                 set_env_variable('TAGS', get_env('tags') + ';' + tag)
@@ -777,7 +780,7 @@ def _set_behave_arguments(
                 value_arg = value_arg.replace(features_path, 'features').replace(
                     '\\', '\\\\'
                 )
-        if arg == 'define':
+        if arg == 'define' and value_arg:
             for key_value in value_arg:
                 arguments.append('--define')
                 arguments.append(key_value)

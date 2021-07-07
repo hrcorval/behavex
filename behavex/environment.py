@@ -6,10 +6,11 @@ BehaveX - Agile test wrapper on top of Behave (BDD)
 import logging
 import os
 import shutil
+import sys
 
 from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 from behave.log_capture import capture
-from behave.runner import Context
+from behave.runner import Context, ModelRunner
 
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param
@@ -24,6 +25,44 @@ from behavex.utils import (
 )
 
 Context.__getattribute__ = create_custom_log_when_called
+
+
+def extend_behave_hooks():
+    """
+    Extend Behave hooks with BehaveX hooks code
+    Using cookie cutter to implement this
+    """
+    behave_run_hook = ModelRunner.run_hook
+    behavex_env = sys.modules[__name__]
+
+    def run_hook(self, name, context, *args):
+        if name == 'before_all':
+            # noinspection PyUnresolvedReferences
+            behavex_env.before_all(context)
+        elif name == 'before_feature':
+            # noinspection PyUnresolvedReferences
+            behavex_env.before_feature(context, *args)
+        elif name == 'before_scenario':
+            # noinspection PyUnresolvedReferences
+            behavex_env.before_scenario(context, *args)
+        elif name == 'before_step':
+            # noinspection PyUnresolvedReferences
+            behavex_env.before_step(context, *args)
+        elif name == 'after_step':
+            # noinspection PyUnresolvedReferences
+            behavex_env.after_step(context, *args)
+        elif name == 'after_scenario':
+            # noinspection PyUnresolvedReferences
+            behavex_env.after_scenario(context, *args)
+        elif name == 'after_feature':
+            # noinspection PyUnresolvedReferences
+            behavex_env.after_feature(context, *args)
+        elif name == 'after_all':
+            # noinspection PyUnresolvedReferences
+            behavex_env.after_all(context, *args)
+        behave_run_hook(self, name, context, *args)
+
+    ModelRunner.run_hook = run_hook
 
 
 def before_all(context):
