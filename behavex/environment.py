@@ -25,6 +25,7 @@ from behavex.utils import (
 )
 
 Context.__getattribute__ = create_custom_log_when_called
+hooks_already_set = False
 
 
 def extend_behave_hooks():
@@ -32,37 +33,40 @@ def extend_behave_hooks():
     Extend Behave hooks with BehaveX hooks code
     Using cookie cutter to implement this
     """
+    global hooks_already_set
     behave_run_hook = ModelRunner.run_hook
     behavex_env = sys.modules[__name__]
 
     def run_hook(self, name, context, *args):
+        behave_run_hook(self, name, context, *args)
         if name == 'before_all':
             # noinspection PyUnresolvedReferences
             behavex_env.before_all(context)
-        elif name == 'before_feature':
+        if name == 'before_feature':
             # noinspection PyUnresolvedReferences
             behavex_env.before_feature(context, *args)
-        elif name == 'before_scenario':
+        if name == 'before_scenario':
             # noinspection PyUnresolvedReferences
             behavex_env.before_scenario(context, *args)
-        elif name == 'before_step':
+        if name == 'before_step':
             # noinspection PyUnresolvedReferences
             behavex_env.before_step(context, *args)
-        elif name == 'after_step':
+        if name == 'after_step':
             # noinspection PyUnresolvedReferences
             behavex_env.after_step(context, *args)
-        elif name == 'after_scenario':
+        if name == 'after_scenario':
             # noinspection PyUnresolvedReferences
             behavex_env.after_scenario(context, *args)
-        elif name == 'after_feature':
+        if name == 'after_feature':
             # noinspection PyUnresolvedReferences
             behavex_env.after_feature(context, *args)
-        elif name == 'after_all':
+        if name == 'after_all':
             # noinspection PyUnresolvedReferences
             behavex_env.after_all(context, *args)
-        behave_run_hook(self, name, context, *args)
 
-    ModelRunner.run_hook = run_hook
+    if not hooks_already_set:
+        hooks_already_set = True
+        ModelRunner.run_hook = run_hook
 
 
 def before_all(context):
@@ -149,6 +153,7 @@ def after_feature(context, feature):
 
 def after_all(context):
     try:
+        # noinspection PyProtectedMember
         report_json.generate_execution_info(context, context._runner.features)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)

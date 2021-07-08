@@ -393,6 +393,7 @@ def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
     execution_codes, generate_report = [], False
     if multiprocess:
         ExecutionSingleton._instances[ConfigRun] = config
+    extend_behave_hooks()
     for feature in list_features:
         try:
             args = _set_behave_arguments(multiprocess, feature, scenario, paths, config)
@@ -451,7 +452,6 @@ def _launch_behave(args):
     generate_report = True
     execution_code = 0
     try:
-        extend_behave_hooks()
         behave_script.main(args)
     except KeyboardInterrupt:
         execution_code = 1
