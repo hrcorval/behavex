@@ -30,11 +30,6 @@ from behavex.global_vars import global_vars
 
 
 def gather_steps_with_definition(features, steps_definition):
-    """
-    Gather steps with definition.
-
-    :return dict:
-    """
     all_steps = []
     for feature in features:
         for scenario in feature['scenarios']:
@@ -55,24 +50,6 @@ def gather_steps_with_definition(features, steps_definition):
 
 
 def get_summary_definition(steps):
-    """
-    Get summary for a step definitions.
-
-    :param steps: list of behave.model.step
-    :return dict: a dict with follow keys:
-     avg:
-     time:
-     status:
-     executions:
-     appearances:
-     steps: dict with follow keys:
-        avg:
-        executions:
-        time:
-        status:
-        appearances:
-    """
-
     result = {'steps': {}, 'status': []}
     for step in steps:
         result['status'].append(step['status'])
@@ -120,17 +97,6 @@ def get_summary_definition(steps):
 
 
 def count_by_status(values, func='getitem'):
-    """
-    Count the status.
-
-    create a tuple with 3 int, the first in count the quantity of status passed exitst,
-    seconds the quantity status failed exist and the last the quantity of status skipped,
-     undefined and s untested
-
-    :param values: Element that are iterable and contain the key status
-    :param func:
-    :return: tuple
-    """
     if func == 'getitem':
         get_item = getitem
     elif func == 'getattr':
@@ -155,27 +121,6 @@ def count_by_status(values, func='getitem'):
 
 
 def calculate_status(list_status):
-    """
-    Calculate the finally status.
-
-    It Should be a list with word 'passed', 'failed', 'passed', 'untested'
-    >> lst = ['passed', 'passed', 'failed']
-    >> calculate_status(lst)
-    'failed'
-    >> lst = ['passed', 'passed', 'skipped']
-    >> calculate_status(lst)
-    'passed'
-    >> lst = ['untested', 'passed', 'skipped']
-    >> calculate_status(lst)
-    'passed'
-    >> lst = ['untested', 'skipped', 'skipped']
-    >> calculate_status(lst)
-    'skipped'
-
-    :param list_status: list.
-    :return str:
-    """
-
     set_status = set(list_status)
     if 'untested' in set_status:
         set_status.remove('untested')
@@ -192,8 +137,6 @@ def calculate_status(list_status):
 
 
 def gather_steps(features):
-    """retrieves a dictionary with steps used in latest test execution,
-    together with the number of times they were executed"""
     steps = {}
     for feature in features:
         for scenario in feature['scenarios']:
@@ -227,7 +170,6 @@ def gather_steps(features):
 
 
 def gather_errors(scenario, retrieve_step_name=False):
-    """Retrieve the error message related to a particular failing scenario"""
     if retrieve_step_name:
         return scenario['error_msg'], scenario['error_lines'], scenario['error_step']
     else:
@@ -235,7 +177,6 @@ def gather_errors(scenario, retrieve_step_name=False):
 
 
 def pretty_print_time(seconds_float, sec_decimals=1):
-    """pretty print time based on a given number of seconds"""
     seconds_float = round(seconds_float, sec_decimals)
     minutes, seconds = divmod(seconds_float, 60)
     hours, minutes = divmod(minutes, 60)
@@ -257,13 +198,11 @@ def pretty_print_time(seconds_float, sec_decimals=1):
 
 
 def normalize_path(path):
-    """Normalize the path for support in linux and windows"""
     exp = re.compile('\\\\|/')
     return os.path.join(*exp.split(path))
 
 
 def resolving_type(step, scenario, background=True):
-    """Resolving if have that put And or your step_type"""
     if step['index'] == 0:
         return step['step_type'].title()
     else:
@@ -282,9 +221,6 @@ def resolving_type(step, scenario, background=True):
 
 
 def try_operate_descriptor(dest_path, execution, return_value=False):
-    """This function tries to operate with the descriptor, if the execution
-    fails, then the flow of execution stops until the user enters the 'F' key
-    to rerun the operation"""
     passed = False
     following = True
     retry_number = 1
@@ -328,7 +264,6 @@ def try_operate_descriptor(dest_path, execution, return_value=False):
 
 
 def get_status(dictionary):
-    """Return the status"""
     return (
         dictionary.get('failed', False)
         or dictionary.get('passed', False)
@@ -337,9 +272,6 @@ def get_status(dictionary):
 
 
 def get_test_execution_tags():
-    """return the tags given of the console execution
-    :return: tags
-    """
     if not get_env('behave_tags'):
         behave_tags_path = os.path.join(
             os.path.abspath(get_env('OUTPUT')), global_vars.behave_tags_file
@@ -355,7 +287,6 @@ def get_test_execution_tags():
 
 
 def match_for_execution(tags):
-    """ Indicates if provided tags match with execution tags """
     # Check filter
     tag_re = re.compile(r'@?[\w\d\-_.]+')
     tags_filter = get_test_execution_tags()
@@ -384,7 +315,6 @@ def match_for_execution(tags):
 
 
 def copy_bootstrap_html_generator(output):
-    """copy the bootstrap directory for portable html"""
     dest_path = os.path.join(output, 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
@@ -396,7 +326,6 @@ def copy_bootstrap_html_generator(output):
 
 
 def get_overall_status(output):
-    """Calculating overall status"""
     if not output:
         return {'status': 'skipped'}
     overall_status = {
@@ -407,19 +336,7 @@ def get_overall_status(output):
 
 
 def get_save_function(path, content):
-    """
-    Returns a function that saves a file with the specified
-    content and file privileges
-    :param path: location of file
-    :param content:  The content that will be written to the file
-    :return: fun_save function
-    """
-
     def fun_save():
-        """
-        Functino aux for save.
-        :return:
-        """
         with codecs.open(path, 'w', 'utf8') as file_:
             file_.write(content)
         os.chmod(path, 511)  # nosec
@@ -428,10 +345,6 @@ def get_save_function(path, content):
 
 
 def create_log_path(name, execution_retry=False):
-    """
-    Creating a new folder in configured log path.
-    If folder exists, a suffix number is added to that folder.
-    """
     name = normalize_filename(name)
     if sys.version_info < (3, 0):
         path = os.path.join(get_env('logs').decode('utf8'), str(name))
@@ -449,7 +362,6 @@ def create_log_path(name, execution_retry=False):
 
 
 def get_error_message(message_error):
-    """"Retrieve errors in unicode format, removing invalid characters"""
     if not message_error:
         return u''
     if isinstance(message_error, Exception):
@@ -469,12 +381,6 @@ def get_error_message(message_error):
 
 
 def text(value, encoding=None, errors=None):
-    """Convert into a unicode string.
-    :param value:  Value to convert into a unicode string (bytes, str, object).
-    :param encoding: convertion encoding
-    :param errors:
-    :return: Unicode string
-    """
     if value:
         value = value.name if isinstance(value, Status) else value.replace('\\', '/')
     if encoding is None:
@@ -503,10 +409,6 @@ def text(value, encoding=None, errors=None):
 
 
 def normalize_filename(input_name):
-    """
-    Removes invalid filename characters like '<>:"/\\| ?*'
-    inputName = string or unicode object.
-    """
     valid_name = None
     try:
         if sys.version_info[0] == 2:

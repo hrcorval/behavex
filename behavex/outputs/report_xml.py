@@ -22,16 +22,7 @@ from behavex.outputs.report_utils import (
 
 
 def _export_feature_to_xml(feature, isobject=True):
-    """This function generate_gallery one file xml with information of the scenario"""
-
     def get_scenarios(feature_):
-        """
-        Access to attribute scenarios depend if is object then accessing
-        as attribute else accessing to dictionary
-        :param feature_:
-        :return:
-        """
-
         def flatter_scenarios(scenarios_list):
             return sum(
                 (
@@ -46,21 +37,9 @@ def _export_feature_to_xml(feature, isobject=True):
         )
 
     def get_tags(scenario_):
-        """
-        Access to attribute scenarios depend if is object then accessing
-        as attribute else accessing to dictionary
-        :param scenario_:
-        :return:
-        """
         return scenario_.tags if isobject else scenario_['tags']
 
     def get_status(scenario_):
-        """
-        Access to attribute scenarios depend if is object then accessing
-        as attribute else accessing to dictionary
-        :param scenario_:
-        :return:
-        """
         return scenario_.status if isobject else scenario_['status']
 
     scenarios = [
@@ -123,5 +102,4 @@ def _export_feature_to_xml(feature, isobject=True):
 
 
 def export_feature_to_xml(feature, isobject=True):
-    """This function generate_gallery one file xml with information of the scenario"""
     _export_feature_to_xml(feature, isobject)

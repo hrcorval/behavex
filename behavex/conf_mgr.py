@@ -100,7 +100,6 @@ class ConfigRun(metaclass=ExecutionSingleton):
         self.environ[key] = value
 
     def get_param_config(self, key_chain):
-        """Get text of the dictionary with annotation in chain"""
         keys = key_chain.split('.')
         if len(keys) == 1:
             keys = ['params'] + keys
@@ -116,8 +115,6 @@ class ConfigRun(metaclass=ExecutionSingleton):
         return ''
 
     def get_param(self, key_chain, arg=None):
-        """Method for accessing parameters with logic between file config and
-        opt module."""
         if not arg:
             arg = key_chain.split('.')[-1]
         if getattr(self.args, arg):

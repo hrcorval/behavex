@@ -30,8 +30,7 @@ hooks_already_set = False
 
 def extend_behave_hooks():
     """
-    Extend Behave hooks with BehaveX hooks code
-    Using cookie cutter to implement this
+    Extend Behave hooks with BehaveX hooks code.
     """
     global hooks_already_set
     behave_run_hook = ModelRunner.run_hook

@@ -3,29 +3,6 @@
 /*
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */
-
-This module it is a set  with functions used en common for some packages.
-
-FUNCTIONS:
-    - get_logging_level
-    - join_feature_reports
-    - join_list_dict
-    - join_step_definitions
-    - join_scenario_reports
-    - explore_features
-    - should_be_run
-    - copy_bootstrap_html_generator
-    - cleanup_folders
-    - set_env_variable
-    - set_environ_config
-    - print_parallel
-    - get_text
-    - configure_logging
-    - len_scenarios
-    - check_environment_file
-    - set_behave_tags
-    - set_system_paths
-    - generate_reports
 """
 # __future__ added for compatibility
 from __future__ import absolute_import, print_function
@@ -69,30 +46,15 @@ LOGGING_LEVELS = {
 
 
 def append_results(codes, json_reports, tuple_values):
-    """
-
-    :param codes:
-    :param json_reports:
-    :param tuple_values:
-    :return:
-    """
     codes.append(tuple_values[0])
     json_reports.append(tuple_values[1])
 
 
 def create_partial_function_append(codes, json_reports):
-    """
-    return a function partial.
-
-    :param codes: list
-    :param json_reports: list
-    :return: function
-    """
     return functools.partial(append_results, codes, json_reports)
 
 
 def get_logging_level():
-    """Get logging level from file config or argument."""
     if get_param('logging_level'):
         log_level = get_param('logging_level')
     else:
@@ -103,11 +65,6 @@ def get_logging_level():
 
 # noinspection PyDictCreation
 def join_feature_reports(json_reports):
-    """
-    Join intermediate values
-    :param json_reports: list of outputs
-    :return: json united
-    """
     scenario_lines = get_env('scenario_lines')
     if len(json_reports) == 1:
         merged_json = json_reports[0]
@@ -141,13 +98,6 @@ def join_feature_reports(json_reports):
 
 
 def join_list_dict(json_reports, key):
-    """
-    Join list of dict.
-
-    :param json_reports:
-    :param key:
-    :return:
-    """
     new_list_dict = sum(
         (json_[key] for json_ in json_reports if isinstance(json_[key], dict)), []
     )
@@ -155,12 +105,6 @@ def join_list_dict(json_reports, key):
 
 
 def join_step_definitions(json_reports):
-    """
-    Join dict from json_reports['steps_definition']*[]:
-
-    :param json_reports:
-    :return: dict
-    """
     # the update function forced to return a list
     def update(x, y):
         if isinstance(x, dict) and isinstance(y, dict):
@@ -181,11 +125,6 @@ def join_step_definitions(json_reports):
 
 
 def join_scenario_reports(json_reports):
-    """
-    Join intermediate values with logic by scenarios
-    :param json_reports: list of json
-    :return: json
-    """
     result = {}
     status = {}
     for json_ in json_reports:
@@ -219,12 +158,6 @@ def join_scenario_reports(json_reports):
 
 
 def explore_features(features_path, features_list=None):
-    """
-    Explore features path and create one list with features path that are inside
-    :param features_path: The folder path
-    :param features_list: The accumulator
-    :return:
-    """
     if features_list is None:
         features_list = []
     for node in os.listdir(features_path):
@@ -240,11 +173,6 @@ def explore_features(features_path, features_list=None):
 
 
 def should_be_run(path_feature):
-    """
-    Parse file and calculating if there are tags that should matching with tags to run
-    :param path_feature: the path of the feature
-    :return: boolean
-    """
     feature = parse_file(path_feature)
     if not feature:
         tags_list = []
@@ -283,12 +211,6 @@ def match_any_paths(feature):
 
 
 def match_any_name(feature):
-    """
-    Check if any scenario name of the feature match with PATTERN  passed in argument NAME.
-
-    :param feature: obj Feature
-    :return: True|False
-    """
     if not IncludeNameMatch().bool():
         return True
     result = False
@@ -304,7 +226,6 @@ def match_any_name(feature):
 
 
 def copy_bootstrap_html_generator():
-    """copy the bootstrap directory for portable html"""
     destination_path = os.path.join(get_env('OUTPUT'), 'outputs', 'bootstrap')
     bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
@@ -318,7 +239,6 @@ def copy_bootstrap_html_generator():
 
 
 def cleanup_folders():
-    """ Cleanup folders before execution. """
     # output folder
     output_folder = get_env('output')
 
@@ -350,23 +270,12 @@ def cleanup_folders():
 
 
 def set_env_variable(key, value):
-    """
-    Create environment variables based on the provided command line arguments
-    :param key:
-    :param value:
-    :return:
-    """
     if value:
         os.environ[key] = str(value)
         set_env(key.lower(), value)
 
 
 def print_env_variables(keys):
-    """
-    Print an environment variable in table format
-    :param keys: List containing the environment variable keys to print
-    :return:
-    """
     key_length = 20
     value_length = 60
     print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
@@ -387,10 +296,6 @@ def print_env_variables(keys):
 
 
 def set_environ_config(args_parsed):
-    """Return the framework configuration values as a dictionary.
-    If no config file is provided as execution argument, default
-    values are set from conf_behavex.cfg
-    """
     global CONFIG
     global CONFIG_PATH
     CONFIG_PATH = None
@@ -405,9 +310,6 @@ def set_environ_config(args_parsed):
 
 
 def print_parallel(msg, *args, **kwargs):
-    """
-    Print to console when BehaveX is executing in parallel.
-    """
     logger = logging.getLogger('bhx_parallel')
     if len(logger.handlers) == 0:
         console_log = logging.StreamHandler(sys.stdout)
@@ -420,18 +322,6 @@ def print_parallel(msg, *args, **kwargs):
 
 
 def get_text(key_chain):
-    """
-    Find content by key_chain in module content_dictionary
-    example:
-    if there is in module TEXTS
-    content = {
-        'scenario': {'running_start': 'running scenario with name {} .'}
-    }
-    and call get_text('scenario.running_start')
-    then return str 'running scenario with name {} .'
-    :param key_chain: the key_chain for find
-    :return:
-    """
     dictionary = TEXTS
     keys = key_chain.split('.')
     result = None
@@ -449,13 +339,6 @@ def get_text(key_chain):
 
 
 def configure_logging(args_parse):
-    """Configures the implemented 'logger'.
-    Implemented Handlers:
-        - StreamHandler: Writes logs to console
-        - FileHandler: Writes tests log in the folder specified
-            in the 'output' --> 'path' variable of the solution
-            configuration file
-    """
     # Create log folder
     if not os.path.exists(get_env('logs')):
         os.makedirs(os.path.abspath(get_env('logs')))
@@ -489,12 +372,6 @@ def configure_logging(args_parse):
 
 
 def len_scenarios(feature_file):
-    """
-    The amount of scenarios that should be executed for
-    the specified feature filename
-    :param feature_file: Feature filename
-    :return: Total scenarios
-    """
     data = codecs.open(feature_file, encoding='utf8').read()
     feature = parse_feature(data=data)
     amount_scenarios = 0
@@ -513,16 +390,12 @@ def len_scenarios(feature_file):
 
 
 def check_environment_file():
-    """Check if environment.py module exists"""
     path_environment = os.path.join(os.environ.get('FEATURES_PATH'), 'environment.py')
     if not os.path.exists(path_environment):
         raise Exception("environment.py module not found in 'features' folder")
 
 
 def set_behave_tags():
-    """
-    Setting tags behave and recording in file
-    """
     behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
     tags = []
     # Check for tags passed as arguments
@@ -552,7 +425,6 @@ def set_behave_tags():
 
 
 def set_system_paths():
-    """Add temporary folder to the system path"""
     input_path = os.pathsep + get_env('temp')
     os.environ['PATH'] += input_path
 
@@ -562,15 +434,6 @@ def generate_reports(json_output):
 
 
 def create_custom_log_when_called(self, key):
-    """
-    If key is evidence_path then will create the evidence_path with value of
-    log_path joined custom_logs and will create the folder, else, will call
-    the generic method __getattribute__.
-
-    :param self:
-    :param key:
-    :return:
-    """
     if key == 'evidence_path':
         if not hasattr(self, 'log_path'):
             if not hasattr(self, 'scenario'):
@@ -596,10 +459,6 @@ def get_json_results():
 
 
 class MatchInclude(metaclass=ExecutionSingleton):
-    """
-    This object is used to check if any scenario or feature should be filtered by PATTERN
-    """
-
     def __init__(self, expr=None):
         if not expr:
             expr = get_param('include').replace("'", '"')
@@ -620,10 +479,6 @@ class MatchInclude(metaclass=ExecutionSingleton):
 
 
 class IncludePathsMatch(metaclass=ExecutionSingleton):
-    """
-    This object is used for check if some scenario or feature should be filtered by paths.
-    """
-
     def __init__(self, paths=None):
         if not paths:
             paths = get_env('include_paths', get_param('include_paths'))
@@ -666,10 +521,6 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
 
 
 class IncludeNameMatch(metaclass=ExecutionSingleton):
-    """
-    This object is used to check if any scenario should be filtered by PATTERN
-    """
-
     def __init__(self, expr=None):
         if not expr:
             expr = get_param('name').replace("'", '"')

@@ -23,7 +23,6 @@ from behavex.outputs.report_utils import (
 
 
 def generate_report(output, joined=None, report=None):
-    """Generate outputs in html format"""
     environment = output['environment']
     features = output['features']
     steps_definition = output['steps_definition']
@@ -38,7 +37,6 @@ def generate_report(output, joined=None, report=None):
 
 
 def _create_manifest(relative, page):
-    """Create file manifest from template"""
     parameters_template = {'relative': relative, 'page': page}
     template_handler = TemplateHandler(global_vars.jinja_templates_path)
     output_text = template_handler.render_template(
@@ -55,7 +53,6 @@ def _create_manifest(relative, page):
 
 
 def _create_files_report(content_to_file):
-    """Create files for report html"""
     for name_file, content in content_to_file.items():
         if name_file == 'report.html':
             layout_path = os.path.join(
@@ -87,7 +84,6 @@ def _create_files_report(content_to_file):
 
 
 def get_metrics_variables(scenarios):
-    """Processing variable for generating metrics in charts"""
     skipped = sum(
         scenario['status'] not in ['passed', 'failed'] for scenario in scenarios
     )
@@ -119,7 +115,6 @@ def get_metrics_variables(scenarios):
 def export_result_to_html(
     environment, features, metrics_variables, steps_definition, joined=None, report=None
 ):
-    """Create test_result.html file with feature information"""
     totals, summary = export_to_html_table_summary(features)
     tags, scenarios = get_value_filters(features)
     steps_summary = gather_steps_with_definition(features, steps_definition)
@@ -143,7 +138,6 @@ def export_result_to_html(
 
 
 def get_value_filters(features):
-    """Processing data feature  for generate_gallery the filters"""
     tags = {
         tag
         for feature in features
@@ -161,7 +155,6 @@ def get_value_filters(features):
 
 
 def export_to_html_table_summary(features):
-    """Generate summary for report html"""
     list_fields = [
         'Feature',
         'Total',

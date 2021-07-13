@@ -5,15 +5,8 @@
 * BehaveX - Agile test wrapper on top of Behave (BDD)
 */
 
-This module parse params for framework behavex.
-
-Variables:
-    - BEHAVE_ARGS
-    - BEHAVEX_ARGS
-
-Functions:
-    - parse_arguments
-
+Parse all framework arguments, the ones from BehaveX and
+the ones from Behave supported by the wrapper
 """
 # __future__ has been added to maintain compatibility
 from __future__ import absolute_import

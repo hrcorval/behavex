@@ -33,14 +33,9 @@ from behavex.outputs.report_utils import (
 
 
 class TemplateHandler(metaclass=ExecutionSingleton):
-    """This class template handler"""
+    """Handler to manage all jinja templates"""
 
     def __init__(self, template_path):
-        """
-        This inicialize templateHandler
-        :param template_path: the path of template file
-        :return: class templateHandler
-        """
         self.template_loader = jinja2.FileSystemLoader(searchpath=template_path)
         self.template_env = jinja2.Environment(
             loader=self.template_loader, autoescape=True
@@ -83,38 +78,18 @@ class TemplateHandler(metaclass=ExecutionSingleton):
             self.template_env.globals.update(path_join=os.path.join)
 
     def get_filters(self):
-        """return filters the jinja
-        :return: list of the filters
-        """
         return self.template_env.filters
 
     def get_template(self, name):
-        """
-        Return the template
-        :param name: template name
-        :return: template
-        """
         return self.template_env.get_template(name)
 
     def render_template(self, template_name, parameter_template=None):
-        """
-        Render the template with parameters
-        :param template_name: name the template in folder template
-        :param parameter_template: the parameters for template
-        :return: the str with contains template renders
-        """
         if parameter_template is None:
             parameter_template = {}
         # This function has been forced to return a string type
         return str(self.get_template(str(template_name)).render(parameter_template))
 
     def add_filter(self, function_filter, name_function=None):
-        """
-        Add filter to templateHandler
-        :param function_filter: function to add
-        :param name_function: the name to call in template
-        :return: true if ok added
-        """
         if name_function is None:
             # func_name has been replaced by __name__
             self.get_filters()[function_filter.__name__] = function_filter
@@ -124,7 +99,6 @@ class TemplateHandler(metaclass=ExecutionSingleton):
             raise Exception('name_function must be of type str')
 
     def _get_text(self, key_chain):
-        """Get text of the dictionary with anotation in chain"""
         result = None
         keys = key_chain.split('.')
         dictionary = self.dictionary_texts
@@ -142,12 +116,6 @@ class TemplateHandler(metaclass=ExecutionSingleton):
 
 
 def _exist_extra_logs(scenario):
-    """
-    Check if there are some file inside of folder extra logs.
-
-    :param scenario:
-    :return:
-    """
     extra_logs_folder = get_path_extra_logs(scenario)
     if os.path.exists(extra_logs_folder):
         return len(os.listdir(extra_logs_folder)) >= 1
@@ -183,36 +151,23 @@ def get_extra_logs_file(scenario):
 
 
 def _calculate_color(list_status):
-    """
-    Calculate color.
-
-    first calculate the status then it choose coloe
-    :param list_status:
-    :return str: green|red|grey
-    """
     color = {'passed': 'green', 'skipped': 'grey', 'failed': 'red'}
     return color[calculate_status(list_status)]
 
 
 def _print_step(step):
-    """Printing step in format for usuario and handle encoding"""
     return u'{0} {1} ... {2} in {3:.4}s '.format(
         step.step_type, step.name, step.status, float(step.duration)
     )
 
 
 def _print_step_json(step):
-    """Printing step in format for usuario and handle encoding"""
     return u'{0} {1} ... {2} in {3:.4}s '.format(
         step['step_type'], step['name'], step['status'], float(step['duration'])
     )
 
 
 def get_lines_exception(step):
-    """
-    :param step:
-    :return:
-    """
     if step.exception:
         return u'\n'.join(
             [16 * u' ' + line for line in traceback.format_tb(step.exc_traceback)]
@@ -222,17 +177,10 @@ def get_lines_exception(step):
 
 
 def _path_exist_in_output(path):
-    """
-    This function checked that path is in folder_output passed in config
-    :param path: the path to checked
-    :return: boolean
-    """
     return os.path.exists(os.path.join(os.path.abspath(get_env('OUTPUT')), path))
 
 
 def _get_list_exception_steps(steps, backs_steps):
-    """Return list of the step with that have exception set in your attribute"""
-
     def is_failing(step):
         return step.exception or step.status == 'undefined'
 
@@ -241,9 +189,6 @@ def _get_list_exception_steps(steps, backs_steps):
 
 
 def _get_path_log(scenario):
-    """
-    return the path a folder log
-    """
     path_logs = get_env('logs')
     # scenario.keys()  has been forced to be a list to maintain compatibility
     if 'log' in list(scenario.keys()):
@@ -253,19 +198,16 @@ def _get_path_log(scenario):
 
 
 def _quoteattr(string):
-    """Escape and quote an attribute value"""
     return "''" if not string else quoteattr(string)
 
 
 def _print_tag_xml(tags):
-    """return the list of the tag with @"""
     if not tags:
         return ''
     return '   '.join(['@{0}'.format(tag) for tag in tags])
 
 
 def _create_progress_html(total, passed=0, failed=0, skipped=0):
-    """creates a progress bar in html calculating each parcentage"""
     div = (
         '<div class="progress-bar progress-bar-default progress-behavex-{}"'
         ' role="progressbar" style="width:{}" title="{}"></div>'
@@ -302,7 +244,6 @@ def _create_progress_html(total, passed=0, failed=0, skipped=0):
 
 
 def _resolving_color_class(status):
-    """returns the class depending on the status code"""
     status_lower = status.lower()
     if status_lower in ('failed', 'error'):
         return 'danger'
@@ -316,7 +257,6 @@ def _resolving_color_class(status):
 
 # environment.keys() has been forced to be a list
 def _export_environments_title(environments):
-    """Export environments to string for title of the element html5"""
     result = ''
     max_name = max(len(list(environment.keys())[0]) for environment in environments)
     row = '{} --{}>  {}\n'
@@ -330,14 +270,12 @@ def _export_environments_title(environments):
 
 
 def create_tags_set(feature):
-    """Create set of tags taht are part of the scenarios in a feature"""
     result = {str(tag) for scenario in feature['scenarios'] for tag in scenario['tags']}
     return list(result)
 
 
 # to_string_list has been forced to return a list
 def to_string_list(tags):
-    """convert each element in string"""
     if tags is None:
         return []
     return list(map(str, tags))
@@ -401,10 +339,6 @@ def invalid_xml_remove(c):
 
 
 def clean_char(char):
-    """
-    Function for remove invalid XML characters from
-    incoming data.
-    """
     # Get rid of the ctrl characters first.
     # http://stackoverflow.com/questions/1833873/python-regex-escape-characters
     # Variable char has been forced to be a string

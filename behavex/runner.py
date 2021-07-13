@@ -86,7 +86,6 @@ def main():
 
 
 def run(args):
-    """Perform all the required actions in order to do the test execution."""
     global match_include
     global include_path_match
     global include_name_match
@@ -114,13 +113,6 @@ def run(args):
 
 
 def setup_running_failures(args_parsed):
-    """
-    Set the variable INCLUDE_PATHS with output set on failures.txt
-      if the variable RUN_FAILURES is set to True.
-
-    :param args_parsed:
-    :return: EXIT_OK|EXIT_ERROR
-    """
     if args_parsed.run_failures:
         set_env_variable('RUN_FAILURES', args_parsed.run_failures)
         failures_path = os.path.join(
@@ -151,7 +143,11 @@ def launch_behavex():
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
     parallel_processes = get_param('parallel_processes')
-    multiprocess = True if get_param('parallel_processes') > 1 else False
+    multiprocess = (
+        True
+        if get_param('parallel_processes') > 1 and not get_param('dry_run')
+        else False
+    )
     if not multiprocess:
         parallel_scheme = ''
     set_behave_tags()
@@ -161,7 +157,7 @@ def launch_behavex():
     create_scenario_line_references(features_list)
     process_pool = multiprocessing.Pool(parallel_processes, init_multiprocessing)
     try:
-        if parallel_processes == 1:
+        if parallel_processes == 1 or get_param('dry_run'):
             # when it is not multiprocess
             if get_param('dry_run'):
                 print('Obtaining information about the reporting scope...')
@@ -233,9 +229,6 @@ def launch_behavex():
 
 
 def notify_missing_features():
-    """
-    Print the paths of .feature files that do not exist.
-    """
     include_paths = get_env('include_paths', [])
     for path in include_paths:
         include_path = path.partition(':')[0]
@@ -244,11 +237,6 @@ def notify_missing_features():
 
 
 def create_test_list(test_list):
-    """
-    :param test_list:
-    :return: Dictionary containing the feature paths
-            and line number of scenarios to run again
-    """
     paths = []
     sce_lines = get_env('scenario_lines')
     for feature, scenarios in test_list.items():
@@ -258,14 +246,6 @@ def create_test_list(test_list):
 
 
 def create_scenario_line_references(features):
-    """
-    create a dictionary with name scenario as key and the value content the first number
-    line where  the scenario is defined. this result will is stored a global
-    variable scenario_lines
-
-    :param features: The json with information of the results execution
-    :return: None
-    """
     sce_lines = {}
     for feature in features:
         sce_lines[text(feature.filename)] = {}
@@ -280,16 +260,6 @@ def create_scenario_line_references(features):
 
 
 def launch_by_feature(features, process_pool):
-    """
-    Split the test execution in multiple behave instances (processes) to
-    generate_gallery parallel test executions.
-    In this case, parallelism is performed at feature level, meaning that each
-    parallel behave instance will pick up a feature, and the scenarios in
-    each feature file will be executed sequentially
-    :param features: List containing all features
-    :param process_pool: The process pool
-    :return: json with json executions
-    """
     json_reports = []
     execution_codes = []
     serial = [feature.filename for feature in features if 'SERIAL' in feature.tags]
@@ -318,16 +288,6 @@ def launch_by_feature(features, process_pool):
 
 
 def launch_by_scenario(features, process_pool):
-    """
-    Split the test execution in multiple behave instances (processes) to
-    perform parallel test executions.
-    In this case, parallelism is performed at scenario level, meaning that each
-    parallel behave instance will pick up a scenario and execute it.
-    As soon as the execution finishes, another scenario will be picked up to run
-    :param features: List containing all features
-    :param process_pool: The process pool
-    :return: json with json executions
-    """
     serial_scenarios = []
     json_reports = []
     filenames = []
@@ -378,15 +338,6 @@ def launch_by_scenario(features, process_pool):
 
 
 def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
-    """
-    Trigger one process with behave
-    :param list_features: List of the feature
-    :param scenario: if the parallel-scheme is scenario
-    :param multiprocess: if is running in parallel
-    :param config: configuration file
-
-    :return:
-    """
     args = None
     json_reports = []
     paths = config.get_env('include_paths', [])
@@ -419,14 +370,6 @@ def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
 
 
 def filter_feature_executed(json_output, filename, scenario_name):
-    """
-    Filter the info feature about that is executed and delete the others features.
-
-    :param json_output:
-    :param filename:
-    :param scenario_name:
-    :return:
-    """
     for feature in json_output.get('features', '')[:]:
         if feature.get('filename', '') == filename:
             mapping_scenarios = []
@@ -441,12 +384,6 @@ def filter_feature_executed(json_output, filename, scenario_name):
 
 
 def _launch_behave(args):
-    """
-    Run the test cases using Behave testing framework.
-    Configuration is passed through command line parameters.
-    :param args: string list for passing to behave
-    :return:
-    """
     # Save tags configuration to report only selected scenarios
     # Check for tags in config file
     generate_report = True
@@ -466,14 +403,6 @@ def _launch_behave(args):
 
 
 def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=False):
-    """
-    Close process pool and generate_gallery outputs
-    :param process_pool: process pool
-    :param json_reports: list of the json that result of the execution
-    :param multi_process: Boolean indicating if execution is running in parallel
-    :param scenario: True or False if the parallel scheme is scenario
-    :return: None
-    """
     merged_json = None
     output = os.path.join(get_env('OUTPUT'))
     try:
@@ -504,12 +433,6 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
 
 
 def filter_by_paths(merged_json_reports):
-    """
-    filter information about features that has executed.
-
-    :param merged_json_reports:
-    :return: None
-    """
     sce_lines = get_env('scenario_lines')
     if not sce_lines:
         return
@@ -539,10 +462,6 @@ def filter_by_paths(merged_json_reports):
 
 
 def remove_temporary_files(parallel_processes):
-    """
-    Remove files generated for multiprocessing
-    :param parallel_processes: quantity of processes
-    """
     path_info = os.path.join(
         os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_json'])
     )
@@ -587,12 +506,6 @@ def remove_temporary_files(parallel_processes):
 
 
 def processing_xml_feature(json_output, scenario):
-    """
-    Processing json to generate_gallery an xml per feature when execution is completed
-    :param json_output: The output json of the partial feature execution
-    :param scenario: The scenario name to process
-    :return:
-    """
     if json_output['features'] and 'scenarios' in json_output['features'][0]:
 
         scenarios_old = json_output['features'][0]['scenarios']
@@ -639,14 +552,6 @@ def processing_xml_feature(json_output, scenario):
 
 
 def _set_env_variables(args):
-    """Setting arguments as environment variables, in order to
-        use them when executing actions in a separate process.
-        Also, CONFIG env variable is set in init module, as it
-        is used when initializing several framework modules
-         :param args: the args provider from console
-    :param args: the args parsing
-    :return:
-    """
     output_folder = os.path.normpath(get_env('output'))
     if os.path.isabs(output_folder):
         set_env_variable('OUTPUT', output_folder)
@@ -693,11 +598,6 @@ def _set_env_variables(args):
 
 
 def _store_tags_to_env_variable(tags):
-    """
-    Process execution tags and store them into an environment variable
-    :param tags: Execution tags list
-    :return:
-    """
     config = conf_mgr.get_config()
     tags_skip = config['test_run']['tags_to_skip']
     if isinstance(tags_skip, str) and tags_skip:
@@ -720,16 +620,6 @@ def _store_tags_to_env_variable(tags):
 def _set_behave_arguments(
     multiprocess, feature=None, scenario=None, paths=None, config=None
 ):
-    """
-    Recreate command line arguments in order to
-    call behave framework with the expected values
-    :param multiprocess: if the mode is in parallel
-    :param feature: The specific feature to run if parallel scheme is feature
-     or scenario
-    :param scenario: The specific name of the scenario if parallel scheme is
-     scenario
-    :return:
-    """
     arguments = []
     output_folder = config.get_env('OUTPUT')
     if multiprocess:
@@ -796,26 +686,12 @@ def _set_behave_arguments(
 
 
 def set_args_captures(args, args_sys):
-    """
-    Set the arguments related with capture outputs arguments.
-
-    :param args:
-    :param args_sys:
-    :return:
-    """
     for default_arg in ['capture', 'capture_stderr', 'logcapture']:
         if not getattr(args_sys, 'no_{}'.format(default_arg)):
             args.append('--no-{}'.format(default_arg.replace('_', '-')))
 
 
 def set_paths_argument(args, paths):
-    """
-    Set args iterating with the values of paths
-
-    :param args:
-    :param paths:
-    :return: None
-    """
     if paths:
         for path in paths:
             args.append(os.path.realpath(path))

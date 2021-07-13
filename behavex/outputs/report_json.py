@@ -28,23 +28,11 @@ from behavex.utils import try_operate_descriptor
 
 
 def add_step_info(step, parent_node):
-    """
-    Create dictionary with step information
-    :param step: step
-    :param parent_node: parent node
-    :return: None
-    """
     index = len(parent_node)
     parent_node.append(_step_to_dict(index, step))
 
 
 def add_step_info_background(step, parent_node):
-    """
-    Create dictionary with background information
-    :param step: step
-    :param parent_node: parent node
-    :return: None
-    """
     step_info = {}
     for attrib in ('step_type', 'name', 'text', 'status'):
         step_info[attrib] = text(getattr(step, attrib))
@@ -63,13 +51,6 @@ def add_step_info_background(step, parent_node):
 
 
 def generate_execution_info(context, features, test=False):
-    """
-    Generate json with test execution information
-    :param context: context variable containing test execution information
-    :param features: informaiton about all executed features
-    :param test: do not generate the resport if tests is set to True
-    :return: json object
-    """
     # Generate scenario list
     feature_list = []
 
@@ -103,7 +84,6 @@ def generate_execution_info(context, features, test=False):
 
 
 def save_info_json(context, feature_list):
-    """Save JSON containing test execution information"""
     environment_info = ''
     if hasattr(context, 'environment'):
         environment_info = context.environment
@@ -150,11 +130,6 @@ def save_info_json(context, feature_list):
 
 # noinspection PyBroadException
 def _processing_background(scenario):
-    """
-    Processes background information associated to the test scenario
-    :param scenario: test scenario
-    :return: dictionary with background information
-    """
     scenario_background = {'duration': 0.0, 'steps': []}
     if scenario.background:
         steps = []
@@ -168,11 +143,6 @@ def _processing_background(scenario):
 
 # noinspection PyBroadException
 def _processing_background_feature(feature):
-    """
-    Processes background information associated to the feature
-    :param feature: feature
-    :return: dictionary with background information
-    """
     feature_background = {}
     if feature.background:
         steps = []
@@ -184,11 +154,6 @@ def _processing_background_feature(feature):
 
 
 def _processing_scenarios(scenarios, scenario_list, id_feature):
-    """Processes all scenarios associated to a feature
-    :param scenarios: all scenarios
-    :param scenario_list: list used to append the scenarios
-    :return: tuple with overall_status and scenario list
-    """
     scenario_outline_index = 0
     overall_status = 'passed'
     for scenario in scenarios:
@@ -233,7 +198,6 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
 
 
 def _get_error_scenario(scenario):
-    """Retrieve the error message related to a particular failing scenario """
     error_lines = []
     error_msg = u''
     failing_step = None
@@ -267,7 +231,6 @@ def _get_error_scenario(scenario):
 
 
 def _step_to_dict(index, step):
-    """Step to dict"""
     step_info = {}
     for attrib in ('step_type', 'name', 'text', 'status'):
         step_info[attrib] = (
@@ -294,13 +257,6 @@ def _step_to_dict(index, step):
 
 
 def process_step_definition(step, step_info):
-    """
-    Process step definition and add key in STEPS_DEFINITION.
-
-    :param step:
-    :param step_info:
-    :return:
-    """
     definition = registry.find_step_definition(step)
     if definition:
         hash_step = _generate_hash(definition.string)
@@ -312,5 +268,4 @@ def process_step_definition(step, step_info):
 
 
 def _generate_hash(word):
-    """Generate has h from specified word"""
     return abs(hash(word)) % (10 ** 8)
