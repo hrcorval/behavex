@@ -17,6 +17,7 @@ performance_output/
 eggs/
 .eggs/
 .idea
+.pypirc
 lib/
 lib64/
 parts/
