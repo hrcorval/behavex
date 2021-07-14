@@ -144,7 +144,7 @@ There are a few metrics that can be easily calculated for the executed suite:
 * Pass Rate
 * Steps execution counter and average execution time
 
-That metrics are provided as part of the HTML report
+All metrics are provided as part of the HTML report
 
 ## Dry runs
 
