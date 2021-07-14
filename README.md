@@ -68,8 +68,6 @@ Execute the following command to install BehaveX with pip:
 
 > pip install behavex
 
-TODO: 1) Add behavex library to Pypi, 2) Behavex setup in environment.py
-
 ## Executing BehaveX
 
 The execution is performed in the same way as you do when executing the behave from command line, but using the "behavex" command.
