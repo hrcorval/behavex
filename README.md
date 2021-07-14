@@ -152,6 +152,9 @@ The wrapper overwrites the Behave dry run implementation just to be able to prov
 
 The HTML report generated as part of the dry run can be used to share the scenarios specifications with any stakeholder.
 
+Example:
+> behavex -t @TAG --dry-run
+
 ## Muting test scenarios
 
 Sometimes it is necessary to have failing test scenarios to continue being executed in all build server plans, but having them muted until the test or product fix is provided.
