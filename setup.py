@@ -3,13 +3,15 @@ from setuptools import find_packages, setup
 
 setup(
     name='behavex',
-    version='1.4.1',
+    version='1.5.0',
     python_requires='>=3, !=3.9.*',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',
+    url='https://github.com/hrcorval/behavex',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     description='Agile test wrapper on top of Behave (BDD).',
+    long_description_content_type='text/markdown',
     entry_points={
         'console_scripts': [
             'behavex = behavex.runner:main',
