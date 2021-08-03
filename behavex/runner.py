@@ -365,7 +365,6 @@ def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
             except Exception as ex:
                 logging.exception(ex)
         json_reports.append(json_output)
-
     return execution_codes, join_feature_reports(json_reports)
 
 
@@ -374,10 +373,7 @@ def filter_feature_executed(json_output, filename, scenario_name):
         if feature.get('filename', '') == filename:
             mapping_scenarios = []
             for scenario in feature['scenarios']:
-                pattern = re.compile(
-                    '{}(.--.@\\d+.\\d+)?'.format(re.escape(scenario_name))
-                )
-                if pattern.match(scenario['name']):
+                if scenario_name_matching(scenario_name, scenario['name']):
                     mapping_scenarios.append(scenario)
             feature['scenarios'] = mapping_scenarios
             return [feature]
@@ -508,13 +504,13 @@ def remove_temporary_files(parallel_processes):
 def processing_xml_feature(json_output, scenario):
     if json_output['features'] and 'scenarios' in json_output['features'][0]:
 
-        scenarios_old = json_output['features'][0]['scenarios']
-        scenario_executed = [
-            scen
-            for scen in scenarios_old
-            if scen['name'] == scenario
-            or (scen['name'].startswith(scenario) and '@' in scen['name'])
-        ]
+        reported_scenarios = json_output['features'][0]['scenarios']
+
+        scenario_executed = []
+        for reported_scenario in reported_scenarios:
+            reported_name = reported_scenario['name']
+            if reported_name == scenario or ('@' in reported_name and scenario_name_matching(scenario, reported_name)):
+                scenario_executed.append(reported_scenario)
         json_output['features'][0]['scenarios'] = scenario_executed
         feature_name = os.path.join(
             get_env('OUTPUT'), u'{}.tmp'.format(json_output['features'][0]['name'])
@@ -626,8 +622,12 @@ def _set_behave_arguments(
         arguments.append(feature)
         arguments.append('--no-summary')
         if scenario:
+            outline_examples_in_name = re.findall('<\\S*>', scenario)
+            scenario_outline_compatible = '{}(.?--.?@\\d*.\\d*\\s*)?$'.format(re.escape(scenario))
+            for example_name in outline_examples_in_name:
+                scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "\\S*")
             arguments.append('--name')
-            arguments.append('{}(.?--.?@\\d*.\\d*\\s*)?$'.format(re.escape(scenario)))
+            arguments.append(scenario_outline_compatible)
         name = multiprocessing.current_process().name.split('-')[-1]
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
@@ -695,6 +695,15 @@ def set_paths_argument(args, paths):
     if paths:
         for path in paths:
             args.append(os.path.realpath(path))
+
+
+def scenario_name_matching(abstract_scenario_name, scenario_name):
+    outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
+    scenario_outline_compatible = '{}(.--.@\\d+.\\d+)?'.format(re.escape(abstract_scenario_name))
+    for example_name in outline_examples_in_name:
+        scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "\\S*")
+    pattern = re.compile(scenario_outline_compatible)
+    return pattern.match(scenario_name)
 
 
 def dump_json_results():

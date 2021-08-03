@@ -208,7 +208,7 @@ def export_to_html_table_summary(features):
         summary[feature['name']] = fields.copy()
         summary[feature['name']]['muted'] = muted
 
-    if len(features) > 0:
+    if len(features) > 0 and fields_total['Total'] > 0:
         fields_total['Execution Status'] = '%.2f' % (
             (float(fields_total['Executed']) / fields_total['Total']) * 100
         )
