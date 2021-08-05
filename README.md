@@ -1,4 +1,5 @@
 # BehaveX
+
 BehaveX is a test wrapper on top of Behave, that provides additional capabilites that are useful in testing pipelines.
 Basically, using this wrapper you will be able to:
 * Perform parallel test executions (multi-process executions)
@@ -110,6 +111,13 @@ This is a friendly test execution report that contains information related to te
 
 It should be available at the following path:
 > <output_folfer>/report.html
+
+#### Screenshots
+![test execution report](img/html_test_report.png?raw=true)
+
+![test execution report](img/html_test_report_2.png?raw=true)
+
+![test execution report](img/html_test_report_3.png?raw=true)
 
 ### JSON report
 Contains information about test scenarios and execution status.
