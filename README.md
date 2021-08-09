@@ -19,6 +19,12 @@ Basically, using this wrapper you will be able to:
 * Execute dry runs and see the full list of scenarios into the HTML report
   * This is an override of the Behave dry run implementation
 
+![test execution report](img/html_test_report.png?raw=true)
+
+![test execution report](img/html_test_report_2.png?raw=true)
+
+![test execution report](img/html_test_report_3.png?raw=true)
+
 ## Constraints
 
 * BehaveX is currently implemented over Behave **v1.2.6**, and not all Behave arguments are yet supported.
@@ -112,12 +118,6 @@ This is a friendly test execution report that contains information related to te
 It should be available at the following path:
 > <output_folfer>/report.html
 
-#### Screenshots
-![test execution report](img/html_test_report.png?raw=true)
-
-![test execution report](img/html_test_report_2.png?raw=true)
-
-![test execution report](img/html_test_report_3.png?raw=true)
 
 ### JSON report
 Contains information about test scenarios and execution status.
