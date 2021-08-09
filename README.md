@@ -19,11 +19,11 @@ Basically, using this wrapper you will be able to:
 * Execute dry runs and see the full list of scenarios into the HTML report
   * This is an override of the Behave dry run implementation
 
-![test execution report](img/html_test_report.png?raw=true)
+![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report.png?raw=true)
 
-![test execution report](img/html_test_report_2.png?raw=true)
+![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report_2.png?raw=true)
 
-![test execution report](img/html_test_report_3.png?raw=true)
+![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report_3.png?raw=true)
 
 ## Constraints
 
