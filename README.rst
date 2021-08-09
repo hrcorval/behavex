@@ -5,21 +5,34 @@ BehaveX is a test wrapper on top of Behave, that provides additional
 capabilites that are useful in testing pipelines. Basically, using this
 wrapper you will be able to:
 
-- Perform parallel test executions (multi-process executions)
-   - By feature
-   - By scenario
-- Get additional test execution reports
-   - Friendly HTML report
-   - JSON report (enable exporting|integrating test execution information)
-- Provide additional evidence as part of execution reports
-   - Any testing evidence you get, you can paste it to a predefined folder path (by scenario) to be part of the HTML report
-- Generate test logs per scenario
+-  Perform parallel test executions (multi-process executions)
+
+   -  By feature
+   -  By scenario
+
+-  Get additional test execution reports
+
+   -  Friendly HTML report
+   -  JSON report (enable exporting|integrating test execution information)
+
+-  Provide additional evidence as part of execution reports
+
+   -  Any testing evidence you get, you can paste it to a predefined folder path (by scenario) to be part of the HTML report
+
+-  Generate test logs per scenario
+
    - Whatever you log in test steps using the logging library, it will generate an individual log report for each scenario
-- Mute test scenarios in build servers
+
+-  Mute test scenarios in build servers
+
    - By just adding the @MUTE tag to test scenarios, they will be executed, but they will not be part of the JUnit reports
-- Generate metrics in HTML report for the executed test suite
+
+-  Generate metrics in HTML report for the executed test suite
+
    - Automation Rate, Pass Rate and Steps executions & duration
-- Execute dry runs and see the full list of scenarios into the HTML report
+
+-  Execute dry runs and see the full list of scenarios into the HTML report
+
    - This is an override of the Behave dry run implementation
 
 .. figure:: https://github.com/hrcorval/behavex/blob/master/img/html_test_report.png?raw=true
@@ -61,11 +74,27 @@ Additional Comments
 Supported Behave arguments
 --------------------------
 
-The following Behave arguments are currently supported: \* no_color \*
-color \* define \* exclude \* include \* no_snippets \* no_capture \*
-name \* capture \* no_capture_stderr \* capture_stderr \* no_logcapture
-\* logcapture \* logging_level \* summary \* quiet \* stop \* tags \*
-tags-help
+The following Behave arguments are currently supported:
+
+- no_color
+- color
+- define
+- exclude
+- include
+- no_snippets
+- no_capture
+- name
+- capture
+- no_capture_stderr
+- capture_stderr
+- no_logcapture
+- logcapture
+- logging_level
+- summary
+- quiet
+- stop
+- tags
+- tags-help
 
 There might be more arguments that can be supported, it is just a matter
 of adapting the wrapper implementation to use these.
@@ -163,14 +192,18 @@ related to test scenarios, execution status, execution evidence and
 metrics. A filters bar is also provided to filter scenarios by name, tag
 or status.
 
-It should be available at the following path: > /report.html
+It should be available at the following path:
+
+   <output_folfer>/report.html
 
 JSON report
 ~~~~~~~~~~~
 
 Contains information about test scenarios and execution status.
 
-It should be available at the following path: > /report.json
+It should be available at the following path:
+
+   <output_folfer>/report.json
 
 The report is provided to enable exporting test execution data and to
 simplify the integration with third party tools.
@@ -187,9 +220,7 @@ JUnit file per scenario.
 
 Reports are available at the following path:
 
-.. code-block::
-
-   <output_folfer>/behave/*.xml
+   <output_folfer>/behave/\*.xml
 
 Attaching additional execution evidence
 ---------------------------------------
@@ -220,9 +251,9 @@ Metrics
 There are a few metrics that can be easily calculated for the executed
 suite:
 
- - Automation Rate
- - Pass Rate
- - Steps execution counter and average execution time
+- Automation Rate
+- Pass Rate
+- Steps execution counter and average execution time
 
 All metrics are provided as part of the HTML report
 
