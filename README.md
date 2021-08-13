@@ -10,7 +10,7 @@ Basically, this wrapper encapsulates the Behave framework functionality and incl
   * By scenario
 * Get additional test execution reports
   * Friendly HTML report
-  * JSON report (enable exporting|integrating test execution information)
+  * JSON report (enable exporting the test execution information and integrating with third party tools)
 * Provide additional evidence as part of execution reports
   * Any testing evidence you get, you can paste it to a predefined folder path (by scenario) to be part of the HTML report
 * Generate test logs per scenario
