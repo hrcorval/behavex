@@ -442,8 +442,11 @@ def create_custom_log_when_called(self, key):
             self.log_path = normalize_filename(self.scenario.name)
         evidence_path = os.path.join(self.log_path, 'evidence')
         self.evidence_path = evidence_path
-        if not os.path.exists(evidence_path):
-            os.makedirs(evidence_path)
+        try:
+            os.makedirs(evidence_path, exist_ok=True)
+        except OSError as error:
+            print("It was not possible to create the folder to store additional scenario evidence...")
+            raise error
         return evidence_path
     else:
         return object.__getattribute__(self, key)
