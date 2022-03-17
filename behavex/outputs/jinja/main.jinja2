@@ -459,7 +459,7 @@
             {%- endif -%}
             {% if step.text is defined and step.text != "None" %}
             <div class="small attr_text">
-                {{ step.text|replace_enter|e|replace("&lt;br&gt;", "<br>")|replace(' ', '&nbsp;&nbsp;')}}
+                {{ step.text|replace_enter|e|replace("&lt;br&gt;", "<br>")|replace('&nbsp;', ' ')}}
             </div>
 
             {% endif%}
@@ -882,7 +882,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "passed" -%}
-                                '{{step_name|safe}}',
+                                '{{step_name|safe|replace("'", "&#39;")}}',
                             {%- endif -%}
                         {%- endfor -%}
                         ],
@@ -899,7 +899,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "failed" -%}
-                                '{{step_name|safe}}',
+                                '{{step_name|safe|replace("'", "&#39;")}}',
                             {%- endif -%}
                         {%- endfor -%}
                         ],
