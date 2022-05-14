@@ -3,8 +3,8 @@ from setuptools import find_packages, setup
 
 setup(
     name='behavex',
-    version='1.5.3',
-    python_requires='>=3, !=3.9.*',
+    version='1.5.4',
+    python_requires='>=3.5',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',
     url='https://github.com/hrcorval/behavex',
@@ -36,6 +36,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Software Development :: Testing',
     ],
 )

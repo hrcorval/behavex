@@ -11,3 +11,13 @@ ENHANCEMENTS:
 DOCUMENTATION:
 
 * Adding HTML report screenshots to documentation
+
+Version: 1.5.4
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Fixing encoding issues in HTML report
+* Enabling wrapper to run with latest python versions
+
+
