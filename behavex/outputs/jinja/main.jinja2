@@ -882,7 +882,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "passed" -%}
-                                '{{step_name|safe|replace("'", "&#39;")}}',
+                                '{{step_name}}',
                             {%- endif -%}
                         {%- endfor -%}
                         ],
@@ -899,7 +899,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "failed" -%}
-                                '{{step_name|safe|replace("'", "&#39;")}}',
+                                '{{step_name}}',
                             {%- endif -%}
                         {%- endfor -%}
                         ],

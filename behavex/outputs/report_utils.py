@@ -14,6 +14,7 @@ Test report utility methods for retrieving summarized test execution information
 from __future__ import absolute_import, print_function
 
 import codecs
+import hashlib
 import os
 import re
 import shutil
@@ -409,58 +410,5 @@ def text(value, encoding=None, errors=None):
 
 
 def normalize_filename(input_name):
-    valid_name = None
-    try:
-        if sys.version_info[0] == 2:
-            if isinstance(input_name, str):
-                if isinstance(input_name, str):
-                    input_name = text(input_name)
-            else:
-                raise TypeError
-            if not input_name:
-                return u''
-            # xrange has been replaced for range
-            characters = ''.join(map(chr, range(255)))
-            reserved_characters = '<>:"/\\|?*'
-            for character in reserved_characters:
-                characters = characters.replace(character, '')
-            valid_name = ''.join(char for char in input_name if char in characters)
-            valid_name = unicodedata.normalize('NFKD', valid_name).encode(
-                'ascii', 'ignore'
-            )
-            valid_name = string.capwords(valid_name)
-            valid_name = valid_name.replace(' ', '_')
-            if isinstance(valid_name, str):
-                valid_name = text(valid_name)
-        if sys.version_info[0] == 3:
-            if isinstance(input_name, str):
-                pass
-            else:
-                raise TypeError
-            characters = ''.join(chr(i) for i in range(255))
-            reserved_characters = '<>:"/\\|?*'
-            for character in reserved_characters:
-                characters = characters.replace(character, '')
-            valid_name = ''.join(char for char in input_name if char in characters)
-            valid_name = unicodedata.normalize('NFKD', valid_name).encode(
-                'ascii', 'ignore'
-            )
-            if isinstance(valid_name, str):
-                valid_name = string.capwords(valid_name)
-            else:
-                valid_name = bytes.title(valid_name)
-            if isinstance(valid_name, str):
-                valid_name = valid_name.replace(' ', '_')
-            else:
-                valid_name = valid_name.replace(b' ', b'_')
-            if isinstance(valid_name, str):
-                valid_name = bytes(valid_name, encoding='UTF-8')
-        if isinstance(valid_name, bytes):
-            valid_name = valid_name.decode('utf8')
-        return valid_name
-    except TypeError:
-        err_msg = 'Input should be str or unicode, but received a: {}'.format(
-            type(input_name)
-        )
-        print(err_msg)
-        return
+    return str(hashlib.sha256(input_name.encode('UTF-8')).hexdigest())
+
