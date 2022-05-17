@@ -299,8 +299,8 @@ def parse_arguments(args):
         default='',
         action='store_true',
         help='Re-executes all failing scenarios published into the '
-        'failing_scenarios.txt file. This file is created at the root '
-        'folder of your testing project after every test run (only when '
+        'failing_scenarios.txt file. This file is created into the '
+        'testing project root folder after every test run (only when '
         'there are failing scenarios).',
         required=False,
     )
