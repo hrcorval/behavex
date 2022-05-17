@@ -8,7 +8,7 @@ class GlobalVars:
         self._report_filenames = {
             'report_json': 'report.json',
             'report_overall': 'overall_status.json',
-            'report_failures': 'failures.txt',
+            'report_failures': 'failing_scenarios.txt',
         }
         self._behave_tags_file = os.path.join('behave', 'behave.tags')
         self._jinja_templates_path = os.path.join(

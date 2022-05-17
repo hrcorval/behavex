@@ -175,3 +175,27 @@ Example:
 Sometimes it is necessary to have failing test scenarios to continue being executed in all build server plans, but having them muted until the test or product fix is provided.
 
 Tests are muted by adding the @MUTE tag to each test scenario. Muted scenarios will be run but the execution will not be notified in the JUnit reports. However, you will see the execution information in the HTML report.
+
+## What to do with failing scenarios?
+
+### @AUTORETRY tag
+
+This tag can be used for flacky scenarios or when the testing infrastructure is not stable at all.
+
+The @AUTORETRY tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails. 
+
+### Rerun all failed scenarios
+
+Whenever you perform an automated test execution and there are failing tests, the "failing_scenarios.txt" file is created into the root folder of your testing project.
+This file allows you to re-execute all failing scenarios again. This can be done by executing the following command:
+
+> behavex -rf
+
+or
+
+> behavex --rerun-failures
+
+To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the "-o" or "--output-folder" argument.
+
+It is important to mention that this argument doesn't work yet with parallel test executions, but we will work on adding this capability in upcoming library versions 
+ 

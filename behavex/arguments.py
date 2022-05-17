@@ -295,12 +295,13 @@ def parse_arguments(args):
     )
     parser.add_argument(
         '-rf',
-        '--run-failures',
+        '--rerun-failures',
         default='',
         action='store_true',
-        help='Run behavex with the parameter --include-paths with'
-        ' the value of the content from the failures.txt file'
-        ' located in result output.',
+        help='Re-executes all failing scenarios published into the '
+        'failing_scenarios.txt file. This file is created at the root '
+        'folder of your testing project after every test run (only when '
+        'there are failing scenarios).',
         required=False,
     )
     # parser.add_argument('--logging-format',
