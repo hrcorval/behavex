@@ -115,10 +115,7 @@ def run(args):
 def setup_running_failures(args_parsed):
     if args_parsed.run_failures:
         set_env_variable('RUN_FAILURES', args_parsed.run_failures)
-        failures_path = os.path.join(
-            get_env('OUTPUT'), global_vars.report_filenames['report_failures']
-        )
-
+        failures_path = os.path.abspath(global_vars.report_filenames['report_failures'])
         if not os.path.exists(failures_path):
             print('\nThere are no failing test scenarios to run.')
             return EXIT_ERROR
@@ -205,9 +202,7 @@ def launch_behavex():
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
             if failures:
-                failures_file_path = os.path.join(
-                    get_env('OUTPUT'), global_vars.report_filenames['report_failures']
-                )
+                failures_file_path = os.path.abspath(global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
                     parameters = create_test_list(failures)
                     failures_file.write(parameters)
