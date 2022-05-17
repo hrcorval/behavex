@@ -197,5 +197,5 @@ or
 
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the "-o" or "--output-folder" argument.
 
-It is important to mention that this argument doesn't work yet with parallel test executions, but we will work on adding this capability in upcoming library versions 
+It is important to mention that this argument doesn't work yet with parallel test executions 
  
