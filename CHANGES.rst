@@ -6,7 +6,7 @@ Version: 1.5.5
 
 ENHANCEMENTS:
 
-* Small refactoring over the "--run-failures (or -rf)" argument functionality, to store the file with failures into the root folder instead of the output folder, avoiding the file to get deleted after a re-execution.
+* Small refactoring over the "--rerun-failures (or -rf)" argument functionality, to store the file with failures into the root folder instead of the output folder, avoiding the file to get deleted after a re-execution.
 
 DOCUMENTATION:
 
