@@ -113,8 +113,8 @@ def run(args):
 
 
 def setup_running_failures(args_parsed):
-    if args_parsed.run_failures:
-        set_env_variable('RUN_FAILURES', args_parsed.run_failures)
+    if args_parsed.rerun_failures:
+        set_env_variable('RERUN_FAILURES', args_parsed.rerun_failures)
         failures_path = os.path.abspath(global_vars.report_filenames['report_failures'])
         if not os.path.exists(failures_path):
             print('\nThere are no failing test scenarios to run.')
