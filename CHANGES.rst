@@ -1,6 +1,22 @@
 Version History
 ===============================================================================
 
+Version: 1.5.9
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Another encoding fix applied to the HTML report to avoid breaking it on failing scenarios
+
+NOTES:
+
+* We apologize for all the previous versions that were generated in such a short period of  time. We have been working on including all requests from BehaveX users, and we were missing some of them (so we created new versions), and we did some mistakes in the meantime. We will organize to make it better next time
+
+CONTRIBUTIONS:
+
+* Contribution from `Ravi Salunkhe <https://github.com/salunkhe-ravi>`__ about sample project that instances the BehaveX wrapper: https://github.com/salunkhe-ravi/behavex-boilerplate-framework (Thanks Ravi!!)
+
+
 Version: 1.5.8
 -------------------------------------------------------------------------------
 
@@ -45,10 +61,6 @@ ENHANCEMENTS:
 * Fixed issue with scenario outlines containing quotes in description (scenario name not properly parsed)
 * Fixed encoding issues with step descriptions in HTML report
 * Enabled wrapper to run with latest python versions
-
-CONTRIBUTIONS:
-
-* Contribution from `Ravi Salunkhe <https://github.com/salunkhe-ravi>`__ about sample project that instances the BehaveX wrapper: https://github.com/salunkhe-ravi/behavex-boilerplate-framework (Thanks Ravi!!)
 
 Version: 1.5.3
 -------------------------------------------------------------------------------
