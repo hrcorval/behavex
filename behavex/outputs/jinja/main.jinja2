@@ -881,7 +881,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "passed" -%}
-                                decodeHtmlEntity({{step_name}}),
+                                decodeHtmlEntity('{{step_name}}'),
                             {%- endif -%}
                         {%- endfor -%}
                         ],
