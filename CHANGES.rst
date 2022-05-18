@@ -1,6 +1,15 @@
 Version History
 ===============================================================================
 
+Version: 1.5.7
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Reverting back implementation to normalize scenario names to be backward compatible
+* Fixing additional encoding issues reported by customers
+
+
 Version: 1.5.6
 -------------------------------------------------------------------------------
 
