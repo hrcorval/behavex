@@ -27,6 +27,7 @@ from behavex.outputs.report_utils import (
     get_error_message,
     match_for_execution,
     normalize_filename,
+    get_string_hash,
     pretty_print_time,
     resolving_type,
 )
@@ -43,6 +44,7 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.dictionary_texts = TEXTS
         self.add_filter(_path_exist_in_output, 'path_exist_in_output')
         self.add_filter(gather_errors, 'gather_errors')
+        self.add_filter(get_string_hash, 'get_string_hash')
         self.add_filter(normalize_filename, 'normalize')
         self.add_filter(_resolving_color_class, 'resolving_color_class')
         self.add_filter(pretty_print_time, 'pretty_print_time')
@@ -125,7 +127,7 @@ def _exist_extra_logs(scenario):
 def get_path_extra_logs(scenario):
     extra_logs_folder = os.path.join(
         get_env('logs'),
-        str(normalize_filename(scenario.get('name'))),
+        str(get_string_hash(scenario.get('name'))),
         'evidence',
     )
     return extra_logs_folder
@@ -137,7 +139,7 @@ def get_relative_extra_logs_path(scenario):
             [
                 'outputs',
                 'logs',
-                normalize_filename(scenario.get('name')),
+                get_string_hash(scenario.get('name')),
                 'evidence',
             ]
         )

@@ -288,9 +288,9 @@
                         <th style="height: 24px" class="text-center">Evidence</th>
                     </tr>
                     {%- for scenario in feature.scenarios -%}
-                        {%- set normalized_name = scenario.name|normalize -%}
-                        <!-- normalized_name has been forced to be a string -->
-                        {%- set normalized_name = normalized_name|string -%}
+                        {%- set scenario_hash = scenario.name|get_string_hash -%}
+                        <!-- scenario_hash has been forced to be a string -->
+                        {%- set scenario_hash = scenario_hash|string -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario.tags|to_string_list }}">
                             <td class="text-left grey-behavex">
@@ -365,12 +365,7 @@
                                         <span class="glyphicon glyphicon-copy"></span></a>
                                     </td>
                                 {%- else -%}
-                                    {%- set normalized_name = normalized_name|string -%}
-									{%- set log_dir_name = normalized_name -%}
-                                    {%- if scenario.outline_index > 0 -%}
-                                        {%- set log_dir_name = normalized_name ~ '_' ~ scenario.outline_index -%}
-										{%- set log_dir_name = log_dir_name|string -%}
-                                    {%- endif -%}
+                                    {%- set scenario_hash = scenario_hash|string -%}
                                     <p class="text-center">Automated</p>
                                     </td>
 
@@ -390,14 +385,12 @@
 
                                     <td style="width: 190px;">
                                         <div class="btn-group text-left">
-                                            {%- set normalized_name = normalized_name|string -%}
-											{%- set normalized_name = normalized_name|replace("b'","" ) -%}
-											{%- set normalized_name = normalized_name|replace("'","" ) -%}
+                                            {%- set scenario_hash = scenario_hash|string -%}
 											{%- set path_log = get_path_log(scenario) -%}
 											{%- set path_log = path_log|string -%}
-                                            {%- set path_log_scenario = path_join(path_log, normalized_name , 'scenario.log')-%}
+                                            {%- set path_log_scenario = path_join(path_log, scenario_hash , 'scenario.log')-%}
 											{%- set path_log_scenario = path_log_scenario|string -%}
-                                            {%- set path_img_scenario = path_join(path_log, normalized_name, 'images.html')-%}
+                                            {%- set path_img_scenario = path_join(path_log, scenario_hash, 'images.html')-%}
 											{%- set path_img_scenario = path_img_scenario|string -%}
 
                                             {%- if path_log_scenario|path_exist_in_output -%}
@@ -840,8 +833,8 @@
         });
         var scenarios_autocomplete = Array();
         {%- for scenario, id in scenarios -%}
-            scenarios_autocomplete.push({'label':'{{ scenario|replace("'",'"')|replace("\\", "\\\\")|safe }}',
-            'desc':'{{ id }}','value': '{{ scenario|replace("'",'"')|replace("\\", "\\\\")|safe  }}' });
+            scenarios_autocomplete.push({'label':'{{ scenario|replace("\\", "\\\\")|replace("'","\\'")|safe }}',
+            'desc':'{{ id }}','value': '{{ scenario|replace("\\", "\\\\")|replace("'","\\'")|safe  }}' });
         {%- endfor -%}
         var search = $('[data-search]');
         search.autocomplete({
@@ -875,6 +868,12 @@
         high_grey = '#777'
         muted_failed = '{{ muted }}' || 1;
 
+        var decodeHtmlEntity = function(x) {
+          return x.replace(/&#(\d+);/g, function(match, dec) {
+            return String.fromCharCode(dec);
+          });
+        };
+
         var scatterDataSteps = {
             type: 'scatter',
             data: {
@@ -882,7 +881,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "passed" -%}
-                                '{{step_name}}',
+                                decodeHtmlEntity({{step_name}}),
                             {%- endif -%}
                         {%- endfor -%}
                         ],
@@ -899,7 +898,7 @@
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
                             {%- if step_dict["overall_status"] == "failed" -%}
-                                '{{step_name}}',
+                                decodeHtmlEntity({{step_name}}),
                             {%- endif -%}
                         {%- endfor -%}
                         ],
