@@ -20,7 +20,7 @@
             {{'\n'}}
         {%- endfor -%}
     {%- endif -%}
-        {{ 16*' ' ~ step|print_step ~ '\n'}}
+        {{ 16*' ' ~ step|print_step|safe ~ '\n'}}
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
 {%- set is_muted = ('MUTE' in scenario.tags and scenario.status == 'failed')-%}

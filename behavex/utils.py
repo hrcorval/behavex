@@ -32,6 +32,7 @@ from behavex.outputs.report_utils import (
     get_save_function,
     match_for_execution,
     normalize_filename,
+    get_string_hash,
     try_operate_descriptor,
 )
 
@@ -439,7 +440,7 @@ def create_custom_log_when_called(self, key):
             if not hasattr(self, 'scenario'):
                 ex_msg = '"evidence_path" is only accessible in the context of a test scenario'
                 raise Exception(ex_msg)
-            self.log_path = normalize_filename(self.scenario.name)
+            self.log_path = get_string_hash(self.scenario.name)
         evidence_path = os.path.join(self.log_path, 'evidence')
         self.evidence_path = evidence_path
         try:
