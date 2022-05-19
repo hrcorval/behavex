@@ -124,7 +124,7 @@ def setup_running_failures(args_parsed):
             if not content:
                 print('\nThere are no failing test scenarios to run.')
                 return EXIT_ERROR
-            set_env_variable('INCLUDE_PATHS', content.split())
+            set_env_variable('INCLUDE_PATHS', content.split(","))
             return EXIT_OK
 
 
@@ -237,7 +237,7 @@ def create_test_list(test_list):
     for feature, scenarios in test_list.items():
         for scenario_name in scenarios:
             paths.append('{}:{}'.format(feature, sce_lines[feature][scenario_name]))
-    return ' '.join(paths)
+    return ','.join(paths)
 
 
 def create_scenario_line_references(features):

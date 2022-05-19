@@ -6,6 +6,14 @@ Version: 1.5.9
 
 FIXES:
 
+* Enable re-executing failing scenarios that contain blank spaces in path or filename
+
+
+Version: 1.5.9
+-------------------------------------------------------------------------------
+
+FIXES:
+
 * Another encoding fix applied to the HTML report to avoid breaking it on failing scenarios
 
 NOTES:

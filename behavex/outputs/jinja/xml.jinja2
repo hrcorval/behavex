@@ -47,11 +47,11 @@
                 scenario: {{ scenario.name|CIXC|safe ~'\n'}}
                 {%- if scenario._background_steps is iterable -%}
                     {%- for step in scenario._background_steps -%}
-                        {{ print_step_xml(step)}}
+                        {{ print_step_xml(step)|safe}}
                     {%- endfor -%}
                 {%- endif -%}
                 {%- for step in scenario.steps -%}
-                    {{ print_step_xml(step) }}
+                    {{ print_step_xml(step)|safe }}
                 {%- endfor -%}
             @scenario.end
             ----------------------------------------------------------------------------------------------------
@@ -64,10 +64,10 @@ name={{ feature.filename[9:-8]|normalize|CIXC|quoteattr|safe }} failures='{{ sum
 {%- for scenario in scenarios -%}
     {%- if scenario._scenarios is defined -%}
         {%- for _scenario in scenario._scenarios -%}
-            {{ print_scenario(_scenario)}}
+            {{ print_scenario(_scenario)|safe }}
         {%- endfor -%}
     {%- else -%}
-        {{ print_scenario(scenario)}}
+        {{ print_scenario(scenario)|safe }}
     {%- endif -%}
 {%- endfor -%}
 </testsuite>
