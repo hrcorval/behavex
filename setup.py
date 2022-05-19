@@ -19,7 +19,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'jinja2==3.0.3',
+        'jinja2==3.0.0',
         'configobj',
         'htmlmin',
         'csscompressor',
