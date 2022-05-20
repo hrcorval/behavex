@@ -1,6 +1,18 @@
 Version History
 ===============================================================================
 
+Version: 1.5.10
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Changes done to **rerun-failures** argument, to request the **failing_scenarios.txt** path as argument value
+
+FIXES:
+
+* Enable re-executing failing scenarios that contain blank spaces in path or filename
+
+
 Version: 1.5.9
 -------------------------------------------------------------------------------
 

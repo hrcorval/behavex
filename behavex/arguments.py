@@ -296,13 +296,11 @@ def parse_arguments(args):
     parser.add_argument(
         '-rf',
         '--rerun-failures',
-        default='',
-        action='store_true',
-        help='Re-executes all failing scenarios published into the '
-        'failing_scenarios.txt file. This file is created into the '
-        'testing project root folder after every test run (only when '
-        'there are failing scenarios).',
-        required=False,
+        help='Allows re-executing the failing scenarios that '
+             'are published after every execution into the '
+             '"failing_scenarios.txt" file in output folder. '
+             '(e.g. --rf ./output/failing_scenarios.txt)',
+        required=False
     )
     # parser.add_argument('--logging-format',
     #                    help="Specify custom format to print statements. Uses "

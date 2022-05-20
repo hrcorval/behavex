@@ -66,7 +66,7 @@ def get_config():
     parallel_processes=integer(default=1)
     parallel_scheme=option('feature', 'scenario', default='scenario')
     include_paths=list(default=list())
-    rerun_failures=boolean(default=False)
+    rerun_failures=string(default="")
     """
     global CONFIG
     global CONFIG_PATH
