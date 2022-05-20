@@ -157,7 +157,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
     scenario_outline_index = 0
     overall_status = 'passed'
     for scenario in scenarios:
-        if not (scenario.status == "skipped" and get_env("RERUN_SCENARIOS")):
+        if not (scenario.status == "skipped" and get_env("RERUN_FAILURES")):
             # Set MANUAL to False in order filter regardless of it
             error_msg, error_lines, error_step, error_background = _get_error_scenario(
                 scenario
