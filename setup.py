@@ -20,7 +20,6 @@ setup(
     install_requires=[
         'behave==1.2.6',
         'jinja2',
-        'mkdocs',
         'configobj',
         'htmlmin',
         'csscompressor',
