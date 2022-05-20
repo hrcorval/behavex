@@ -45,7 +45,7 @@ def _export_feature_to_xml(feature, isobject=True):
     scenarios = [
         scenario
         for scenario in get_scenarios(feature)
-        if match_for_execution(get_tags(scenario))
+        if (match_for_execution(get_tags(scenario)) and not (get_status(scenario) == 'skipped' and get_env('RERUN_FAILURES')))
     ]
 
     skipped = [scenario for scenario in scenarios if get_status(scenario) == 'skipped']
