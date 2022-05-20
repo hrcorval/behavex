@@ -186,7 +186,7 @@ The @AUTORETRY tag can be applied to any scenario or feature, and it is used to 
 
 ### Rerun all failed scenarios
 
-Whenever you perform an automated test execution and there are failing scenarios, the "failing_scenarios.txt" file will be created into the execution output folder.
+Whenever you perform an automated test execution and there are failing scenarios, the **failing_scenarios.txt** file will be created into the execution output folder.
 This file allows you to run all failing scenarios again. 
 
 This can be done by executing the following command:
@@ -197,7 +197,7 @@ or
 
 > behavex --rerun-failures ./<OUTPUT_FOLDER>/failing_scenarios.txt
 
-To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the "-o" or "--output-folder" argument.
+To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
 It is important to mention that this argument doesn't work yet with parallel test executions 
  
