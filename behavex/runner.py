@@ -113,19 +113,23 @@ def run(args):
 
 
 def setup_running_failures(args_parsed):
-    if args_parsed.rerun_failures:
-        set_env_variable('RERUN_FAILURES', args_parsed.rerun_failures)
-        failures_path = os.path.abspath(global_vars.report_filenames['report_failures'])
-        if not os.path.exists(failures_path):
-            print('\nThere are no failing test scenarios to run.')
+    failures_path = args_parsed.rerun_failures
+    if failures_path:
+        failures_path = os.path.normpath(failures_path)
+        if not os.path.isabs(failures_path):
+            failures_path = os.path.abspath(failures_path)
+        if os.path.exists(failures_path):
+            set_env_variable('RERUN_FAILURES', args_parsed.rerun_failures)
+            with open(failures_path, 'r') as failures_file:
+                content = failures_file.read()
+                if not content:
+                    print('\nThere are no failing test scenarios to run.')
+                    return EXIT_ERROR
+                set_env_variable('INCLUDE_PATHS', content.split(","))
+                return EXIT_OK
+        else:
+            print('\nThe specified failing scenarios filename was not found: {}'.format(failures_path))
             return EXIT_ERROR
-        with open(failures_path, 'r') as failures_file:
-            content = failures_file.read()
-            if not content:
-                print('\nThere are no failing test scenarios to run.')
-                return EXIT_ERROR
-            set_env_variable('INCLUDE_PATHS', content.split(","))
-            return EXIT_OK
 
 
 def init_multiprocessing():
@@ -202,7 +206,7 @@ def launch_behavex():
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
             if failures:
-                failures_file_path = os.path.abspath(global_vars.report_filenames['report_failures'])
+                failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
                     parameters = create_test_list(failures)
                     failures_file.write(parameters)
