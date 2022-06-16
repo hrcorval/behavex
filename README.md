@@ -146,7 +146,7 @@ It is considered a good practice to provide as much as evidence as possible in t
 
 Any evidence file you generate when executing a test scenario, it can be stored into a folder path that the wrapper provides for each scenario.
 
-The evidence folter path is stored into the "evidence_path" context variable (or "context.evidence_path"). This variable is updated by the wrapper before executing each scenario, and all the files you copy into that path will be accesible from the HTML report linked to the executed scenario
+The evidence folter path is automatically generated and stored into the "context.evidence_path" context variable. This variable is updated by the wrapper before executing each scenario, and all the files you copy into that path will be accesible from the HTML report linked to the executed scenario
 
 ## Test logs per scenario
 
