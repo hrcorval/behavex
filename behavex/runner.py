@@ -22,10 +22,13 @@ import traceback
 from operator import itemgetter
 from tempfile import gettempdir
 
+import behave
 from behave import __main__ as behave_script
+from behave.runner_util import exec_file
 
 # noinspection PyUnresolvedReferences
 import behavex.outputs.report_json
+import behavex.environment
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, get_env, get_param, set_env
@@ -155,6 +158,16 @@ def launch_behavex():
     scenario = False
     notify_missing_features()
     features_list = explore_features(features_path)
+
+    _generate_dummy_runner()
+
+    hooks = {}
+    exec_file(os.path.join(features_path, "environment.py"), hooks)
+    if "estimate_feature" in hooks.keys():
+        estimate_fn = hooks['estimate_feature']
+    else:
+        estimate_fn = behavex.environment.estimate_feature
+    features_list.sort(key=estimate_fn, reverse=True)
     create_scenario_line_references(features_list)
     process_pool = multiprocessing.Pool(parallel_processes, init_multiprocessing)
     try:
@@ -376,6 +389,14 @@ def filter_feature_executed(json_output, filename, scenario_name):
                     mapping_scenarios.append(scenario)
             feature['scenarios'] = mapping_scenarios
             return [feature]
+
+
+def _generate_dummy_runner(args=""):
+    config = behave.configuration.Configuration(args)
+    runner = behave.runner.Runner(config)
+    with runner.path_manager:
+        runner.setup_paths()
+    runner.load_step_definitions()
 
 
 def _launch_behave(args):

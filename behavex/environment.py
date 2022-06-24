@@ -158,6 +158,17 @@ def after_all(context):
         _log_exception_and_continue('after_all (json_report)', exception)
 
 
+def estimate_feature(feature):
+    """
+    This function analyzes a feature and provides an estimate of time.
+    The estimate is used when scheduling parallel branches so that long tests are distributed first.
+    Higher estimates should indicate longer durations, but it is a relative heuristic and not expected to represent a specific duration.
+    This default implementation does not provide any estimate, which means the list will not be sorted.
+    Users may define estimate_feature in their environment.py file which will provide an assesment based on their use case.
+    """
+    return 0
+
+
 def _add_log_handler(log_path):
     """Adding a new log handler to logger"""
     log_filename = os.path.join(log_path, 'scenario.log')
