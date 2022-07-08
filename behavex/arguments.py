@@ -105,7 +105,7 @@ def parse_arguments(args):
         help='Output folder where the test report \
                             will be stored. Relative paths can be \
                             provided. \
-                            This argument value is accessible through \
+                            This argument value is accessible in testing implementations through \
                             the "OUTPUT" environment variable',
         required=False,
     )
@@ -298,7 +298,7 @@ def parse_arguments(args):
         '--rerun-failures',
         help='Allows re-executing the failing scenarios that '
              'are published after every execution into the '
-             '"failing_scenarios.txt" file in output folder. '
+             '"failing_scenarios.txt" file in the output folder. '
              '(e.g. --rf ./output/failing_scenarios.txt)',
         required=False
     )
