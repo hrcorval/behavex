@@ -138,15 +138,15 @@
                         <div class="container-fluid behavex-row-total">
                             <span class="col-xs-12">
                                 <div class="col-xs-3">
-                                    <h5><b>Automation Rate {{ '%10.0f' % (((total - not_automated)/ total)|float * 100.0)|round }}%</b></h5>
+                                    <h5><b>Automation Rate: {{ '%10.0f' % (((total - not_automated)/ total)|float * 100.0)|round }}%</b></h5>
                                     <canvas id="chart-automation-rate"/>
                                 </div>
                                 <div class="col-xs-3">
-                                    <h5 id="h5-status"><b>Pass Rate {{ '%10.0f' % ((passed/((passed + failed) or 1))|float * 100.0)|round }}%</b></h5>
+                                    <h5 id="h5-status"><b>Pass Rate: {{ '%10.0f' % ((passed/((passed + failed) or 1))|float * 100.0)|round }}%</b></h5>
                                     <canvas id="chart-pass-rate"/>
                                 </div>
                                 <div class="col-xs-6">
-                                    <h5 id="h5-status"><b>Steps</b></h5>
+                                    <h5 id="h5-status"><b>Steps</b><b class="span-behavex" id="reusability"></b></h5>
                                     <canvas id="chart-steps"/>
                                 </div>
                             </span>
@@ -978,5 +978,11 @@
                 }]
             }
         };
+
+        {%- set total_executions = steps.values() | sum(attribute='executions') -%}
+        {%- set total_steps = steps | length -%}
+        {%- if total_executions > 0 and total_steps > 0 -%}
+            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(avg. reusability of executed steps: {{ (total_executions/total_steps) }})";
+        {%- endif -%}
 
 {% endblock %}
