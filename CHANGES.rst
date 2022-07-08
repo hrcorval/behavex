@@ -1,6 +1,15 @@
 Version History
 ===============================================================================
 
+Version: 1.5.12
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Reporting the average reusability of test steps in metrics
+* Consider not only the scenario description but also the feature description when creating the evidence path, to avoid issues with duplicated scenario names
+
+
 Version: 1.5.11
 -------------------------------------------------------------------------------
 
