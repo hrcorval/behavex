@@ -440,7 +440,7 @@ def create_custom_log_when_called(self, key):
             if not hasattr(self, 'scenario'):
                 ex_msg = '"evidence_path" is only accessible in the context of a test scenario'
                 raise Exception(ex_msg)
-            self.log_path = get_string_hash(self.scenario.name)
+            self.log_path = get_string_hash("{}-{}".format(str(self.feature.name), str(self.scenario.name)))
         evidence_path = os.path.join(self.log_path, 'evidence')
         self.evidence_path = evidence_path
         try:
