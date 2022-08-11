@@ -982,7 +982,7 @@
         {%- set total_executions = steps.values() | sum(attribute='executions') -%}
         {%- set total_steps = steps | length -%}
         {%- if total_executions > 0 and total_steps > 0 -%}
-            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(avg. reusability of executed steps: {{ (total_executions/total_steps) }})";
+            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(avg. reusability of executed steps: {{ '%0.1f' % (total_executions/total_steps) }})";
         {%- endif -%}
 
 {% endblock %}
