@@ -8,6 +8,7 @@ ENHANCEMENTS:
 
 * Reporting the average reusability of test steps in metrics
 * Consider not only the scenario description but also the feature description when creating the evidence path, to avoid issues with duplicated scenario names
+* Improvement done in HTML report to consider line breaks in reported error messages in failing steps
 
 
 Version: 1.5.11

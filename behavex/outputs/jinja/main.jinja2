@@ -465,7 +465,11 @@
                         <li>
                             <small>
                                 {%- if error_msg -%}
-                                    {{ error_msg|e }} <br>
+                                    {%- for line in error_msg -%}
+                                        {%- if line -%}
+                                            {{ line|print_error|e }}<br>
+                                        {%- endif -%}
+                                    {%- endfor -%}
                                 {%- else -%}
                                     {%- for line in error_lines -%}
                                         {%- if line -%}
