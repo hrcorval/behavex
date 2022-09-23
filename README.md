@@ -109,6 +109,10 @@ BehaveX will be in charge of managing each parallel process, and consolidate all
 Parallel test executions can be performed by **feature** or by **scenario**.
 
 Examples:
+> behavex --parallel-processes 3
+
+> behavex -t @TAG --parallel-processes 3
+
 > behavex -t @\<TAG\> --parallel-processes 2 --parallel-schema scenario
 
 > behavex -t @\<TAG\> --parallel-processes 5 --parallel-schema feature
@@ -120,14 +124,14 @@ When the parallel-schema is set by **feature**, all tests within each feature wi
 This is a friendly test execution report that contains information related to test scenarios, execution status, execution evidence and metrics. A filters bar is also provided to filter scenarios by name, tag or status.
 
 It should be available at the following path:
-> <output_folfer>/report.html
+> <output_folder>/report.html
 
 
 ### JSON report
 Contains information about test scenarios and execution status.
 
 It should be available at the following path:
-> <output_folfer>/report.json
+> <output_folder>/report.json
 
 The report is provided to enable exporting test execution data and to simplify the integration with third party tools.
 
@@ -138,7 +142,7 @@ The wrapper overwrites the Behave JUnit reports, just to enable dealing with par
 By default, there will be one JUnit file per feature, unless the parallel execution is performed by scenario, in which there will be one JUnit file per scenario.
 
 Reports are available at the following path:
-> <output_folfer>/behave/*.xml
+> <output_folder>/behave/*.xml
 
 ## Attaching additional execution evidence to test report
 
