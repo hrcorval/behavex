@@ -210,7 +210,7 @@ def _get_error_scenario(scenario):
             failing_step['background'] = 'True'
             # failing_step.keys() is forced to be a list in order to maintain compatibility
             if 'error_msg' in list(failing_step.keys()):
-                error_msg = failing_step['error_msg'].split("\n")
+                error_msg = failing_step['error_msg'].splitlines()
             if 'error_lines' in list(failing_step.keys()):
                 error_lines = failing_step['error_lines']
             if step.status == 'undefined':
@@ -223,7 +223,7 @@ def _get_error_scenario(scenario):
             failing_step = _step_to_dict(index, step)
             # failing_step.keys() is forced to be a list in order to maintain compatibility
             if 'error_msg' in list(failing_step.keys()):
-                error_msg = failing_step['error_msg'].split("\n")
+                error_msg = failing_step['error_msg'].splitlines()
             if 'error_lines' in list(failing_step.keys()):
                 error_lines = failing_step['error_lines']
             error_background = False
