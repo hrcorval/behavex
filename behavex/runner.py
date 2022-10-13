@@ -557,14 +557,7 @@ def _set_env_variables(args):
     if get_param('include_paths'):
         set_env_variable('INCLUDE_PATHS', get_param('include_paths'))
     if get_param('include'):
-        if platform.system() == 'Windows':
-            set_env_variable(
-                'INCLUDE', json.dumps(get_param('include').replace('/', '\\'))
-            )
-        else:
-            set_env_variable('INCLUDE', get_param('include'))
-    if get_param('include'):
-        set_env_variable('INCLUDE', json.loads(get_param('include')))
+        set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
         set_env_variable('NAME', args.name)
     for arg in BEHAVEX_ARGS[4:]:

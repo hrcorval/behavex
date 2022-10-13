@@ -464,10 +464,13 @@ def get_json_results():
 
 class MatchInclude(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
+        self.features_path = os.path.abspath(os.environ.get('FEATURES_PATH'))
         if not expr:
             expr = get_param('include').replace("'", '"')
-        self.features_path = os.path.abspath(os.environ.get('FEATURES_PATH'))
-        expr = expr.replace(self.features_path, 'features').replace('\\', '\\\\')
+        else:
+            expr = expr.replace(self.features_path, 'features')
+        expr = ('/'.join(expr.split('\\')))
+        expr = '.*{}'.format(expr)
         self.reg = re.compile(expr)
 
     def __call__(self, *args, **kwargs):
@@ -478,7 +481,7 @@ class MatchInclude(metaclass=ExecutionSingleton):
 
     def match(self, filename):
         filename = os.path.abspath(filename)
-        filename = 'features' + filename.replace(self.features_path, '')
+        filename = '/'.join(filename.split('\\'))
         return not self.reg.match(filename) is None
 
 
