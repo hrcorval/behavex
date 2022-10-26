@@ -52,7 +52,8 @@ def append_results(codes, json_reports, tuple_values):
 
 
 def create_partial_function_append(codes, json_reports):
-    return functools.partial(append_results, codes, json_reports)
+    append_output = functools.partial(append_results, codes, json_reports)
+    return append_output
 
 
 def get_logging_level():
@@ -167,13 +168,13 @@ def explore_features(features_path, features_list=None):
         else:
             if node.endswith('.feature'):
                 path_feature = os.path.abspath(os.path.join(features_path, node))
-                feature = should_be_run(path_feature)
+                feature = should_feature_be_run(path_feature)
                 if feature:
                     features_list.append(feature)
     return features_list
 
 
-def should_be_run(path_feature):
+def should_feature_be_run(path_feature):
     feature = parse_file(path_feature)
     if not feature:
         tags_list = []

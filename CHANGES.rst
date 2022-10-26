@@ -1,6 +1,17 @@
 Version History
 ===============================================================================
 
+Version: 2.0.0
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Improvement in the order in which the events are executed in environment.py. On every "before_<something>" event, the BehaveX event has precedence over the same event in testing solution, and the other way around should be on every "after_<something>" event
+
+FIXES:
+
+* Fix implemented in scenario outlines, as scenarios were not being published in execution reports when examples are part of scenario descriptions and contain white spaces
+
 Version: 1.5.12
 -------------------------------------------------------------------------------
 
