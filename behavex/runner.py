@@ -356,10 +356,10 @@ def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
             json_output = {'environment': [], 'features': [], 'steps_definition': []}
         if scenario:
             json_output['features'] = filter_feature_executed(
-                json_output, text(list_features[0]), scenario.strip()
+                json_output, text(list_features[0]), scenario
             )
             try:
-                processing_xml_feature(json_output, scenario.strip())
+                processing_xml_feature(json_output, scenario)
             except Exception as ex:
                 logging.exception(ex)
         json_reports.append(json_output)
