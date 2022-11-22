@@ -7,6 +7,7 @@ Version: 2.0.0
 ENHANCEMENTS:
 
 * Improvement in the order in which the events are executed in environment.py. On every "before_<something>" event, the BehaveX event has precedence over the same event in testing solution, and the other way around should be on every "after_<something>" event
+* Reusing FEATURES_PATH environment variable to indicate were features are located
 
 FIXES:
 
