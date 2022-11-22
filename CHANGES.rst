@@ -10,6 +10,7 @@ ENHANCEMENTS:
 
 FIXES:
 
+* Fix implemented when scenarios are dynamically skipped or removed from the execution list
 * Fix implemented in scenario outlines, as scenarios were not being published in execution reports when examples are part of scenario descriptions and contain white spaces
 
 Version: 1.5.12
