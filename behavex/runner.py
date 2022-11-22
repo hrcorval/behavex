@@ -296,20 +296,20 @@ def launch_by_scenario(features, process_pool):
     for feature in features:
         for scenario in feature.scenarios:
             # noinspection PyCallingNonCallable
-            if include_path_match(
-                feature.filename, scenario.line
-            ) and include_name_match(scenario.name):
+            if include_path_match(feature.filename, scenario.line) \
+                    and include_name_match(scenario.name):
                 scenario.tags += feature.tags
-                if 'SERIAL' in scenario.tags:
-                    scenario_tuple = (feature.filename, scenario.name)
-                    if scenario_tuple in serial_scenarios:
-                        duplicated_scenarios.append(scenario.name)
-                    serial_scenarios.append(scenario_tuple)
-                else:
-                    scenario_tuple = ([feature.filename], scenario.name)
-                    if scenario_tuple in filenames:
-                        duplicated_scenarios.append(scenario.name)
-                    filenames.append(scenario_tuple)
+                if match_for_execution(scenario.tags):
+                    if 'SERIAL' in scenario.tags:
+                        scenario_tuple = (feature.filename, scenario.name)
+                        if scenario_tuple in serial_scenarios:
+                            duplicated_scenarios.append(scenario.name)
+                        serial_scenarios.append(scenario_tuple)
+                    else:
+                        scenario_tuple = ([feature.filename], scenario.name)
+                        if scenario_tuple in filenames:
+                            duplicated_scenarios.append(scenario.name)
+                        filenames.append(scenario_tuple)
     if duplicated_scenarios:
         print_parallel(
             'scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4)
@@ -332,7 +332,6 @@ def launch_by_scenario(features, process_pool):
             (filename, scenario_name, True, ConfigRun()),
             callback=create_partial_function_append(execution_codes, json_reports),
         )
-
     return execution_codes, json_reports
 
 
@@ -617,7 +616,7 @@ def _set_behave_arguments(
             outline_examples_in_name = re.findall('<\\S*>', scenario)
             scenario_outline_compatible = '{}(.?--.?@\\d*.\\d*\\s*)?$'.format(re.escape(scenario))
             for example_name in outline_examples_in_name:
-                scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "\\S*")
+                scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
             arguments.append('--name')
             arguments.append(scenario_outline_compatible)
         name = multiprocessing.current_process().name.split('-')[-1]
@@ -693,7 +692,7 @@ def scenario_name_matching(abstract_scenario_name, scenario_name):
     outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
     scenario_outline_compatible = '{}(.--.@\\d+.\\d+)?'.format(re.escape(abstract_scenario_name))
     for example_name in outline_examples_in_name:
-        scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "\\S*")
+        scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
     pattern = re.compile(scenario_outline_compatible)
     return pattern.match(scenario_name)
 
