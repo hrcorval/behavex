@@ -75,7 +75,7 @@ def join_feature_reports(json_reports):
         merged_json['environment'] = join_list_dict(json_reports, 'environment')
         merged_json['steps_definition'] = join_step_definitions(json_reports)
         merged_json['features'] = sum((json_['features'] for json_ in json_reports), [])
-    if IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool():
+    if merged_json['features'] and (IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool()):
         delete = []
         for index, feature in enumerate(merged_json['features'][:]):
             lines = scenario_lines.get(feature['filename'], {})
