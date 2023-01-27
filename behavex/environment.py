@@ -41,34 +41,37 @@ def extend_behave_hooks():
             # noinspection PyUnresolvedReferences
             behavex_env.before_all(context)
             behave_run_hook(self, name, context, *args)
-        if name == 'before_feature':
+        elif name == 'before_feature':
             # noinspection PyUnresolvedReferences
             behavex_env.before_feature(context, *args)
             behave_run_hook(self, name, context, *args)
-        if name == 'before_scenario':
+        elif name == 'before_scenario':
             # noinspection PyUnresolvedReferences
             behavex_env.before_scenario(context, *args)
             behave_run_hook(self, name, context, *args)
-        if name == 'before_step':
+        elif name == 'before_step':
             # noinspection PyUnresolvedReferences
             behavex_env.before_step(context, *args)
             behave_run_hook(self, name, context, *args)
-        if name == 'after_step':
+        elif name == 'after_step':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_step(context, *args)
-        if name == 'after_scenario':
+        elif name == 'after_scenario':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_scenario(context, *args)
-        if name == 'after_feature':
+        elif name == 'after_feature':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_feature(context, *args)
-        if name == 'after_all':
+        elif name == 'after_all':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_all(context, *args)
+        else:
+            # noinspection PyUnresolvedReferences
+            behave_run_hook(self, name, context, *args)
 
     if not hooks_already_set:
         hooks_already_set = True
