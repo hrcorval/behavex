@@ -41,6 +41,9 @@ def extend_behave_hooks():
             # noinspection PyUnresolvedReferences
             behavex_env.before_all(context)
             behave_run_hook(self, name, context, *args)
+        if name == 'before_tag':
+            # noinspection PyUnresolvedReferences
+            behave_run_hook(self, name, context, *args)
         if name == 'before_feature':
             # noinspection PyUnresolvedReferences
             behavex_env.before_feature(context, *args)
