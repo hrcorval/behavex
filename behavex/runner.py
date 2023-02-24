@@ -614,7 +614,7 @@ def _set_behave_arguments(
         arguments.append('--no-summary')
         if scenario:
             outline_examples_in_name = re.findall('<\\S*>', scenario)
-            scenario_outline_compatible = '{}(.?--.?@\\d*.\\d*\\s*)?$'.format(re.escape(scenario))
+            scenario_outline_compatible = '{}(.?--.?@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(scenario))
             for example_name in outline_examples_in_name:
                 scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
             arguments.append('--name')
@@ -690,7 +690,7 @@ def set_paths_argument(args, paths):
 
 def scenario_name_matching(abstract_scenario_name, scenario_name):
     outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
-    scenario_outline_compatible = '{}(.--.@\\d+.\\d+)?'.format(re.escape(abstract_scenario_name))
+    scenario_outline_compatible = '{}(.--.@\\d+.\\d+\\s*\\S*)?'.format(re.escape(abstract_scenario_name))
     for example_name in outline_examples_in_name:
         scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
     pattern = re.compile(scenario_outline_compatible)
