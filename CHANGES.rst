@@ -1,6 +1,14 @@
 Version History
 ===============================================================================
 
+Version: 2.0.0
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fix implemented when parsing scenario outlines containing names in examples
+* Adding missing webhooks related to tags (before_tag and after_tag)
+
 Version: 1.6.0
 -------------------------------------------------------------------------------
 
