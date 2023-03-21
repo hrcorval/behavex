@@ -53,6 +53,14 @@ def extend_behave_hooks():
             # noinspection PyUnresolvedReferences
             behavex_env.before_step(context, *args)
             behave_run_hook(self, name, context, *args)
+        elif name == 'before_tag':
+            # noinspection PyUnresolvedReferences
+            behavex_env.before_tag(context, *args)
+            behave_run_hook(self, name, context, *args)
+        elif name == 'after_tag':
+            # noinspection PyUnresolvedReferences
+            behave_run_hook(self, name, context, *args)
+            behavex_env.after_tag(context, *args)
         elif name == 'after_step':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
@@ -126,6 +134,14 @@ def before_scenario(context, scenario):
 
 
 def before_step(context, step):
+    pass
+
+
+def before_tag(context, tag):
+    pass
+
+
+def after_tag(context, tag):
     pass
 
 
