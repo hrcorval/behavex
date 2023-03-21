@@ -90,12 +90,14 @@ def run(args):
     global include_path_match
     global include_name_match
     args_parsed = parse_arguments(args)
-    if not os.path.isdir(os.environ.get('FEATURES_PATH')):
-        print('\n"features" folder was not found in current path...')
-        exit()
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
     _set_env_variables(args_parsed)
+    if len(get_param('paths')) > 0 and os.path.isdir(get_param('paths')[0]):
+        os.environ['FEATURES_PATH'] = get_param('paths')[0]
+    if not os.path.isdir(os.environ.get('FEATURES_PATH')):
+        print('\n"features" folder was not found in current path...')
+        exit()
     execution_code = setup_running_failures(args_parsed)
     if execution_code == EXIT_ERROR:
         return EXIT_ERROR
@@ -608,6 +610,8 @@ def _set_behave_arguments(
     multiprocess, feature=None, scenario=None, paths=None, config=None
 ):
     arguments = []
+    for feature_path in get_param('paths'):
+        arguments.append(feature_path)
     output_folder = config.get_env('OUTPUT')
     if multiprocess:
         arguments.append(feature)

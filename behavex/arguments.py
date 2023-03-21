@@ -76,6 +76,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(
         description='BehaveX - test automation wrapper on top of Behave'
     )
+    parser.add_argument("paths", nargs="*",
+                        help="Feature directory, file or file location (FILE:LINE).")
     parser.add_argument(
         '-c',
         '--config',

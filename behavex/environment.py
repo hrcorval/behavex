@@ -119,23 +119,20 @@ def before_scenario(context, scenario):
         context.log_path = create_log_path(concat_feature_and_scenario_name, retrying_execution)
         context.bhx_log_handler = _add_log_handler(context.log_path)
         if retrying_execution:
-            logging.info('Retrying scenario...\n'.format())
+            logging.info('Retrying scenario execution...\n'.format())
             shutil.rmtree(context.evidence_path)
     except Exception as exception:
         _log_exception_and_continue('before_scenario (behavex)', exception)
 
 
 def before_step(context, step):
-    if context.bhx_inside_scenario:
-        logging.info('STEP: {}'.format(step.name))
+    pass
 
 
 def after_step(context, step):
     if step.exception:
         step.error_message = step.error_message
         logging.exception(step.exception)
-    if context.bhx_inside_scenario:
-        logging.debug('Execution time %.2f sec\n', step.duration)
 
 
 @capture
