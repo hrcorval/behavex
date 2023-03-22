@@ -3,6 +3,9 @@ Version History
 
 Version: 2.0.0
 -------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Enabling behavex to specify the features path to execute features located in a different path (behavex <features_path>)
 
 FIXES:
 
