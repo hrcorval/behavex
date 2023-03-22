@@ -566,8 +566,7 @@ def _set_env_variables(args):
 
     set_env_variable('TEMP', os.path.join(get_env('output'), 'temp'))
     set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
-    if get_param('logging_level'):
-        set_env_variable('logging_level', get_param('logging_level'))
+    set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))
     set_env_variable('DRY_RUN', get_param('dry_run'))
