@@ -5,7 +5,9 @@ Version: 2.0.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
 
-* Enabling behavex to specify the features path to execute features located in a different path (behavex <features_path>)
+* Enabling Behavex to execute features located in a different path by specifying the Features Path (Behavex <features_path>)
+* Displaying the number of features in the "Feature" column
+* Showing the number of unique steps and total step executions in the "Steps" chart
 
 FIXES:
 

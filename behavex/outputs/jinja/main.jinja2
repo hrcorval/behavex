@@ -30,7 +30,12 @@
             <table class="table table-bordered behavex_letter" id="summary">
                 <thead>
                     <tr class="table-header">
-                        <th>Feature</th>
+                        {%- set total_features = features|length -%}
+                        {%- if total_features <= 1 -%}
+                            <th>Feature</th>
+                        {%- else -%}
+                            <th>Feature ({{ total_features }} features)</th>
+                        {%- endif -%}
                         <th style="width:120px">Total</th>
                         <th style="width:120px">Executed</th>
                         <th style="width:180px">Status</th>
@@ -121,6 +126,7 @@
 
         {%- endblock -%}
         {%- block filter -%}
+            {%- set total_steps = steps | length -%}
             <div id="accordion2" role="tablist" aria-multiselectable="true">
                 <div class="panel panel-default container_body">
                     <div class="panel-heading" role="tab" id="headingOne">
@@ -146,7 +152,7 @@
                                     <canvas id="chart-pass-rate"/>
                                 </div>
                                 <div class="col-xs-6">
-                                    <h5 id="h5-status"><b>Steps</b><b class="span-behavex" id="reusability"></b></h5>
+                                    <h5 id="h5-status"><b>Steps: {{ total_steps }}</b><b class="span-behavex" id="reusability"></b></h5>
                                     <canvas id="chart-steps"/>
                                 </div>
                             </span>
@@ -985,9 +991,8 @@
         };
 
         {%- set total_executions = steps.values() | sum(attribute='executions') -%}
-        {%- set total_steps = steps | length -%}
         {%- if total_executions > 0 and total_steps > 0 -%}
-            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(avg. reusability of executed steps: {{ '%0.1f' % (total_executions/total_steps) }})";
+            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(Executions: {{ total_executions }}, Avg. Reusability: {{ '%0.1f' % (total_executions/total_steps) }})";
         {%- endif -%}
 
 {% endblock %}
