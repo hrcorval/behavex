@@ -1,5 +1,6 @@
         {%- extends "base.jinja2" -%}
         {%- set menu = 'report' -%}
+        {%- set total_steps = steps | length -%}
         {%- block title -%}Test Execution Report{%- endblock -%}
         {%- block iframe -%}
             <div style="display: none" id="iframe-container">
@@ -126,7 +127,6 @@
 
         {%- endblock -%}
         {%- block filter -%}
-            {%- set total_steps = steps | length -%}
             <div id="accordion2" role="tablist" aria-multiselectable="true">
                 <div class="panel panel-default container_body">
                     <div class="panel-heading" role="tab" id="headingOne">
@@ -324,12 +324,11 @@
                                             {%- if [tag]|match_for_execution -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
                                                     class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
+                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
                                             {%- else -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
+                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
                                             {%- endif -%}
-                                            </li>
                                         {%- endfor -%}
                                     </ul>
                                     {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
