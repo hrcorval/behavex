@@ -1,29 +1,27 @@
 # BehaveX
 
-BehaveX is a test wrapper on top of Python Behave, that provides additional capabilities over the Behave framework that are useful in testing pipelines.
+BehaveX is a test wrapper on top of Python Behave that provides additional capabilities to improve testing pipelines.
 
-BehaveX can be adopted from scratch using the same [Behave](https://github.com/behave/behave) framework principles, or over existing Behave based projects.
+BehaveX can be used to build testing pipelines from scratch using the same [Behave](https://github.com/behave/behave) framework principles, or to expand the capabilities of Behave-based projects.
 
 Basically, this wrapper encapsulates the Behave framework functionality and includes the following features:
-* Perform parallel test executions (multi-process executions)
-  * By feature
-  * By scenario
+* Perform parallel test executions
+  * Execute tests using multiple processes, either by feature or by scenario.
 * Get additional test execution reports
-  * Friendly HTML report
-  * JSON report (enable exporting the test execution data and integrating with third party tools)
+  * Generate friendly HTML reports and JSON reports that can be exported and integrated with third-party tools
 * Provide additional evidence as part of execution reports
-  * Any testing evidence you get, you can paste it to a predefined folder path (by scenario) to be part of the HTML report
+  * Include any testing evidence by pasting it to a predefined folder path associated with each scenario. This evidence will then be automatically included as part of the HTML report
 * Generate test logs per scenario
-  * Whatever you log in test steps using the logging library, it will generate an individual log report for each scenario
+  * Any logs generated during test execution using the logging library will automatically be compiled into an individual log report for each scenario
 * Mute test scenarios in build servers
   * By just adding the @MUTE tag to test scenarios, they will be executed, but they will not be part of the JUnit reports
 * Generate metrics in HTML report for the executed test suite
   * Automation Rate, Pass Rate and Steps executions & duration
 * Execute dry runs and see the full list of scenarios into the HTML report
-  * This is an override of the existing Behave dry run implementation
+  * This is enhanced implementation of Behave's dry run feature, allowing you to see the full list of scenarios in the HTML report without actually executing the tests
 * Re-execute failing test scenarios
   * By just adding the @AUTORETRY tag to test scenarios, so when the first execution fails the scenario is immediately re-executed
-  * Also, by providing this wrapper with the list of failing scenarios that was automatically generated from a previous execution
+  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically
   
 ![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report.png?raw=true)
 
@@ -57,14 +55,14 @@ Examples:
 
 ## Constraints
 
-* BehaveX is currently implemented over Behave **v1.2.6**, and not all Behave arguments are yet supported.
-* Parallel execution implementation is based on concurrent Behave processes. So, whatever you have into the **before_all** and **after_all** hooks in **environment.py** module, it will be re-executed on every parallel process. Also, the same will happen with the **before_feature** and **after_feature** hooks when the parallel execution schema is set by scenario.
-* The library is provided as is, and no tests over the framework have been implemented yet (there were tests in initial versions, but they got deprecated). Any contribution to that end will help a lot on delivering with confidence new library versions.
-* Some english translations might not be accurate (and docstrings are empty) so it is expected this is fixed soon.
+* BehaveX is currently implemented on top of Behave **v1.2.6**, and not all Behave arguments are yet supported.
+* The parallel execution implementation is based on concurrent Behave processes. Therefore, any code in the **before_all** and **after_all** hooks in the **environment.py** module will be executed in each parallel process. The same applies to the **before_feature** and **after_feature** hooks when the parallel execution is set by scenario.
+* The library is provided as is, and no tests have been implemented for the framework yet (initial versions had tests, but they were deprecated). Any contributions to testing would be greatly appreciated.
+* There may be inaccuracies in some English translations, and some docstrings are currently empty. We expect to fix these issues soon.
 
 ### Additional Comments
 
-* The stop argument does not work when performing parallel test executions.
+* The **stop** argument does not work when performing parallel test executions.
 * The JUnit reports have been replaced by the ones generated by the test wrapper, just to support muting tests
 
 ## Supported Behave arguments
