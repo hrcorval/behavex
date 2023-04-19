@@ -90,12 +90,14 @@ def run(args):
     global include_path_match
     global include_name_match
     args_parsed = parse_arguments(args)
-    if not os.path.isdir(os.environ.get('FEATURES_PATH')):
-        print('\n"features" folder was not found in current path...')
-        exit()
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
     _set_env_variables(args_parsed)
+    if len(get_param('paths')) > 0 and os.path.isdir(get_param('paths')[0]):
+        os.environ['FEATURES_PATH'] = get_param('paths')[0]
+    if not os.path.isdir(os.environ.get('FEATURES_PATH')):
+        print('\n"features" folder was not found in current path...')
+        exit()
     execution_code = setup_running_failures(args_parsed)
     if execution_code == EXIT_ERROR:
         return EXIT_ERROR
@@ -564,8 +566,7 @@ def _set_env_variables(args):
 
     set_env_variable('TEMP', os.path.join(get_env('output'), 'temp'))
     set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
-    if get_param('logging_level'):
-        set_env_variable('logging_level', get_param('logging_level'))
+    set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))
     set_env_variable('DRY_RUN', get_param('dry_run'))
@@ -608,13 +609,15 @@ def _set_behave_arguments(
     multiprocess, feature=None, scenario=None, paths=None, config=None
 ):
     arguments = []
+    for feature_path in get_param('paths'):
+        arguments.append(feature_path)
     output_folder = config.get_env('OUTPUT')
     if multiprocess:
         arguments.append(feature)
         arguments.append('--no-summary')
         if scenario:
             outline_examples_in_name = re.findall('<\\S*>', scenario)
-            scenario_outline_compatible = '{}(.?--.?@\\d*.\\d*\\s*)?$'.format(re.escape(scenario))
+            scenario_outline_compatible = '{}(.?--.?@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(scenario))
             for example_name in outline_examples_in_name:
                 scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
             arguments.append('--name')
@@ -690,7 +693,7 @@ def set_paths_argument(args, paths):
 
 def scenario_name_matching(abstract_scenario_name, scenario_name):
     outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
-    scenario_outline_compatible = '{}(.--.@\\d+.\\d+)?'.format(re.escape(abstract_scenario_name))
+    scenario_outline_compatible = '{}(.--.@\\d+.\\d+\\s*\\S*)?'.format(re.escape(abstract_scenario_name))
     for example_name in outline_examples_in_name:
         scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
     pattern = re.compile(scenario_outline_compatible)

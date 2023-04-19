@@ -76,6 +76,8 @@ def parse_arguments(args):
     parser = argparse.ArgumentParser(
         description='BehaveX - test automation wrapper on top of Behave'
     )
+    parser.add_argument("paths", nargs="*",
+                        help="Features path")
     parser.add_argument(
         '-c',
         '--config',
@@ -102,11 +104,9 @@ def parse_arguments(args):
         '-o',
         '--output-folder',
         default='',
-        help='Output folder where the test report \
-                            will be stored. Relative paths can be \
-                            provided. \
-                            This argument value is accessible in testing implementations through \
-                            the "OUTPUT" environment variable',
+        help='Specifies the output folder path where the test report will be stored. '
+             'The path can be specified as a relative path. The value of this argument '
+             'can be accessed in testing implementations using the "OUTPUT" environment variable',
         required=False,
     )
     parser.add_argument(
@@ -156,10 +156,9 @@ def parse_arguments(args):
     )
     parser.add_argument(
         '--name',
-        help='Only execute the feature elements which match'
-        ' part of the given name. If this option is given'
-        ' more than once, it will match against all the '
-        'given names.',
+        help='Execute feature elements matching a part of the given name. '
+             'If this option is specified more than once, '
+             'it will match against all given names.',
         required=False,
     )
     parser.add_argument(
@@ -250,8 +249,8 @@ def parse_arguments(args):
     )
     parser.add_argument(
         '--stop',
-        help='Stop running tests at the first failure. This argument is not '
-        'supported on parallel test executions.',
+        help='Specifies that the test execution should stop at the first failure. '
+             'Note that this argument is not supported for parallel test executions',
         action='store_true',
         required=False,
     )
@@ -268,21 +267,21 @@ def parse_arguments(args):
         '--logging_level',
         default='INFO',
         choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'],
-        help='Specify a level to capture logging at. The '
-        'default is INFO - capturing everything.',
+        help='Specifies the logging level to capture.',
         required=False,
     )
     parser.add_argument(
         '--parallel-processes',
         default=1,
         type=int,
-        help='quantity of threads that will enable to execute',
+        help='Specifies the number of parallel processes that can be executed simultaneously.',
         required=False,
     )
     parser.add_argument(
         '--parallel-scheme',
         choices=['feature', 'scenario'],
         default='scenario',
+        help="Specifies whether parallel execution should be performed at the scenario or feature level.",
         required=False,
     )
     parser.add_argument(
@@ -290,16 +289,17 @@ def parse_arguments(args):
         '--include-paths',
         default=[],
         nargs='*',
-        help='Filter test set to the specified list of features '
+        help='Filters the test set to the specified list of features.'
         'or feature file locations (FEATURE_FILE:LINE).',
     )
     parser.add_argument(
         '-rf',
         '--rerun-failures',
-        help='Allows re-executing the failing scenarios that '
-             'are published after every execution into the '
-             '"failing_scenarios.txt" file in the output folder. '
-             '(e.g. --rf ./output/failing_scenarios.txt)',
+        help='Enables re-execution of the failing scenarios. '
+             'After each execution, the failing scenarios are saved '
+             'in a "failing_scenarios.txt" file in the output folder. '
+             'This argument specifies the location of the "failing_scenarios.txt" file. '
+             'For example: --rf ./output/failing_scenarios.txt',
         required=False
     )
     # parser.add_argument('--logging-format',

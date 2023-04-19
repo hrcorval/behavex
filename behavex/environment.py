@@ -41,36 +41,45 @@ def extend_behave_hooks():
             # noinspection PyUnresolvedReferences
             behavex_env.before_all(context)
             behave_run_hook(self, name, context, *args)
-        if name == 'before_tag':
-            behave_run_hook(self, name, context, *args)
-        if name == 'before_feature':
+        elif name == 'before_feature':
             # noinspection PyUnresolvedReferences
             behavex_env.before_feature(context, *args)
             behave_run_hook(self, name, context, *args)
-        if name == 'before_scenario':
+        elif name == 'before_scenario':
             # noinspection PyUnresolvedReferences
             behavex_env.before_scenario(context, *args)
             behave_run_hook(self, name, context, *args)
-        if name == 'before_step':
+        elif name == 'before_step':
             # noinspection PyUnresolvedReferences
             behavex_env.before_step(context, *args)
             behave_run_hook(self, name, context, *args)
-        if name == 'after_step':
+        elif name == 'before_tag':
+            # noinspection PyUnresolvedReferences
+            behavex_env.before_tag(context, *args)
+            behave_run_hook(self, name, context, *args)
+        elif name == 'after_tag':
+            # noinspection PyUnresolvedReferences
+            behave_run_hook(self, name, context, *args)
+            behavex_env.after_tag(context, *args)
+        elif name == 'after_step':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_step(context, *args)
-        if name == 'after_scenario':
+        elif name == 'after_scenario':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_scenario(context, *args)
-        if name == 'after_feature':
+        elif name == 'after_feature':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_feature(context, *args)
-        if name == 'after_all':
+        elif name == 'after_all':
             # noinspection PyUnresolvedReferences
             behave_run_hook(self, name, context, *args)
             behavex_env.after_all(context, *args)
+        else:
+            # noinspection PyUnresolvedReferences
+            behave_run_hook(self, name, context, *args)
 
     if not hooks_already_set:
         hooks_already_set = True
@@ -118,23 +127,28 @@ def before_scenario(context, scenario):
         context.log_path = create_log_path(concat_feature_and_scenario_name, retrying_execution)
         context.bhx_log_handler = _add_log_handler(context.log_path)
         if retrying_execution:
-            logging.info('Retrying scenario...\n'.format())
+            logging.info('Retrying scenario execution...\n'.format())
             shutil.rmtree(context.evidence_path)
     except Exception as exception:
         _log_exception_and_continue('before_scenario (behavex)', exception)
 
 
 def before_step(context, step):
-    if context.bhx_inside_scenario:
-        logging.info('STEP: {}'.format(step.name))
+    pass
+
+
+def before_tag(context, tag):
+    pass
+
+
+def after_tag(context, tag):
+    pass
 
 
 def after_step(context, step):
     if step.exception:
         step.error_message = step.error_message
         logging.exception(step.exception)
-    if context.bhx_inside_scenario:
-        logging.debug('Execution time %.2f sec\n', step.duration)
 
 
 @capture

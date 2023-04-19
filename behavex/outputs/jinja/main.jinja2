@@ -1,5 +1,6 @@
         {%- extends "base.jinja2" -%}
         {%- set menu = 'report' -%}
+        {%- set total_steps = steps | length -%}
         {%- block title -%}Test Execution Report{%- endblock -%}
         {%- block iframe -%}
             <div style="display: none" id="iframe-container">
@@ -30,7 +31,12 @@
             <table class="table table-bordered behavex_letter" id="summary">
                 <thead>
                     <tr class="table-header">
-                        <th>Feature</th>
+                        {%- set total_features = features|length -%}
+                        {%- if total_features <= 1 -%}
+                            <th>Feature</th>
+                        {%- else -%}
+                            <th>Feature ({{ total_features }} features)</th>
+                        {%- endif -%}
                         <th style="width:120px">Total</th>
                         <th style="width:120px">Executed</th>
                         <th style="width:180px">Status</th>
@@ -146,7 +152,7 @@
                                     <canvas id="chart-pass-rate"/>
                                 </div>
                                 <div class="col-xs-6">
-                                    <h5 id="h5-status"><b>Steps</b><b class="span-behavex" id="reusability"></b></h5>
+                                    <h5 id="h5-status"><b>Steps: {{ total_steps }}</b><b class="span-behavex" id="reusability"></b></h5>
                                     <canvas id="chart-steps"/>
                                 </div>
                             </span>
@@ -318,12 +324,11 @@
                                             {%- if [tag]|match_for_execution -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
                                                     class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
+                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
                                             {%- else -%}
                                                 <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}<a>
+                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
                                             {%- endif -%}
-                                            </li>
                                         {%- endfor -%}
                                     </ul>
                                     {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
@@ -985,9 +990,8 @@
         };
 
         {%- set total_executions = steps.values() | sum(attribute='executions') -%}
-        {%- set total_steps = steps | length -%}
         {%- if total_executions > 0 and total_steps > 0 -%}
-            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(avg. reusability of executed steps: {{ '%0.1f' % (total_executions/total_steps) }})";
+            document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(Executions: {{ total_executions }}, Avg. Reusability: {{ '%0.1f' % (total_executions/total_steps) }})";
         {%- endif -%}
 
 {% endblock %}

@@ -281,7 +281,7 @@ def get_test_execution_tags():
         behave_tags = behave_tags_file.readline().strip()
         behave_tags_file.close()
         os.chmod(behave_tags_path, 511)  # nosec
-        set_env('behave_tags', behave_tags.replace('@MANUAL', 'False'))
+        set_env('behave_tags', behave_tags)
         return get_env('behave_tags')
     else:
         return get_env('behave_tags')

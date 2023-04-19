@@ -1,6 +1,19 @@
 Version History
 ===============================================================================
 
+Version: 2.0.1
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Enabling Behavex to execute features located in a different path by specifying the Features Path (Behavex <features_path>)
+* Displaying the number of features in the "Feature" column
+* Showing the number of unique steps and total step executions in the "Steps" chart
+
+FIXES:
+
+* Fix implemented when parsing scenario outlines containing names in examples
+* Adding missing webhooks related to tags (before_tag and after_tag)
+
 Version: 1.6.0
 -------------------------------------------------------------------------------
 
