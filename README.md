@@ -1,6 +1,6 @@
 # BehaveX
 
-BehaveX is a test wrapper on top of Python Behave, that provides additional capabilites over the Behave framework that are useful in testing pipelines.
+BehaveX is a test wrapper on top of Python Behave, that provides additional capabilities over the Behave framework that are useful in testing pipelines.
 
 BehaveX can be adopted from scratch using the same [Behave](https://github.com/behave/behave) framework principles, or over existing Behave based projects.
 
@@ -59,7 +59,7 @@ Examples:
 
 * BehaveX is currently implemented over Behave **v1.2.6**, and not all Behave arguments are yet supported.
 * Parallel execution implementation is based on concurrent Behave processes. So, whatever you have into the **before_all** and **after_all** hooks in **environment.py** module, it will be re-executed on every parallel process. Also, the same will happen with the **before_feature** and **after_feature** hooks when the parallel execution schema is set by scenario.
-* The library is provided as is, and no tests over the framework have been implemented yet (there were tests in initial versions but they got deprecated). Any contribution on that end will help a lot on delivering with confidence new library versions.
+* The library is provided as is, and no tests over the framework have been implemented yet (there were tests in initial versions, but they got deprecated). Any contribution to that end will help a lot on delivering with confidence new library versions.
 * Some english translations might not be accurate (and docstrings are empty) so it is expected this is fixed soon.
 
 ### Additional Comments
@@ -95,7 +95,7 @@ There might be more arguments that can be supported, it is just a matter of adap
 * output_folder
   * Specifies the output folder where execution reports will be generated (JUnit, HTML and JSon)
 * dry-run
-  * Overwrites teh existing Behave dry-run implementation
+  * Overwrites the existing Behave dry-run implementation
   * Performs a dry-run by listing the scenarios as part of the output reports
 * parallel_processes
   * Specifies the number of parallel Behave processes
@@ -116,11 +116,11 @@ Examples:
 
 > behavex -t @TAG --parallel-processes 3
 
-> behavex -t @\<TAG\> --parallel-processes 2 --parallel-schema scenario
+> behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
 
-> behavex -t @\<TAG\> --parallel-processes 5 --parallel-schema feature
+> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature
 
-When the parallel-schema is set by **feature**, all tests within each feature will be run sequentially.
+When the parallel-scheme is set by **feature**, all tests within each feature will be run sequentially.
 
 ## Test execution reports
 ### HTML report
@@ -153,7 +153,7 @@ It is considered a good practice to provide as much as evidence as possible in t
 
 Any evidence file you generate when executing a test scenario, it can be stored into a folder path that the wrapper provides for each scenario.
 
-The evidence folder path is automatically generated and stored into the **"context.evidence_path"** context variable. This variable is automatically updated by the wrapper before executing each scenario, and all the files you copy into that path will be accesible from the HTML report linked to the executed scenario
+The evidence folder path is automatically generated and stored into the **"context.evidence_path"** context variable. This variable is automatically updated by the wrapper before executing each scenario, and all the files you copy into that path will be accessible from the HTML report linked to the executed scenario
 
 ## Test logs per scenario
 
@@ -187,7 +187,7 @@ Tests can be muted by adding the @MUTE tag to each test scenario. This will caus
 
 ### @AUTORETRY tag
 
-This tag can be used for flacky scenarios or when the testing infrastructure is not stable at all.
+This tag can be used for flaky scenarios or when the testing infrastructure is not stable at all.
 
 The @AUTORETRY tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails. 
 
