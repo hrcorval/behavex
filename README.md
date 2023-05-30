@@ -208,7 +208,7 @@ It is important to mention that this argument doesn't work yet with parallel tes
 
 ## Show Your Support
 
-If you find this project helpful or interesting, we would appreciate it if you could give it a star. It's a simple way to show your support and let us know that you find value in our work.
+**If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.
 
 By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
 
