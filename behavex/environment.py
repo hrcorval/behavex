@@ -148,7 +148,7 @@ def after_tag(context, tag):
 def after_step(context, step):
     if step.exception:
         step.error_message = step.error_message
-        logging.exception(step.exception)
+        logging.error(step.exception)
 
 
 @capture
@@ -222,5 +222,5 @@ def _log_exception_and_continue(module, exception):
     just to avoid the testing framework to stop executing
     the following tests"""
     error_message = "Unexpected error in '%s' function:" % module
-    logging.exception(error_message)
-    logging.exception(exception)
+    logging.error(error_message)
+    logging.error(exception)
