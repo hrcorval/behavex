@@ -3,6 +3,9 @@ Version History
 
 Version: 2.0.2
 -------------------------------------------------------------------------------
+ENHANCEMENTS:
+* HTML Report layout improvements to properly render long gherkin steps and failure messages
+
 FIXES:
 
 * Fix done when logging exceptions in environment.py module

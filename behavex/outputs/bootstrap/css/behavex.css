@@ -235,7 +235,7 @@ table th {
     margin-right: 4px
 }
 .ul-tags-behavex {
-    padding-left: 3px;
+    padding-left: 1px;
     float: left;
 }
 .label-behavex {
@@ -286,14 +286,15 @@ table th {
     border: 1px solid #765453;
     border-radius: 5px;
     padding-left: 15px;
-    width: 100%;
     margin-left: 3px;
     padding-top: 3px;
     margin-bottom: 3px;
+    width: max-content;
 }
 body {
     padding-left: 20px;
     padding-right: 20px;
+    min-width: 900px;
 }
 .scenario-step {
     width: 100%;
@@ -377,4 +378,15 @@ ul.list-unstyled.scenario-step > li {
 .metrics-hidden{
     position: fixed;
     top: -1000px;
+}
+.report-filter{
+    min-width: 210px;
+}
+.gherkin{
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: calc(100% - 10px);
+}
+.table-scenario{
+    table-layout: fixed;
 }
