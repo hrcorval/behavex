@@ -4,11 +4,13 @@ Version History
 Version: 2.0.2
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
-* HTML Report layout improvements to properly render long gherkin steps and failure messages
+* HTML Report layout improvements to properly render long gherkin steps and failure messages.  `Issue #81 <https://github.com/hrcorval/behavex/issues/81>`_
+
 
 FIXES:
 
 * Fix done when logging exceptions in environment.py module
+* Fix done when detecting scenarios (Scenario detection does not work for Non-English languages). `Issue #77 <https://github.com/hrcorval/behavex/issues/77>`_
 
 Version: 2.0.1
 -------------------------------------------------------------------------------
