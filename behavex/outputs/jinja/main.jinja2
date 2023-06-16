@@ -319,18 +319,20 @@
                                 </div>
                                 <div data-div-id_hash="{{ scenario.id_hash }}"
                                      style="display: None" class="pull-left gherkin">
-                                    <ul class="list-unstyled ul-tags-behavex label-behavex" style="font-size: 10px">
-                                        {%- for tag in scenario.tags -%}
-                                            {%- if [tag]|match_for_execution -%}
-                                                <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
-                                                    class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
-                                            {%- else -%}
-                                                <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
-                                            {%- endif -%}
-                                        {%- endfor -%}
-                                    </ul>
+                                    {% if scenario.tags %}
+                                        <ul class="list-unstyled ul-tags-behavex label-behavex" style="font-size: 10px">
+                                            {%- for tag in scenario.tags -%}
+                                                {%- if [tag]|match_for_execution -%}
+                                                    <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
+                                                        class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
+                                                                <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
+                                                {%- else -%}
+                                                    <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
+                                                                <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
+                                                {%- endif -%}
+                                            {%- endfor -%}
+                                        </ul>
+                                    {% endif %}
                                     {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
                                         <br>
                                         <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
@@ -457,8 +459,8 @@
                 </table>
             {%- endif -%}
             {% if step.text is defined and step.text != "None" %}
-            <div class="small attr_text">
-                {{ step.text|replace_enter|e|replace("&lt;br&gt;", "<br>")|replace('&nbsp;', ' ')}}
+            <div>
+                <pre class="small behavex_letter">{{ step.text|safe}}</pre>
             </div>
 
             {% endif%}
@@ -466,9 +468,9 @@
                 <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
                  {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
                  {%- if error_msg or error_lines -%}
-                    <ul class="list-unstyled ul-step-error">
+                    <ul class="list-unstyled pull-left">
                         <li>
-                            <small>
+                            <pre class="red-behavex behavex_letter ul-step-error">
                                 {%- if error_msg -%}
                                     {%- for line in error_msg -%}
                                         {%- if line -%}
@@ -482,7 +484,7 @@
                                         {%- endif -%}
                                     {%- endfor -%}
                                 {%- endif -%}
-                            </small>
+                            </pre>
                         </li>
                     </ul>
                  {%- endif -%}

@@ -281,8 +281,6 @@ table th {
     width: 100%;
 }
 .ul-step-error {
-    font-size: 13px;
-    font-weight: 100;
     border: 1px solid #765453;
     border-radius: 5px;
     padding-left: 15px;
@@ -366,10 +364,6 @@ ul.list-unstyled.scenario-step > li {
 .modal-style-body{
     height: 94%;
     width: 100%;
-}
-.attr_text{
-    margin: 2px;
-    padding-left: 14px;
 }
 .ui-menu{
     color: #4F4F4F;

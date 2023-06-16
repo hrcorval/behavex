@@ -11,6 +11,7 @@ FIXES:
 
 * Fix done when logging exceptions in environment.py module
 * Fix done when detecting scenarios (Scenario detection does not work for Non-English languages). `Issue #77 <https://github.com/hrcorval/behavex/issues/77>`_
+* Fix done to properly render step.text in HTML report. `Issue #79 <https://github.com/hrcorval/behavex/issues/79>`_
 
 Version: 2.0.1
 -------------------------------------------------------------------------------
