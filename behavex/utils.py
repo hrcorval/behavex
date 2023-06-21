@@ -177,7 +177,7 @@ def explore_features(features_path, features_list=None):
 def should_feature_be_run(path_feature):
     feature = parse_file(path_feature)
     if not feature:
-        tags_list = []
+        return False
     else:
         tags_list = [
             scenario.tags

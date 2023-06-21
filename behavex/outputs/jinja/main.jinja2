@@ -440,7 +440,7 @@
         </div>
         {%- endmacro -%}
         {%- macro print_step(scenario, step) -%}
-            <li style="width: 100%"><b>{{ step|resolving_type(scenario)|safe }}</b> {{ ((step.name) ~ test_status_text)|e }}
+            <li style="width: 100%;float: left;"><b>{{ step|resolving_type(scenario)|safe }}</b> {{ ((step.name) ~ test_status_text)|e }}
             {%- if 'table' in step -%}
                 <table class="table table-hover behavex_letter table-step-value">
                     <tr class="{{scenario.status|resolving_color_class}} table-header">
