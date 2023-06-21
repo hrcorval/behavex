@@ -176,15 +176,16 @@ def explore_features(features_path, features_list=None):
 
 def should_feature_be_run(path_feature):
     feature = parse_file(path_feature)
-    if not feature:
-        tags_list = []
-    else:
-        tags_list = [
-            scenario.tags
-            for scenario in feature.scenarios
-            if hasattr(feature, 'scenarios')
-        ]
+
+    tags_list = []
+    if feature:
         tags_list.append(feature.tags)
+        for scenario in feature.scenarios:
+            tags_list.append(scenario.tags)
+            if hasattr(scenario, 'scenarios'):
+                for outline_example in scenario.scenarios:
+                    tags_list.append(outline_example.tags)
+
     match_tag = any(match_for_execution(tags) for tags in tags_list)
 
     filename = feature.filename
