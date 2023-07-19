@@ -5,7 +5,7 @@ Version: 2.0.2
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
 * HTML Report layout improvements to properly render long gherkin steps and failure messages.  `Issue #81 <https://github.com/hrcorval/behavex/issues/81>`_
-
+* Improvement done when parallel execution cannot be launched due to duplicated scenario names, by throwing an error exit code  `Issue #86 <https://github.com/hrcorval/behavex/issues/86>`_
 
 FIXES:
 
