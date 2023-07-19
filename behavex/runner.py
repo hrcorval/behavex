@@ -317,7 +317,7 @@ def launch_by_scenario(features, process_pool):
         print_parallel(
             'scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4)
         )
-        exit()
+        exit(1)
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
         json_serial_reports = [
