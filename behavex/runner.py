@@ -23,6 +23,7 @@ from operator import itemgetter
 from tempfile import gettempdir
 
 from behave import __main__ as behave_script
+from behave.model import ScenarioOutline
 
 # noinspection PyUnresolvedReferences
 import behavex.outputs.report_json
@@ -252,7 +253,7 @@ def create_scenario_line_references(features):
         sce_lines[text(feature.filename)] = {}
         feature_lines = sce_lines[text(feature.filename)]
         for scenario in feature.scenarios:
-            if scenario.keyword == u'Scenario':
+            if not isinstance(scenario, ScenarioOutline):
                 feature_lines[scenario.name] = scenario.line
             else:
                 for scenario_multiline in scenario.scenarios:

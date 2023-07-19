@@ -71,7 +71,6 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(get_path_extra_logs, 'get_path_extra_logs')
         self.add_filter(get_relative_extra_logs_path, 'get_relative_extra_logs_path')
         self.add_filter(clean_invalid_xml_chars, 'CIXC')
-        self.add_filter(replace_enter, 'replace_enter')
         self.add_filter(normalize_path, 'normalize_path')
         self.template_env.globals.update(get_env=get_env)
         # self.template_env.globals.keys() has been forced to be a list
@@ -284,7 +283,7 @@ def to_string_list(tags):
 
 
 def _print_error(line):
-    return line
+    return line.replace('/n', os.linesep)
 
 
 def clean_invalid_xml_chars(xml_content):
@@ -363,10 +362,6 @@ def clean_char(char):
             # print ord(char), char.encode('ascii', 'ignore')
             return new_char
     return char
-
-
-def replace_enter(text):
-    return text.replace(os.linesep, '<br>')
 
 
 def normalize_path(text):

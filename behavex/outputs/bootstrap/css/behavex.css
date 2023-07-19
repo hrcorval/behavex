@@ -235,7 +235,7 @@ table th {
     margin-right: 4px
 }
 .ul-tags-behavex {
-    padding-left: 3px;
+    padding-left: 1px;
     float: left;
 }
 .label-behavex {
@@ -281,19 +281,18 @@ table th {
     width: 100%;
 }
 .ul-step-error {
-    font-size: 13px;
-    font-weight: 100;
     border: 1px solid #765453;
     border-radius: 5px;
     padding-left: 15px;
-    width: 100%;
     margin-left: 3px;
     padding-top: 3px;
     margin-bottom: 3px;
+    width: max-content;
 }
 body {
     padding-left: 20px;
     padding-right: 20px;
+    min-width: 900px;
 }
 .scenario-step {
     width: 100%;
@@ -366,10 +365,6 @@ ul.list-unstyled.scenario-step > li {
     height: 94%;
     width: 100%;
 }
-.attr_text{
-    margin: 2px;
-    padding-left: 14px;
-}
 .ui-menu{
     color: #4F4F4F;
     background-color: #EEEEEE;
@@ -377,4 +372,15 @@ ul.list-unstyled.scenario-step > li {
 .metrics-hidden{
     position: fixed;
     top: -1000px;
+}
+.report-filter{
+    min-width: 210px;
+}
+.gherkin{
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: calc(100% - 10px);
+}
+.table-scenario{
+    table-layout: fixed;
 }

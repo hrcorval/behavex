@@ -176,7 +176,6 @@ def explore_features(features_path, features_list=None):
 
 def should_feature_be_run(path_feature):
     feature = parse_file(path_feature)
-
     tags_list = []
     if feature:
         tags_list.append(feature.tags)
