@@ -45,7 +45,6 @@ from behavex.utils import (
     IncludeNameMatch,
     IncludePathsMatch,
     MatchInclude,
-    check_environment_file,
     cleanup_folders,
     configure_logging,
     copy_bootstrap_html_generator,
@@ -94,11 +93,13 @@ def run(args):
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
     _set_env_variables(args_parsed)
-    if len(get_param('paths')) > 0 and os.path.isdir(get_param('paths')[0]):
-        os.environ['FEATURES_PATH'] = get_param('paths')[0]
-    if not os.path.isdir(os.environ.get('FEATURES_PATH')):
-        print('\n"features" folder was not found in current path...')
-        exit()
+    if len(get_param('paths')) > 0:
+        for path in get_param('paths'):
+            if not os.path.exists(path):
+                print('\nSpecified path was not found: {}'.format(path))
+                exit()
+        paths = ",".join(get_param('paths'))
+        os.environ['FEATURES_PATH'] = paths
     execution_code = setup_running_failures(args_parsed)
     if execution_code == EXIT_ERROR:
         return EXIT_ERROR
@@ -107,7 +108,6 @@ def run(args):
     cleanup_folders()
     copy_bootstrap_html_generator()
     configure_logging(args_parsed)
-    check_environment_file()
     match_include = MatchInclude()
     include_path_match = IncludePathsMatch()
     include_name_match = IncludeNameMatch()
@@ -141,8 +141,8 @@ def init_multiprocessing():
 
 def launch_behavex():
     """Launch the BehaveX test execution in the specified parallel mode."""
-    json_reports = None
-    execution_codes = None
+    json_reports = []
+    execution_codes = []
     time_init = time.time()
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
@@ -157,17 +157,22 @@ def launch_behavex():
     set_behave_tags()
     scenario = False
     notify_missing_features()
-    features_list = explore_features(features_path)
+    features_list = {}
+    for path in features_path.split(','):
+        features_list[path] = explore_features(path)
     create_scenario_line_references(features_list)
     process_pool = multiprocessing.Pool(parallel_processes, init_multiprocessing)
     try:
         if parallel_processes == 1 or get_param('dry_run'):
-            # when it is not multiprocess
+            # Executing without parallel processes
             if get_param('dry_run'):
                 print('Obtaining information about the reporting scope...')
-            execution_codes, json_reports = execute_tests(
-                [True], multiprocess=False, config=ConfigRun()
-            )
+            all_paths = [key for key in features_list]
+            execution_codes, json_reports = execute_tests(features_path=all_paths,
+                                                          feature_filename=None,
+                                                          scenario_name=None,
+                                                          multiprocess=False,
+                                                          config=ConfigRun())
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
                 features_list, process_pool
@@ -249,124 +254,141 @@ def create_test_list(test_list):
 
 def create_scenario_line_references(features):
     sce_lines = {}
-    for feature in features:
-        sce_lines[text(feature.filename)] = {}
-        feature_lines = sce_lines[text(feature.filename)]
-        for scenario in feature.scenarios:
-            if not isinstance(scenario, ScenarioOutline):
-                feature_lines[scenario.name] = scenario.line
-            else:
-                for scenario_multiline in scenario.scenarios:
-                    feature_lines[scenario_multiline.name] = scenario_multiline.line
+    for features_list in features.values():
+        for feature in features_list:
+            sce_lines[text(feature.filename)] = {}
+            feature_lines = sce_lines[text(feature.filename)]
+            for scenario in feature.scenarios:
+                if not isinstance(scenario, ScenarioOutline):
+                    feature_lines[scenario.name] = scenario.line
+                else:
+                    for scenario_multiline in scenario.scenarios:
+                        feature_lines[scenario_multiline.name] = scenario_multiline.line
     set_env('scenario_lines', sce_lines)
 
 
 def launch_by_feature(features, process_pool):
     json_reports = []
     execution_codes = []
-    serial = [feature.filename for feature in features if 'SERIAL' in feature.tags]
-
-    features_dict = {
-        feature.filename: feature.name
-        for feature in features
-        if feature.filename not in serial
-    }
+    serial = []
+    features_dict = {}
+    for features_path in features:
+        serial += [feature.filename for feature in features[features_path] if 'SERIAL' in feature.tags]
+        features_dict.update({
+            feature.filename: feature.name
+            for feature in features[features_path]
+            if feature.filename not in serial
+        })
     if serial:
         print_parallel('feature.serial_execution')
-        execution_code, map_json = execute_tests(serial, config=ConfigRun())
-        json_reports += [map_json]
-        execution_codes.append(execution_code)
-
+        for feature_filename in serial:
+            execution_code, map_json = execute_tests(None, feature_filename, None, True, config=ConfigRun())
+            json_reports += [map_json]
+            execution_codes.append(execution_code)
     print_parallel('feature.running_parallels')
-
-    for filename, _scenario_name in features_dict.items():
+    for feature_filename, feature_name in features_dict.items():
         process_pool.apply_async(
             execute_tests,
-            ([filename], None, True, ConfigRun()),
+            (feature_filename, None, None, True, ConfigRun()),
             callback=create_partial_function_append(execution_codes, json_reports),
         )
-
     return execution_codes, json_reports
 
 
 def launch_by_scenario(features, process_pool):
-    serial_scenarios = []
     json_reports = []
-    filenames = []
     execution_codes = []
-    duplicated_scenarios = []
-
-    for feature in features:
-        for scenario in feature.scenarios:
-            # noinspection PyCallingNonCallable
-            if include_path_match(feature.filename, scenario.line) \
-                    and include_name_match(scenario.name):
-                scenario.tags += feature.tags
-                if match_for_execution(scenario.tags):
-                    if 'SERIAL' in scenario.tags:
-                        scenario_tuple = (feature.filename, scenario.name)
-                        if scenario_tuple in serial_scenarios:
-                            duplicated_scenarios.append(scenario.name)
-                        serial_scenarios.append(scenario_tuple)
-                    else:
-                        scenario_tuple = ([feature.filename], scenario.name)
-                        if scenario_tuple in filenames:
-                            duplicated_scenarios.append(scenario.name)
-                        filenames.append(scenario_tuple)
+    filenames = {}
+    serial_scenarios = {}
+    duplicated_scenarios = {}
+    features_with_empty_scenario_descriptions = []
+    for features_path, features_list in features.items():
+        for feature in features_list:
+            for scenario in feature.scenarios:
+                # noinspection PyCallingNonCallable
+                if include_path_match(feature.filename, scenario.line) \
+                        and include_name_match(scenario.name):
+                    scenario.tags += feature.tags
+                    if match_for_execution(scenario.tags):
+                        if scenario.name == "":
+                            features_with_empty_scenario_descriptions.append(feature.filename)
+                        if 'SERIAL' in scenario.tags:
+                            scenario_tuple = (feature.filename, scenario.name)
+                            for key in serial_scenarios.keys():
+                                if scenario_tuple in serial_scenarios[key]:
+                                    if key not in duplicated_scenarios:
+                                        duplicated_scenarios[key] = []
+                                    duplicated_scenarios[key].append(scenario.name)
+                            if features_path not in serial_scenarios:
+                                serial_scenarios[features_path] = []
+                            serial_scenarios[features_path].append(scenario_tuple)
+                        else:
+                            scenario_tuple = (feature.filename, scenario.name)
+                            for key in filenames.keys():
+                                if scenario_tuple in filenames[key]:
+                                    if key not in duplicated_scenarios:
+                                        duplicated_scenarios[key] = []
+                                    duplicated_scenarios[key].append(scenario.name)
+                            if features_path not in filenames:
+                                filenames[features_path] = []
+                            filenames[features_path].append(scenario_tuple)
     if duplicated_scenarios:
-        print_parallel(
-            'scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4)
-        )
+        print_parallel('scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4))
+        exit(1)
+    if features_with_empty_scenario_descriptions:
+        print_parallel('feature.empty_scenario_descriptions', '\n* '.join(features_with_empty_scenario_descriptions))
         exit(1)
     if serial_scenarios:
-        print_parallel('scenario.serial_execution')
-        json_serial_reports = [
-            execute_tests([feature], scenario, config=ConfigRun())
-            for feature, scenario in serial_scenarios
-        ]
-        # execution_codes and json_reports are forced to be lists now.
-        execution_codes += list(map(itemgetter(0), json_serial_reports))
-        json_reports += list(map(itemgetter(1), json_serial_reports))
+        for features_path, feature_filenames in serial_scenarios.items():
+            print_parallel('scenario.serial_execution')
+            json_serial_reports = [
+                execute_tests(features_path=features_path,
+                              feature_filename=feature_filename,
+                              scenario_name=scenario_name,
+                              config=ConfigRun())
+                for feature_filename, scenario_name in feature_filenames
+            ]
+            # execution_codes and json_reports are forced to be lists now.
+            execution_codes += list(map(itemgetter(0), json_serial_reports))
+            json_reports += list(map(itemgetter(1), json_serial_reports))
 
     print_parallel('scenario.running_parallels')
-    for filename, scenario_name in filenames:
-        process_pool.apply_async(
-            execute_tests,
-            (filename, scenario_name, True, ConfigRun()),
-            callback=create_partial_function_append(execution_codes, json_reports),
-        )
+    for features_path, feature_filenames in filenames.items():
+        for feature_filename, scenario_name in feature_filenames:
+            process_pool.apply_async(
+                execute_tests,
+                (features_path, feature_filename, scenario_name, True, ConfigRun()),
+                callback=create_partial_function_append(execution_codes, json_reports),
+            )
     return execution_codes, json_reports
 
 
-def execute_tests(list_features, scenario=None, multiprocess=True, config=None):
-    args = None
-    json_reports = []
+def execute_tests(features_path, feature_filename=None, scenario_name=None, multiprocess=True, config=None):
+    behave_args = None
     paths = config.get_env('include_paths', [])
-    execution_codes, generate_report = [], False
     if multiprocess:
         ExecutionSingleton._instances[ConfigRun] = config
     extend_behave_hooks()
-    for feature in list_features:
+    try:
+        behave_args = _set_behave_arguments(features_path, multiprocess, feature_filename, scenario_name, paths, config)
+    except Exception as exception:
+        traceback.print_exc()
+        print(exception)
+    # print("pipenv run behave {}".format(" ".join(behave_args)))
+    execution_codes, generate_report = _launch_behave(behave_args)
+    if generate_report:
+        json_output = dump_json_results()
+    else:
+        json_output = {'environment': [], 'features': [], 'steps_definition': []}
+    if scenario_name:
+        json_output['features'] = filter_feature_executed(
+            json_output, text(feature_filename), scenario_name
+        )
         try:
-            args = _set_behave_arguments(multiprocess, feature, scenario, paths, config)
-        except Exception as exception:
-            traceback.print_exc()
-            print(exception)
-        execution_codes, generate_report = _launch_behave(args)
-        if generate_report:
-            json_output = dump_json_results()
-        else:
-            json_output = {'environment': [], 'features': [], 'steps_definition': []}
-        if scenario:
-            json_output['features'] = filter_feature_executed(
-                json_output, text(list_features[0]), scenario
-            )
-            try:
-                processing_xml_feature(json_output, scenario)
-            except Exception as ex:
-                logging.exception(ex)
-        json_reports.append(json_output)
-    return execution_codes, join_feature_reports(json_reports)
+            processing_xml_feature(json_output, scenario_name)
+        except Exception as ex:
+            logging.exception(ex)
+    return execution_codes, join_feature_reports(json_output)
 
 
 def filter_feature_executed(json_output, filename, scenario_name):
@@ -380,13 +402,13 @@ def filter_feature_executed(json_output, filename, scenario_name):
             return [feature]
 
 
-def _launch_behave(args):
+def _launch_behave(behave_args):
     # Save tags configuration to report only selected scenarios
     # Check for tags in config file
     generate_report = True
     execution_code = 0
     try:
-        behave_script.main(args)
+        behave_script.main(behave_args)
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False
@@ -403,7 +425,7 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     merged_json = None
     output = os.path.join(get_env('OUTPUT'))
     try:
-        if multi_process:
+        if type(json_reports) is list:
             process_pool.close()
             process_pool.join()
             if scenario:
@@ -606,27 +628,32 @@ def _store_tags_to_env_variable(tags):
         set_env_variable('TAGS', '')
 
 
-def _set_behave_arguments(
-    multiprocess, feature=None, scenario=None, paths=None, config=None
-):
+def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=None, paths=None, config=None):
     arguments = []
-    for feature_path in get_param('paths'):
-        arguments.append(feature_path)
     output_folder = config.get_env('OUTPUT')
     if multiprocess:
-        arguments.append(feature)
+        if not feature:
+            arguments.append(features_path)
+        else:
+            arguments.append(feature)
         arguments.append('--no-summary')
         if scenario:
-            outline_examples_in_name = re.findall('<\\S*>', scenario)
-            scenario_outline_compatible = '{}(.?--.?@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(scenario))
+            outline_examples_in_name = re.findall('<[\\S]*>', scenario)
+            scenario_outline_compatible = '^{}(.?--.?@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(scenario))
             for example_name in outline_examples_in_name:
-                scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
+                escaped_example_name = re.escape(example_name)
+                scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
             arguments.append('--name')
-            arguments.append(scenario_outline_compatible)
+            arguments.append("{}".format(scenario_outline_compatible))
         name = multiprocessing.current_process().name.split('-')[-1]
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
     else:
+        if type(features_path) is list:
+            for feature_path in features_path:
+                arguments.append(feature_path)
+        else:
+            arguments.append(features_path)
         set_paths_argument(arguments, paths)
         if get_param('dry_run'):
             arguments.append('--no-summary')
@@ -696,7 +723,8 @@ def scenario_name_matching(abstract_scenario_name, scenario_name):
     outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
     scenario_outline_compatible = '{}(.--.@\\d+.\\d+\\s*\\S*)?'.format(re.escape(abstract_scenario_name))
     for example_name in outline_examples_in_name:
-        scenario_outline_compatible = scenario_outline_compatible.replace(example_name, "[\\S ]*")
+        escaped_example_name = re.escape(example_name)
+        scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
     pattern = re.compile(scenario_outline_compatible)
     return pattern.match(scenario_name)
 

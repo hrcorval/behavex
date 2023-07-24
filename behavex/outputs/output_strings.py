@@ -54,6 +54,7 @@ TEXTS = {
         'serial_execution': '{0}\nRunning serial features (tagged as @SERIAL)'
         '.\n\n{0}'.format('*' * 60),
         'running_parallels': '{0}\nRunning parallel features.\n\n{0}'.format('*' * 60),
+        'empty_scenario_descriptions': u'{0}\nThere are features containing scenarios with empty descriptions: \n* {1}.\n\n{0}'.format('*' * 60, {}),
         'run_behave': u"Running feature '{}'.",
     },
     'scenario': {

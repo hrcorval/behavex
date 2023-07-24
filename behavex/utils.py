@@ -68,13 +68,16 @@ def get_logging_level():
 # noinspection PyDictCreation
 def join_feature_reports(json_reports):
     scenario_lines = get_env('scenario_lines')
-    if len(json_reports) == 1:
-        merged_json = json_reports[0]
+    if type(json_reports) is list:
+        if len(json_reports) == 1:
+            merged_json = json_reports[0]
+        else:
+            merged_json = {}
+            merged_json['environment'] = join_list_dict(json_reports, 'environment')
+            merged_json['steps_definition'] = join_step_definitions(json_reports)
+            merged_json['features'] = sum((json_['features'] for json_ in json_reports), [])
     else:
-        merged_json = {}
-        merged_json['environment'] = join_list_dict(json_reports, 'environment')
-        merged_json['steps_definition'] = join_step_definitions(json_reports)
-        merged_json['features'] = sum((json_['features'] for json_ in json_reports), [])
+        merged_json = json_reports
     if merged_json['features'] and (IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool()):
         delete = []
         for index, feature in enumerate(merged_json['features'][:]):
@@ -162,31 +165,37 @@ def join_scenario_reports(json_reports):
 def explore_features(features_path, features_list=None):
     if features_list is None:
         features_list = []
-    for node in os.listdir(features_path):
-        if os.path.isdir(os.path.join(features_path, node)):
-            explore_features(os.path.join(features_path, node), features_list)
-        else:
-            if node.endswith('.feature'):
-                path_feature = os.path.abspath(os.path.join(features_path, node))
-                feature = should_feature_be_run(path_feature)
-                if feature:
-                    features_list.append(feature)
+    if os.path.isfile(features_path):
+        if features_path.endswith('.feature'):
+            path_feature = os.path.abspath(features_path)
+            feature = should_feature_be_run(path_feature)
+            if feature:
+                features_list.append(feature)
+    else:
+        for node in os.listdir(features_path):
+            if os.path.isdir(os.path.join(features_path, node)):
+                explore_features(os.path.join(features_path, node), features_list)
+            else:
+                if node.endswith('.feature'):
+                    path_feature = os.path.abspath(os.path.join(features_path, node))
+                    feature = should_feature_be_run(path_feature)
+                    if feature:
+                        features_list.append(feature)
     return features_list
 
 
 def should_feature_be_run(path_feature):
     feature = parse_file(path_feature)
-    tags_list = []
-    if feature:
+    if not feature:
+        return False
+    else:
+        tags_list = [
+            scenario.tags
+            for scenario in feature.scenarios
+            if hasattr(feature, 'scenarios')
+        ]
         tags_list.append(feature.tags)
-        for scenario in feature.scenarios:
-            tags_list.append(scenario.tags)
-            if hasattr(scenario, 'scenarios'):
-                for outline_example in scenario.scenarios:
-                    tags_list.append(outline_example.tags)
-
     match_tag = any(match_for_execution(tags) for tags in tags_list)
-
     filename = feature.filename
     if (
         match_tag
@@ -389,12 +398,6 @@ def len_scenarios(feature_file):
             else:
                 amount_scenarios += 1
     return amount_scenarios
-
-
-def check_environment_file():
-    path_environment = os.path.join(os.environ.get('FEATURES_PATH'), 'environment.py')
-    if not os.path.exists(path_environment):
-        raise Exception("environment.py module not found in 'features' folder")
 
 
 def set_behave_tags():
