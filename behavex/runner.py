@@ -92,7 +92,6 @@ def run(args):
     args_parsed = parse_arguments(args)
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
-    _set_env_variables(args_parsed)
     if len(get_param('paths')) > 0:
         for path in get_param('paths'):
             if not os.path.exists(path):
@@ -100,6 +99,7 @@ def run(args):
                 exit()
         paths = ",".join(get_param('paths'))
         os.environ['FEATURES_PATH'] = paths
+    _set_env_variables(args_parsed)
     execution_code = setup_running_failures(args_parsed)
     if execution_code == EXIT_ERROR:
         return EXIT_ERROR
@@ -231,6 +231,7 @@ def launch_behavex():
         process_pool.terminate()
         process_pool.join()
         exit_code = 1
+    print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
     print('Exit code: {}'.format(exit_code))
     return exit_code
 
@@ -601,6 +602,7 @@ def _set_env_variables(args):
             'TAGS',
             'PARALLEL_SCHEME',
             'PARALLEL_PROCESSES',
+            'FEATURES_PATH',
             'TEMP',
             'LOGS',
             'LOGGING_LEVEL',
