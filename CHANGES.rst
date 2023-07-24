@@ -15,7 +15,7 @@ FIXES:
 * Fix done to properly render step.text in HTML report. `Issue #79 <https://github.com/hrcorval/behavex/issues/79>`_
 * Fix done when parsing empty feature files.
 
-CONTRIBUTIONS:
+CONTRIBUTORS:
 
 * Contribution from `seb <https://github.com/sebns>`__ providing the fix to an issue when parsing tags associated to scenario outline examples (Thanks!!)
 

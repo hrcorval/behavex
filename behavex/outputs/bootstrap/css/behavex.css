@@ -280,15 +280,6 @@ table th {
     margin: 0px;
     width: 100%;
 }
-.ul-step-error {
-    border: 1px solid #765453;
-    border-radius: 5px;
-    padding-left: 15px;
-    margin-left: 3px;
-    padding-top: 3px;
-    margin-bottom: 3px;
-    width: max-content;
-}
 body {
     padding-left: 20px;
     padding-right: 20px;
