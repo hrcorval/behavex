@@ -468,9 +468,9 @@
                 <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
                  {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
                  {%- if error_msg or error_lines -%}
-                    <ul class="list-unstyled pull-left">
+                    <ul class="list-unstyled">
                         <li>
-                            <pre class="red-behavex behavex_letter ul-step-error">
+                            <pre class="red-behavex behavex_letter">
                                 {%- if error_msg -%}
                                     {%- for line in error_msg -%}
                                         {%- if line -%}
