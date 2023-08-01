@@ -196,7 +196,7 @@ def launch_behavex():
                 no_chain=True,
             )
 
-        remove_temporary_files(parallel_processes)
+        remove_temporary_files(parallel_processes, json_reports)
 
         results = get_json_results()
         failing_non_muted_tests = False
@@ -481,7 +481,7 @@ def filter_by_paths(merged_json_reports):
         ]
 
 
-def remove_temporary_files(parallel_processes):
+def remove_temporary_files(parallel_processes, json_reports):
     path_info = os.path.join(
         os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_json'])
     )
@@ -523,7 +523,17 @@ def remove_temporary_files(parallel_processes):
         os.chmod(stdout_file, 511)  # nosec
         if not os.access(stdout_file, os.W_OK):
             os.remove(stdout_file)
-
+    # removing any pending temporary files
+    for json_report in json_reports:
+        if 'features' in json_report and json_report['features']:
+            feature_name = os.path.join(
+                get_env('OUTPUT'), u'{}.tmp'.format(json_report['features'][0]['name'])
+            )
+            if os.path.exists(feature_name):
+                try:
+                    os.remove(feature_name)
+                except Exception as remove_ex:
+                    print(remove_ex)
 
 def processing_xml_feature(json_output, scenario):
     if json_output['features'] and 'scenarios' in json_output['features'][0]:
