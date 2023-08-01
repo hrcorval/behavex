@@ -188,31 +188,35 @@ def launch_behavex():
         if get_param('dry_run'):
             msg = '\nDry run completed. Please, see the report in {0}' ' folder.\n\n'
             print(msg.format(get_env('OUTPUT')))
-        if multiprocess:
-            print_parallel(
-                '\nTotal execution time: {}'.format(
-                    pretty_print_time(time_end - time_init)
-                ),
-                no_chain=True,
-            )
 
         remove_temporary_files(parallel_processes, json_reports)
 
         results = get_json_results()
         failing_non_muted_tests = False
+        totals = {"features": {"passed": 0, "failed": 0, "skipped": 0},
+                  "scenarios": {"passed": 0, "failed": 0, "skipped": 0}}
         if results:
             failures = {}
             for feature in results['features']:
                 if feature['status'] == 'failed':
+                    totals['features']['failed'] += 1
                     filename = feature['filename']
                     failures[filename] = []
+                elif feature['status'] == 'passed':
+                    totals['features']['passed'] += 1
                 else:
+                    totals['features']['skipped'] += 1
                     continue
                 for scenario in feature['scenarios']:
                     if scenario['status'] == 'failed':
+                        totals['scenarios']['failed'] += 1
                         failures[filename].append(scenario['name'])
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
+                    elif scenario['status'] == 'passed':
+                        totals['scenarios']['passed'] += 1
+                    else:
+                        totals['scenarios']['skipped'] += 1
             if failures:
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
@@ -231,7 +235,20 @@ def launch_behavex():
         process_pool.terminate()
         process_pool.join()
         exit_code = 1
-    print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
+    if multiprocess:
+        plural_char = lambda n: 's' if n != 1 else ''
+        print('\n{} feature{} passed, {} failed, {} skipped (*)'.format(totals['features']['passed'],
+                                                                        plural_char(totals['features']['passed']),
+                                                                        totals['features']['failed'],
+                                                                        totals['features']['skipped']))
+        print('{} scenario{} passed, {} failed, {} skipped (*)'.format(totals['scenarios']['passed'],
+                                                                       plural_char(totals['scenarios']['passed']),
+                                                                       totals['scenarios']['failed'],
+                                                                       totals['scenarios']['skipped']))
+        print('(*) Skipped tests are those that were executed but explicitly marked as skipped.')
+        print('Took: {}'.format(pretty_print_time(time_end - time_init)))
+    if results and results['features']:
+        print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
     print('Exit code: {}'.format(exit_code))
     return exit_code
 
@@ -461,12 +478,12 @@ def filter_by_paths(merged_json_reports):
         for index, scenario in enumerate(feature['scenarios'][:]):
             line = sce_lines[feature['filename']][scenario['name']]
             if (
-                (
-                    IncludePathsMatch()(feature['filename'], line)
-                    and MatchInclude()(feature['filename'])
-                )
-                and match_for_execution(scenario['tags'])
-                and IncludeNameMatch()(scenario['name'])
+                    (
+                            IncludePathsMatch()(feature['filename'], line)
+                            and MatchInclude()(feature['filename'])
+                    )
+                    and match_for_execution(scenario['tags'])
+                    and IncludeNameMatch()(scenario['name'])
             ):
                 filters.append(index)
         feature['scenarios'] = [
@@ -534,6 +551,7 @@ def remove_temporary_files(parallel_processes, json_reports):
                     os.remove(feature_name)
                 except Exception as remove_ex:
                     print(remove_ex)
+
 
 def processing_xml_feature(json_output, scenario):
     if json_output['features'] and 'scenarios' in json_output['features'][0]:
