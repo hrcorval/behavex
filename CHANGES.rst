@@ -8,6 +8,7 @@ ENHANCEMENTS:
 * Printing the HTML output report that in the console when behavex execution is finished
 * Printing the paths where the features are located when behavex execution is started  `Issue #88 <https://github.com/hrcorval/behavex/issues/88>`_
 * Printing the summary of executed scenarios when running in parallel
+* Major improvement done to enable re-executing failing scenarios in parallel
 
 Version: 2.0.2
 -------------------------------------------------------------------------------

@@ -23,6 +23,7 @@ class GlobalVars:
         }
         self._retried_scenarios = {}
         self._steps_definitions = {}
+        self._rerun_failures = False
 
     @property
     def execution_path(self):
@@ -55,6 +56,14 @@ class GlobalVars:
     @property
     def steps_definitions(self):
         return self._steps_definitions
+
+    @property
+    def rerun_failures(self):
+        return self._rerun_failures
+
+    @rerun_failures.setter
+    def rerun_failures(self, rerun_failures):
+        self._rerun_failures = rerun_failures
 
 
 global_vars = GlobalVars()
