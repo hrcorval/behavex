@@ -310,6 +310,8 @@ def create_scenario_line_references(features):
                         updated_features[feature_without_scenario_line].append(scenario)
                     scenario_lines[scenario.name] = scenario.line
             else:
+                if feature_path not in updated_features:
+                    updated_features[feature_path] = []
                 if not isinstance(scenario, ScenarioOutline):
                     updated_features[feature_path] = scenarios
                     scenario_lines[scenario.name] = scenario.line
@@ -404,7 +406,7 @@ def launch_by_scenario(features, process_pool):
                               config=ConfigRun())
                 for feature_filename, scenario_name in feature_filenames
             ]
-            # execution_codes and json_reports are forced to be lists now.
+            # execution_codes and json_reports are forced to be of type a list.
             execution_codes += list(map(itemgetter(0), json_serial_reports))
             json_reports += list(map(itemgetter(1), json_serial_reports))
 
