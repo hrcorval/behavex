@@ -296,13 +296,11 @@ def create_scenario_line_references(features):
     sce_lines = {}
     updated_features = {}
     for feature_path, scenarios in features.items():
-        if len(scenarios) == 0:
-            continue
-        feature_filename = text(scenarios[0].filename)
-        if feature_filename not in sce_lines:
-            sce_lines[feature_filename] = {}
-        feature_lines = sce_lines[feature_filename]
         for scenario in scenarios:
+            scenario_filename = text(scenario.filename)
+            if scenario_filename not in sce_lines:
+                sce_lines[scenario_filename] = {}
+            scenario_lines = sce_lines[scenario_filename]
             if global_vars.rerun_failures or ".feature:" in feature_path:
                 feature_without_scenario_line = feature_path.split(":")[0]
                 if feature_without_scenario_line not in updated_features:
@@ -310,14 +308,14 @@ def create_scenario_line_references(features):
                 if scenario.line == int(feature_path.split(":")[1]):
                     if scenario not in updated_features[feature_without_scenario_line]:
                         updated_features[feature_without_scenario_line].append(scenario)
-                    feature_lines[scenario.name] = scenario.line
+                    scenario_lines[scenario.name] = scenario.line
             else:
                 if not isinstance(scenario, ScenarioOutline):
                     updated_features[feature_path] = scenarios
-                    feature_lines[scenario.name] = scenario.line
+                    scenario_lines[scenario.name] = scenario.line
                 else:
                     for scenario_multiline in scenario.scenarios:
-                        feature_lines[scenario_multiline.name] = scenario_multiline.line
+                        scenario_lines[scenario_multiline.name] = scenario_multiline.line
                 if scenario not in updated_features[feature_path]:
                     updated_features[feature_path].append(scenario)
     set_env('scenario_lines', sce_lines)
