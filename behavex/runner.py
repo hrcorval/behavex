@@ -305,21 +305,30 @@ def create_scenario_line_references(features):
                 feature_without_scenario_line = feature_path.split(":")[0]
                 if feature_without_scenario_line not in updated_features:
                     updated_features[feature_without_scenario_line] = []
-                if scenario.line == int(feature_path.split(":")[1]):
-                    if scenario not in updated_features[feature_without_scenario_line]:
-                        updated_features[feature_without_scenario_line].append(scenario)
-                    scenario_lines[scenario.name] = scenario.line
+                if isinstance(scenario, ScenarioOutline):
+                    for scenario_outline_instance in scenario._scenarios:
+                        if scenario_outline_instance.line == int(feature_path.split(":")[1]):
+                            if scenario not in updated_features[feature_without_scenario_line]:
+                                updated_features[feature_without_scenario_line].append(scenario_outline_instance)
+                            scenario_lines[scenario_outline_instance.name] = scenario_outline_instance.line
+                            break
+                else:
+                    if scenario.line == int(feature_path.split(":")[1]):
+                        if scenario not in updated_features[feature_without_scenario_line]:
+                            updated_features[feature_without_scenario_line].append(scenario)
+                        scenario_lines[scenario.name] = scenario.line
             else:
                 if feature_path not in updated_features:
                     updated_features[feature_path] = []
-                if not isinstance(scenario, ScenarioOutline):
-                    updated_features[feature_path] = scenarios
-                    scenario_lines[scenario.name] = scenario.line
+                if isinstance(scenario, ScenarioOutline):
+                    for scenario_outline_instance in scenario.scenarios:
+                        scenario_lines[scenario_outline_instance.name] = scenario_outline_instance.line
+                        if scenario_outline_instance not in updated_features[feature_path]:
+                            updated_features[feature_path].append(scenario_outline_instance)
                 else:
-                    for scenario_multiline in scenario.scenarios:
-                        scenario_lines[scenario_multiline.name] = scenario_multiline.line
-                if scenario not in updated_features[feature_path]:
-                    updated_features[feature_path].append(scenario)
+                    scenario_lines[scenario.name] = scenario.line
+                    if scenario not in updated_features[feature_path]:
+                        updated_features[feature_path].append(scenario)
     set_env('scenario_lines', sce_lines)
     return updated_features
 
@@ -677,7 +686,11 @@ def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=No
         arguments.append('--no-summary')
         if scenario:
             outline_examples_in_name = re.findall('<[\\S]*>', scenario)
-            scenario_outline_compatible = '^{}(.?--.?@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(scenario))
+            pattern = "(.?--.?@\\d+.\\d+\\s*\\S*)"
+            if bool(re.search(pattern, scenario)):
+                scenario_outline_compatible = '^{}$'.format(scenario)
+            else:
+                scenario_outline_compatible = '^{}{}?$'.format(re.escape(scenario), pattern)
             for example_name in outline_examples_in_name:
                 escaped_example_name = re.escape(example_name)
                 scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
