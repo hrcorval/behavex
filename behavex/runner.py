@@ -306,9 +306,9 @@ def create_scenario_line_references(features):
                 if feature_without_scenario_line not in updated_features:
                     updated_features[feature_without_scenario_line] = []
                 if isinstance(scenario, ScenarioOutline):
-                    for scenario_outline_instance in scenario._scenarios:
+                    for scenario_outline_instance in scenario.scenarios:
                         if scenario_outline_instance.line == int(feature_path.split(":")[1]):
-                            if scenario not in updated_features[feature_without_scenario_line]:
+                            if scenario_outline_instance not in updated_features[feature_without_scenario_line]:
                                 updated_features[feature_without_scenario_line].append(scenario_outline_instance)
                             scenario_lines[scenario_outline_instance.name] = scenario_outline_instance.line
                             break
