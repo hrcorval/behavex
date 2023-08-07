@@ -688,12 +688,13 @@ def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=No
             outline_examples_in_name = re.findall('<[\\S]*>', scenario)
             pattern = "(.?--.?@\\d+.\\d+\\s*\\S*)"
             if bool(re.search(pattern, scenario)):
-                scenario_outline_compatible = '^{}$'.format(scenario)
+                scenario_outline_compatible = '^{}$'.format(re.escape(scenario))
             else:
                 scenario_outline_compatible = '^{}{}?$'.format(re.escape(scenario), pattern)
-            for example_name in outline_examples_in_name:
-                escaped_example_name = re.escape(example_name)
-                scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
+            if outline_examples_in_name:
+                for example_name in outline_examples_in_name:
+                    escaped_example_name = re.escape(example_name)
+                    scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
             arguments.append('--name')
             arguments.append("{}".format(scenario_outline_compatible))
         name = multiprocessing.current_process().name.split('-')[-1]
