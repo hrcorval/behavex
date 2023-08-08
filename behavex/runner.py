@@ -318,17 +318,18 @@ def create_scenario_line_references(features):
                             updated_features[feature_without_scenario_line].append(scenario)
                         scenario_lines[scenario.name] = scenario.line
             else:
-                if feature_path not in updated_features:
-                    updated_features[feature_path] = []
+                updated_features_path = scenario.feature.filename
+                if updated_features_path not in updated_features:
+                    updated_features[updated_features_path] = []
                 if isinstance(scenario, ScenarioOutline):
                     for scenario_outline_instance in scenario.scenarios:
                         scenario_lines[scenario_outline_instance.name] = scenario_outline_instance.line
-                        if scenario_outline_instance not in updated_features[feature_path]:
-                            updated_features[feature_path].append(scenario_outline_instance)
+                        if scenario_outline_instance not in updated_features[updated_features_path]:
+                            updated_features[updated_features_path].append(scenario_outline_instance)
                 else:
                     scenario_lines[scenario.name] = scenario.line
-                    if scenario not in updated_features[feature_path]:
-                        updated_features[feature_path].append(scenario)
+                    if scenario not in updated_features[updated_features_path]:
+                        updated_features[updated_features_path].append(scenario)
     set_env('scenario_lines', sce_lines)
     return updated_features
 
@@ -406,8 +407,8 @@ def launch_by_scenario(features, process_pool):
         print_parallel('feature.empty_scenario_descriptions', '\n* '.join(features_with_empty_scenario_descriptions))
         exit(1)
     if serial_scenarios:
+        print_parallel('scenario.serial_execution')
         for features_path, feature_filenames in serial_scenarios.items():
-            print_parallel('scenario.serial_execution')
             json_serial_reports = [
                 execute_tests(features_path=features_path,
                               feature_filename=feature_filename,
