@@ -42,15 +42,25 @@ The execution is performed in the same way as you do when executing Behave from 
 
 Examples:
 
-> behavex -t @TAG_1  -t ~@TAG_2
+>Run scenarios tagged as TAG_1 but not TAG_2:
+> 
+> **behavex -t @TAG_1 -t ~@TAG_2**
 
-> behavex -t @TAG_1,@TAG_2
+>Run scenarios tagged as TAG_1 or TAG_2:
+> 
+>**behavex -t @TAG_1,@TAG_2**
 
-> behavex -t @TAG --parallel-processes 4 --parallel-scheme scenario
+>Run scenarios tagged as TAG_1, using 4 parallel processes:
+> 
+>**behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario**
 
-> behavex -t @TAG --parallel-processes 3
+>Run scenarios tagged as TAG_1, using 5 parallel processes executing a feature on each process:
+> 
+>**behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature**
 
-> behavex -t @TAG --dry-run
+> Perform a dry run of the scenarios tagged as TAG_1, and generate the HTML report:
+> 
+>**behavex -t @TAG --dry-run**
 
 
 ## Constraints
