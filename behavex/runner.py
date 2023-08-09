@@ -188,7 +188,7 @@ def launch_behavex():
             if global_vars.rerun_failures:
                 all_paths = features_path.split(",")
             else:
-                all_paths = [key for key in updated_features_list]
+                all_paths = [key for key in features_list.keys()]
             execution_codes, json_reports = execute_tests(features_path=all_paths,
                                                           feature_filename=None,
                                                           scenario_name=None,
