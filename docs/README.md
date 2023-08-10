@@ -42,15 +42,41 @@ The execution is performed in the same way as you do when executing Behave from 
 
 Examples:
 
-> behavex -t @TAG_1  -t ~@TAG_2
+>Run scenarios tagged as **TAG_1** but not **TAG_2**:
+> 
+> <pre>behavex -t @TAG_1 -t ~@TAG_2</pre>
 
-> behavex -t @TAG_1,@TAG_2
+>Run scenarios tagged as **TAG_1** or **TAG_2**:
+> 
+><pre>behavex -t @TAG_1,@TAG_2</pre>
 
-> behavex -t @TAG --parallel-processes 4 --parallel-scheme scenario
+>Run scenarios tagged as **TAG_1**, using **4** parallel processes:
+> 
+><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
 
-> behavex -t @TAG --parallel-processes 3
+>Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using **2** parallel processes
+> 
+><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2</pre>
 
-> behavex -t @TAG --dry-run
+> >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
+> 
+><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2</pre>
+
+> >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
+> 
+><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2</pre>
+
+>Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
+> 
+><pre>behavex features/feature_1 features/feature_2 --parallel-processes 2</pre>
+
+>Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
+> 
+><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
+
+> Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
+> 
+><pre>behavex -t @TAG_1 --dry-run</pre>
 
 
 ## Constraints
@@ -58,7 +84,6 @@ Examples:
 * BehaveX is currently implemented on top of Behave **v1.2.6**, and not all Behave arguments are yet supported.
 * The parallel execution implementation is based on concurrent Behave processes. Therefore, any code in the **before_all** and **after_all** hooks in the **environment.py** module will be executed in each parallel process. The same applies to the **before_feature** and **after_feature** hooks when the parallel execution is set by scenario.
 * The library is provided as is, and no tests have been implemented for the framework yet (initial versions had tests, but they were deprecated). Any contributions to testing would be greatly appreciated.
-* There may be inaccuracies in some English translations, and some docstrings are currently empty. We expect to fix these issues soon.
 
 ### Additional Comments
 
@@ -112,7 +137,7 @@ Parallel test executions can be performed by **feature** or by **scenario**.
 Examples:
 > behavex --parallel-processes 3
 
-> behavex -t @TAG --parallel-processes 3
+> behavex -t @\<TAG\> --parallel-processes 3
 
 > behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
 
@@ -208,7 +233,7 @@ It is important to mention that this argument doesn't work yet with parallel tes
 
 ## Show Your Support
 
-If you find this project helpful or interesting, we would appreciate it if you could give it a star. It's a simple way to show your support and let us know that you find value in our work.
+**If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.
 
 By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
 
