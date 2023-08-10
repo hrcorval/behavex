@@ -68,7 +68,7 @@ Examples:
 
 >Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
 > 
-><pre>behavex other_features/feature_1 other_features/feature_2 --parallel-processes 2
+><pre>behavex features/feature_1 features/feature_2 --parallel-processes 2
 
 >Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
 > 
