@@ -42,42 +42,41 @@ The execution is performed in the same way as you do when executing Behave from 
 
 Examples:
 
->Run scenarios tagged as TAG_1 but not TAG_2:
+>Run scenarios tagged as **TAG_1** but not **TAG_2**:
 > 
 > <pre>behavex -t @TAG_1 -t ~@TAG_2</pre>
 
->Run scenarios tagged as TAG_1 or TAG_2:
+>Run scenarios tagged as **TAG_1** or **TAG_2**:
 > 
 ><pre>behavex -t @TAG_1,@TAG_2</pre>
 
->Run scenarios tagged as TAG_1, using 4 parallel processes:
+>Run scenarios tagged as **TAG_1**, using **4** parallel processes:
 > 
 ><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
 
->Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using 2 parallel processes
+>Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using **2** parallel processes
 > 
 ><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2
 
-> >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
+> >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 > 
 ><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2
 
-> >Run scenarios tagged as TAG_1 from "**features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
+> >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 > 
 ><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2
 
->Run scenarios located at "other_features/feature_1" and "other_features/feature_2" folders, using 2 parallel processes
+>Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
 > 
 ><pre>behavex other_features/feature_1 other_features/feature_2 --parallel-processes 2
 
->Run scenarios tagged as TAG_1, using 5 parallel processes executing a feature on each process:
+>Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
 > 
 ><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
 
-> Perform a dry run of the scenarios tagged as TAG_1, and generate the HTML report:
+> Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
 > 
 ><pre>behavex -t @TAG --dry-run</pre>
-
 
 
 ## Constraints
