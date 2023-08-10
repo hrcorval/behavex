@@ -358,7 +358,11 @@ def create_log_path(name, execution_retry=False):
             return path
         path = initial_path + u'_' + str(scenario_outline_index)
         scenario_outline_index += 1
-    os.makedirs(path)
+    try:
+        os.makedirs(path)
+    except FileExistsError:
+        # path already exists
+        pass
     return path
 
 

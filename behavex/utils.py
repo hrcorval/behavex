@@ -68,13 +68,16 @@ def get_logging_level():
 # noinspection PyDictCreation
 def join_feature_reports(json_reports):
     scenario_lines = get_env('scenario_lines')
-    if len(json_reports) == 1:
-        merged_json = json_reports[0]
+    if type(json_reports) is list:
+        if len(json_reports) == 1:
+            merged_json = json_reports[0]
+        else:
+            merged_json = {}
+            merged_json['environment'] = join_list_dict(json_reports, 'environment')
+            merged_json['steps_definition'] = join_step_definitions(json_reports)
+            merged_json['features'] = sum((json_['features'] for json_ in json_reports), [])
     else:
-        merged_json = {}
-        merged_json['environment'] = join_list_dict(json_reports, 'environment')
-        merged_json['steps_definition'] = join_step_definitions(json_reports)
-        merged_json['features'] = sum((json_['features'] for json_ in json_reports), [])
+        merged_json = json_reports
     if merged_json['features'] and (IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool()):
         delete = []
         for index, feature in enumerate(merged_json['features'][:]):
@@ -84,9 +87,7 @@ def join_feature_reports(json_reports):
                 for scenario in feature['scenarios']
                 if IncludeNameMatch()(scenario['name'])
                 and MatchInclude()(feature['filename'])
-                and IncludePathsMatch()(
-                    scenario['filename'], lines.get(scenario['name'], -1)
-                )
+                and IncludePathsMatch()(scenario['filename'], lines.get(scenario['name'], -1))
             ]
             if not scenarios:
                 # create index list for delete after iterated the feature list.
@@ -162,22 +163,31 @@ def join_scenario_reports(json_reports):
 def explore_features(features_path, features_list=None):
     if features_list is None:
         features_list = []
-    for node in os.listdir(features_path):
-        if os.path.isdir(os.path.join(features_path, node)):
-            explore_features(os.path.join(features_path, node), features_list)
-        else:
-            if node.endswith('.feature'):
-                path_feature = os.path.abspath(os.path.join(features_path, node))
-                feature = should_feature_be_run(path_feature)
-                if feature:
-                    features_list.append(feature)
+    if global_vars.rerun_failures or ".feature:" in features_path:
+        features_path = features_path.split(":")[0]
+    if os.path.isfile(features_path):
+        if features_path.endswith('.feature'):
+            path_feature = os.path.abspath(features_path)
+            feature = should_feature_be_run(path_feature)
+            if feature:
+                features_list.extend(feature.scenarios)
+    else:
+        for node in os.listdir(features_path):
+            if os.path.isdir(os.path.join(features_path, node)):
+                explore_features(os.path.join(features_path, node), features_list)
+            else:
+                if node.endswith('.feature'):
+                    path_feature = os.path.abspath(os.path.join(features_path, node))
+                    feature = should_feature_be_run(path_feature)
+                    if feature:
+                        features_list.extend(feature.scenarios)
     return features_list
 
 
 def should_feature_be_run(path_feature):
     feature = parse_file(path_feature)
     if not feature:
-        tags_list = []
+        return False
     else:
         tags_list = [
             scenario.tags
@@ -186,14 +196,8 @@ def should_feature_be_run(path_feature):
         ]
         tags_list.append(feature.tags)
     match_tag = any(match_for_execution(tags) for tags in tags_list)
-
     filename = feature.filename
-    if (
-        match_tag
-        and MatchInclude()(filename)
-        and match_any_paths(feature)
-        and match_any_name(feature)
-    ):
+    if match_tag and MatchInclude()(filename) and match_any_paths(feature) and match_any_name(feature):
         return feature
     else:
         return False
@@ -391,12 +395,6 @@ def len_scenarios(feature_file):
     return amount_scenarios
 
 
-def check_environment_file():
-    path_environment = os.path.join(os.environ.get('FEATURES_PATH'), 'environment.py')
-    if not os.path.exists(path_environment):
-        raise Exception("environment.py module not found in 'features' folder")
-
-
 def set_behave_tags():
     behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
     tags = []
@@ -488,33 +486,29 @@ class MatchInclude(metaclass=ExecutionSingleton):
 
 class IncludePathsMatch(metaclass=ExecutionSingleton):
     def __init__(self, paths=None):
-        if not paths:
-            paths = get_env('include_paths', get_param('include_paths'))
-        self.features_path = os.path.abspath(os.getenv('FEATURES_PATH'))
-        self.include_paths = [
-            os.path.abspath(path).replace(self.features_path, 'features')
-            for path in paths
-        ]
+        self.features_paths = os.getenv('FEATURES_PATH').split(",")
         self.features = [
-            path
-            for path in self.include_paths
-            if not os.path.isdir(path) and ':' not in path
+            os.path.abspath(path)
+            for path in self.features_paths
+            if os.path.isfile(path) and ':' not in path
         ]
         self.scenarios = [
-            path
-            for path in self.include_paths
+            "{}:{}".format(os.path.abspath(path.split(":")[0]), path.split(":")[1])
+            for path in self.features_paths
             if not os.path.isdir(path) and ':' in path
         ]
-        self.folders = [path for path in paths if os.path.isdir(path)]
+        self.folders = [
+            os.path.abspath(path)
+            for path in self.features_paths
+            if os.path.isdir(path) and ':' not in path
+        ]
 
     def __call__(self, *args, **kwargs):
         return self.match(*args)
 
     def match(self, filename, scenario=None):
-        if not self.include_paths:
-            return True
+        filename = os.path.abspath(filename)
         match_scenario, match_feature = False, False
-        filename = os.path.abspath(filename).replace(self.features_path, 'features')
         if scenario:
             match_scenario = '{}:{}'.format(filename, scenario) in self.scenarios
         match_feature = filename in self.features
@@ -525,7 +519,7 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
         )
 
     def bool(self):
-        return self.include_paths and self.features and self.folders
+        return self.features and self.folders
 
 
 class IncludeNameMatch(metaclass=ExecutionSingleton):

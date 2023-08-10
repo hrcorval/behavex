@@ -164,7 +164,7 @@
                     <div class="panel-body">
                         <div class="container-fluid behavex-row-total">
                             <div class="row"><br>
-                                <div class="col-sm-4 pull-left">
+                                <div class="col-sm-3 pull-left report-filter">
                                     <div class="form-group form-group-sm">
                                         <b>
                                         <label class="control-label pull-left"
@@ -177,7 +177,7 @@
                                         </b>
                                     </div>
                                 </div>
-                                <div class="col-sm-4 pull-left">
+                                <div class="col-sm-3 pull-left report-filter">
                                     <div class="form-group form-group-sm">
                                         <label class="control-label pull-left"
                                                style="padding-top: 5px;padding-right:3px;font-size: 12px;">
@@ -193,7 +193,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-sm-2 pull-left">
+                                <div class="col-sm-3 pull-left report-filter">
                                     <div class="form-group form-group-sm">
                                         <label class="control-label pull-left"
                                                style="padding-top: 5px;padding-right:3px;font-size: 12px;">
@@ -209,7 +209,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-sm-2 pull-left" >
+                                <div class="col-sm-3 pull-left" >
                                     <div class="form-group form-group-sm">
                                         <button type="button" class="btn btn-info btn-xs"
                                                 id="button-reset-filter" data-reset-filter>
@@ -241,7 +241,7 @@
         {%- macro print_feature(feature) -%}
             <div class="panel-default feature behavex_letter">
                 <div class="panel-body">
-                    <table class="table table-bordered behavex_letter" >
+                    <table class="table table-bordered behavex_letter table-scenario" >
                     {%- if feature.background.steps|count > 0  -%}
                         <tr style="display: none" data-info-background="{{ feature.name }}"
                             class="panel-header">
@@ -288,10 +288,10 @@
                                 </a>
                             {%- endif -%}
                         </th>
-                        <th style="width: 90px;height: 24px" class="text-center">Type</th>
-                        <th style="width: 90px;height: 24px" class="text-center">Status</th>
-                        <th style="width: 90px;height: 24px" class="text-center">Duration</th>
-                        <th style="height: 24px" class="text-center">Evidence</th>
+                        <th style="width: 80px;height: 24px" class="text-center">Type</th>
+                        <th style="width: 80px;height: 24px" class="text-center">Status</th>
+                        <th style="width: 80px;height: 24px" class="text-center">Duration</th>
+                        <th style="width: 180px;height: 24px" class="text-center">Evidence</th>
                     </tr>
                     {%- for scenario in feature.scenarios -%}
                         {%- set concat_feature_and_scenario_name = feature.name + "-" + scenario.name -%}
@@ -318,19 +318,21 @@
                                     {% endif %}
                                 </div>
                                 <div data-div-id_hash="{{ scenario.id_hash }}"
-                                     style="display: None" class="pull-left">
-                                    <ul class="list-unstyled ul-tags-behavex label-behavex" style="width:100%;height:20px;font-size: 10px">
-                                        {%- for tag in scenario.tags -%}
-                                            {%- if [tag]|match_for_execution -%}
-                                                <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
-                                                    class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-                                                            <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
-                                            {%- else -%}
-                                                <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-                                                            <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
-                                            {%- endif -%}
-                                        {%- endfor -%}
-                                    </ul>
+                                     style="display: None" class="pull-left gherkin">
+                                    {% if scenario.tags %}
+                                        <ul class="list-unstyled ul-tags-behavex label-behavex" style="font-size: 10px">
+                                            {%- for tag in scenario.tags -%}
+                                                {%- if [tag]|match_for_execution -%}
+                                                    <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
+                                                        class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
+                                                                <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
+                                                {%- else -%}
+                                                    <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
+                                                                <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
+                                                {%- endif -%}
+                                            {%- endfor -%}
+                                        </ul>
+                                    {% endif %}
                                     {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
                                         <br>
                                         <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
@@ -438,7 +440,7 @@
         </div>
         {%- endmacro -%}
         {%- macro print_step(scenario, step) -%}
-            <li style="width: 100%"><b>{{ step|resolving_type(scenario)|safe }}</b> {{ ((step.name) ~ test_status_text)|e }}
+            <li style="width: 100%;float: left;"><b>{{ step|resolving_type(scenario)|safe }}</b> {{ ((step.name) ~ test_status_text)|e }}
             {%- if 'table' in step -%}
                 <table class="table table-hover behavex_letter table-step-value">
                     <tr class="{{scenario.status|resolving_color_class}} table-header">
@@ -457,8 +459,8 @@
                 </table>
             {%- endif -%}
             {% if step.text is defined and step.text != "None" %}
-            <div class="small attr_text">
-                {{ step.text|replace_enter|e|replace("&lt;br&gt;", "<br>")|replace('&nbsp;', ' ')}}
+            <div>
+                <pre class="small behavex_letter">{{ step.text|safe}}</pre>
             </div>
 
             {% endif%}
@@ -466,9 +468,9 @@
                 <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
                  {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
                  {%- if error_msg or error_lines -%}
-                    <ul class="list-unstyled pull-left ul-step-error">
+                    <ul class="list-unstyled">
                         <li>
-                            <small>
+                            <pre class="red-behavex behavex_letter">
                                 {%- if error_msg -%}
                                     {%- for line in error_msg -%}
                                         {%- if line -%}
@@ -482,7 +484,7 @@
                                         {%- endif -%}
                                     {%- endfor -%}
                                 {%- endif -%}
-                            </small>
+                            </pre>
                         </li>
                     </ul>
                  {%- endif -%}

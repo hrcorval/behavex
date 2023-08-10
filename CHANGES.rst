@@ -1,11 +1,30 @@
 Version History
 ===============================================================================
 
-Version: 2.0.2
+Version: 3.0.0
 -------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Enable Behavex to execute features located in a different paths (behavex <features_path1> <features_path2> ... <features_pathN>)
+* Printing the HTML output report that in the console when behavex execution is finished
+* Printing the paths where the features are located when behavex execution is started  `Issue #88 <https://github.com/hrcorval/behavex/issues/88>`_
+* Printing the summary of executed scenarios when running in parallel
+* Major improvement done to enable re-executing failing scenarios in parallel
+* Enable scenario outlines to be executed in parallel
+* HTML Report layout improvements to properly render long gherkin steps and failure messages.  `Issue #81 <https://github.com/hrcorval/behavex/issues/81>`_
+* Improvement done when parallel execution cannot be launched due to duplicated scenario names, by throwing an error exit code  `Issue #86 <https://github.com/hrcorval/behavex/issues/86>`_
+
 FIXES:
 
 * Fix done when logging exceptions in environment.py module
+* Fix done when parsing tags associated to scenario outline examples.  `Issue #85 <https://github.com/hrcorval/behavex/issues/85>`_
+* Fix done when detecting scenarios (Scenario detection does not work for Non-English languages). `Issue #77 <https://github.com/hrcorval/behavex/issues/77>`_
+* Fix done to properly render step.text in HTML report. `Issue #79 <https://github.com/hrcorval/behavex/issues/79>`_
+* Fix done when parsing empty feature files.
+
+CONTRIBUTORS:
+
+* Contribution from `seb <https://github.com/sebns>`__ providing the fix to an issue when parsing tags associated to scenario outline examples (Thanks!!)
 
 Version: 2.0.1
 -------------------------------------------------------------------------------
