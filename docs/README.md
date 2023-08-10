@@ -58,11 +58,11 @@ Examples:
 > 
 ><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2</pre>
 
-> >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
+>Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 > 
 ><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2</pre>
 
-> >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
+>Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 > 
 ><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2</pre>
 
@@ -74,7 +74,7 @@ Examples:
 > 
 ><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
 
-> Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
+>Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
 > 
 ><pre>behavex -t @TAG_1 --dry-run</pre>
 
