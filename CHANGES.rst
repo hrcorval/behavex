@@ -6,7 +6,7 @@ Version: 3.0.0
 ENHANCEMENTS:
 
 * Enable Behavex to execute features located in different paths (behavex <features_path1> <features_path2> ... <features_pathN>)
-* Printing the HTML output report path in the console at the end of the execution
+* Printing the HTML output report path in the console at the end of the test execution
 * Printing the paths where the features are located when behavex execution is started  `Issue #88 <https://github.com/hrcorval/behavex/issues/88>`_
 * Printing the execution summary when running tests in parallel
 * Major improvement done to enable re-executing all failing scenarios in parallel
