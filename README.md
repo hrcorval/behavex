@@ -54,17 +54,17 @@ Examples:
 > 
 ><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
 
->Run scenarios located at "**other_features/features_folder_1**" and "**other_features/features_folder_2**" folders, using 2 parallel processes
+>Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using 2 parallel processes
 > 
-><pre>behavex other_features/features_folder_1 other_features/features_folder_2 --parallel-processes 2
+><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2
 
-> >Run scenarios from "**other_features/features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
+> >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
 > 
-><pre>behavex other_features/features_folder_1/sample_feature.feature --parallel-processes 2
+><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2
 
-> >Run scenarios tagged as TAG_1 from "**other_features/features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
+> >Run scenarios tagged as TAG_1 from "**features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
 > 
-><pre>behavex other_features/features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2
+><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2
 
 >Run scenarios located at "other_features/feature_1" and "other_features/feature_2" folders, using 2 parallel processes
 > 
