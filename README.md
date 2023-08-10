@@ -54,6 +54,22 @@ Examples:
 > 
 ><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
 
+>Run scenarios located at "**other_features/features_folder_1**" and "**other_features/features_folder_2**" folders, using 2 parallel processes
+> 
+><pre>behavex other_features/features_folder_1 other_features/features_folder_2 --parallel-processes 2
+
+> >Run scenarios from "**other_features/features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
+> 
+><pre>behavex other_features/features_folder_1/sample_feature.feature --parallel-processes 2
+
+> >Run scenarios tagged as TAG_1 from "**other_features/features_folder_1/sample_feature.feature**" feature file, using 2 parallel processes
+> 
+><pre>behavex other_features/features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2
+
+>Run scenarios located at "other_features/feature_1" and "other_features/feature_2" folders, using 2 parallel processes
+> 
+><pre>behavex other_features/feature_1 other_features/feature_2 --parallel-processes 2
+
 >Run scenarios tagged as TAG_1, using 5 parallel processes executing a feature on each process:
 > 
 ><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
@@ -63,12 +79,12 @@ Examples:
 ><pre>behavex -t @TAG --dry-run</pre>
 
 
+
 ## Constraints
 
 * BehaveX is currently implemented on top of Behave **v1.2.6**, and not all Behave arguments are yet supported.
 * The parallel execution implementation is based on concurrent Behave processes. Therefore, any code in the **before_all** and **after_all** hooks in the **environment.py** module will be executed in each parallel process. The same applies to the **before_feature** and **after_feature** hooks when the parallel execution is set by scenario.
 * The library is provided as is, and no tests have been implemented for the framework yet (initial versions had tests, but they were deprecated). Any contributions to testing would be greatly appreciated.
-* There may be inaccuracies in some English translations, and some docstrings are currently empty. We expect to fix these issues soon.
 
 ### Additional Comments
 
