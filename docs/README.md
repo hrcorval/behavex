@@ -4,7 +4,8 @@ BehaveX is a test wrapper on top of Python Behave that provides additional capab
 
 BehaveX can be used to build testing pipelines from scratch using the same [Behave](https://github.com/behave/behave) framework principles, or to expand the capabilities of Behave-based projects.
 
-Basically, this wrapper encapsulates the Behave framework functionality and includes the following features:
+## Features provided by BehaveX
+
 * Perform parallel test executions
   * Execute tests using multiple processes, either by feature or by scenario.
 * Get additional test execution reports
@@ -21,8 +22,8 @@ Basically, this wrapper encapsulates the Behave framework functionality and incl
   * This is enhanced implementation of Behave's dry run feature, allowing you to see the full list of scenarios in the HTML report without actually executing the tests
 * Re-execute failing test scenarios
   * By just adding the @AUTORETRY tag to test scenarios, so when the first execution fails the scenario is immediately re-executed
-  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically
-  
+  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically 
+
 ![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report.png?raw=true)
 
 ![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report_2.png?raw=true)
