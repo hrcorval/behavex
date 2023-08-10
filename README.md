@@ -137,7 +137,7 @@ Parallel test executions can be performed by **feature** or by **scenario**.
 Examples:
 > behavex --parallel-processes 3
 
-> behavex -t @TAG --parallel-processes 3
+> behavex -t @\<TAG\> --parallel-processes 3
 
 > behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
 
