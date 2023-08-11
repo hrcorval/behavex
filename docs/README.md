@@ -79,6 +79,10 @@ Examples:
 > 
 ><pre>behavex -t @TAG_1 --dry-run</pre>
 
+>Run scenarios tagged as **TAG_1**, generating the execution evidence into the "**exec_evidence**" folder (instead of the default "**output**" folder):
+> 
+><pre>behavex -t @TAG_1 -o execution_evidence</pre>
+
 
 ## Constraints
 
@@ -126,6 +130,8 @@ Also, there might be more arguments that can be supported, it is just a matter o
   * Specifies the number of parallel Behave processes
 * **parallel-scheme** (--parallel-scheme)
   * Performs the parallel test execution by [scenario|feature]
+
+You can take a look at the provided examples (above in this documentation) to see how to use these arguments.
 
 ## Parallel test executions
 The implementation for running tests in parallel is based on concurrent executions of Behave instances in multiple processes.
