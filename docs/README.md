@@ -79,6 +79,10 @@ Examples:
 > 
 ><pre>behavex -t @TAG_1 --dry-run</pre>
 
+>Run scenarios tagged as **TAG_1**, generating the execution evidence into the "**exec_evidence**" folder (instead of the default "**output**" folder):
+> 
+><pre>behavex -t @TAG_1 -o execution_evidence</pre>
+
 
 ## Constraints
 
@@ -117,15 +121,17 @@ Also, there might be more arguments that can be supported, it is just a matter o
 
 ## Specific arguments from BehaveX
 
-* >output_folder
+* **output-folder** (-o or --output-folder)
   * Specifies the output folder where execution reports will be generated (JUnit, HTML and JSon)
-* >dry-run
+* **dry-run** (-d or --dry-run)
   * Overwrites the existing Behave dry-run implementation
   * Performs a dry-run by listing the scenarios as part of the output reports
-* >parallel_processes
+* **parallel-processes** (--parallel-processes)
   * Specifies the number of parallel Behave processes
-* >parallel_scheme
+* **parallel-scheme** (--parallel-scheme)
   * Performs the parallel test execution by [scenario|feature]
+
+You can take a look at the provided examples (above in this documentation) to see how to use these arguments.
 
 ## Parallel test executions
 The implementation for running tests in parallel is based on concurrent executions of Behave instances in multiple processes.
@@ -152,14 +158,14 @@ When the parallel-scheme is set by **feature**, all tests within each feature wi
 This is a friendly test execution report that contains information related to test scenarios, execution status, execution evidence and metrics. A filters bar is also provided to filter scenarios by name, tag or status.
 
 It should be available by default at the following path:
-> \<output_folder\>/report.html
+> <output_folder\>/report.html
 
 
 ### JSON report
 Contains information about test scenarios and execution status.
 
 It should be available by default at the following path:
-> \<output_folder\>/report.json
+> <output_folder\>/report.json
 
 The report is provided to simplify the integration with third party tools, by providing all test execution data in a format that can be easily parsed.
 
@@ -170,7 +176,7 @@ The wrapper overwrites the existing Behave JUnit reports, just to enable dealing
 By default, there will be one JUnit file per feature, unless the parallel execution is performed by scenario, in which there will be one JUnit file per scenario.
 
 Reports are available by default at the following path:
-> \<output_folder\>/behave/*.xml
+> <output_folder\>/behave/*.xml
 
 ## Attaching additional execution evidence to test report
 
@@ -223,11 +229,11 @@ This file allows you to run all failing scenarios again.
 
 This can be done by executing the following command:
 
-> behavex -rf ./<OUTPUT_FOLDER>/failing_scenarios.txt
+> behavex -rf ./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
 or
 
-> behavex --rerun-failures ./<OUTPUT_FOLDER>/failing_scenarios.txt
+> behavex --rerun-failures ./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
