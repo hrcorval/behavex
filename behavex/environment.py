@@ -26,7 +26,7 @@ from behavex.utils import (
 
 Context.__getattribute__ = create_custom_log_when_called
 hooks_already_set = False
-
+scenario_name = None
 
 def extend_behave_hooks():
     """
@@ -91,9 +91,9 @@ def before_all(context):
     try:
         # Initialyzing log handler
         context.bhx_log_handler = None
+        context.bhx_inside_scenario = False
         # Store framework settings to make them accessible from steps
         context.bhx_config_framework = conf_mgr.get_config()
-        context.bhx_inside_scenario = False
     except Exception as exception:
         _log_exception_and_continue('before_all (behavex)', exception)
 
@@ -146,9 +146,12 @@ def after_tag(context, tag):
 
 
 def after_step(context, step):
-    if step.exception:
-        step.error_message = step.error_message
-        logging.error(step.exception)
+    try:
+        if step.exception:
+            step.error_message = step.error_message
+            logging.error(step.exception)
+    except Exception as exception:
+        _log_exception_and_continue('after_step (behavex)', exception)
 
 
 @capture
@@ -169,15 +172,19 @@ def after_scenario(context, scenario):
 
 # noinspection PyUnusedLocal
 def after_feature(context, feature):
-    if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
-        return
-    report_xml.export_feature_to_xml(feature)
+    try:
+        if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
+            return
+        report_xml.export_feature_to_xml(feature)
+    except Exception as exception:
+        _log_exception_and_continue('after_feature (behavex)', exception)
 
 
 def after_all(context):
     try:
         # noinspection PyProtectedMember
-        report_json.generate_execution_info(context, context._runner.features)
+        feature_list = report_json.generate_execution_info(context._runner.features)
+        report_json.save_info_json(context, feature_list)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
 

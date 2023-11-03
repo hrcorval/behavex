@@ -1,6 +1,16 @@
 Version History
 ===============================================================================
 
+Version: 3.1.0
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fix done to properly report as "Untested" features and scenarios that crashed during execution
+* Fix done in console summary, to properly report the number of scenarios executed
+* Fix done when executing features in parallel, as not all features where considered for execution
+
+
 Version: 3.0.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:

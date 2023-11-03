@@ -20,6 +20,7 @@ import traceback
 from tempfile import gettempdir
 
 from behave.step_registry import registry
+from behave.model import ScenarioOutline
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
@@ -50,22 +51,18 @@ def add_step_info_background(step, parent_node):
     return step_info
 
 
-def generate_execution_info(context, features, test=False):
+def generate_execution_info(features):
     # Generate scenario list
     feature_list = []
-
     for feature in features:
         scenario_list = []
         id_feature = random.getrandbits(16)
         for feature_scenario in feature.scenarios:
-            scenarios = []
-            if feature_scenario.keyword == 'Scenario':
-                scenarios = [feature_scenario]
-            elif feature_scenario.keyword == 'Scenario Outline':
+            if isinstance(feature_scenario, ScenarioOutline):
                 scenarios = feature_scenario.scenarios
-            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature)[
-                1
-            ]
+            else:
+                scenarios = [feature_scenario]
+            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature)[1]
 
         if scenario_list:
             feature_info = {}
@@ -78,9 +75,7 @@ def generate_execution_info(context, features, test=False):
             feature_info['background'] = _processing_background_feature(feature)
             feature_info['id'] = id_feature
             feature_list.append(feature_info)
-    if test:
-        return feature_list
-    return save_info_json(context, feature_list)
+    return feature_list
 
 
 def save_info_json(context, feature_list):
