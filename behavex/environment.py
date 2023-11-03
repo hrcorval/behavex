@@ -26,7 +26,6 @@ from behavex.utils import (
 
 Context.__getattribute__ = create_custom_log_when_called
 hooks_already_set = False
-scenario_name = None
 
 def extend_behave_hooks():
     """
