@@ -22,9 +22,11 @@ from behavex.utils import (
     create_custom_log_when_called,
     get_autoretry_attempts,
     get_logging_level,
+    get_scenario_tags,
 )
 
 Context.__getattribute__ = create_custom_log_when_called
+
 hooks_already_set = False
 
 def extend_behave_hooks():
@@ -102,12 +104,12 @@ def before_feature(context, feature):
     try:
         context.bhx_execution_attempts = {}
         for scenario in feature.scenarios:
-            scenario.tags += feature.tags
+            scenario_tags = get_scenario_tags(scenario)
             if get_param('dry_run'):
-                if 'MANUAL' not in scenario.tags:
+                if 'MANUAL' not in scenario_tags:
                     scenario.tags.append(u'BHX_MANUAL_DRY_RUN')
                     scenario.tags.append(u'MANUAL')
-            configured_attempts = get_autoretry_attempts(scenario.tags)
+            configured_attempts = get_autoretry_attempts(scenario_tags)
             if configured_attempts > 0:
                 patch_scenario_with_autoretry(scenario, configured_attempts)
     except Exception as exception:
@@ -156,7 +158,8 @@ def after_step(context, step):
 @capture
 def after_scenario(context, scenario):
     try:
-        configured_attempts = get_autoretry_attempts(scenario.tags)
+        scenario_tags = get_scenario_tags(scenario)
+        configured_attempts = get_autoretry_attempts(scenario_tags)
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
             feature_name = scenario.feature.name
             if feature_name not in global_vars.retried_scenarios:

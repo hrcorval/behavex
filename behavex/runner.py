@@ -63,8 +63,10 @@ from behavex.utils import (
     set_env_variable,
     set_environ_config,
     set_system_paths,
+    get_scenario_tags,
 )
 from behavex.outputs.report_json import generate_execution_info
+
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -270,7 +272,6 @@ def launch_behavex():
                                                                        plural_char(totals['scenarios']['passed']),
                                                                        totals['scenarios']['failed'],
                                                                        totals['scenarios']['skipped']))
-        print('(*) Skipped tests are those that were executed but explicitly marked as skipped.')
         print('Took: {}'.format(pretty_print_time(time_end - time_init)))
     if results and results['features']:
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
@@ -380,15 +381,15 @@ def launch_by_scenario(features, process_pool, lock):
             # noinspection PyCallingNonCallable
             if include_path_match(scenario.filename, scenario.line) \
                     and include_name_match(scenario.name):
-                scenario.tags += scenario.feature.tags
-                if match_for_execution(scenario.tags):
+                scenario_tags = get_scenario_tags(scenario, include_example_tags=True)
+                if match_for_execution(scenario_tags):
                     if scenario.name == "":
                         features_with_empty_scenario_descriptions.append(scenario.filename)
                     feature_json_skeleton = _get_feature_json_skeleton(scenario)
                     scenario_information = {"feature_filename": scenario.feature.filename,
                                             "feature_json_skeleton": feature_json_skeleton,
                                             "scenario_name": scenario.name}
-                    if 'SERIAL' in scenario.tags:
+                    if 'SERIAL' in scenario_tags:
                         for key in serial_scenarios.keys():
                             if scenario_information in serial_scenarios[key]:
                                 if key not in duplicated_scenarios:
@@ -601,28 +602,26 @@ def processing_xml_feature(json_output, scenario, lock=None):
         lock.acquire()
     try:
         if json_output['features'] and 'scenarios' in json_output['features'][0]:
-
             reported_scenarios = json_output['features'][0]['scenarios']
-
-            scenario_executed = []
+            executed_scenario = []
             for reported_scenario in reported_scenarios:
                 reported_name = reported_scenario['name']
                 if reported_name == scenario or ('@' in reported_name and scenario_name_matching(scenario, reported_name)):
-                    scenario_executed.append(reported_scenario)
-            json_output['features'][0]['scenarios'] = scenario_executed
+                    executed_scenario.append(reported_scenario)
+            json_output['features'][0]['scenarios'] = executed_scenario
             feature_name = os.path.join(
                 get_env('OUTPUT'), u'{}.tmp'.format(os.path.basename(json_output['features'][0]['filename']))
             )
-            feature_old = json_output['features'][0]
-            feature_old['scenarios'] = scenario_executed
+            processed_feature_data = json_output['features'][0]
+            processed_feature_data['scenarios'] = executed_scenario
             if os.path.exists(feature_name):
                 for _ in range(0, 10):
                     try:
-                        feature_old = json.load(open(feature_name, 'r'))
+                        processed_feature_data = json.load(open(feature_name, 'r'))
                         with open(feature_name, 'w') as feature_file:
-                            for scen in scenario_executed:
-                                feature_old['scenarios'].append(scen)
-                            json.dump(feature_old, feature_file)
+                            for scen in executed_scenario:
+                                processed_feature_data['scenarios'].append(scen)
+                            json.dump(processed_feature_data, feature_file)
                         break
                     except Exception as ex:
                         logging.debug(ex)
@@ -630,12 +629,12 @@ def processing_xml_feature(json_output, scenario, lock=None):
                         time.sleep(1)
             else:
                 with codecs.open(feature_name, 'w', 'utf8') as feature_file:
-                    json.dump(feature_old, feature_file)
-            # We calculate the quantity of the scenario that should executing
-            scenarios_total = len_scenarios(feature_old['filename'])
-            if len(feature_old['scenarios']) == scenarios_total:
+                    json.dump(processed_feature_data, feature_file)
+            # calculate the total number of scenarios that should be executed
+            total_scenarios = len_scenarios(processed_feature_data['filename'])
+            if len(processed_feature_data['scenarios']) == total_scenarios:
                 try:
-                    report_xml.export_feature_to_xml(feature_old, False)
+                    report_xml.export_feature_to_xml(processed_feature_data, False)
                 except Exception as ex:
                     traceback.print_exc()
                     print(ex)
@@ -811,7 +810,7 @@ def set_args_captures(args, args_sys):
 
 def scenario_name_matching(abstract_scenario_name, scenario_name):
     outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
-    scenario_outline_compatible = '{}(.--.@\\d+.\\d+\\s*\\S*)?'.format(re.escape(abstract_scenario_name))
+    scenario_outline_compatible = '^{}(.--.@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(abstract_scenario_name))
     for example_name in outline_examples_in_name:
         escaped_example_name = re.escape(example_name)
         scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")

@@ -25,7 +25,7 @@ from behave.model import ScenarioOutline
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import get_error_message, match_for_execution, text
-from behavex.utils import try_operate_descriptor
+from behavex.utils import try_operate_descriptor, get_scenario_tags
 
 
 def add_step_info(step, parent_node):
@@ -158,13 +158,14 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
                 scenario
             )
             # pylint: disable=W0123
-            if match_for_execution(scenario.tags):
+            scenario_tags = get_scenario_tags(scenario)
+            if match_for_execution(scenario_tags):
                 # Scenario was selectable
                 scenario_info = {}
-                for attrib in ('name', 'duration', 'status', 'tags'):
-                    value = getattr(scenario, attrib)
-                    value = value.name if attrib == 'status' else value
-                    scenario_info[attrib] = value
+                scenario_info['name'] = getattr(scenario, 'name')
+                scenario_info['duration'] = getattr(scenario, 'duration')
+                scenario_info['status'] = getattr(scenario, 'status').name
+                scenario_info['tags'] = getattr(scenario, 'effective_tags')
                 scenario_info['filename'] = text(scenario.filename)
                 scenario_info['feature'] = scenario.feature.name
                 scenario_info['id_feature'] = id_feature

@@ -242,6 +242,9 @@
             <div class="panel-default feature behavex_letter">
                 <div class="panel-body">
                     <table class="table table-bordered behavex_letter table-scenario" >
+                    <colgroup>
+                        <col><col style="width: 80px"><col style="width: 80px"><col style="width: 80px"><col style="width: 180px">
+                    </colgroup>
                     {%- if feature.background.steps|count > 0  -%}
                         <tr style="display: none" data-info-background="{{ feature.name }}"
                             class="panel-header">
@@ -258,7 +261,7 @@
                                                             <th>{{ key }}</th>
                                                         {%- endfor -%}
                                                     </tr>
-                                                    {%- for i in range(step.table.values()[0]|count) -%}
+                                                    {%- for i in range(((step.table.values()|list)[0])|count) -%}
                                                         <tr>
                                                             {%- for key in step.table -%}
                                                                 <td>{{ step.table[key][i]|e }}</td>
@@ -276,15 +279,13 @@
                         </tr>
                     {%- endif -%}
                     <tr class="table-header">
-                        <th style="width: auto">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Scenario
+                        <th style="width: auto">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Scenario&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             {%- if feature.background.steps|count > 0 -%}
                                 <a data-name-background="{{ feature.name}}" style="cursor:pointer;"
                                    data-background data-show="false"
-                                   title="{{ ('commons.expand'|get_text).format('background') }}">
-                                    <small class="pull-right behavex-letter" data-name-background="{{ feature.name}}"
-                                           data-background>
-                                        {{ 'report.show_background'|get_text }}&nbsp;&nbsp;
-                                    </small>
+                                   title="{{ ('commons.expand'|get_text).format('background') }}"><small
+                                        class="behavex-letter" data-name-background="{{ feature.name}}"
+                                           data-background>{{'report.show_background'|get_text}}</small>
                                 </a>
                             {%- endif -%}
                         </th>
@@ -298,15 +299,16 @@
                         {%- set scenario_hash = concat_feature_and_scenario_name|get_string_hash -%}
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
+                        {%- set scenario_tags = scenario|get_scenario_tags -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
-                                data-scenario-tags="{{ scenario.tags|to_string_list }}">
+                                data-scenario-tags="{{ scenario_tags|to_string_list }}">
                             <td class="text-left grey-behavex">
                                 <div class="{{ [scenario.status]|calculate_color }}-behavex alert-{{ scenario.status|resolving_color_class }} behavex_letter alert-behavex scenario-step">
                                     &nbsp;
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
                                           <b class="span-behavex">{{ scenario.name |e}}</b>&nbsp;
-                                        {%- if ('MUTE' in scenario.tags) -%}
+                                        {%- if ('MUTE' in scenario|get_scenario_tags) -%}
                                             <b class="glyphicon glyphicon-volume-off"
                                                title="{{ 'report.muted'|get_text }}">
                                             </b>
@@ -319,9 +321,9 @@
                                 </div>
                                 <div data-div-id_hash="{{ scenario.id_hash }}"
                                      style="display: None" class="pull-left gherkin">
-                                    {% if scenario.tags %}
+                                    {% if scenario_tags %}
                                         <ul class="list-unstyled ul-tags-behavex label-behavex" style="font-size: 10px">
-                                            {%- for tag in scenario.tags -%}
+                                            {%- for tag in scenario_tags -%}
                                                 {%- if [tag]|match_for_execution -%}
                                                     <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
                                                         class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
@@ -356,7 +358,7 @@
                                 </div>
                             </td>
                             <td>
-                                {%- if "MANUAL" in scenario.tags -%}
+                                {%- if "MANUAL" in scenario_tags -%}
                                     <p class="text-center">Manual</p>
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>
@@ -364,7 +366,7 @@
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
                                     </td>
-                                {%- elif "WIP" in scenario.tags -%}
+                                {%- elif "WIP" in scenario_tags -%}
                                     <p class="text-center">Work In Progress</p>
                                     </td>
                                     <td>&nbsp;&nbsp;Not&nbsp;Run</td>

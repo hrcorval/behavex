@@ -3,13 +3,17 @@ Version History
 
 Version: 3.1.0
 -------------------------------------------------------------------------------
+ENHANCEMENTS:
+* Improvement in background steps rendering in HTML report
+* Reporting scenarios that crashed during execution as "Untested" in HTML report
 
 FIXES:
 
 * Fix done to properly report as "Untested" features and scenarios that crashed during execution
-* Fix done in console summary, to properly report the number of scenarios executed
+* Fixed console summary, to properly report the number of scenarios executed
 * Fix done when executing features in parallel, as not all features where considered for execution
-
+* Fix done when executing features in parallel, as not all features where considered for execution
+* Fixed JUnit reports to properly report all executed scenarios (as some of them were missing)
 
 Version: 3.0.0
 -------------------------------------------------------------------------------

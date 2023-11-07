@@ -72,6 +72,8 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(get_relative_extra_logs_path, 'get_relative_extra_logs_path')
         self.add_filter(clean_invalid_xml_chars, 'CIXC')
         self.add_filter(normalize_path, 'normalize_path')
+        from behavex.utils import get_scenario_tags
+        self.add_filter(get_scenario_tags, 'get_scenario_tags')
         self.template_env.globals.update(get_env=get_env)
         # self.template_env.globals.keys() has been forced to be a list
         if 'get_path_log' not in list(self.template_env.globals.keys()):

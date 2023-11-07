@@ -19,6 +19,7 @@ from behavex.outputs.report_utils import (
     text,
     try_operate_descriptor,
 )
+from behavex.utils import get_scenario_tags
 
 
 def _export_feature_to_xml(feature, isobject=True):
@@ -37,7 +38,7 @@ def _export_feature_to_xml(feature, isobject=True):
         )
 
     def get_tags(scenario_):
-        return scenario_.tags if isobject else scenario_['tags']
+        return get_scenario_tags(scenario_) if isobject else scenario_['tags']
 
     def get_status(scenario_):
         return scenario_.status if isobject else scenario_['status']
