@@ -37,16 +37,13 @@ def _export_feature_to_xml(feature, isobject=True):
             flatter_scenarios(feature_.scenarios) if isobject else feature_['scenarios']
         )
 
-    def get_tags(scenario_):
-        return get_scenario_tags(scenario_) if isobject else scenario_['tags']
-
     def get_status(scenario_):
         return scenario_.status if isobject else scenario_['status']
 
     scenarios = [
         scenario
         for scenario in get_scenarios(feature)
-        if (match_for_execution(get_tags(scenario)) and not (get_status(scenario) == 'skipped' and get_env('RERUN_FAILURES')))
+        if (match_for_execution(get_scenario_tags(scenario)) and not (get_status(scenario) == 'skipped' and get_env('RERUN_FAILURES')))
     ]
 
     skipped = [scenario for scenario in scenarios if get_status(scenario) == 'skipped']
@@ -59,7 +56,7 @@ def _export_feature_to_xml(feature, isobject=True):
     muted = [
         scenario
         for scenario in scenarios
-        if any(i in ['MUTE'] for i in get_tags(scenario))
+        if any(i in ['MUTE'] for i in get_scenario_tags(scenario))
     ]
 
     muted_failed = [scenario for scenario in muted if get_status(scenario) == 'failed']
