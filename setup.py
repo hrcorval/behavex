@@ -3,7 +3,11 @@ from setuptools import find_packages, setup
 
 setup(
     name='behavex',
+<<<<<<< Updated upstream
     version='3.0.0',
+=======
+    version='3.1.1',
+>>>>>>> Stashed changes
     python_requires='>=3.5',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',

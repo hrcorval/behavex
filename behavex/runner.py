@@ -179,7 +179,15 @@ def launch_behavex():
     for path in features_path.split(','):
         features_list[path] = explore_features(path)
     updated_features_list = create_scenario_line_references(features_list)
+<<<<<<< Updated upstream
     process_pool = multiprocessing.Pool(parallel_processes, init_multiprocessing)
+=======
+    manager = multiprocessing.Manager()
+    lock = manager.Lock()
+    # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
+    shared_removed_scenarios = manager.dict()
+    process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
+>>>>>>> Stashed changes
     try:
         if parallel_processes == 1 or get_param('dry_run'):
             # Executing without parallel processes
@@ -196,7 +204,11 @@ def launch_behavex():
                                                           config=ConfigRun())
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
+<<<<<<< Updated upstream
                 updated_features_list, process_pool
+=======
+                updated_features_list, process_pool, lock, shared_removed_scenarios
+>>>>>>> Stashed changes
             )
             scenario = True
         elif parallel_scheme == 'feature':
@@ -362,7 +374,11 @@ def launch_by_feature(features, process_pool):
     return execution_codes, json_reports
 
 
+<<<<<<< Updated upstream
 def launch_by_scenario(features, process_pool):
+=======
+def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
+>>>>>>> Stashed changes
     json_reports = []
     execution_codes = []
     filenames = {}
@@ -425,13 +441,23 @@ def launch_by_scenario(features, process_pool):
         for feature_filename, scenario_name in feature_filenames:
             process_pool.apply_async(
                 execute_tests,
+<<<<<<< Updated upstream
                 (features_path, feature_filename, scenario_name, True, ConfigRun()),
+=======
+                args=(features_path, feature_filename, feature_json_skeleton, scenario_name,
+                      True, ConfigRun(), lock, shared_removed_scenarios),
+>>>>>>> Stashed changes
                 callback=create_partial_function_append(execution_codes, json_reports),
             )
     return execution_codes, json_reports
 
 
+<<<<<<< Updated upstream
 def execute_tests(features_path, feature_filename=None, scenario_name=None, multiprocess=True, config=None):
+=======
+def execute_tests(features_path, feature_filename=None, feature_json_skeleton=None, scenario_name=None,
+                  multiprocess=True, config=None, lock=None, shared_removed_scenarios=None):
+>>>>>>> Stashed changes
     behave_args = None
     if multiprocess:
         ExecutionSingleton._instances[ConfigRun] = config
@@ -444,7 +470,32 @@ def execute_tests(features_path, feature_filename=None, scenario_name=None, mult
     # print("pipenv run behave {}".format(" ".join(behave_args)))
     execution_codes, generate_report = _launch_behave(behave_args)
     if generate_report:
+<<<<<<< Updated upstream
         json_output = dump_json_results()
+=======
+        if execution_code == 2:
+            if feature_json_skeleton:
+                json_output = {'environment': [], 'features': [json.loads(feature_json_skeleton)], 'steps_definition': []}
+            else:
+                json_output = {'environment': [], 'features': [], 'steps_definition': []}
+        else:
+            json_output = dump_json_results()
+        if scenario_name:
+            json_output['features'] = filter_feature_executed(
+                json_output, text(feature_filename), scenario_name
+            )
+            if shared_removed_scenarios and not json_output['features'][0]['scenarios']:
+                # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in current execution
+                feature_filename = json_output['features'][0]["filename"]
+                if feature_filename not in shared_removed_scenarios:
+                    shared_removed_scenarios[json_output['features'][0]["filename"]] = 1
+                else:
+                    shared_removed_scenarios[json_output['features'][0]["filename"]] += 1
+            try:
+                processing_xml_feature(json_output, scenario_name, lock, shared_removed_scenarios)
+            except Exception as ex:
+                logging.exception(ex)
+>>>>>>> Stashed changes
     else:
         json_output = {'environment': [], 'features': [], 'steps_definition': []}
     if scenario_name:
@@ -572,6 +623,7 @@ def remove_temporary_files(parallel_processes, json_reports):
                     print(remove_ex)
 
 
+<<<<<<< Updated upstream
 def processing_xml_feature(json_output, scenario):
     if json_output['features'] and 'scenarios' in json_output['features'][0]:
 
@@ -590,6 +642,47 @@ def processing_xml_feature(json_output, scenario):
         feature_old['scenarios'] = scenario_executed
         if os.path.exists(feature_name):
             for _ in range(0, 10):
+=======
+def processing_xml_feature(json_output, scenario, lock=None, shared_removed_scenarios=None):
+    if lock:
+        lock.acquire()
+    try:
+        if json_output['features'] and 'scenarios' in json_output['features'][0]:
+            reported_scenarios = json_output['features'][0]['scenarios']
+            executed_scenario = []
+            for reported_scenario in reported_scenarios:
+                reported_name = reported_scenario['name']
+                if reported_name == scenario or ('@' in reported_name and scenario_name_matching(scenario, reported_name)):
+                    executed_scenario.append(reported_scenario)
+            json_output['features'][0]['scenarios'] = executed_scenario
+            feature_name = os.path.join(
+                get_env('OUTPUT'), u'{}.tmp'.format(os.path.basename(json_output['features'][0]['filename']))
+            )
+            processed_feature_data = json_output['features'][0]
+            processed_feature_data['scenarios'] = executed_scenario
+            if os.path.exists(feature_name):
+                for _ in range(0, 10):
+                    try:
+                        processed_feature_data = json.load(open(feature_name, 'r'))
+                        with open(feature_name, 'w') as feature_file:
+                            for scen in executed_scenario:
+                                processed_feature_data['scenarios'].append(scen)
+                            json.dump(processed_feature_data, feature_file)
+                        break
+                    except Exception as ex:
+                        logging.debug(ex)
+                        logging.debug('Retrying reading from {}'.format(feature_name))
+                        time.sleep(1)
+            else:
+                with codecs.open(feature_name, 'w', 'utf8') as feature_file:
+                    json.dump(processed_feature_data, feature_file)
+            # calculate the total number of scenarios that should be executed
+            removed_scenarios = 0
+            if shared_removed_scenarios and processed_feature_data['filename'] in shared_removed_scenarios:
+                removed_scenarios = shared_removed_scenarios[processed_feature_data['filename']]
+            total_scenarios = len_scenarios(processed_feature_data['filename'])-removed_scenarios
+            if len(processed_feature_data['scenarios']) == total_scenarios:
+>>>>>>> Stashed changes
                 try:
                     feature_old = json.load(open(feature_name, 'r'))
                     with open(feature_name, 'w') as feature_file:
