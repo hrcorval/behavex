@@ -1,8 +1,6 @@
 Version History
 ===============================================================================
 
-<<<<<<< Updated upstream
-=======
 Version: 3.1.1
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
@@ -17,7 +15,6 @@ FIXES:
 * Fix done when executing features in parallel, as not all features where considered for execution
 * Fixed JUnit reports to properly report all executed scenarios (as some of them were missing)
 
->>>>>>> Stashed changes
 Version: 3.0.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
