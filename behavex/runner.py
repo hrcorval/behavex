@@ -426,7 +426,8 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                               feature_filename=scenario_information["feature_filename"],
                               feature_json_skeleton=scenario_information["feature_json_skeleton"],
                               scenario_name=scenario_information["scenario_name"],
-                              config=ConfigRun())
+                              config=ConfigRun(),
+                              shared_removed_scenarios=shared_removed_scenarios)
                 for scenario_information in scenarios_in_feature
             ]
             # execution_codes and json_reports are forced to be of type a list.
@@ -460,6 +461,7 @@ def execute_tests(features_path, feature_filename=None, feature_json_skeleton=No
         traceback.print_exc()
         print(exception)
     execution_code, generate_report = _launch_behave(behave_args)
+    # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
     if generate_report:
         if execution_code == 2:
             if feature_json_skeleton:
@@ -472,14 +474,8 @@ def execute_tests(features_path, feature_filename=None, feature_json_skeleton=No
             json_output['features'] = filter_feature_executed(
                 json_output, text(feature_filename), scenario_name
             )
-            if shared_removed_scenarios is not None and (not json_output['features'] or not json_output['features'][0]['scenarios']):
-                # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in current execution
-                if feature_filename not in shared_removed_scenarios:
-                    shared_removed_scenarios[feature_filename] = 1
-                else:
-                    shared_removed_scenarios[feature_filename] += 1
             try:
-                processing_xml_feature(json_output, scenario_name, lock, shared_removed_scenarios)
+                processing_xml_feature(json_output, scenario_name, feature_filename, lock, shared_removed_scenarios)
             except Exception as ex:
                 logging.exception(ex)
     else:
@@ -607,11 +603,20 @@ def remove_temporary_files(parallel_processes, json_reports):
                     print(remove_ex)
 
 
-def processing_xml_feature(json_output, scenario, lock=None, shared_removed_scenarios=None):
+def processing_xml_feature(json_output, scenario, feature_filename, lock=None, shared_removed_scenarios=None):
     if lock:
         lock.acquire()
     try:
-        if json_output['features'] and 'scenarios' in json_output['features'][0]:
+        feature_contains_scenarios = True if (json_output['features'] and
+                                              'scenarios' in json_output['features'][0] and
+                                              json_output['features'][0]["scenarios"]) else False
+        if shared_removed_scenarios is not None and not feature_contains_scenarios:
+            # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in current execution
+            if feature_filename not in shared_removed_scenarios:
+                shared_removed_scenarios[feature_filename] = 1
+            else:
+                shared_removed_scenarios[feature_filename] += 1
+        if feature_contains_scenarios:
             reported_scenarios = json_output['features'][0]['scenarios']
             executed_scenario = []
             for reported_scenario in reported_scenarios:
@@ -620,7 +625,7 @@ def processing_xml_feature(json_output, scenario, lock=None, shared_removed_scen
                     executed_scenario.append(reported_scenario)
             json_output['features'][0]['scenarios'] = executed_scenario
             feature_name = os.path.join(
-                get_env('OUTPUT'), u'{}.tmp'.format(os.path.basename(json_output['features'][0]['filename']))
+                get_env('OUTPUT'), u'{}.tmp'.format(os.path.basename(feature_filename))
             )
             processed_feature_data = json_output['features'][0]
             processed_feature_data['scenarios'] = executed_scenario
@@ -642,9 +647,9 @@ def processing_xml_feature(json_output, scenario, lock=None, shared_removed_scen
                     json.dump(processed_feature_data, feature_file)
             # calculate the total number of scenarios that should be executed
             removed_scenarios = 0
-            if shared_removed_scenarios and processed_feature_data['filename'] in shared_removed_scenarios:
-                removed_scenarios = shared_removed_scenarios[processed_feature_data['filename']]
-            total_scenarios = len_scenarios(processed_feature_data['filename'])-removed_scenarios
+            if shared_removed_scenarios and feature_filename in shared_removed_scenarios:
+                removed_scenarios = shared_removed_scenarios[feature_filename]
+            total_scenarios = len_scenarios(feature_filename)-removed_scenarios
             if len(processed_feature_data['scenarios']) == total_scenarios:
                 try:
                     report_xml.export_feature_to_xml(processed_feature_data, False)
