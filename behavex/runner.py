@@ -183,14 +183,10 @@ def launch_behavex():
     for path in features_path.split(','):
         features_list[path] = explore_features(path)
     updated_features_list = create_scenario_line_references(features_list)
-<<<<<<< HEAD
     manager = multiprocessing.Manager()
     lock = manager.Lock()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
-=======
-    lock = multiprocessing.Manager().Lock()
->>>>>>> master
     process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
     try:
         if parallel_processes == 1 or get_param('dry_run'):
@@ -208,11 +204,7 @@ def launch_behavex():
                                                           config=ConfigRun())
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
-<<<<<<< HEAD
                 updated_features_list, process_pool, lock, shared_removed_scenarios
-=======
-                updated_features_list, process_pool, lock
->>>>>>> master
             )
             scenario = True
         elif parallel_scheme == 'feature':
