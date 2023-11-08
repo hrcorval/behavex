@@ -473,7 +473,7 @@ def execute_tests(features_path, feature_filename=None, feature_json_skeleton=No
             json_output['features'] = filter_feature_executed(
                 json_output, text(feature_filename), scenario_name
             )
-            if shared_removed_scenarios and not json_output['features'][0]['scenarios']:
+            if shared_removed_scenarios is not None and not json_output['features'][0]['scenarios']:
                 # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in current execution
                 feature_filename = json_output['features'][0]["filename"]
                 if feature_filename not in shared_removed_scenarios:
