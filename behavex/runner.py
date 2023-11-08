@@ -460,7 +460,6 @@ def execute_tests(features_path, feature_filename=None, feature_json_skeleton=No
         traceback.print_exc()
         print(exception)
     execution_code, generate_report = _launch_behave(behave_args)
-    # print("pipenv run behave {} --> Execution Code: {}".format(" ".join(behave_args), execution_code))
     if generate_report:
         if execution_code == 2:
             if feature_json_skeleton:
@@ -473,13 +472,12 @@ def execute_tests(features_path, feature_filename=None, feature_json_skeleton=No
             json_output['features'] = filter_feature_executed(
                 json_output, text(feature_filename), scenario_name
             )
-            if shared_removed_scenarios is not None and not json_output['features'][0]['scenarios']:
+            if shared_removed_scenarios is not None and (not json_output['features'] or not json_output['features'][0]['scenarios']):
                 # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in current execution
-                feature_filename = json_output['features'][0]["filename"]
                 if feature_filename not in shared_removed_scenarios:
-                    shared_removed_scenarios[json_output['features'][0]["filename"]] = 1
+                    shared_removed_scenarios[feature_filename] = 1
                 else:
-                    shared_removed_scenarios[json_output['features'][0]["filename"]] += 1
+                    shared_removed_scenarios[feature_filename] += 1
             try:
                 processing_xml_feature(json_output, scenario_name, lock, shared_removed_scenarios)
             except Exception as ex:
