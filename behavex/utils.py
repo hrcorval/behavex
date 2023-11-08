@@ -189,12 +189,11 @@ def should_feature_be_run(path_feature):
     if not feature:
         return False
     else:
-        tags_list = [
-            scenario.tags
-            for scenario in feature.scenarios
-            if hasattr(feature, 'scenarios')
-        ]
-        tags_list.append(feature.tags)
+        tags_list = []
+        if hasattr(feature, 'scenarios'):
+            for scenario in feature.scenarios:
+                scenario_tags = get_scenario_tags(scenario, include_example_tags=True)
+                tags_list.append(scenario_tags)
     match_tag = any(match_for_execution(tags) for tags in tags_list)
     filename = feature.filename
     if match_tag and MatchInclude()(filename) and match_any_paths(feature) and match_any_name(feature):
@@ -382,13 +381,15 @@ def len_scenarios(feature_file):
     feature = parse_feature(data=data)
     amount_scenarios = 0
     for scenario in feature.scenarios:
-        if match_for_execution(scenario.tags):
+        scenario_tags = get_scenario_tags(scenario)
+        if match_for_execution(scenario_tags):
             if isinstance(scenario, ScenarioOutline):
                 outline_instances = 1
+                total_rows = 0
                 for example in scenario.examples:
-                    rows = len(example.table.rows)
-                    if rows > outline_instances:
-                        outline_instances = rows
+                    total_rows += len(example.table.rows)
+                    if total_rows > outline_instances:
+                        outline_instances = total_rows
                 amount_scenarios += outline_instances
             else:
                 amount_scenarios += 1
@@ -422,6 +423,20 @@ def set_behave_tags():
     try_operate_descriptor(
         behave_tags, execution=get_save_function(behave_tags, tags_line)
     )
+
+
+def get_scenario_tags(scenario, include_example_tags=False):
+    if type(scenario) is dict:
+        scenario_tags_set = set(scenario['tags'])
+    else:
+        scenario_tags = scenario.effective_tags
+        if isinstance(scenario, ScenarioOutline) and include_example_tags:
+            for example in scenario.examples:
+                scenario_tags.extend(example.tags)
+        scenario_tags.extend(scenario.feature.tags)
+        scenario_tags_set = set(scenario_tags)
+    result = list(scenario_tags_set)
+    return result
 
 
 def set_system_paths():
