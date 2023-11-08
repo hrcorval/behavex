@@ -1,6 +1,20 @@
 Version History
 ===============================================================================
 
+Version: 3.1.0
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Improvement done when rendering feature background steps in HTML report
+* Reporting scenarios that crashed during execution as "Untested" in HTML report (scenarios that crashed were not reported in previous BehaveX versions)
+* Enhancement in HTML Report to add to scenarios the tags related to the feature where they are located
+
+FIXES:
+
+* Fixed console summary, to properly report the number of scenarios executed
+* Fix done when executing features in parallel, as not all features where considered for execution
+* Fixed JUnit reports to properly report all executed scenarios (as some of them were missing)
+
 Version: 3.0.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:

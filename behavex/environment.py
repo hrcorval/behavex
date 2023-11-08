@@ -22,11 +22,12 @@ from behavex.utils import (
     create_custom_log_when_called,
     get_autoretry_attempts,
     get_logging_level,
+    get_scenario_tags,
 )
 
 Context.__getattribute__ = create_custom_log_when_called
-hooks_already_set = False
 
+hooks_already_set = False
 
 def extend_behave_hooks():
     """
@@ -91,9 +92,9 @@ def before_all(context):
     try:
         # Initialyzing log handler
         context.bhx_log_handler = None
+        context.bhx_inside_scenario = False
         # Store framework settings to make them accessible from steps
         context.bhx_config_framework = conf_mgr.get_config()
-        context.bhx_inside_scenario = False
     except Exception as exception:
         _log_exception_and_continue('before_all (behavex)', exception)
 
@@ -103,12 +104,12 @@ def before_feature(context, feature):
     try:
         context.bhx_execution_attempts = {}
         for scenario in feature.scenarios:
-            scenario.tags += feature.tags
+            scenario_tags = get_scenario_tags(scenario)
             if get_param('dry_run'):
-                if 'MANUAL' not in scenario.tags:
+                if 'MANUAL' not in scenario_tags:
                     scenario.tags.append(u'BHX_MANUAL_DRY_RUN')
                     scenario.tags.append(u'MANUAL')
-            configured_attempts = get_autoretry_attempts(scenario.tags)
+            configured_attempts = get_autoretry_attempts(scenario_tags)
             if configured_attempts > 0:
                 patch_scenario_with_autoretry(scenario, configured_attempts)
     except Exception as exception:
@@ -146,15 +147,19 @@ def after_tag(context, tag):
 
 
 def after_step(context, step):
-    if step.exception:
-        step.error_message = step.error_message
-        logging.error(step.exception)
+    try:
+        if step.exception:
+            step.error_message = step.error_message
+            logging.error(step.exception)
+    except Exception as exception:
+        _log_exception_and_continue('after_step (behavex)', exception)
 
 
 @capture
 def after_scenario(context, scenario):
     try:
-        configured_attempts = get_autoretry_attempts(scenario.tags)
+        scenario_tags = get_scenario_tags(scenario)
+        configured_attempts = get_autoretry_attempts(scenario_tags)
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
             feature_name = scenario.feature.name
             if feature_name not in global_vars.retried_scenarios:
@@ -169,15 +174,19 @@ def after_scenario(context, scenario):
 
 # noinspection PyUnusedLocal
 def after_feature(context, feature):
-    if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
-        return
-    report_xml.export_feature_to_xml(feature)
+    try:
+        if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
+            return
+        report_xml.export_feature_to_xml(feature)
+    except Exception as exception:
+        _log_exception_and_continue('after_feature (behavex)', exception)
 
 
 def after_all(context):
     try:
         # noinspection PyProtectedMember
-        report_json.generate_execution_info(context, context._runner.features)
+        feature_list = report_json.generate_execution_info(context._runner.features)
+        report_json.save_info_json(context, feature_list)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
 
