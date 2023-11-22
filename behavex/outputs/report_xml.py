@@ -10,6 +10,8 @@ from __future__ import absolute_import
 import os
 import re
 
+from behave.model_core import Status
+
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
@@ -32,25 +34,34 @@ def _export_feature_to_xml(feature, isobject=True):
                 ),
                 [],
             )
-
-        return (
-            flatter_scenarios(feature_.scenarios) if isobject else feature_['scenarios']
-        )
+        scenarios = flatter_scenarios(feature_.scenarios) if isobject else feature_['scenarios']
+        return scenarios
 
     def get_status(scenario_):
-        return scenario_.status if isobject else scenario_['status']
+        if hasattr(scenario_, 'status'):
+            return scenario_.status
+        else:
+            status = scenario_['status']
+            if 'untested' in status:
+                return Status.untested
+            elif 'failed' in status:
+                return Status.failed
+            elif 'skipped' in status:
+                return Status.skipped
+            elif 'passed' in status:
+                return Status.passed
 
     scenarios = [
         scenario
         for scenario in get_scenarios(feature)
-        if (match_for_execution(get_scenario_tags(scenario)) and not (get_status(scenario) == 'skipped' and get_env('RERUN_FAILURES')))
+        if (match_for_execution(get_scenario_tags(scenario)) and not (get_status(scenario) == Status.skipped and get_env('RERUN_FAILURES')))
     ]
 
-    skipped = [scenario for scenario in scenarios if get_status(scenario) == 'skipped']
+    skipped = [scenario for scenario in scenarios if get_status(scenario) == Status.skipped]
     failures = [
         scenario
         for scenario in scenarios
-        if get_status(scenario) == 'failed' or get_status(scenario) == 'untested'
+        if get_status(scenario) == Status.failed or get_status(scenario) == Status.untested
     ]
 
     muted = [
@@ -59,7 +70,7 @@ def _export_feature_to_xml(feature, isobject=True):
         if any(i in ['MUTE'] for i in get_scenario_tags(scenario))
     ]
 
-    muted_failed = [scenario for scenario in muted if get_status(scenario) == 'failed']
+    muted_failed = [scenario for scenario in muted if get_status(scenario) == Status.failed]
 
     summary = {
         'time': sum(
@@ -86,7 +97,7 @@ def _export_feature_to_xml(feature, isobject=True):
         else global_vars.jinja_templates['xml_json'],
         parameters_template,
     )
-    output_text = output_text.replace('Status.', '')
+    output_text = output_text.replace('status="Status.', 'status="')
     exp = re.compile('\\\\|/')
     filename = feature.filename if isobject else feature['filename']
     filename = text(filename)
