@@ -1,13 +1,14 @@
 Version History
 ===============================================================================
 
-Version: 3.1.5
+Version: 3.2.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
 
 * Improvement done when rendering feature background steps in HTML report
 * Reporting scenarios that crashed during execution as "Untested" in HTML report (scenarios that crashed were not reported in previous BehaveX versions)
 * Enhancement in HTML Report to add to scenarios the tags related to the feature where they are located
+* Contribution from `Axel Furlan <https://github.com/AxelFurlanF>`__ by fixing deprecation warning when using latest Behave version (1.2.6)  `PR 116 <https://github.com/hrcorval/behavex/pull/116>`_  (Thanks Axel!!)
 
 FIXES:
 
