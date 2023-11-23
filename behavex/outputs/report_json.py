@@ -256,9 +256,9 @@ def _step_to_dict(index, step):
 def process_step_definition(step, step_info):
     definition = registry.find_step_definition(step)
     if definition:
-        hash_step = _generate_hash(definition.string)
+        hash_step = _generate_hash(definition.pattern)
         if hash_step not in global_vars.steps_definitions:
-            global_vars.steps_definitions[hash_step] = definition.string
+            global_vars.steps_definitions[hash_step] = definition.pattern
         step_info['hash'] = hash_step
     else:
         step_info['hash'] = 0
