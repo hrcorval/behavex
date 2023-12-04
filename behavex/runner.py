@@ -8,6 +8,7 @@
 from __future__ import absolute_import, print_function
 
 import codecs
+import copy
 import json
 import logging.config
 import multiprocessing
@@ -18,8 +19,8 @@ import re
 import signal
 import sys
 import time
-import copy
 import traceback
+from concurrent.futures import ProcessPoolExecutor
 from operator import itemgetter
 from tempfile import gettempdir
 
@@ -35,6 +36,7 @@ from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
+from behavex.outputs.report_json import generate_execution_info
 from behavex.outputs.report_utils import (
     get_overall_status,
     match_for_execution,
@@ -49,7 +51,7 @@ from behavex.utils import (
     cleanup_folders,
     configure_logging,
     copy_bootstrap_html_generator,
-    create_partial_function_append,
+    create_execution_complete_callback_function,
     explore_features,
     generate_reports,
     get_json_results,
@@ -63,10 +65,8 @@ from behavex.utils import (
     set_env_variable,
     set_environ_config,
     set_system_paths,
-    get_scenario_tags,
+    get_scenario_tags, create_record_test_execution_completed_callback_function,
 )
-from behavex.outputs.report_json import generate_execution_info
-
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -176,10 +176,15 @@ def launch_behavex():
     )
     if not multiprocess:
         parallel_scheme = ''
+    parallel_tests_in_execution = None
+    if multiprocess:
+        manager = multiprocessing.Manager()
+        parallel_tests_in_execution = manager.list()
     set_behave_tags()
     scenario = False
     notify_missing_features(features_path)
     features_list = {}
+
     for path in features_path.split(','):
         features_list[path] = explore_features(path)
     updated_features_list = create_scenario_line_references(features_list)
@@ -187,8 +192,11 @@ def launch_behavex():
     lock = manager.Lock()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
-    process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
+    process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
+                                       initializer=init_multiprocessing(),
+                                       initargs=(lock,))
     try:
+        config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
             # Executing without parallel processes
             if get_param('dry_run'):
@@ -197,21 +205,20 @@ def launch_behavex():
                 all_paths = features_path.split(",")
             else:
                 all_paths = [key for key in updated_features_list]
-            execution_codes, json_reports = execute_tests(features_path=all_paths,
-                                                          feature_filename=None,
-                                                          scenario_name=None,
-                                                          multiprocess=False,
-                                                          config=ConfigRun())
+            execution_codes, json_reports = execute_tests_in_current_process(features_path=all_paths,
+                                                                             feature_filename=None,
+                                                                             scenario_name=None,
+                                                                             config=config)
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
-                updated_features_list, process_pool, lock, shared_removed_scenarios
+                updated_features_list, process_pool, lock, shared_removed_scenarios, parallel_tests_in_execution
             )
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(
-                updated_features_list, process_pool
+                updated_features_list, process_pool, parallel_tests_in_execution
             )
-        wrap_up_process_pools(process_pool, json_reports, multiprocess, scenario)
+        wrap_up_process_pools(process_pool, json_reports, scenario)
         time_end = time.time()
 
         if get_param('dry_run'):
@@ -220,38 +227,76 @@ def launch_behavex():
 
         remove_temporary_files(parallel_processes, json_reports)
 
-        results = get_json_results()
         failing_non_muted_tests = False
-        totals = {"features": {"passed": 0, "failed": 0, "skipped": 0},
-                  "scenarios": {"passed": 0, "failed": 0, "skipped": 0}}
-        if results:
-            failures = {}
-            for feature in results['features']:
-                if feature['status'] == 'failed':
-                    totals['features']['failed'] += 1
-                    filename = feature['filename']
-                    failures[filename] = []
-                elif feature['status'] == 'passed':
-                    totals['features']['passed'] += 1
-                else:
-                    totals['features']['skipped'] += 1
-                    totals['scenarios']['skipped'] += len(feature['scenarios'])
-                    continue
-                for scenario in feature['scenarios']:
-                    if scenario['status'] == 'failed':
-                        totals['scenarios']['failed'] += 1
-                        failures[filename].append(scenario['name'])
-                        if 'MUTE' not in scenario['tags']:
-                            failing_non_muted_tests = True
-                    elif scenario['status'] == 'passed':
-                        totals['scenarios']['passed'] += 1
+
+        # If there are tests that haven't completed execution, then there was a fatal failure with a number of tests.
+        # Output what failed to complete to help guide the user in what to debug.
+        if len(parallel_tests_in_execution) > 0:
+            output_folder = config.get_env('OUTPUT')
+
+            if parallel_scheme == 'scenario':
+                print("These scenarios failed to complete for an unknown reason:")
+                scenarios_by_feature = {}
+
+                # Group the scenarios by feature to give a nicer grouping to the output
+                for parallel_test_in_execution in parallel_tests_in_execution:
+                    json_test_configuration = json.loads(parallel_test_in_execution)
+                    if json_test_configuration["filename"] not in scenarios_by_feature:
+                        scenarios_by_feature[json_test_configuration["filename"]] = {
+                            "feature_name": json_test_configuration['filename'],
+                            "scenarios": json_test_configuration['scenarios']
+                        }
                     else:
-                        totals['scenarios']['skipped'] += 1
-            if failures:
-                failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
-                with open(failures_file_path, 'w') as failures_file:
-                    parameters = create_test_list(failures)
-                    failures_file.write(parameters)
+                        scenarios_by_feature[json_test_configuration["filename"]]["scenarios"].extend(
+                            json_test_configuration['scenarios'])
+
+                for feature_filename, scenarios in scenarios_by_feature.items():
+                    print(
+                        f"    Feature name: {scenarios['feature_name']}. Feature file: {feature_filename}")
+                    for scenario in scenarios["scenarios"]:
+                        print(f"        Scenario name: {scenario['name']}")
+                        behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
+                        print(f"            Behave log for scenario: {behave_log_file}")
+            elif parallel_scheme == 'feature':
+                print("These features failed to complete for an unknown reason:")
+                for parallel_test_in_execution in parallel_tests_in_execution:
+                    json_test_configuration = json.loads(parallel_test_in_execution)
+                    print(
+                        f"    Feature name: {json_test_configuration['name']}. Feature file: {json_test_configuration['filename']}")
+                    behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
+                    print(f"        Behave log for feature: {behave_log_file}")
+        else:
+            results = get_json_results()
+            totals = {"features": {"passed": 0, "failed": 0, "skipped": 0},
+                      "scenarios": {"passed": 0, "failed": 0, "skipped": 0}}
+            if results:
+                failures = {}
+                for feature in results['features']:
+                    if feature['status'] == 'failed':
+                        totals['features']['failed'] += 1
+                        filename = feature['filename']
+                        failures[filename] = []
+                    elif feature['status'] == 'passed':
+                        totals['features']['passed'] += 1
+                    else:
+                        totals['features']['skipped'] += 1
+                        totals['scenarios']['skipped'] += len(feature['scenarios'])
+                        continue
+                    for scenario in feature['scenarios']:
+                        if scenario['status'] == 'failed':
+                            totals['scenarios']['failed'] += 1
+                            failures[filename].append(scenario['name'])
+                            if 'MUTE' not in scenario['tags']:
+                                failing_non_muted_tests = True
+                        elif scenario['status'] == 'passed':
+                            totals['scenarios']['passed'] += 1
+                        else:
+                            totals['scenarios']['skipped'] += 1
+                if failures:
+                    failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
+                    with open(failures_file_path, 'w') as failures_file:
+                        parameters = create_test_list(failures)
+                        failures_file.write(parameters)
         # Calculates final exit code. execution_codes is 1 only if an execution exception arises
         if isinstance(execution_codes, list):
             execution_exception = True if sum(execution_codes) > 0 else False
@@ -262,22 +307,25 @@ def launch_behavex():
         )
     except KeyboardInterrupt:
         print('Caught KeyboardInterrupt, terminating workers')
-        process_pool.terminate()
-        process_pool.join()
+        process_pool.shutdown(wait=False, cancel_futures=True)
         exit_code = 1
-    if multiprocess:
-        plural_char = lambda n: 's' if n != 1 else ''
-        print('\n{} feature{} passed, {} failed, {} skipped (*)'.format(totals['features']['passed'],
-                                                                        plural_char(totals['features']['passed']),
-                                                                        totals['features']['failed'],
-                                                                        totals['features']['skipped']))
-        print('{} scenario{} passed, {} failed, {} skipped (*)'.format(totals['scenarios']['passed'],
-                                                                       plural_char(totals['scenarios']['passed']),
-                                                                       totals['scenarios']['failed'],
-                                                                       totals['scenarios']['skipped']))
-        print('Took: {}'.format(pretty_print_time(time_end - time_init)))
-    if results and results['features']:
-        print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
+
+    # Won't have sensible metrics to output given fatal failures
+    if len(parallel_tests_in_execution) == 0:
+        if multiprocess:
+            plural_char = lambda n: 's' if n != 1 else ''
+            print('\n{} feature{} passed, {} failed, {} skipped (*)'.format(totals['features']['passed'],
+                                                                            plural_char(totals['features']['passed']),
+                                                                            totals['features']['failed'],
+                                                                            totals['features']['skipped']))
+            print('{} scenario{} passed, {} failed, {} skipped (*)'.format(totals['scenarios']['passed'],
+                                                                           plural_char(totals['scenarios']['passed']),
+                                                                           totals['scenarios']['failed'],
+                                                                           totals['scenarios']['skipped']))
+            print('Took: {}'.format(pretty_print_time(time_end - time_init)))
+        if results and results['features']:
+            print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
+
     print('Exit code: {}'.format(exit_code))
     return exit_code
 
@@ -342,7 +390,11 @@ def create_scenario_line_references(features):
     return updated_features
 
 
-def launch_by_feature(features, process_pool):
+def launch_by_feature(
+        features,
+        process_pool,
+        parallel_tests_in_execution
+):
     json_reports = []
     execution_codes = []
     serial_features = []
@@ -357,22 +409,42 @@ def launch_by_feature(features, process_pool):
     if serial_features:
         print_parallel('feature.serial_execution')
         for feature_filename in serial_features:
-            execution_code, map_json = execute_tests(None, feature_filename, None, None, True, config=ConfigRun())
+            execution_code, map_json = execute_tests_in_current_process(None, feature_filename, None, None, True, config=ConfigRun())
             json_reports += [map_json]
             execution_codes.append(execution_code)
     print_parallel('feature.running_parallels')
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
         feature_json_skeleton = parallel_feature["feature_json_skeleton"]
-        process_pool.apply_async(
-            execute_tests,
-            (None, feature_filename, feature_json_skeleton, None, True, ConfigRun()),
-            callback=create_partial_function_append(execution_codes, json_reports),
+        future = process_pool.submit(
+            execute_tests_in_subprocess,
+            None,
+            parallel_tests_in_execution,
+            feature_filename,
+            feature_json_skeleton,
+            None,
+            ConfigRun()
         )
+
+        future.add_done_callback(create_execution_complete_callback_function(
+            execution_codes,
+            json_reports
+        ))
+        future.add_done_callback(create_record_test_execution_completed_callback_function(
+            parallel_feature,
+            feature_json_skeleton
+        ))
+
     return execution_codes, json_reports
 
 
-def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
+def launch_by_scenario(
+        features,
+        process_pool,
+        lock,
+        shared_removed_scenarios,
+        parallel_tests_in_execution
+):
     json_reports = []
     execution_codes = []
     parallel_scenarios = {}
@@ -422,7 +494,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
         print_parallel('scenario.serial_execution')
         for features_path, scenarios_in_feature in serial_scenarios.items():
             json_serial_reports = [
-                execute_tests(features_path=features_path,
+                execute_tests_in_current_process(features_path=features_path,
                               feature_filename=scenario_information["feature_filename"],
                               feature_json_skeleton=scenario_information["feature_json_skeleton"],
                               scenario_name=scenario_information["scenario_name"],
@@ -440,23 +512,88 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
             feature_filename = scenario_information["feature_filename"]
             feature_json_skeleton = scenario_information["feature_json_skeleton"]
             scenario_name = scenario_information["scenario_name"]
-            process_pool.apply_async(
-                execute_tests,
-                args=(features_path, feature_filename, feature_json_skeleton, scenario_name,
-                      True, ConfigRun(), lock, shared_removed_scenarios),
-                callback=create_partial_function_append(execution_codes, json_reports),
+            future = process_pool.submit(
+                execute_tests_in_subprocess,
+                features_path,
+                parallel_tests_in_execution,
+                feature_filename,
+                feature_json_skeleton,
+                scenario_name,
+                ConfigRun(),
+                lock,
+                shared_removed_scenarios
             )
+            future.add_done_callback(create_execution_complete_callback_function(
+                execution_codes,
+                json_reports
+            ))
+            future.add_done_callback(create_record_test_execution_completed_callback_function(
+                feature_json_skeleton,
+                parallel_tests_in_execution
+            ))
     return execution_codes, json_reports
 
 
-def execute_tests(features_path, feature_filename=None, feature_json_skeleton=None, scenario_name=None,
-                  multiprocess=True, config=None, lock=None, shared_removed_scenarios=None):
+def execute_tests_in_subprocess(
+        features_path,
+        parallel_tests_in_execution,
+        feature_filename=None,
+        feature_json_skeleton=None,
+        scenario_name=None,
+        config=None,
+        lock=None,
+        shared_removed_scenarios=None
+):
+    parallel_tests_in_execution.append(feature_json_skeleton)
+
+    return execute_tests(
+        features_path=features_path,
+        feature_filename=feature_filename,
+        feature_json_skeleton=feature_json_skeleton,
+        scenario_name=scenario_name,
+        multiprocess=True,
+        config=config,
+        lock=lock
+    )
+
+
+def execute_tests_in_current_process(
+        features_path,
+        feature_filename=None,
+        feature_json_skeleton=None,
+        scenario_name=None,
+        config=None,
+        lock=None,
+):
+    return execute_tests(
+        features_path=features_path,
+        feature_filename=feature_filename,
+        feature_json_skeleton=feature_json_skeleton,
+        scenario_name=scenario_name,
+        multiprocess=False,
+        config=config,
+        lock=lock
+    )
+
+
+def execute_tests(
+        features_path,
+        feature_filename,
+        feature_json_skeleton,
+        scenario_name,
+        multiprocess,
+        config,
+        lock,
+):
     behave_args = None
     if multiprocess:
         ExecutionSingleton._instances[ConfigRun] = config
     extend_behave_hooks()
     try:
-        behave_args = _set_behave_arguments(features_path, multiprocess, feature_filename, scenario_name, config)
+        # Execution ID is only important for multiprocessing so that we can influence where output files end up
+        execution_id = None if not feature_json_skeleton and multiprocess else json.loads(feature_json_skeleton)['id']
+        behave_args = _set_behave_arguments(features_path, multiprocess, execution_id, feature_filename, scenario_name,
+                                            config)
     except Exception as exception:
         traceback.print_exc()
         print(exception)
@@ -519,12 +656,16 @@ def _launch_behave(behave_args):
     return execution_code, generate_report
 
 
-def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=False):
+def wrap_up_process_pools(
+        process_pool,
+        json_reports,
+        scenario=False
+):
     merged_json = None
     output = os.path.join(get_env('OUTPUT'))
     try:
-        process_pool.close()
-        process_pool.join()
+        process_pool.shutdown()
+
         if type(json_reports) is list:
             if scenario:
                 json_reports = join_scenario_reports(json_reports)
@@ -532,8 +673,7 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
         else:
             merged_json = json_reports
     except KeyboardInterrupt:
-        process_pool.terminate()
-        process_pool.join()
+        process_pool.shutdown(wait=False, cancel_futures=True)
     status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
     with open(status_info, 'w') as file_info:
         over_status = {'status': get_overall_status(merged_json)}
@@ -564,11 +704,13 @@ def remove_temporary_files(parallel_processes, json_reports):
             except Exception as remove_ex:
                 print(remove_ex)
 
-        path_stdout = os.path.join(gettempdir(), 'stdout{}.txt'.format(i + 1))
-        if os.path.exists(path_stdout):
+    path_behavex_logs = os.path.join(os.path.join(get_env('OUTPUT'), 'behavex', 'logs'))
+    if os.path.exists(path_behavex_logs):
+        for filename in os.listdir(path_behavex_logs):
             try:
-                os.chmod(path_stdout, 511)  # nosec
-                os.remove(path_stdout)
+                file_path = os.path.join(path_behavex_logs, filename)
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
             except Exception as remove_ex:
                 print(remove_ex)
 
@@ -724,7 +866,7 @@ def _store_tags_to_env_variable(tags):
         set_env_variable('TAGS', '')
 
 
-def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=None, config=None):
+def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario=None, config=None):
     arguments = []
     output_folder = config.get_env('OUTPUT')
     if multiprocess:
@@ -746,9 +888,11 @@ def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=No
                     scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
             arguments.append('--name')
             arguments.append("{}".format(scenario_outline_compatible))
-        name = multiprocessing.current_process().name.split('-')[-1]
+        # Need a unique path for behave, otherwise if there are multiple processes then it'll error if the
+        # directory exists
+        output_id = str(execution_id) if execution_id else multiprocessing.current_process().name.split('-')[-1]
         arguments.append('--outfile')
-        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
+        arguments.append(os.path.join(output_folder, 'behavex', 'logs', output_id, 'behave.log'))
     else:
         if type(features_path) is list:
             for feature_path in features_path:
