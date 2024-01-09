@@ -157,8 +157,12 @@ def setup_running_failures(args_parsed):
         return EXIT_OK, None
 
 
-def init_multiprocessing():
+def init_multiprocessing(idQueue):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # Retrieve one of the unique IDs
+    id = idQueue.get()
+    # Use the unique ID to name the process
+    multiprocessing.current_process().name = f'behave_worker-{id}'
 
 
 def launch_behavex():
@@ -187,7 +191,12 @@ def launch_behavex():
     lock = manager.Lock()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
-    process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
+    # Create a queue containing unique IDs from 0 to the number of parallel processes - 1
+    # These IDs will be attributed to the process when they will be initialized 
+    idQueue = manager.Queue()
+    for i in range(parallel_processes):
+        idQueue.put(i)
+    process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing, initargs=(idQueue,))
     try:
         if parallel_processes == 1 or get_param('dry_run'):
             # Executing without parallel processes
@@ -746,9 +755,13 @@ def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=No
                     scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
             arguments.append('--name')
             arguments.append("{}".format(scenario_outline_compatible))
-        name = multiprocessing.current_process().name.split('-')[-1]
+        worker_id = multiprocessing.current_process().name.split('-')[-1]
+            
         arguments.append('--outfile')
-        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
+        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(worker_id)))
+
+        arguments.append('-D')
+        arguments.append(f'worker_id={worker_id}')
     else:
         if type(features_path) is list:
             for feature_path in features_path:
@@ -763,6 +776,8 @@ def _set_behave_arguments(features_path, multiprocess, feature=None, scenario=No
         arguments.append(output_folder)
         arguments.append('--outfile')
         arguments.append(os.path.join(output_folder, 'behave', 'behave.log'))
+        arguments.append('-D')
+        arguments.append(f'worker_id=0')
     arguments.append('--no-skipped')
     arguments.append('--no-junit')
     run_wip_tests = False

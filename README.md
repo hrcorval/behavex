@@ -153,6 +153,12 @@ Examples:
 
 When the parallel-scheme is set by **feature**, all tests within each feature will be run sequentially.
 
+BehaveX populates the Behave contexts with the `worker_id` user-specific data. This variable contains the id of the current behave process.  
+
+E.g If BehaveX is started with `--parallel-processes 2`, the first instance of behave will receive `worker_id=0`, and the second instance will receive `worker_id=1`.  
+
+This variable can be accessed within the python tests using `context.config.userdata['worker_id']`
+
 ## Test execution reports
 ### HTML report
 This is a friendly test execution report that contains information related to test scenarios, execution status, execution evidence and metrics. A filters bar is also provided to filter scenarios by name, tag or status.
