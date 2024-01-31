@@ -231,7 +231,7 @@ def launch_behavex():
 
         # If there are tests that haven't completed execution, then there was a fatal failure with a number of tests.
         # Output what failed to complete to help guide the user in what to debug.
-        if len(parallel_tests_in_execution) > 0:
+        if parallel_tests_in_execution and len(parallel_tests_in_execution) > 0:
             output_folder = config.get_env('OUTPUT')
 
             if parallel_scheme == 'scenario':
@@ -311,7 +311,7 @@ def launch_behavex():
         exit_code = 1
 
     # Won't have sensible metrics to output given fatal failures
-    if len(parallel_tests_in_execution) == 0:
+    if parallel_tests_in_execution and len(parallel_tests_in_execution) == 0:
         if multiprocess:
             plural_char = lambda n: 's' if n != 1 else ''
             print('\n{} feature{} passed, {} failed, {} skipped (*)'.format(totals['features']['passed'],
@@ -591,7 +591,7 @@ def execute_tests(
     extend_behave_hooks()
     try:
         # Execution ID is only important for multiprocessing so that we can influence where output files end up
-        execution_id = None if not feature_json_skeleton and multiprocess else json.loads(feature_json_skeleton)['id']
+        execution_id = json.loads(feature_json_skeleton or '{}').get('id')
         behave_args = _set_behave_arguments(features_path, multiprocess, execution_id, feature_filename, scenario_name,
                                             config)
     except Exception as exception:
