@@ -1,6 +1,13 @@
 Version History
 ===============================================================================
 
+Version: 3.2.1
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Adding a progress bar to the console when running in parallel to better track the execution progress (arguments: -spb or --show-progress-bar)
+
+
 Version: 3.2.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
