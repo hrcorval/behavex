@@ -20,6 +20,7 @@ import sys
 import time
 import copy
 import traceback
+from tqdm import tqdm
 from operator import itemgetter
 from tempfile import gettempdir
 
@@ -63,7 +64,7 @@ from behavex.utils import (
     set_env_variable,
     set_environ_config,
     set_system_paths,
-    get_scenario_tags,
+    get_scenario_tags
 )
 from behavex.outputs.report_json import generate_execution_info
 
@@ -169,6 +170,7 @@ def launch_behavex():
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
     parallel_processes = get_param('parallel_processes')
+    show_progress_bar = get_param('show_progress_bar')
     multiprocess = (
         True
         if get_param('parallel_processes') > 1 and not get_param('dry_run')
@@ -188,6 +190,8 @@ def launch_behavex():
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
+    progress_bar_format = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]"
+    progress_bar = tqdm(desc="Execution Progress", bar_format=progress_bar_format) if show_progress_bar else None
     try:
         if parallel_processes == 1 or get_param('dry_run'):
             # Executing without parallel processes
@@ -204,14 +208,16 @@ def launch_behavex():
                                                           config=ConfigRun())
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
-                updated_features_list, process_pool, lock, shared_removed_scenarios
+                updated_features_list, process_pool, lock, shared_removed_scenarios, progress_bar
             )
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(
-                updated_features_list, process_pool
+                updated_features_list, process_pool, progress_bar
             )
         wrap_up_process_pools(process_pool, json_reports, multiprocess, scenario)
+        if progress_bar:
+            progress_bar.close()
         time_end = time.time()
 
         if get_param('dry_run'):
@@ -342,7 +348,7 @@ def create_scenario_line_references(features):
     return updated_features
 
 
-def launch_by_feature(features, process_pool):
+def launch_by_feature(features, process_pool, progress_bar):
     json_reports = []
     execution_codes = []
     serial_features = []
@@ -354,12 +360,16 @@ def launch_by_feature(features, process_pool):
         else:
             parallel_features.append({"feature_filename": feature.filename,
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
+    if progress_bar is not None:
+        progress_bar.reset(len(serial_features) + len(parallel_features))
     if serial_features:
         print_parallel('feature.serial_execution')
         for feature_filename in serial_features:
             execution_code, map_json = execute_tests(None, feature_filename, None, None, True, config=ConfigRun())
             json_reports += [map_json]
             execution_codes.append(execution_code)
+            if progress_bar:
+                progress_bar.update()
     print_parallel('feature.running_parallels')
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
@@ -367,17 +377,18 @@ def launch_by_feature(features, process_pool):
         process_pool.apply_async(
             execute_tests,
             (None, feature_filename, feature_json_skeleton, None, True, ConfigRun()),
-            callback=create_partial_function_append(execution_codes, json_reports),
+            callback=create_partial_function_append(execution_codes, json_reports, progress_bar),
         )
     return execution_codes, json_reports
 
 
-def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
+def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, progress_bar):
     json_reports = []
     execution_codes = []
     parallel_scenarios = {}
     serial_scenarios = {}
     duplicated_scenarios = {}
+    total_scenarios = 0
     features_with_empty_scenario_descriptions = []
     for features_path, scenarios in features.items():
         for scenario in scenarios:
@@ -402,6 +413,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                             serial_scenarios[features_path] = []
                         if scenario_information not in serial_scenarios[features_path]:
                             serial_scenarios[features_path].append(scenario_information)
+                            total_scenarios += 1
                     else:
                         for key in parallel_scenarios.keys():
                             if scenario_information in parallel_scenarios[key]:
@@ -412,6 +424,9 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                             parallel_scenarios[features_path] = []
                         if parallel_scenarios not in parallel_scenarios[features_path]:
                             parallel_scenarios[features_path].append(scenario_information)
+                            total_scenarios += 1
+    if progress_bar is not None:
+        progress_bar.reset(total_scenarios)
     if duplicated_scenarios:
         print_parallel('scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4))
         exit(1)
@@ -433,7 +448,8 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
             # execution_codes and json_reports are forced to be of type a list.
             execution_codes += list(map(itemgetter(0), json_serial_reports))
             json_reports += list(map(itemgetter(1), json_serial_reports))
-
+            if progress_bar:
+                progress_bar.update()
     print_parallel('scenario.running_parallels')
     for features_path in parallel_scenarios.keys():
         for scenario_information in parallel_scenarios[features_path]:
@@ -444,7 +460,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                 execute_tests,
                 args=(features_path, feature_filename, feature_json_skeleton, scenario_name,
                       True, ConfigRun(), lock, shared_removed_scenarios),
-                callback=create_partial_function_append(execution_codes, json_reports),
+                callback=create_partial_function_append(execution_codes, json_reports, progress_bar=progress_bar),
             )
     return execution_codes, json_reports
 

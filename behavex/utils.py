@@ -46,13 +46,15 @@ LOGGING_LEVELS = {
 }
 
 
-def append_results(codes, json_reports, tuple_values):
+def append_results(codes, json_reports, progress_bar, tuple_values):
     codes.append(tuple_values[0])
     json_reports.append(tuple_values[1])
+    if progress_bar:
+        progress_bar.update()
 
 
-def create_partial_function_append(codes, json_reports):
-    append_output = functools.partial(append_results, codes, json_reports)
+def create_partial_function_append(codes, json_reports, progress_bar):
+    append_output = functools.partial(append_results, codes, json_reports, progress_bar)
     return append_output
 
 

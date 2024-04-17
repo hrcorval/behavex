@@ -68,6 +68,7 @@ BEHAVEX_ARGS = [
     'tags',
     'parallel_scheme',
     'parallel_processes',
+    'show_progress_bar',
 ]
 
 
@@ -302,6 +303,15 @@ def parse_arguments(args):
              'For example: --rf ./output/failing_scenarios.txt',
         required=False
     )
+    parser.add_argument(
+        '-spb',
+        '--show-progress-bar',
+        help="Shows the execution progress bar in console.",
+        default=False,
+        action='store_true',
+        required=False,
+    )
+
     # parser.add_argument('--logging-format',
     #                    help="Specify custom format to print statements. Uses "
     #                          " the same format as used by standard logging "
