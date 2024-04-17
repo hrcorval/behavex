@@ -23,6 +23,7 @@ setup(
         'configobj',
         'htmlmin',
         'csscompressor',
+        'tqdm',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

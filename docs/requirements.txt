@@ -4,3 +4,4 @@ mkdocs>=1.2.3
 configobj
 htmlmin
 csscompressor
+tqdm
