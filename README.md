@@ -173,7 +173,7 @@ The report is provided to simplify the integration with third party tools, by pr
 
 The wrapper overwrites the existing Behave JUnit reports, just to enable dealing with parallel executions and muted test scenarios
 
-By default, there will be one JUnit file per feature, unless the parallel execution is performed by scenario, in which there will be one JUnit file per scenario.
+By default, there will be one JUnit file per feature, no matter if the parallel execution is performed by feature or scenario.
 
 Reports are available by default at the following path:
 > <output_folder\>/behave/*.xml
