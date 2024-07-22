@@ -123,7 +123,8 @@ def run(args):
                 os.environ['FEATURES_PATH'] = paths
             else:
                 os.environ['FEATURES_PATH'] = features_path + ',' + paths
-    if os.environ.get('FEATURES_PATH') is None or os.environ.get('FEATURES_PATH') == '':
+    features_path = os.environ.get('FEATURES_PATH')
+    if features_path == '' or features_path is None:
         os.environ['FEATURES_PATH'] = os.path.join(os.getcwd(), 'features')
     _set_env_variables(args_parsed)
     set_system_paths()
