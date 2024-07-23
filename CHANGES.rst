@@ -7,6 +7,10 @@ ENHANCEMENTS:
 
 * Adding a progress bar to the console when running in parallel to better track the execution progress (arguments: -spb or --show-progress-bar)
 
+FIXES:
+
+* Fixed blank report issue reported in some cases when running tests in parallel
+
 
 Version: 3.2.0
 -------------------------------------------------------------------------------
