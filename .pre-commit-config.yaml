@@ -28,11 +28,13 @@ repos:
     hooks:
       - id: isort
 
-  # - repo: https://github.com/PyCQA/pylint
-  #   rev: pylint-2.6.0
-  #   hooks:
-  #     - id: pylint
-  #       args:
-  #         - --max-line-length=120
-  #         - --ignore-imports=yes
-  #         - -d duplicate-code
+#  - repo: https://github.com/PyCQA/pylint
+#    rev: v2.13.5
+#    hooks:
+#       - id: pylint
+#         args:
+#           - --max-line-length=120
+#           - --ignore-imports=yes
+#           # ignore  C0116: Missing function or method docstring
+#           - --disable=C0116
+#           - -d duplicate-code
