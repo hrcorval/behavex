@@ -28,13 +28,10 @@ from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (
-    get_save_function,
-    match_for_execution,
-    normalize_filename,
-    get_string_hash,
-    try_operate_descriptor,
-)
+from behavex.outputs.report_utils import (get_save_function, get_string_hash,
+                                          match_for_execution,
+                                          normalize_filename,
+                                          try_operate_descriptor)
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {

@@ -15,12 +15,9 @@ from behave.model_core import Status
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
-from behavex.outputs.report_utils import (
-    get_save_function,
-    match_for_execution,
-    text,
-    try_operate_descriptor,
-)
+from behavex.outputs.report_utils import (get_save_function,
+                                          match_for_execution, text,
+                                          try_operate_descriptor)
 from behavex.utils import get_scenario_tags
 
 

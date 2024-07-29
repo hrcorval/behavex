@@ -182,4 +182,3 @@ ENHANCEMENTS:
 DOCUMENTATION:
 
 * Adding HTML report screenshots to documentation
-

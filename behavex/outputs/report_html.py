@@ -15,11 +15,9 @@ import htmlmin
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
-from behavex.outputs.report_utils import (
-    gather_steps_with_definition,
-    get_save_function,
-    try_operate_descriptor,
-)
+from behavex.outputs.report_utils import (gather_steps_with_definition,
+                                          get_save_function,
+                                          try_operate_descriptor)
 
 
 def generate_report(output, joined=None, report=None):

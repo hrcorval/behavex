@@ -19,13 +19,14 @@ import random
 import traceback
 from tempfile import gettempdir
 
-from behave.step_registry import registry
 from behave.model import ScenarioOutline
+from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
-from behavex.outputs.report_utils import get_error_message, match_for_execution, text
-from behavex.utils import try_operate_descriptor, get_scenario_tags
+from behavex.outputs.report_utils import (get_error_message,
+                                          match_for_execution, text)
+from behavex.utils import get_scenario_tags, try_operate_descriptor
 
 
 def add_step_info(step, parent_node):

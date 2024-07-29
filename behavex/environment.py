@@ -17,13 +17,9 @@ from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import create_log_path
-from behavex.utils import (
-    LOGGING_CFG,
-    create_custom_log_when_called,
-    get_autoretry_attempts,
-    get_logging_level,
-    get_scenario_tags,
-)
+from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
+                           get_autoretry_attempts, get_logging_level,
+                           get_scenario_tags)
 
 Context.__getattribute__ = create_custom_log_when_called
 

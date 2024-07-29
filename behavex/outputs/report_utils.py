@@ -312,7 +312,7 @@ def match_for_execution(tags):
     for tag in tag_re.findall(tags_filter):
         if tag not in ('not', 'and', 'or', 'True', 'False'):
             tags_filter = tags_filter.replace(tag + ' ', 'False ')
-    return tags_filter == '' or eval(tags_filter)
+    return tags_filter == '' or eval(tags_filter)  # nosec
 
 
 def copy_bootstrap_html_generator(output):

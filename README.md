@@ -22,7 +22,7 @@ BehaveX can be used to build testing pipelines from scratch using the same [Beha
   * This is enhanced implementation of Behave's dry run feature, allowing you to see the full list of scenarios in the HTML report without actually executing the tests
 * Re-execute failing test scenarios
   * By just adding the @AUTORETRY tag to test scenarios, so when the first execution fails the scenario is immediately re-executed
-  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically 
+  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically
 
 ![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report.png?raw=true)
 
@@ -44,43 +44,43 @@ The execution is performed in the same way as you do when executing Behave from 
 Examples:
 
 >Run scenarios tagged as **TAG_1** but not **TAG_2**:
-> 
+>
 > <pre>behavex -t @TAG_1 -t ~@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1** or **TAG_2**:
-> 
+>
 ><pre>behavex -t @TAG_1,@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **4** parallel processes:
-> 
+>
 ><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
 
 >Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using **2** parallel processes
-> 
+>
 ><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2</pre>
 
 >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
-> 
+>
 ><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2</pre>
 
 >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
-> 
+>
 ><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2</pre>
 
 >Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
-> 
+>
 ><pre>behavex features/feature_1 features/feature_2 --parallel-processes 2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
-> 
+>
 ><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
 
 >Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
-> 
+>
 ><pre>behavex -t @TAG_1 --dry-run</pre>
 
 >Run scenarios tagged as **TAG_1**, generating the execution evidence into the "**exec_evidence**" folder (instead of the default "**output**" folder):
-> 
+>
 ><pre>behavex -t @TAG_1 -o execution_evidence</pre>
 
 
@@ -220,12 +220,12 @@ Tests can be muted by adding the @MUTE tag to each test scenario. This will caus
 
 This tag can be used for flaky scenarios or when the testing infrastructure is not stable at all.
 
-The @AUTORETRY tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails. 
+The @AUTORETRY tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails.
 
 ### Rerun all failed scenarios
 
 Whenever you perform an automated test execution and there are failing scenarios, the **failing_scenarios.txt** file will be created into the execution output folder.
-This file allows you to run all failing scenarios again. 
+This file allows you to run all failing scenarios again.
 
 This can be done by executing the following command:
 
@@ -237,7 +237,7 @@ or
 
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
-It is important to mention that this argument doesn't work yet with parallel test executions 
+It is important to mention that this argument doesn't work yet with parallel test executions
 
 ## Show Your Support
 
@@ -246,4 +246,3 @@ It is important to mention that this argument doesn't work yet with parallel tes
 By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
 
 Thank you in advance for your support! We truly appreciate it.
- 

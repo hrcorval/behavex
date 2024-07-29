@@ -8,6 +8,7 @@
 from __future__ import absolute_import, print_function
 
 import codecs
+import copy
 import json
 import logging.config
 import multiprocessing
@@ -18,14 +19,13 @@ import re
 import signal
 import sys
 import time
-import copy
 import traceback
-from tqdm import tqdm
 from operator import itemgetter
 from tempfile import gettempdir
 
 from behave import __main__ as behave_script
-from behave.model import ScenarioOutline, Scenario, Feature
+from behave.model import Feature, Scenario, ScenarioOutline
+from tqdm import tqdm
 
 # noinspection PyUnresolvedReferences
 import behavex.outputs.report_json
@@ -36,38 +36,21 @@ from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
-from behavex.outputs.report_utils import (
-    get_overall_status,
-    match_for_execution,
-    pretty_print_time,
-    text,
-    try_operate_descriptor,
-)
-from behavex.utils import (
-    IncludeNameMatch,
-    IncludePathsMatch,
-    MatchInclude,
-    cleanup_folders,
-    configure_logging,
-    copy_bootstrap_html_generator,
-    create_partial_function_append,
-    explore_features,
-    generate_reports,
-    get_json_results,
-    get_logging_level,
-    join_feature_reports,
-    join_scenario_reports,
-    len_scenarios,
-    print_env_variables,
-    print_parallel,
-    set_behave_tags,
-    set_env_variable,
-    set_environ_config,
-    set_system_paths,
-    get_scenario_tags
-)
 from behavex.outputs.report_json import generate_execution_info
-
+from behavex.outputs.report_utils import (get_overall_status,
+                                          match_for_execution,
+                                          pretty_print_time, text,
+                                          try_operate_descriptor)
+from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
+                           cleanup_folders, configure_logging,
+                           copy_bootstrap_html_generator,
+                           create_partial_function_append, explore_features,
+                           generate_reports, get_json_results,
+                           get_logging_level, get_scenario_tags,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
+                           set_behave_tags, set_env_variable,
+                           set_environ_config, set_system_paths)
 
 EXIT_OK = 0
 EXIT_ERROR = 1

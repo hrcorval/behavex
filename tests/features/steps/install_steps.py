@@ -1,5 +1,7 @@
-from behave import given, when, then
+# nosec B404
 import subprocess
+
+from behave import given, then, when
 
 
 @given('I have installed behavex')
