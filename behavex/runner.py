@@ -174,7 +174,7 @@ def launch_behavex():
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
-    progress_bar_format = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]"
+    progress_bar_format = "{l_bar}{bar:100} | {n_fmt}/{total_fmt}\n"
     progress_bar = tqdm(desc="Execution Progress", bar_format=progress_bar_format) if show_progress_bar else None
     try:
         if parallel_processes == 1 or get_param('dry_run'):
