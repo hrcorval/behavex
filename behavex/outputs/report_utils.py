@@ -295,6 +295,7 @@ def match_for_execution(tags):
     if get_param('dry_run'):
         if 'BHX_MANUAL_DRY_RUN' in tags:
             tags.remove('BHX_MANUAL_DRY_RUN')
+        if 'MANUAL' in tags:
             tags.remove('MANUAL')
     # Set scenario tags in filter
     for tag in tags:

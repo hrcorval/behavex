@@ -151,10 +151,15 @@ def launch_behavex():
     json_reports = []
     execution_codes = []
     time_init = time.time()
+    config = conf_mgr.get_config()
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
-    parallel_processes = get_param('parallel_processes')
-    show_progress_bar = get_param('show_progress_bar')
+    if get_param('dry_run'):
+        parallel_processes = 1
+        show_progress_bar = False
+    else:
+        parallel_processes = get_param('parallel_processes')
+        show_progress_bar = get_param('show_progress_bar')
     multiprocess = (
         True
         if get_param('parallel_processes') > 1 and not get_param('dry_run')
@@ -174,8 +179,14 @@ def launch_behavex():
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     process_pool = multiprocessing.Pool(parallel_processes, initializer=init_multiprocessing(), initargs=(lock,))
-    progress_bar_format = "{l_bar}{bar:100} | {n_fmt}/{total_fmt}\n"
-    progress_bar = tqdm(desc="Execution Progress", bar_format=progress_bar_format) if show_progress_bar else None
+    if show_progress_bar:
+        progress_bar_format = config['tqdm']['bar_format']
+        print_progress_in_new_lines = config['tqdm']['print_progress_in_new_lines']
+        if print_progress_in_new_lines:
+            progress_bar_format += "\n"
+        progress_bar = tqdm(desc="Execution Progress", bar_format=progress_bar_format, total=0)
+    else:
+        progress_bar = None
     try:
         if parallel_processes == 1 or get_param('dry_run'):
             # Executing without parallel processes
@@ -201,6 +212,7 @@ def launch_behavex():
             )
         wrap_up_process_pools(process_pool, json_reports, multiprocess, scenario)
         if progress_bar:
+            progress_bar.disable = True
             progress_bar.close()
         time_end = time.time()
 
@@ -345,7 +357,7 @@ def launch_by_feature(features, process_pool, progress_bar):
             parallel_features.append({"feature_filename": feature.filename,
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
     if progress_bar is not None:
-        progress_bar.reset(len(serial_features) + len(parallel_features))
+        progress_bar.total = len(serial_features) + len(parallel_features)
     if serial_features:
         print_parallel('feature.serial_execution')
         for feature_filename in serial_features:
@@ -410,7 +422,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, p
                             parallel_scenarios[features_path].append(scenario_information)
                             total_scenarios += 1
     if progress_bar is not None:
-        progress_bar.reset(total_scenarios)
+        progress_bar.total = total_scenarios
     if duplicated_scenarios:
         print_parallel('scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4))
         exit(1)

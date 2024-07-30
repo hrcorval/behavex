@@ -30,11 +30,9 @@ def get_config():
     [output]
     path=string(default="output")
 
-    [outputs]
-    types=string_list(default=list("html", "xml"))
-
-    [screenshots]
-    hash_detail=string(default="0")
+    [tqdm]
+    bar_format=string(default='{l_bar}{bar:10}| {n_fmt}/{total_fmt} [{elapsed}]')
+    print_progress_in_new_lines=boolean(default=True)
 
     [test_run]
     tags_to_skip=string(default="")

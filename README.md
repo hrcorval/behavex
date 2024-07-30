@@ -130,6 +130,8 @@ Also, there might be more arguments that can be supported, it is just a matter o
   * Specifies the number of parallel Behave processes
 * **parallel-scheme** (--parallel-scheme)
   * Performs the parallel test execution by [scenario|feature]
+* **show-progress-bar** (--show-progress-bar)
+  * Displays a progress bar in console while executing the tests in parallel
 
 You can take a look at the provided examples (above in this documentation) to see how to use these arguments.
 
@@ -150,6 +152,8 @@ Examples:
 > behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
 
 > behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature
+
+> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature --show-progress-bar
 
 When the parallel-scheme is set by **feature**, all tests within each feature will be run sequentially.
 
@@ -238,6 +242,25 @@ or
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
 It is important to mention that this argument doesn't work yet with parallel test executions
+
+
+## Display a Progress Bar in Console
+
+When executing tests in parallel, you can display a progress bar in the console to see the progress of the test execution.
+
+To enable the progress bar, just add the **--show-progress-bar** argument to the command line.
+
+Example:
+
+> behavex -t @TAG --parallel-processes 3 --show-progress-bar
+
+The progress bar is implemented using the **tqdm** library. You can change the progress bar format by adding the following setting in the behave configuration file:
+
+> [tqdm]
+>
+> bar_format="{l_bar}{bar:10}| {n_fmt}/{total_fmt} [{elapsed}]"
+>
+> print_progress_in_new_lines="true"
 
 ## Show Your Support
 
