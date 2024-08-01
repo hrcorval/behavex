@@ -553,7 +553,8 @@ def execute_tests_in_subprocess(
         scenario_name=scenario_name,
         multiprocess=True,
         config=config,
-        lock=lock
+        lock=lock,
+        shared_removed_scenarios=shared_removed_scenarios,
     )
 
 
@@ -564,6 +565,7 @@ def execute_tests_in_current_process(
         scenario_name=None,
         config=None,
         lock=None,
+        shared_removed_scenarios=None
 ):
     return execute_tests(
         features_path=features_path,
@@ -572,7 +574,8 @@ def execute_tests_in_current_process(
         scenario_name=scenario_name,
         multiprocess=False,
         config=config,
-        lock=lock
+        lock=lock,
+        shared_removed_scenarios=shared_removed_scenarios,
     )
 
 
@@ -584,6 +587,7 @@ def execute_tests(
         multiprocess,
         config,
         lock,
+        shared_removed_scenarios,
 ):
     behave_args = None
     if multiprocess:
