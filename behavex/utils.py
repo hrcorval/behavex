@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import sys
+from concurrent.futures.process import BrokenProcessPool
 from functools import reduce
 from tempfile import gettempdir
 
@@ -46,13 +47,49 @@ LOGGING_LEVELS = {
 }
 
 
-def append_results(codes, json_reports, tuple_values):
-    codes.append(tuple_values[0])
-    json_reports.append(tuple_values[1])
+def handle_execution_complete_callback(
+        codes,
+        json_reports,
+        future
+):
+    try:
+        tuple_values = future.result()
+        codes.append(tuple_values[0])
+        json_reports.append(tuple_values[1])
+    except BrokenProcessPool:
+        codes.append(1)
 
 
-def create_partial_function_append(codes, json_reports):
-    append_output = functools.partial(append_results, codes, json_reports)
+def create_execution_complete_callback_function(
+        codes,
+        json_reports,
+):
+    append_output = functools.partial(handle_execution_complete_callback,
+                                      codes,
+                                      json_reports)
+    return append_output
+
+
+def record_test_execution_completed_callback(
+        feature_json_skeleton,
+        parallel_tests_in_execution,
+        future
+):
+    try:
+        future.result()
+        parallel_tests_in_execution.remove(feature_json_skeleton)
+    except:
+        # No action
+        pass
+
+
+def create_record_test_execution_completed_callback_function(
+        feature_json_skeleton,
+        parallel_tests_in_execution
+):
+    append_output = functools.partial(record_test_execution_completed_callback,
+                                      feature_json_skeleton,
+                                      parallel_tests_in_execution)
     return append_output
 
 
