@@ -24,6 +24,7 @@ class GlobalVars:
         self._retried_scenarios = {}
         self._steps_definitions = {}
         self._rerun_failures = False
+        self._progress_bar_data = None
 
     @property
     def execution_path(self):
@@ -64,6 +65,14 @@ class GlobalVars:
     @rerun_failures.setter
     def rerun_failures(self, rerun_failures):
         self._rerun_failures = rerun_failures
+
+    @property
+    def progress_bar_data(self):
+        return self._progress_bar_data
+
+    @progress_bar_data.setter
+    def progress_bar_data(self, progress_bar_data):
+        self._progress_bar_data = progress_bar_data
 
 
 global_vars = GlobalVars()

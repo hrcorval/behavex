@@ -258,9 +258,9 @@ The progress bar is implemented using the **tqdm** library. You can change the p
 
 > [tqdm]
 >
-> bar_format="{l_bar}{bar:10}| {n_fmt}/{total_fmt} [{elapsed}]"
+> bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}]"
 >
-> print_progress_in_new_lines="true"
+> print_progress_updates_in_new_lines="true"
 
 ## Show Your Support
 
