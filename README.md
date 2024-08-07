@@ -254,7 +254,7 @@ Example:
 
 > behavex -t @TAG --parallel-processes 3 --show-progress-bar
 
-The progress bar is implemented using the **tqdm** library. You can change the progress bar format by adding the following setting in the behave configuration file:
+The progress bar is implemented using the **tqdm** library. You can change the progress bar format by adding the following setting to the BehaveX configuration file:
 
 > [tqdm]
 >
