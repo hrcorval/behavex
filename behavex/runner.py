@@ -369,7 +369,7 @@ def launch_by_feature(features, process_pool, lock, show_progress_bar):
         progress_bar_instance = global_vars.progress_bar_data["instance"]
         if progress_bar_instance.n >= progress_bar_instance.total:
             progress_bar_instance.disable = True
-        progress_bar_instance.close()
+            progress_bar_instance.close()
     return execution_codes, json_reports
 
 
@@ -457,7 +457,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, s
         progress_bar_instance = global_vars.progress_bar_data["instance"]
         if progress_bar_instance.n >= progress_bar_instance.total:
             progress_bar_instance.disable = True
-        progress_bar_instance.close()
+            progress_bar_instance.close()
     return execution_codes, json_reports
 
 
@@ -836,12 +836,12 @@ def _get_progress_bar_data(parallel_scheme, total_elements):
     try:
         config = conf_mgr.get_config()
         progress_bar_format = config['tqdm']['bar_format']
-        disable_bar = True if config['tqdm']['print_progress_updates_in_new_lines'] else False
+        print_updates_in_new_lines = True if config['tqdm']['print_progress_updates_in_new_lines'] else False
         progress_bar_description = "Executed {}s".format(parallel_scheme)
         progress_bar_instance = tqdm(desc=progress_bar_description,
                                      bar_format=progress_bar_format,
                                      total=total_elements,
-                                     disable=disable_bar)
+                                     disable=print_updates_in_new_lines)
         progress_bar_data = {"description": progress_bar_description,
                              "bar_format": progress_bar_format,
                              "instance": progress_bar_instance}
