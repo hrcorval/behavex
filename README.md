@@ -262,6 +262,7 @@ The progress bar is implemented using the **tqdm** library. You can change the p
 >
 > print_progress_updates_in_new_lines="true"
 
+By default, the progress bar will print every update in a new line in console, but if you need to get all progress bar updates in the same line, you should set the **print_progress_updates_in_new_lines** configuration parameter to "false".
 ## Show Your Support
 
 **If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.

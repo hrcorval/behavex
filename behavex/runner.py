@@ -369,6 +369,7 @@ def launch_by_feature(features, process_pool, lock, show_progress_bar):
         progress_bar_instance = global_vars.progress_bar_data["instance"]
         if progress_bar_instance.n >= progress_bar_instance.total:
             progress_bar_instance.disable = True
+        progress_bar_instance.close()
     return execution_codes, json_reports
 
 
@@ -456,6 +457,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, s
         progress_bar_instance = global_vars.progress_bar_data["instance"]
         if progress_bar_instance.n >= progress_bar_instance.total:
             progress_bar_instance.disable = True
+        progress_bar_instance.close()
     return execution_codes, json_reports
 
 
