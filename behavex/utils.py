@@ -67,6 +67,7 @@ def append_results(codes, json_reports, progress_bar_data, lock, tuple_values):
                                                                       elapsed=elapsed_time).format(**progress_bar_instance.format_dict)
                     tqdm.write(progress_str, file=sys.stdout)
                 else:
+                    progress_bar_instance.bar_format = progress_bar_data["bar_format"]
                     progress_bar_instance.update(1)
                     if progress_bar_instance.n == progress_bar_instance.total:
                         progress_bar_instance.disable = True
