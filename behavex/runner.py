@@ -841,8 +841,9 @@ def _get_progress_bar_data(parallel_scheme, total_elements):
         progress_bar_instance = tqdm(desc=progress_bar_description,
                                      bar_format=progress_bar_format,
                                      total=total_elements,
-                                     disable=print_updates_in_new_lines)
+                                     disable=True)
         progress_bar_data = {"description": progress_bar_description,
+                             "print_updates_in_new_lines": print_updates_in_new_lines,
                              "bar_format": progress_bar_format,
                              "instance": progress_bar_instance}
     except Exception as ex:

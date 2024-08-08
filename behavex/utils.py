@@ -53,24 +53,21 @@ def append_results(codes, json_reports, progress_bar_data, lock, tuple_values):
         try:
             with lock:
                 progress_bar_instance = global_vars.progress_bar_data["instance"]
-                if progress_bar_instance.disable:
-                    progress_bar_instance.n += 1
-                    progress_bar_instance.last_print_n = progress_bar_instance.n
-                    progress_bar_instance.set_description(f"Progress (Iteration )")
-                    progress_bar_instance.refresh()
-                    elapsed_time = time.time() - ELAPSED_START_TIME
-                    # Manually format the progress bar string using pbar.format_meter
-                    progress_str = progress_bar_instance.format_meter(prefix=progress_bar_data["description"],
-                                                                      n=progress_bar_instance.n,
-                                                                      total=progress_bar_instance.total,
-                                                                      bar_format=progress_bar_data["bar_format"],
-                                                                      elapsed=elapsed_time).format(**progress_bar_instance.format_dict)
+                progress_bar_instance.n += 1
+                progress_bar_instance.last_print_n = progress_bar_instance.n
+                progress_bar_instance.set_description(f"Progress (Iteration )")
+                progress_bar_instance.refresh()
+                elapsed_time = time.time() - ELAPSED_START_TIME
+                # Manually format the progress bar string using pbar.format_meter
+                progress_str = progress_bar_instance.format_meter(prefix=progress_bar_data["description"],
+                                                                  n=progress_bar_instance.n,
+                                                                  total=progress_bar_instance.total,
+                                                                  bar_format=progress_bar_data["bar_format"],
+                                                                  elapsed=elapsed_time).format(**progress_bar_instance.format_dict)
+                if progress_bar_data["print_updates_in_new_lines"]:
                     tqdm.write(progress_str, file=sys.stdout)
                 else:
-                    progress_bar_instance.bar_format = progress_bar_data["bar_format"]
-                    progress_bar_instance.update(1)
-                    if progress_bar_instance.n == progress_bar_instance.total:
-                        progress_bar_instance.disable = True
+                    tqdm.write(progress_str + "\r", file=sys.stdout,  end="")
         except Exception as ex:
             global_vars.progress_bar_data = None
             print("There was an error updating the progress bar: {}".format(ex))
