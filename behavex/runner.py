@@ -25,7 +25,6 @@ from tempfile import gettempdir
 
 from behave import __main__ as behave_script
 from behave.model import Feature, Scenario, ScenarioOutline
-from tqdm import tqdm
 
 # noinspection PyUnresolvedReferences
 import behavex.outputs.report_json
@@ -41,6 +40,7 @@ from behavex.outputs.report_utils import (get_overall_status,
                                           match_for_execution,
                                           pretty_print_time, text,
                                           try_operate_descriptor)
+from behavex.progress_bar import ProgressBar
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
@@ -347,15 +347,17 @@ def launch_by_feature(features, process_pool, lock, show_progress_bar):
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
     if show_progress_bar:
         total_features = len(serial_features) + len(parallel_features)
-        global_vars.progress_bar_data = _get_progress_bar_data(total_elements=total_features)
+        global_vars.progress_bar_instance = _get_progress_bar_instance(total_elements=total_features)
+        if global_vars.progress_bar_instance:
+            global_vars.progress_bar_instance.start()
     if serial_features:
         print_parallel('feature.serial_execution')
         for feature_filename in serial_features:
             execution_code, map_json = execute_tests(None, feature_filename, None, None, True, config=ConfigRun())
             json_reports += [map_json]
             execution_codes.append(execution_code)
-            if global_vars.progress_bar_data:
-                global_vars.progress_bar_data["instance"].update()
+            if global_vars.progress_bar_instance:
+                global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
@@ -363,13 +365,8 @@ def launch_by_feature(features, process_pool, lock, show_progress_bar):
         process_pool.apply_async(
             execute_tests,
             (None, feature_filename, feature_json_skeleton, None, True, ConfigRun()),
-            callback=create_partial_function_append(execution_codes, json_reports, global_vars.progress_bar_data, lock=lock),
+            callback=create_partial_function_append(execution_codes, json_reports, global_vars.progress_bar_instance, lock=lock),
         )
-    if global_vars.progress_bar_data:
-        progress_bar_instance = global_vars.progress_bar_data["instance"]
-        if progress_bar_instance.n >= progress_bar_instance.total:
-            progress_bar_instance.disable = True
-            progress_bar_instance.close()
     return execution_codes, json_reports
 
 
@@ -417,7 +414,9 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, s
                             parallel_scenarios[features_path].append(scenario_information)
                             total_scenarios += 1
     if show_progress_bar:
-        global_vars.progress_bar_data = _get_progress_bar_data(parallel_scheme="scenario", total_elements=total_scenarios)
+        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario", total_elements=total_scenarios)
+        if global_vars.progress_bar_instance:
+            global_vars.progress_bar_instance.start()
     if duplicated_scenarios:
         print_parallel('scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4))
         exit(1)
@@ -439,8 +438,8 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, s
             # execution_codes and json_reports are forced to be of type a list.
             execution_codes += list(map(itemgetter(0), json_serial_reports))
             json_reports += list(map(itemgetter(1), json_serial_reports))
-            if global_vars.progress_bar_data:
-                global_vars.progress_bar_data["instance"].update()
+            if global_vars.progress_bar_instance:
+                global_vars.progress_bar_instance.update()
     print_parallel('scenario.running_parallels')
     for features_path in parallel_scenarios.keys():
         for scenario_information in parallel_scenarios[features_path]:
@@ -451,13 +450,8 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, s
                 execute_tests,
                 args=(features_path, feature_filename, feature_json_skeleton, scenario_name,
                       True, ConfigRun(), lock, shared_removed_scenarios),
-                callback=create_partial_function_append(execution_codes, json_reports, global_vars.progress_bar_data, lock=lock),
+                callback=create_partial_function_append(execution_codes, json_reports, global_vars.progress_bar_instance, lock=lock),
             )
-    if global_vars.progress_bar_data:
-        progress_bar_instance = global_vars.progress_bar_data["instance"]
-        if progress_bar_instance.n >= progress_bar_instance.total:
-            progress_bar_instance.disable = True
-            progress_bar_instance.close()
     return execution_codes, json_reports
 
 
@@ -546,6 +540,8 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     except KeyboardInterrupt:
         process_pool.terminate()
         process_pool.join()
+    if global_vars.progress_bar_instance:
+        global_vars.progress_bar_instance.finish()
     status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
     with open(status_info, 'w') as file_info:
         over_status = {'status': get_overall_status(merged_json)}
@@ -832,24 +828,16 @@ def _get_feature_json_skeleton(behave_element):
     return json_skeleton
 
 
-def _get_progress_bar_data(parallel_scheme, total_elements):
+def _get_progress_bar_instance(parallel_scheme, total_elements):
     try:
         config = conf_mgr.get_config()
-        progress_bar_format = config['tqdm']['bar_format']
-        print_updates_in_new_lines = True if config['tqdm']['print_progress_updates_in_new_lines'] else False
-        progress_bar_description = "Executed {}s".format(parallel_scheme)
-        progress_bar_instance = tqdm(desc=progress_bar_description,
-                                     bar_format=progress_bar_format,
-                                     total=total_elements,
-                                     disable=True)
-        progress_bar_data = {"description": progress_bar_description,
-                             "print_updates_in_new_lines": print_updates_in_new_lines,
-                             "bar_format": progress_bar_format,
-                             "instance": progress_bar_instance}
+        print_updates_in_new_lines = True if config['progress_bar']['print_updates_in_new_lines'] else False
+        progress_bar_prefix = "Executed {}s".format(parallel_scheme)
+        progress_bar_instance = ProgressBar(progress_bar_prefix, total_elements, print_updates_in_new_lines=print_updates_in_new_lines)
     except Exception as ex:
         print("There was an error creating the progress bar: {}".format(ex))
         return None
-    return progress_bar_data
+    return progress_bar_instance
 
 def set_args_captures(args, args_sys):
     for default_arg in ['capture', 'capture_stderr', 'logcapture']:

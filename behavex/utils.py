@@ -23,7 +23,6 @@ from tempfile import gettempdir
 from behave.model import ScenarioOutline
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
-from tqdm import tqdm
 
 from behavex.conf_mgr import get_env, get_param, set_env
 from behavex.execution_singleton import ExecutionSingleton
@@ -32,7 +31,6 @@ from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (get_save_function, get_string_hash,
                                           match_for_execution,
-                                          normalize_filename,
                                           try_operate_descriptor)
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
@@ -46,36 +44,17 @@ LOGGING_LEVELS = {
 ELAPSED_START_TIME = time.time()
 
 
-def append_results(codes, json_reports, progress_bar_data, lock, tuple_values):
+def append_results(codes, json_reports, progress_bar_instance, lock, tuple_values):
     codes.append(tuple_values[0])
     json_reports.append(tuple_values[1])
-    if global_vars.progress_bar_data:
-        try:
-            with lock:
-                progress_bar_instance = global_vars.progress_bar_data["instance"]
-                progress_bar_instance.n += 1
-                progress_bar_instance.last_print_n = progress_bar_instance.n
-                progress_bar_instance.set_description(f"Progress (Iteration )")
-                progress_bar_instance.refresh()
-                elapsed_time = time.time() - ELAPSED_START_TIME
-                # Manually format the progress bar string using pbar.format_meter
-                progress_str = progress_bar_instance.format_meter(prefix=progress_bar_data["description"],
-                                                                  n=progress_bar_instance.n,
-                                                                  total=progress_bar_instance.total,
-                                                                  bar_format=progress_bar_data["bar_format"],
-                                                                  elapsed=elapsed_time).format(**progress_bar_instance.format_dict)
-                if progress_bar_data["print_updates_in_new_lines"]:
-                    tqdm.write(progress_str, file=sys.stdout)
-                else:
-                    tqdm.write(progress_str + "\r", file=sys.stdout,  end="")
-        except Exception as ex:
-            global_vars.progress_bar_data = None
-            print("There was an error updating the progress bar: {}".format(ex))
+    if progress_bar_instance:
+        with lock:
+            progress_bar_instance.update()
     return
 
 
-def create_partial_function_append(codes, json_reports, progress_bar_data, lock):
-    append_output = functools.partial(append_results, codes, json_reports, progress_bar_data, lock)
+def create_partial_function_append(codes, json_reports, progress_bar_instance, lock):
+    append_output = functools.partial(append_results, codes, json_reports, progress_bar_instance, lock)
     return append_output
 
 

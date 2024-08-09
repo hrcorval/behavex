@@ -254,15 +254,12 @@ Example:
 
 > behavex -t @TAG --parallel-processes 3 --show-progress-bar
 
-The progress bar is implemented using the **tqdm** library. You can change the progress bar format by adding the following setting to the BehaveX configuration file:
+In case you are printing logs in the console, you can configure the progress bar to be displayed in a new line on every update, by adding the following setting to the BehaveX configuration file
 
-> [tqdm]
+> [progress_bar]
 >
-> bar_format="{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}]"
->
-> print_progress_updates_in_new_lines="true"
+> print_updates_in_new_lines="true"
 
-By default, the progress bar will print every update in a new line in console, but if you need to get all progress bar updates in the same line, you should set the **print_progress_updates_in_new_lines** configuration parameter to "false".
 ## Show Your Support
 
 **If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.

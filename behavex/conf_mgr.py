@@ -30,9 +30,8 @@ def get_config():
     [output]
     path=string(default="output")
 
-    [tqdm]
-    bar_format=string(default='{l_bar}{bar:20}| {n_fmt}/{total_fmt} [{elapsed}]')
-    print_progress_updates_in_new_lines=boolean(default=True)
+    [progress_bar]
+    print_updates_in_new_lines=boolean(default=True)
 
     [test_run]
     tags_to_skip=string(default="")

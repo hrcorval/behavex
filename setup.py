@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='behavex',
-    version='3.2.9',
+    version='3.2.10',
     python_requires='>=3.5',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',
@@ -22,8 +22,7 @@ setup(
         'jinja2',
         'configobj',
         'htmlmin',
-        'csscompressor',
-        'tqdm',
+        'csscompressor'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
