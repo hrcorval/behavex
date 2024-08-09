@@ -26,8 +26,12 @@ class ProgressBar:
 
     def _print_progress_bar(self, new_line=False):
         prefix = f"{self.prefix}: " if self.prefix else ""
-        percent = 100 * (self.current_iteration / float(self.total))
-        filled_length = int(self.bar_length * self.current_iteration // self.total)
+        if self.total == 0:
+            percent = 100
+            filled_length = int(self.bar_length)
+        else:
+            percent = 100 * (self.current_iteration / float(self.total))
+            filled_length = int(self.bar_length * self.current_iteration // self.total)
         bar = '█' * filled_length + '-' * (self.bar_length - filled_length)
         elapsed_time = time.time() - self.start_time
         elapsed_formatted = time.strftime("%M:%S", time.gmtime(elapsed_time))
