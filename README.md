@@ -244,7 +244,7 @@ To avoid the re-execution to overwrite the previous test report, we suggest to p
 It is important to mention that this argument doesn't work yet with parallel test executions
 
 
-## Display a Progress Bar in Console
+## Display the progress bar in console
 
 When executing tests in parallel, you can display a progress bar in the console to see the progress of the test execution.
 
