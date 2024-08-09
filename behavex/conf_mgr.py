@@ -31,7 +31,7 @@ def get_config():
     path=string(default="output")
 
     [progress_bar]
-    print_updates_in_new_lines=boolean(default=True)
+    print_updates_in_new_lines=boolean(default=False)
 
     [test_run]
     tags_to_skip=string(default="")
