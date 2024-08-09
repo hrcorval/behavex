@@ -1,4 +1,5 @@
-name: Test behavex
+name: Test behavex in latest python versions
+
 
 on: [push, pull_request]
 
@@ -25,4 +26,5 @@ jobs:
           pip install behavex
 
       - name: Verify behavex command
-        run: behavex
+        run: behavex ./tests/features
+

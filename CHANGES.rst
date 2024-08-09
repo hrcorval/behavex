@@ -1,6 +1,21 @@
 Version History
 ===============================================================================
 
+Version: 3.2.12
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Adding a progress bar to the console when running in parallel to better track the execution progress (arguments: -spb or --show-progress-bar)
+* Adding workflow to validate the BehaveX wrapper is properly installed in latest python versions (v3.8 to v3.11)
+* Updated pre-commit hooks to use them in every commit
+* Removing some parameters that are no longer used
+
+FIXES:
+
+* Fixed blank report issue reported in some cases when running tests in parallel
+* Fixed issues when performing a dry-run when there are no features/scenarios tagged as MANUAL
+
+
 Version: 3.2.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
@@ -171,4 +186,3 @@ ENHANCEMENTS:
 DOCUMENTATION:
 
 * Adding HTML report screenshots to documentation
-

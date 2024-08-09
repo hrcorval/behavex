@@ -22,7 +22,7 @@ BehaveX can be used to build testing pipelines from scratch using the same [Beha
   * This is enhanced implementation of Behave's dry run feature, allowing you to see the full list of scenarios in the HTML report without actually executing the tests
 * Re-execute failing test scenarios
   * By just adding the @AUTORETRY tag to test scenarios, so when the first execution fails the scenario is immediately re-executed
-  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically 
+  * Additionally, you can provide the wrapper with a list of previously failing scenarios, which will also be re-executed automatically
 
 ![test execution report](https://github.com/hrcorval/behavex/blob/master/img/html_test_report.png?raw=true)
 
@@ -44,43 +44,43 @@ The execution is performed in the same way as you do when executing Behave from 
 Examples:
 
 >Run scenarios tagged as **TAG_1** but not **TAG_2**:
-> 
+>
 > <pre>behavex -t @TAG_1 -t ~@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1** or **TAG_2**:
-> 
+>
 ><pre>behavex -t @TAG_1,@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **4** parallel processes:
-> 
+>
 ><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
 
 >Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using **2** parallel processes
-> 
+>
 ><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2</pre>
 
 >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
-> 
+>
 ><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2</pre>
 
 >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
-> 
+>
 ><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2</pre>
 
 >Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
-> 
+>
 ><pre>behavex features/feature_1 features/feature_2 --parallel-processes 2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
-> 
+>
 ><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
 
 >Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
-> 
+>
 ><pre>behavex -t @TAG_1 --dry-run</pre>
 
 >Run scenarios tagged as **TAG_1**, generating the execution evidence into the "**exec_evidence**" folder (instead of the default "**output**" folder):
-> 
+>
 ><pre>behavex -t @TAG_1 -o execution_evidence</pre>
 
 
@@ -130,6 +130,8 @@ Also, there might be more arguments that can be supported, it is just a matter o
   * Specifies the number of parallel Behave processes
 * **parallel-scheme** (--parallel-scheme)
   * Performs the parallel test execution by [scenario|feature]
+* **show-progress-bar** (--show-progress-bar)
+  * Displays a progress bar in console while executing the tests in parallel
 
 You can take a look at the provided examples (above in this documentation) to see how to use these arguments.
 
@@ -150,6 +152,8 @@ Examples:
 > behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
 
 > behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature
+
+> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature --show-progress-bar
 
 When the parallel-scheme is set by **feature**, all tests within each feature will be run sequentially.
 
@@ -220,12 +224,12 @@ Tests can be muted by adding the @MUTE tag to each test scenario. This will caus
 
 This tag can be used for flaky scenarios or when the testing infrastructure is not stable at all.
 
-The @AUTORETRY tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails. 
+The @AUTORETRY tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails.
 
 ### Rerun all failed scenarios
 
 Whenever you perform an automated test execution and there are failing scenarios, the **failing_scenarios.txt** file will be created into the execution output folder.
-This file allows you to run all failing scenarios again. 
+This file allows you to run all failing scenarios again.
 
 This can be done by executing the following command:
 
@@ -237,7 +241,24 @@ or
 
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
-It is important to mention that this argument doesn't work yet with parallel test executions 
+It is important to mention that this argument doesn't work yet with parallel test executions
+
+
+## Display a Progress Bar in Console
+
+When executing tests in parallel, you can display a progress bar in the console to see the progress of the test execution.
+
+To enable the progress bar, just add the **--show-progress-bar** argument to the command line.
+
+Example:
+
+> behavex -t @TAG --parallel-processes 3 --show-progress-bar
+
+In case you are printing logs in the console, you can configure the progress bar to be displayed in a new line on every update, by adding the following setting to the BehaveX configuration file
+
+> [progress_bar]
+>
+> print_updates_in_new_lines="true"
 
 ## Show Your Support
 
@@ -246,4 +267,3 @@ It is important to mention that this argument doesn't work yet with parallel tes
 By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
 
 Thank you in advance for your support! We truly appreciate it.
- 

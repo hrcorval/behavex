@@ -8,6 +8,7 @@
 from __future__ import absolute_import, print_function
 
 import codecs
+import copy
 import json
 import logging.config
 import multiprocessing
@@ -18,13 +19,12 @@ import re
 import signal
 import sys
 import time
-import copy
 import traceback
 from operator import itemgetter
 from tempfile import gettempdir
 
 from behave import __main__ as behave_script
-from behave.model import ScenarioOutline, Scenario, Feature
+from behave.model import Feature, Scenario, ScenarioOutline
 
 # noinspection PyUnresolvedReferences
 import behavex.outputs.report_json
@@ -35,38 +35,22 @@ from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
-from behavex.outputs.report_utils import (
-    get_overall_status,
-    match_for_execution,
-    pretty_print_time,
-    text,
-    try_operate_descriptor,
-)
-from behavex.utils import (
-    IncludeNameMatch,
-    IncludePathsMatch,
-    MatchInclude,
-    cleanup_folders,
-    configure_logging,
-    copy_bootstrap_html_generator,
-    create_partial_function_append,
-    explore_features,
-    generate_reports,
-    get_json_results,
-    get_logging_level,
-    join_feature_reports,
-    join_scenario_reports,
-    len_scenarios,
-    print_env_variables,
-    print_parallel,
-    set_behave_tags,
-    set_env_variable,
-    set_environ_config,
-    set_system_paths,
-    get_scenario_tags,
-)
 from behavex.outputs.report_json import generate_execution_info
-
+from behavex.outputs.report_utils import (get_overall_status,
+                                          match_for_execution,
+                                          pretty_print_time, text,
+                                          try_operate_descriptor)
+from behavex.progress_bar import ProgressBar
+from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
+                           cleanup_folders, configure_logging,
+                           copy_bootstrap_html_generator,
+                           create_partial_function_append, explore_features,
+                           generate_reports, get_json_results,
+                           get_logging_level, get_scenario_tags,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
+                           set_behave_tags, set_env_variable,
+                           set_environ_config, set_system_paths)
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -122,7 +106,8 @@ def run(args):
                 os.environ['FEATURES_PATH'] = paths
             else:
                 os.environ['FEATURES_PATH'] = features_path + ',' + paths
-    if os.environ.get('FEATURES_PATH') == '':
+    features_path = os.environ.get('FEATURES_PATH')
+    if features_path == '' or features_path is None:
         os.environ['FEATURES_PATH'] = os.path.join(os.getcwd(), 'features')
     _set_env_variables(args_parsed)
     set_system_paths()
@@ -166,9 +151,15 @@ def launch_behavex():
     json_reports = []
     execution_codes = []
     time_init = time.time()
+    config = conf_mgr.get_config()
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
-    parallel_processes = get_param('parallel_processes')
+    if get_param('dry_run'):
+        parallel_processes = 1
+        show_progress_bar = False
+    else:
+        parallel_processes = get_param('parallel_processes')
+        show_progress_bar = get_param('show_progress_bar')
     multiprocess = (
         True
         if get_param('parallel_processes') > 1 and not get_param('dry_run')
@@ -204,12 +195,12 @@ def launch_behavex():
                                                           config=ConfigRun())
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(
-                updated_features_list, process_pool, lock, shared_removed_scenarios
+                updated_features_list, process_pool, lock, shared_removed_scenarios, show_progress_bar
             )
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(
-                updated_features_list, process_pool
+                updated_features_list, process_pool, lock, show_progress_bar
             )
         wrap_up_process_pools(process_pool, json_reports, multiprocess, scenario)
         time_end = time.time()
@@ -342,7 +333,7 @@ def create_scenario_line_references(features):
     return updated_features
 
 
-def launch_by_feature(features, process_pool):
+def launch_by_feature(features, process_pool, lock, show_progress_bar):
     json_reports = []
     execution_codes = []
     serial_features = []
@@ -354,12 +345,19 @@ def launch_by_feature(features, process_pool):
         else:
             parallel_features.append({"feature_filename": feature.filename,
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
+    if show_progress_bar:
+        total_features = len(serial_features) + len(parallel_features)
+        global_vars.progress_bar_instance = _get_progress_bar_instance(total_elements=total_features)
+        if global_vars.progress_bar_instance:
+            global_vars.progress_bar_instance.start()
     if serial_features:
         print_parallel('feature.serial_execution')
         for feature_filename in serial_features:
             execution_code, map_json = execute_tests(None, feature_filename, None, None, True, config=ConfigRun())
             json_reports += [map_json]
             execution_codes.append(execution_code)
+            if global_vars.progress_bar_instance:
+                global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
@@ -367,17 +365,18 @@ def launch_by_feature(features, process_pool):
         process_pool.apply_async(
             execute_tests,
             (None, feature_filename, feature_json_skeleton, None, True, ConfigRun()),
-            callback=create_partial_function_append(execution_codes, json_reports),
+            callback=create_partial_function_append(execution_codes, json_reports, global_vars.progress_bar_instance, lock=lock),
         )
     return execution_codes, json_reports
 
 
-def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
+def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios, show_progress_bar):
     json_reports = []
     execution_codes = []
     parallel_scenarios = {}
     serial_scenarios = {}
     duplicated_scenarios = {}
+    total_scenarios = 0
     features_with_empty_scenario_descriptions = []
     for features_path, scenarios in features.items():
         for scenario in scenarios:
@@ -402,6 +401,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                             serial_scenarios[features_path] = []
                         if scenario_information not in serial_scenarios[features_path]:
                             serial_scenarios[features_path].append(scenario_information)
+                            total_scenarios += 1
                     else:
                         for key in parallel_scenarios.keys():
                             if scenario_information in parallel_scenarios[key]:
@@ -412,6 +412,11 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                             parallel_scenarios[features_path] = []
                         if parallel_scenarios not in parallel_scenarios[features_path]:
                             parallel_scenarios[features_path].append(scenario_information)
+                            total_scenarios += 1
+    if show_progress_bar:
+        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario", total_elements=total_scenarios)
+        if global_vars.progress_bar_instance:
+            global_vars.progress_bar_instance.start()
     if duplicated_scenarios:
         print_parallel('scenario.duplicated_scenarios', json.dumps(duplicated_scenarios, indent=4))
         exit(1)
@@ -433,7 +438,8 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
             # execution_codes and json_reports are forced to be of type a list.
             execution_codes += list(map(itemgetter(0), json_serial_reports))
             json_reports += list(map(itemgetter(1), json_serial_reports))
-
+            if global_vars.progress_bar_instance:
+                global_vars.progress_bar_instance.update()
     print_parallel('scenario.running_parallels')
     for features_path in parallel_scenarios.keys():
         for scenario_information in parallel_scenarios[features_path]:
@@ -444,7 +450,7 @@ def launch_by_scenario(features, process_pool, lock, shared_removed_scenarios):
                 execute_tests,
                 args=(features_path, feature_filename, feature_json_skeleton, scenario_name,
                       True, ConfigRun(), lock, shared_removed_scenarios),
-                callback=create_partial_function_append(execution_codes, json_reports),
+                callback=create_partial_function_append(execution_codes, json_reports, global_vars.progress_bar_instance, lock=lock),
             )
     return execution_codes, json_reports
 
@@ -534,6 +540,8 @@ def wrap_up_process_pools(process_pool, json_reports, multi_process, scenario=Fa
     except KeyboardInterrupt:
         process_pool.terminate()
         process_pool.join()
+    if global_vars.progress_bar_instance:
+        global_vars.progress_bar_instance.finish()
     status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
     with open(status_info, 'w') as file_info:
         over_status = {'status': get_overall_status(merged_json)}
@@ -819,6 +827,17 @@ def _get_feature_json_skeleton(behave_element):
     json_skeleton = json.dumps(generate_execution_info([feature])[0])
     return json_skeleton
 
+
+def _get_progress_bar_instance(parallel_scheme, total_elements):
+    try:
+        config = conf_mgr.get_config()
+        print_updates_in_new_lines = True if config['progress_bar']['print_updates_in_new_lines'] else False
+        progress_bar_prefix = "Executed {}s".format(parallel_scheme)
+        progress_bar_instance = ProgressBar(progress_bar_prefix, total_elements, print_updates_in_new_lines=print_updates_in_new_lines)
+    except Exception as ex:
+        print("There was an error creating the progress bar: {}".format(ex))
+        return None
+    return progress_bar_instance
 
 def set_args_captures(args, args_sys):
     for default_arg in ['capture', 'capture_stderr', 'logcapture']:

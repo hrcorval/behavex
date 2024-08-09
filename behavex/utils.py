@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from functools import reduce
 from tempfile import gettempdir
 
@@ -28,13 +29,9 @@ from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (
-    get_save_function,
-    match_for_execution,
-    normalize_filename,
-    get_string_hash,
-    try_operate_descriptor,
-)
+from behavex.outputs.report_utils import (get_save_function, get_string_hash,
+                                          match_for_execution,
+                                          try_operate_descriptor)
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
@@ -44,15 +41,20 @@ LOGGING_LEVELS = {
     'error': logging.ERROR,
     'critical': logging.CRITICAL,
 }
+ELAPSED_START_TIME = time.time()
 
 
-def append_results(codes, json_reports, tuple_values):
+def append_results(codes, json_reports, progress_bar_instance, lock, tuple_values):
     codes.append(tuple_values[0])
     json_reports.append(tuple_values[1])
+    if progress_bar_instance:
+        with lock:
+            progress_bar_instance.update()
+    return
 
 
-def create_partial_function_append(codes, json_reports):
-    append_output = functools.partial(append_results, codes, json_reports)
+def create_partial_function_append(codes, json_reports, progress_bar_instance, lock):
+    append_output = functools.partial(append_results, codes, json_reports, progress_bar_instance, lock)
     return append_output
 
 

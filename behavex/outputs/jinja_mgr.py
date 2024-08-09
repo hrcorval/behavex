@@ -20,17 +20,11 @@ import jinja2
 from behavex.conf_mgr import get_env
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (
-    calculate_status,
-    count_by_status,
-    gather_errors,
-    get_error_message,
-    match_for_execution,
-    normalize_filename,
-    get_string_hash,
-    pretty_print_time,
-    resolving_type,
-)
+from behavex.outputs.report_utils import (calculate_status, count_by_status,
+                                          gather_errors, get_error_message,
+                                          get_string_hash, match_for_execution,
+                                          normalize_filename,
+                                          pretty_print_time, resolving_type)
 
 
 class TemplateHandler(metaclass=ExecutionSingleton):
