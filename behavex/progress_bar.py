@@ -22,7 +22,7 @@ class ProgressBar:
     def finish(self, print_if_total_reached=False):
         if print_if_total_reached or self.current_iteration < self.total:
             self.current_iteration = self.total
-            self._print_progress_bar()
+            self._print_progress_bar(new_line=True)
 
     def _print_progress_bar(self, new_line=False):
         prefix = f"{self.prefix}: " if self.prefix else ""
