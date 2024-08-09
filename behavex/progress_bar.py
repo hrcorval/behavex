@@ -13,7 +13,7 @@ class ProgressBar:
 
     def start(self, start_increment=0):
         self.current_iteration = start_increment
-        self._print_progress_bar()
+        self._print_progress_bar(new_line=True)
 
     def update(self, increment=1):
         self.current_iteration += increment
@@ -24,7 +24,7 @@ class ProgressBar:
             self.current_iteration = self.total
             self._print_progress_bar()
 
-    def _print_progress_bar(self):
+    def _print_progress_bar(self, new_line=False):
         prefix = f"{self.prefix}: " if self.prefix else ""
         percent = 100 * (self.current_iteration / float(self.total))
         filled_length = int(self.bar_length * self.current_iteration // self.total)
@@ -32,7 +32,7 @@ class ProgressBar:
         elapsed_time = time.time() - self.start_time
         elapsed_formatted = time.strftime("%M:%S", time.gmtime(elapsed_time))
         progress_bar_content = f"\r{prefix}{percent:.0f}%|{bar}| {self.current_iteration}/{self.total} [{elapsed_formatted}]"
-        if self.print_in_new_lines:
+        if self.print_in_new_lines or new_line:
             print(progress_bar_content)
         else:
             sys.stdout.write(progress_bar_content)
