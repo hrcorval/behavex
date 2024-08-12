@@ -1,5 +1,12 @@
-# BehaveX
 [![Downloads](https://static.pepy.tech/badge/behavex)](https://pepy.tech/project/behavex)
+[![PyPI version](https://badge.fury.io/py/behavex.svg)](https://badge.fury.io/py/behavex)
+[![Python Versions](https://img.shields.io/pypi/pyversions/behavex.svg)](https://pypi.org/project/behavex/)
+[![Dependency Status](https://img.shields.io/librariesio/github/hrcorval/behavex)](https://libraries.io/github/hrcorval/behavex)
+[![License](https://img.shields.io/github/license/hrcorval/behavex.svg)](https://github.com/hrcorval/behavex/blob/main/LICENSE)
+[![Build Status](https://github.com/hrcorval/behavex/actions/workflows/python-package.yml/badge.svg)](https://github.com/hrcorval/behavex/actions)
+[![GitHub last commit](https://img.shields.io/github/last-commit/hrcorval/behavex.svg)](https://github.com/hrcorval/behavex/commits/main)
+
+# BehaveX
 
 BehaveX is a test wrapper on top of Python Behave that provides additional capabilities to improve testing pipelines.
 
@@ -178,7 +185,7 @@ The report is provided to simplify the integration with third party tools, by pr
 
 The wrapper overwrites the existing Behave JUnit reports, just to enable dealing with parallel executions and muted test scenarios
 
-By default, there will be one JUnit file per feature, unless the parallel execution is performed by scenario, in which there will be one JUnit file per scenario.
+By default, there will be one JUnit file per feature, no matter if the parallel execution is performed by feature or scenario.
 
 Reports are available by default at the following path:
 > <output_folder\>/behave/*.xml
@@ -245,7 +252,7 @@ To avoid the re-execution to overwrite the previous test report, we suggest to p
 It is important to mention that this argument doesn't work yet with parallel test executions
 
 
-## Display a Progress Bar in Console
+## Display the progress bar in console
 
 When executing tests in parallel, you can display a progress bar in the console to see the progress of the test execution.
 
