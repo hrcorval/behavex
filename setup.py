@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from setuptools import find_packages, setup
 
+with open('README.md', 'r') as fh:
+    long_description = fh.read()
+
 setup(
     name='behavex',
     version='3.2.13',
@@ -12,6 +15,7 @@ setup(
     include_package_data=True,
     description='Agile test wrapper on top of Behave (BDD).',
     long_description_content_type='text/markdown',
+    long_description=long_description,
     entry_points={
         'console_scripts': [
             'behavex = behavex.runner:main',
