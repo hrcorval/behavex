@@ -1,4 +1,5 @@
 # BehaveX
+[![Downloads](https://static.pepy.tech/badge/behavex)](https://pepy.tech/project/behavex)
 
 BehaveX is a test wrapper on top of Python Behave that provides additional capabilities to improve testing pipelines.
 
