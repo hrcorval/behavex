@@ -35,7 +35,7 @@ class ProgressBar:
         bar = '█' * filled_length + '-' * (self.bar_length - filled_length)
         elapsed_time = time.time() - self.start_time
         elapsed_formatted = time.strftime("%M:%S", time.gmtime(elapsed_time))
-        progress_bar_content = f"\r{prefix}{percent:.0f}%|{bar}| {self.current_iteration}/{self.total} [{elapsed_formatted}]"
+        progress_bar_content = f"\r{prefix}{percent:.0f}%|{bar}| {self.current_iteration}/{self.total} [{elapsed_formatted}]\r"
         if self.print_in_new_lines or new_line:
             print(progress_bar_content)
         else:
