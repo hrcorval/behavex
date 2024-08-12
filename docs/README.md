@@ -8,7 +8,7 @@
 
 # BehaveX
 
-BehaveX is a test wrapper on top of Python Behave that provides additional capabilities to improve testing pipelines.
+BehaveX is a test wrapper on top of Python Behave that provides multiple capabilities to improve testing pipelines.
 
 BehaveX can be used to build testing pipelines from scratch using the same [Behave](https://github.com/behave/behave) framework principles, or to expand the capabilities of Behave-based projects.
 
