@@ -190,7 +190,53 @@ By default, there will be one JUnit file per feature, no matter if the parallel 
 Reports are available by default at the following path:
 > <output_folder\>/behave/*.xml
 
-## Attaching additional execution evidence to test report
+## Attaching images to the HTML report
+
+It is possible to attach images or screenshots to the HTML report, and the images will be displayed in an image gallery linked to the executed scenario.
+
+You can used your own mechanism to capture screenshots or retrieve the images you want to attach to the HTML report, and then call to the **attach_image_file** or **attach_image_binary** methods provided by the wrapper.
+
+The provided methods can be used from the hooks available in the environment.py file, or directly from step definitions to attach images to the HTML report. For example:
+
+* **Example 1**: Attaching an image file from a step definition
+```python
+...
+from behavex_images import image_attachments
+
+@given('I take a screenshot from current page')
+def step_impl(context):
+    image_attachments.attach_image_file(context, 'path/to/image.png')
+```
+
+* **Example 2**: Attaching an image binary from the `after_step` hook in environment.py
+```python
+...
+from behavex_images import image_attachments
+from behavex_images.image_attachments import AttachmentsCondition
+
+def before_all(context):
+    image_attachements.set_attachments_condition(context, AttachmentsCondition.ONLY_ON_FAILURE)
+
+def after_step(context, step):
+    image_attachements.attach_image_binary(context, selenium_driver.get_screenshot_as_png())
+```
+
+By default, the images will be attached to the HTML report only when the test fails. However, you can change this behavior by setting the condition to attach images to the HTML report using the **set_attachments_condition** method.
+
+![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report.png?raw=true)
+
+![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report_2.png?raw=true)
+
+![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report_3.png?raw=true)
+
+For more information, you can check the [behavex-images](https://github.com/abmercado19/behavex-images) library page.
+
+If you are using BehaveX < 3.3.0, you can also attach images to the HTML report, but you need to install the **behavex-images** package. You can install it by executing the following command:
+
+> pip install behavex-images
+
+
+## Attaching additional execution evidence to the HTML report
 
 It is considered a good practice to provide as much as evidence as possible in test executions reports to properly identify the root cause of issues.
 
