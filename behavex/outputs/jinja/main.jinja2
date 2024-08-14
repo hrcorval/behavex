@@ -307,9 +307,9 @@
                                     &nbsp;
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
-                                          <b class="span-behavex">{{ scenario.name |e}}</b>&nbsp;
+                                          <b class="span-behavex">{{scenario.name|e}}</b>
                                         {%- if ('MUTE' in scenario|get_scenario_tags) -%}
-                                            <b class="glyphicon glyphicon-volume-off"
+                                            &nbsp;<b class="glyphicon glyphicon-volume-off"
                                                title="{{ 'report.muted'|get_text }}">
                                             </b>
                                         {%- endif -%}
@@ -402,15 +402,18 @@
 											{%- set path_log_scenario = path_log_scenario|string -%}
                                             {%- set path_img_scenario = path_join(path_log, scenario_hash, 'images.html')-%}
 											{%- set path_img_scenario = path_img_scenario|string -%}
-
                                             {%- if path_log_scenario|path_exist_in_output -%}
-                                                <a href="{{  path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
+                                                <a href="#"
+                                                   data-relative-url="{{ path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
+                                                   onclick="convertToAbsoluteURL(this)"
                                                    charset="utf-8" class="btn btn-info btn-xs" title="View Test Logs"
                                                    data-log>
                                                    <span class="glyphicon glyphicon-zoom-in"></span></a>
                                             {%- endif -%}
                                             {%- if  path_img_scenario|path_exist_in_output -%}
-                                                <a href="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
+                                                <a href="#"
+                                                   data-relative-url="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
+                                                   onclick="convertToAbsoluteURL(this)"
                                                    title="View screenshots"
                                                    class="btn btn-info btn-xs" data-image>
                                                     <span class="glyphicon glyphicon-picture"></span></a>
@@ -556,6 +559,17 @@
                 show_tag(selected);
             }
         });
+
+        function convertToAbsoluteURL(anchor) {
+            var relativeUrl = anchor.getAttribute('data-relative-url');
+
+            // Get the current file's directory as the base path
+            var basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+
+            // Construct the absolute URL
+            var absoluteUrl = basePath + relativeUrl;
+            anchor.href = absoluteUrl;
+        }
 
         function filter_status(status){
             show_all()
