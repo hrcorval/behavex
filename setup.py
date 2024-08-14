@@ -23,6 +23,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
+        'behavex-images'
         'jinja2',
         'configobj',
         'htmlmin',
