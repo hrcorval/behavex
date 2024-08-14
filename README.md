@@ -229,7 +229,7 @@ By default, the images will be attached to the HTML report only when the test fa
 
 ![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report_3.png?raw=true)
 
-For more information, you can check the [behavex-images](https://github.com/abmercado19/behavex-images) library page.
+For more information, you can check the [behavex-images](https://github.com/abmercado19/behavex-images) library, which is already installed with BehaveX 3.3.0 and above.
 
 If you are using BehaveX < 3.3.0, you can also attach images to the HTML report, but you need to install the **behavex-images** package. You can install it by executing the following command:
 
