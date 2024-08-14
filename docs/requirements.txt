@@ -2,5 +2,5 @@ behave==1.2.6
 configobj
 csscompressor
 htmlmin
-jinja2==3.1.4
+jinja2>=3.1.4
 mkdocs>=1.2.3
