@@ -10,11 +10,11 @@
 
 BehaveX is a BDD tesing solution designed to enhance your Behave-based testing workflow by providing additional features and performance improvements. It's particularly beneficial in the following scenarios:
 
-* Accelerating test execution: When you need to significantly reduce test run times through parallel execution by feature or scenario.
-* Enhancing test reporting: When comprehensive and visually appealing HTML and JSON reports are required for in-depth analysis and integration with other tools.
-* Improving test visibility: When detailed evidence, such as screenshots and logs, is essential for understanding test failures and successes.
-* Optimizing test automation: When features like test retries, test muting, and performance metrics are crucial for efficient test maintenance and analysis.
-* Managing complex test suites: When handling large test suites demands advanced features for organization, execution, and reporting.
+* **Accelerating test execution**: When you need to significantly reduce test run times through parallel execution by feature or scenario.
+* **Enhancing test reporting**: When comprehensive and visually appealing HTML and JSON reports are required for in-depth analysis and integration with other tools.
+* **Improving test visibility**: When detailed evidence, such as screenshots and logs, is essential for understanding test failures and successes.
+* **Optimizing test automation**: When features like test retries, test muting, and performance metrics are crucial for efficient test maintenance and analysis.
+* **Managing complex test suites**: When handling large test suites demands advanced features for organization, execution, and reporting.
 
 ## Features provided by BehaveX
 
