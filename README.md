@@ -8,9 +8,13 @@
 
 # BehaveX
 
-BehaveX is a test wrapper on top of Python Behave that provides multiple capabilities to improve testing pipelines.
+BehaveX is a BDD tesing solution designed to enhance your Behave-based testing workflow by providing additional features and performance improvements. It's particularly beneficial in the following scenarios:
 
-BehaveX can be used to build testing pipelines from scratch using the same [Behave](https://github.com/behave/behave) framework principles, or to expand the capabilities of Behave-based projects.
+* Accelerating test execution: When you need to significantly reduce test run times through parallel execution by feature or scenario.
+* Enhancing test reporting: When comprehensive and visually appealing HTML and JSON reports are required for in-depth analysis and integration with other tools.
+* Improving test visibility: When detailed evidence, such as screenshots and logs, is essential for understanding test failures and successes.
+* Optimizing test automation: When features like test retries, test muting, and performance metrics are crucial for efficient test maintenance and analysis.
+* Managing complex test suites: When handling large test suites demands advanced features for organization, execution, and reporting.
 
 ## Features provided by BehaveX
 
