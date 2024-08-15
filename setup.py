@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='3.2.13',
+    version='3.3.0',
     python_requires='>=3.5',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',
@@ -23,6 +23,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
+        'behavex-images',
         'jinja2',
         'configobj',
         'htmlmin',

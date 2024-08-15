@@ -1,6 +1,14 @@
 Version History
 ===============================================================================
 
+Version: 3.3.0
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Enabling BehaveX to attach screenshots to the HTML report (by incorporating the behavex-images library)
+* Improvement in progress bar, to remove any trailing content displayed in console when printing the progress bar
+
+
 Version: 3.2.13
 -------------------------------------------------------------------------------
 ENHANCEMENTS:

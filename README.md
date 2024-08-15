@@ -18,7 +18,9 @@ BehaveX can be used to build testing pipelines from scratch using the same [Beha
   * Execute tests using multiple processes, either by feature or by scenario.
 * Get additional test execution reports
   * Generate friendly HTML reports and JSON reports that can be exported and integrated with third-party tools
-* Provide additional evidence as part of execution reports
+* Provide images/screenshots evidence as part of the HTML report
+  * Include images or screenshots as part of the HTML report in an image gallery linked to the executed scenario
+* Provide additional evidence as part of the HTML report
   * Include any testing evidence by pasting it to a predefined folder path associated with each scenario. This evidence will then be automatically included as part of the HTML report
 * Generate test logs per scenario
   * Any logs generated during test execution using the logging library will automatically be compiled into an individual log report for each scenario
@@ -53,43 +55,43 @@ Examples:
 
 >Run scenarios tagged as **TAG_1** but not **TAG_2**:
 >
-> <pre>behavex -t @TAG_1 -t ~@TAG_2</pre>
+> <pre>behavex -t=@TAG_1 -t=~@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1** or **TAG_2**:
 >
-><pre>behavex -t @TAG_1,@TAG_2</pre>
+><pre>behavex -t=@TAG_1,@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **4** parallel processes:
 >
-><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
+><pre>behavex -t=@TAG_1 --parallel-processes=4 --parallel-scheme=scenario</pre>
 
 >Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using **2** parallel processes
 >
-><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2</pre>
+><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes=2</pre>
 
 >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 >
-><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2</pre>
+><pre>behavex features_folder_1/sample_feature.feature --parallel-processes=2</pre>
 
 >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 >
-><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2</pre>
+><pre>behavex features_folder_1/sample_feature.feature -t=@TAG_1 --parallel-processes=2</pre>
 
 >Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
 >
-><pre>behavex features/feature_1 features/feature_2 --parallel-processes 2</pre>
+><pre>behavex features/feature_1 features/feature_2 --parallel-processes=2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
 >
-><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
+><pre>behavex -t=@TAG_1 --parallel-processes=5 --parallel-scheme=feature</pre>
 
 >Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
 >
-><pre>behavex -t @TAG_1 --dry-run</pre>
+><pre>behavex -t=@TAG_1 --dry-run</pre>
 
 >Run scenarios tagged as **TAG_1**, generating the execution evidence into the "**exec_evidence**" folder (instead of the default "**output**" folder):
 >
-><pre>behavex -t @TAG_1 -o execution_evidence</pre>
+><pre>behavex -t=@TAG_1 -o=execution_evidence</pre>
 
 
 ## Constraints
@@ -153,15 +155,15 @@ BehaveX will be in charge of managing each parallel process, and consolidate all
 Parallel test executions can be performed by **feature** or by **scenario**.
 
 Examples:
-> behavex --parallel-processes 3
+> behavex --parallel-processes=3
 
-> behavex -t @\<TAG\> --parallel-processes 3
+> behavex -t=@\<TAG\> --parallel-processes=3
 
-> behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
+> behavex -t=@\<TAG\> --parallel-processes=2 --parallel-scheme=scenario
 
-> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature
+> behavex -t=@\<TAG\> --parallel-processes=5 --parallel-scheme=feature
 
-> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature --show-progress-bar
+> behavex -t=@\<TAG\> --parallel-processes=5 --parallel-scheme=feature --show-progress-bar
 
 When the parallel-scheme is set by **feature**, all tests within each feature will be run sequentially.
 
@@ -190,7 +192,53 @@ By default, there will be one JUnit file per feature, no matter if the parallel 
 Reports are available by default at the following path:
 > <output_folder\>/behave/*.xml
 
-## Attaching additional execution evidence to test report
+## Attaching images to the HTML report
+
+It is possible to attach images or screenshots to the HTML report, and the images will be displayed in an image gallery linked to the executed scenario.
+
+You can used your own mechanism to capture screenshots or retrieve the images you want to attach to the HTML report, and then call to the **attach_image_file** or **attach_image_binary** methods provided by the wrapper.
+
+The provided methods can be used from the hooks available in the environment.py file, or directly from step definitions to attach images to the HTML report. For example:
+
+* **Example 1**: Attaching an image file from a step definition
+```python
+...
+from behavex_images import image_attachments
+
+@given('I take a screenshot from current page')
+def step_impl(context):
+    image_attachments.attach_image_file(context, 'path/to/image.png')
+```
+
+* **Example 2**: Attaching an image binary from the `after_step` hook in environment.py
+```python
+...
+from behavex_images import image_attachments
+from behavex_images.image_attachments import AttachmentsCondition
+
+def before_all(context):
+    image_attachements.set_attachments_condition(context, AttachmentsCondition.ONLY_ON_FAILURE)
+
+def after_step(context, step):
+    image_attachements.attach_image_binary(context, selenium_driver.get_screenshot_as_png())
+```
+
+By default, the images will be attached to the HTML report only when the test fails. However, you can change this behavior by setting the condition to attach images to the HTML report using the **set_attachments_condition** method.
+
+![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report.png?raw=true)
+
+![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report_2.png?raw=true)
+
+![test execution report](https://github.com/abmercado19/behavex-images/blob/master/behavex_images/img/html_test_report_3.png?raw=true)
+
+For more information, you can check the [behavex-images](https://github.com/abmercado19/behavex-images) library, which is already installed with BehaveX 3.3.0 and above.
+
+If you are using BehaveX < 3.3.0, you can also attach images to the HTML report, but you need to install the **behavex-images** package. You can install it by executing the following command:
+
+> pip install behavex-images
+
+
+## Attaching additional execution evidence to the HTML report
 
 It is considered a good practice to provide as much as evidence as possible in test executions reports to properly identify the root cause of issues.
 
@@ -218,7 +266,7 @@ The HTML report generated as part of the dry run can be used to share the scenar
 
 Example:
 
-> behavex -t @TAG --dry-run
+> behavex -t=@TAG --dry-run
 
 ## Muting test scenarios
 
@@ -241,11 +289,11 @@ This file allows you to run all failing scenarios again.
 
 This can be done by executing the following command:
 
-> behavex -rf ./<OUTPUT_FOLDER\>/failing_scenarios.txt
+> behavex -rf=./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
 or
 
-> behavex --rerun-failures ./<OUTPUT_FOLDER\>/failing_scenarios.txt
+> behavex --rerun-failures=./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
@@ -260,7 +308,7 @@ To enable the progress bar, just add the **--show-progress-bar** argument to the
 
 Example:
 
-> behavex -t @TAG --parallel-processes 3 --show-progress-bar
+> behavex -t=@TAG --parallel-processes=3 --show-progress-bar
 
 In case you are printing logs in the console, you can configure the progress bar to be displayed in a new line on every update, by adding the following setting to the BehaveX configuration file
 
