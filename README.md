@@ -53,43 +53,43 @@ Examples:
 
 >Run scenarios tagged as **TAG_1** but not **TAG_2**:
 >
-> <pre>behavex -t @TAG_1 -t ~@TAG_2</pre>
+> <pre>behavex -t=@TAG_1 -t=~@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1** or **TAG_2**:
 >
-><pre>behavex -t @TAG_1,@TAG_2</pre>
+><pre>behavex -t=@TAG_1,@TAG_2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **4** parallel processes:
 >
-><pre>behavex -t @TAG_1 --parallel-processes 4 --parallel-scheme scenario</pre>
+><pre>behavex -t=@TAG_1 --parallel-processes=4 --parallel-scheme=scenario</pre>
 
 >Run scenarios located at "**features/features_folder_1**" and "**features/features_folder_2**" folders, using **2** parallel processes
 >
-><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes 2</pre>
+><pre>behavex features/features_folder_1 features/features_folder_2 --parallel-processes=2</pre>
 
 >Run scenarios from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 >
-><pre>behavex features_folder_1/sample_feature.feature --parallel-processes 2</pre>
+><pre>behavex features_folder_1/sample_feature.feature --parallel-processes=2</pre>
 
 >Run scenarios tagged as **TAG_1** from "**features_folder_1/sample_feature.feature**" feature file, using **2** parallel processes
 >
-><pre>behavex features_folder_1/sample_feature.feature -t @TAG_1 --parallel-processes 2</pre>
+><pre>behavex features_folder_1/sample_feature.feature -t=@TAG_1 --parallel-processes=2</pre>
 
 >Run scenarios located at "**features/feature_1**" and "**features/feature_2**" folders, using **2** parallel processes
 >
-><pre>behavex features/feature_1 features/feature_2 --parallel-processes 2</pre>
+><pre>behavex features/feature_1 features/feature_2 --parallel-processes=2</pre>
 
 >Run scenarios tagged as **TAG_1**, using **5** parallel processes executing a feature on each process:
 >
-><pre>behavex -t @TAG_1 --parallel-processes 5 --parallel-scheme feature</pre>
+><pre>behavex -t=@TAG_1 --parallel-processes=5 --parallel-scheme=feature</pre>
 
 >Perform a dry run of the scenarios tagged as **TAG_1**, and generate the HTML report:
 >
-><pre>behavex -t @TAG_1 --dry-run</pre>
+><pre>behavex -t=@TAG_1 --dry-run</pre>
 
 >Run scenarios tagged as **TAG_1**, generating the execution evidence into the "**exec_evidence**" folder (instead of the default "**output**" folder):
 >
-><pre>behavex -t @TAG_1 -o execution_evidence</pre>
+><pre>behavex -t=@TAG_1 -o=execution_evidence</pre>
 
 
 ## Constraints
@@ -153,15 +153,15 @@ BehaveX will be in charge of managing each parallel process, and consolidate all
 Parallel test executions can be performed by **feature** or by **scenario**.
 
 Examples:
-> behavex --parallel-processes 3
+> behavex --parallel-processes=3
 
-> behavex -t @\<TAG\> --parallel-processes 3
+> behavex -t=@\<TAG\> --parallel-processes=3
 
-> behavex -t @\<TAG\> --parallel-processes 2 --parallel-scheme scenario
+> behavex -t=@\<TAG\> --parallel-processes=2 --parallel-scheme=scenario
 
-> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature
+> behavex -t=@\<TAG\> --parallel-processes=5 --parallel-scheme=feature
 
-> behavex -t @\<TAG\> --parallel-processes 5 --parallel-scheme feature --show-progress-bar
+> behavex -t=@\<TAG\> --parallel-processes=5 --parallel-scheme=feature --show-progress-bar
 
 When the parallel-scheme is set by **feature**, all tests within each feature will be run sequentially.
 
@@ -264,7 +264,7 @@ The HTML report generated as part of the dry run can be used to share the scenar
 
 Example:
 
-> behavex -t @TAG --dry-run
+> behavex -t=@TAG --dry-run
 
 ## Muting test scenarios
 
@@ -287,11 +287,11 @@ This file allows you to run all failing scenarios again.
 
 This can be done by executing the following command:
 
-> behavex -rf ./<OUTPUT_FOLDER\>/failing_scenarios.txt
+> behavex -rf=./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
 or
 
-> behavex --rerun-failures ./<OUTPUT_FOLDER\>/failing_scenarios.txt
+> behavex --rerun-failures=./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
 To avoid the re-execution to overwrite the previous test report, we suggest to provide a different output folder, using the **-o** or **--output-folder** argument.
 
@@ -306,7 +306,7 @@ To enable the progress bar, just add the **--show-progress-bar** argument to the
 
 Example:
 
-> behavex -t @TAG --parallel-processes 3 --show-progress-bar
+> behavex -t=@TAG --parallel-processes=3 --show-progress-bar
 
 In case you are printing logs in the console, you can configure the progress bar to be displayed in a new line on every update, by adding the following setting to the BehaveX configuration file
 
