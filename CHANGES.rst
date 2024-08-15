@@ -8,9 +8,6 @@ ENHANCEMENTS:
 * Enabling BehaveX to attach screenshots to the HTML report (by incorporating the behavex-images library)
 * Improvement in progress bar, to remove any trailing content displayed in console when printing the progress bar
 
-FIXES:
-* Updated the HTML report to use an absolute url when opening the attached report logs and images, as relative urls were causing issues when opening the report in different browsers
-
 
 Version: 3.2.13
 -------------------------------------------------------------------------------

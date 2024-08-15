@@ -403,17 +403,13 @@
                                             {%- set path_img_scenario = path_join(path_log, scenario_hash, 'images.html')-%}
 											{%- set path_img_scenario = path_img_scenario|string -%}
                                             {%- if path_log_scenario|path_exist_in_output -%}
-                                                <a href="#"
-                                                   data-relative-url="{{ path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
-                                                   onclick="convertToAbsoluteURL(this)"
+                                                <a href="{{ path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    charset="utf-8" class="btn btn-info btn-xs" title="View Test Logs"
                                                    data-log>
                                                    <span class="glyphicon glyphicon-zoom-in"></span></a>
                                             {%- endif -%}
                                             {%- if  path_img_scenario|path_exist_in_output -%}
-                                                <a href="#"
-                                                   data-relative-url="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
-                                                   onclick="convertToAbsoluteURL(this)"
+                                                <a href="{{ path_img_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    title="View screenshots"
                                                    class="btn btn-info btn-xs" data-image>
                                                     <span class="glyphicon glyphicon-picture"></span></a>
@@ -559,17 +555,6 @@
                 show_tag(selected);
             }
         });
-
-        function convertToAbsoluteURL(anchor) {
-            var relativeUrl = anchor.getAttribute('data-relative-url');
-
-            // Get the current file's directory as the base path
-            var basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-
-            // Construct the absolute URL
-            var absoluteUrl = basePath + relativeUrl;
-            anchor.href = absoluteUrl;
-        }
 
         function filter_status(status){
             show_all()

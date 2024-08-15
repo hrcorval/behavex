@@ -18,7 +18,9 @@ BehaveX can be used to build testing pipelines from scratch using the same [Beha
   * Execute tests using multiple processes, either by feature or by scenario.
 * Get additional test execution reports
   * Generate friendly HTML reports and JSON reports that can be exported and integrated with third-party tools
-* Provide additional evidence as part of execution reports
+* Provide images/screenshots evidence as part of the HTML report
+  * Include images or screenshots as part of the HTML report in an image gallery linked to the executed scenario
+* Provide additional evidence as part of the HTML report
   * Include any testing evidence by pasting it to a predefined folder path associated with each scenario. This evidence will then be automatically included as part of the HTML report
 * Generate test logs per scenario
   * Any logs generated during test execution using the logging library will automatically be compiled into an individual log report for each scenario
