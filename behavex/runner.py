@@ -42,15 +42,17 @@ from behavex.outputs.report_utils import (get_overall_status,
                                           pretty_print_time, text,
                                           try_operate_descriptor)
 from behavex.progress_bar import ProgressBar
-from behavex.utils import (
-    IncludeNameMatch, IncludePathsMatch, MatchInclude, cleanup_folders,
-    configure_logging, copy_bootstrap_html_generator,
-    create_execution_complete_callback_function,
-    create_record_test_execution_completed_callback_function, explore_features,
-    generate_reports, get_json_results, get_logging_level, get_scenario_tags,
-    get_text, join_feature_reports, join_scenario_reports, len_scenarios,
-    print_env_variables, print_parallel, set_behave_tags, set_env_variable,
-    set_environ_config, set_system_paths)
+from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
+                           cleanup_folders, configure_logging,
+                           copy_bootstrap_html_generator,
+                           create_execution_complete_callback_function,
+                           explore_features, generate_reports,
+                           get_json_results, get_logging_level,
+                           get_scenario_tags, get_text, join_feature_reports,
+                           join_scenario_reports, len_scenarios,
+                           print_env_variables, print_parallel,
+                           set_behave_tags, set_env_variable,
+                           set_environ_config, set_system_paths)
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -176,7 +178,6 @@ def launch_behavex():
     updated_features_list = create_scenario_line_references(features_list)
     parallel_scheme = '' if not multiprocess else parallel_scheme
     manager = multiprocessing.Manager()
-    parallel_tests_in_execution = manager.list()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     lock = manager.Lock()
@@ -193,23 +194,25 @@ def launch_behavex():
                 all_paths = features_path.split(",")
             else:
                 all_paths = [key for key in updated_features_list]
-            execution_codes, json_reports = execute_tests_in_current_process(features_path=all_paths,
-                                                                             feature_filename=None,
-                                                                             scenario_name=None,
-                                                                             config=config)
+            execution_codes, json_reports = execute_tests(features_path=all_paths,
+                                                          feature_filename=None,
+                                                          feature_json_skeleton=None,
+                                                          scenario_name=None,
+                                                          multiprocess=False,
+                                                          config=config,
+                                                          lock=None,
+                                                          shared_removed_scenarios=None)
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                                process_pool,
                                                                lock,
                                                                shared_removed_scenarios,
-                                                               parallel_tests_in_execution,
                                                                show_progress_bar)
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(updated_features_list,
                                                               process_pool,
                                                               lock,
-                                                              parallel_tests_in_execution,
                                                               show_progress_bar)
         wrap_up_process_pools(process_pool, json_reports, scenario)
         time_end = time.time()
@@ -221,48 +224,19 @@ def launch_behavex():
         remove_temporary_files(parallel_processes, json_reports)
 
         failing_non_muted_tests = False
-        # If there are tests that haven't completed execution, then there was a fatal failure with a number of tests.
-        # Output what failed to complete to help guide the user in what to debug.
-        if len(parallel_tests_in_execution) > 0:
-            output_folder = config.get_env('OUTPUT')
-            if parallel_scheme == 'scenario':
-                print("These scenarios failed to complete for an unknown reason:")
-                scenarios_by_feature = {}
-
-                # Group the scenarios by feature to give a nicer grouping to the output
-                for parallel_test_in_execution in parallel_tests_in_execution:
-                    json_test_configuration = json.loads(parallel_test_in_execution)
-                    if json_test_configuration["filename"] not in scenarios_by_feature:
-                        scenarios_by_feature[json_test_configuration["filename"]] = {
-                            "feature_name": json_test_configuration['filename'],
-                            "scenarios": json_test_configuration['scenarios']
-                        }
-                        scenarios_by_feature[json_test_configuration["filename"]]["scenarios"].extend(
-                            json_test_configuration['scenarios'])
-
-                for feature_filename, scenarios in scenarios_by_feature.items():
-                    print(f"    Feature name: {scenarios['feature_name']}. Feature file: {feature_filename}")
-                    for scenario in scenarios["scenarios"]:
-                        print(f"        Scenario name: {scenario['name']}")
-                        behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
-                        print(f"            Behave log for scenario: {behave_log_file}")
-            elif parallel_scheme == 'feature':
-                print("These features failed to complete for an unknown reason:")
-                for parallel_test_in_execution in parallel_tests_in_execution:
-                    json_test_configuration = json.loads(parallel_test_in_execution)
-                    print(f"    Feature name: {json_test_configuration['name']}. Feature file: {json_test_configuration['filename']}")
-                    behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
-                    print(f"        Behave log for feature: {behave_log_file}")
+        # TODO: Replace logs below with test execution logs when an unexpected error occurs
+        # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
+        # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
         results = get_json_results()
         totals = {"features": {"passed": 0, "failed": 0, "skipped": 0},
                   "scenarios": {"passed": 0, "failed": 0, "skipped": 0}}
         if results:
             failures = {}
             for feature in results['features']:
+                filename = feature['filename']
+                failures[filename] = []
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                    filename = feature['filename']
-                    failures[filename] = []
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
                 else:
@@ -376,7 +350,6 @@ def create_scenario_line_references(features):
 def launch_by_feature(features,
                       process_pool,
                       lock,
-                      parallel_tests_in_execution,
                       show_progress_bar):
     json_reports = []
     execution_codes = []
@@ -385,7 +358,8 @@ def launch_by_feature(features,
     for features_path in features:
         feature = features[features_path][0].feature
         if 'SERIAL' in feature.tags:
-            serial_features.append(feature.filename)
+            serial_features.append({"feature_filename": feature.filename,
+                                    "feature_json_skeleton": _get_feature_json_skeleton(feature)})
         else:
             parallel_features.append({"feature_filename": feature.filename,
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
@@ -396,12 +370,15 @@ def launch_by_feature(features,
             global_vars.progress_bar_instance.start()
     if serial_features:
         print_parallel('feature.serial_execution')
-        for feature_filename in serial_features:
-            execution_code, map_json = execute_tests_in_current_process(features_path=None,
-                                                                        feature_filename=feature_filename,
-                                                                        feature_json_skeleton=None,
-                                                                        scenario_name=None,
-                                                                        config=ConfigRun())
+        for serial_feature in serial_features:
+            execution_code, map_json = execute_tests(features_path=None,
+                                                     feature_filename=serial_feature["feature_filename"],
+                                                     feature_json_skeleton=serial_feature["feature_json_skeleton"],
+                                                     scenario_name=None,
+                                                     multiprocess=True,
+                                                     config=ConfigRun(),
+                                                     lock=None,
+                                                     shared_removed_scenarios=None)
             json_reports += [map_json]
             execution_codes.append(execution_code)
             if global_vars.progress_bar_instance:
@@ -411,13 +388,15 @@ def launch_by_feature(features,
         feature_filename = parallel_feature["feature_filename"]
         feature_json_skeleton = parallel_feature["feature_json_skeleton"]
         future = process_pool.submit(
-            execute_tests_in_subprocess,
+            execute_tests,
             None,
-            parallel_tests_in_execution,
             feature_filename,
             feature_json_skeleton,
             None,
-            ConfigRun()
+            True,
+            ConfigRun(),
+            lock,
+            None
         )
 
         future.add_done_callback(create_execution_complete_callback_function(
@@ -425,10 +404,7 @@ def launch_by_feature(features,
             json_reports,
             global_vars.progress_bar_instance,
         ))
-        future.add_done_callback(create_record_test_execution_completed_callback_function(
-            parallel_feature,
-            feature_json_skeleton
-        ))
+
     return execution_codes, json_reports
 
 
@@ -436,7 +412,6 @@ def launch_by_scenario(features,
                        process_pool,
                        lock,
                        shared_removed_scenarios,
-                       parallel_tests_in_execution,
                        show_progress_bar):
     json_reports = []
     execution_codes = []
@@ -492,91 +467,44 @@ def launch_by_scenario(features,
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
         for features_path, scenarios_in_feature in serial_scenarios.items():
-            json_serial_reports = [
-                execute_tests_in_current_process(features_path=features_path,
-                                                 feature_filename=scenario_information["feature_filename"],
-                                                 feature_json_skeleton=scenario_information["feature_json_skeleton"],
-                                                 scenario_name=scenario_information["scenario_name"],
-                                                 config=ConfigRun(),
-                                                 shared_removed_scenarios=shared_removed_scenarios)
-                for scenario_information in scenarios_in_feature
-            ]
-            execution_codes += list(map(itemgetter(0), json_serial_reports))
-            json_reports += list(map(itemgetter(1), json_serial_reports))
-            if global_vars.progress_bar_instance:
-                global_vars.progress_bar_instance.update()
-    print_parallel('scenario.running_parallels')
-    for features_path in parallel_scenarios.keys():
-        for scenario_information in parallel_scenarios[features_path]:
-            feature_filename = scenario_information["feature_filename"]
-            feature_json_skeleton = scenario_information["feature_json_skeleton"]
-            scenario_name = scenario_information["scenario_name"]
-            future = process_pool.submit(
-                execute_tests_in_subprocess,
-                features_path,
-                parallel_tests_in_execution,
-                feature_filename,
-                feature_json_skeleton,
-                scenario_name,
-                ConfigRun(),
-                lock,
-                shared_removed_scenarios
-            )
-            future.add_done_callback(create_execution_complete_callback_function(
-                execution_codes,
-                json_reports,
-                global_vars.progress_bar_instance
-            ))
-            future.add_done_callback(create_record_test_execution_completed_callback_function(
-                feature_json_skeleton,
-                parallel_tests_in_execution
-            ))
+            json_serial_reports = []
+            for scenario_information in scenarios_in_feature:
+                execution_code, json_report = execute_tests(features_path=features_path,
+                                                            feature_filename=scenario_information["feature_filename"],
+                                                            feature_json_skeleton=scenario_information["feature_json_skeleton"],
+                                                            scenario_name=scenario_information["scenario_name"],
+                                                            multiprocess=True,
+                                                            config=ConfigRun(),
+                                                            lock=None,
+                                                            shared_removed_scenarios=None)
+                execution_codes.append(execution_code)
+                json_reports.append(json_report)
+                if global_vars.progress_bar_instance:
+                    global_vars.progress_bar_instance.update()
+    if parallel_scenarios:
+        print_parallel('scenario.running_parallels')
+        for features_path in parallel_scenarios.keys():
+            for scenario_information in parallel_scenarios[features_path]:
+                feature_filename = scenario_information["feature_filename"]
+                feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                scenario_name = scenario_information["scenario_name"]
+                future = process_pool.submit(
+                    execute_tests,
+                    features_path,
+                    feature_filename,
+                    feature_json_skeleton,
+                    scenario_name,
+                    True,
+                    ConfigRun(),
+                    lock,
+                    shared_removed_scenarios
+                )
+                future.add_done_callback(create_execution_complete_callback_function(
+                    execution_codes,
+                    json_reports,
+                    global_vars.progress_bar_instance
+                ))
     return execution_codes, json_reports
-
-
-def execute_tests_in_subprocess(
-        features_path,
-        parallel_tests_in_execution,
-        feature_filename=None,
-        feature_json_skeleton=None,
-        scenario_name=None,
-        config=None,
-        lock=None,
-        shared_removed_scenarios=None
-):
-    parallel_tests_in_execution.append(feature_json_skeleton)
-
-    return execute_tests(
-        features_path=features_path,
-        feature_filename=feature_filename,
-        feature_json_skeleton=feature_json_skeleton,
-        scenario_name=scenario_name,
-        multiprocess=True,
-        config=config,
-        lock=lock,
-        shared_removed_scenarios=shared_removed_scenarios,
-    )
-
-
-def execute_tests_in_current_process(
-        features_path,
-        feature_filename=None,
-        feature_json_skeleton=None,
-        scenario_name=None,
-        config=None,
-        lock=None,
-        shared_removed_scenarios=None
-):
-    return execute_tests(
-        features_path=features_path,
-        feature_filename=feature_filename,
-        feature_json_skeleton=feature_json_skeleton,
-        scenario_name=scenario_name,
-        multiprocess=False,
-        config=config,
-        lock=lock,
-        shared_removed_scenarios=shared_removed_scenarios,
-    )
 
 
 def execute_tests(
@@ -607,6 +535,7 @@ def execute_tests(
     execution_code, generate_report = _launch_behave(behave_args)
     # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
     if generate_report:
+        # print execution code
         if execution_code == 2:
             if feature_json_skeleton:
                 json_output = {'environment': [], 'features': [json.loads(feature_json_skeleton)], 'steps_definition': []}

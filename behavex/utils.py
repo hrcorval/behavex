@@ -70,29 +70,6 @@ def create_execution_complete_callback_function(codes,
     return append_output
 
 
-def record_test_execution_completed_callback(
-        feature_json_skeleton,
-        parallel_tests_in_execution,
-        future
-):
-    try:
-        future.result()
-        parallel_tests_in_execution.remove(feature_json_skeleton)
-    except: # isort:skip
-        # No action
-        print("no action required")
-
-
-def create_record_test_execution_completed_callback_function(
-        feature_json_skeleton,
-        parallel_tests_in_execution
-):
-    append_output = functools.partial(record_test_execution_completed_callback,
-                                      feature_json_skeleton,
-                                      parallel_tests_in_execution)
-    return append_output
-
-
 def get_logging_level():
     if get_param('logging_level'):
         log_level = get_param('logging_level')
