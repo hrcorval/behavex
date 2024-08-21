@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='3.3.0',
+    version='4.0.1rc1',
     python_requires='>=3.5',
     author='Hernan Rey',
     author_email='behavex_users@googlegroups.com',

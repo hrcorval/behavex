@@ -1,6 +1,16 @@
 Version History
 ===============================================================================
 
+Version: 4.0.1
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Changing core implementation to perform parallel executions, by using **concurrent.futures.ProcessPoolExecutor** instead of **multiprocessing.Pool**. This change was done to avoid BehaveX to crash when running in parallel and a test scenario crashes.  `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_
+* Improvement in progress bar, to create a new line after the progress bar is completed
+
+FIXES:
+* Fixed issue when running tests in parallel, as the HTML report was not generated when a scenario crashed, causing BehaveX execution to hang
+
 Version: 3.3.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
