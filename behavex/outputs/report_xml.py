@@ -60,7 +60,6 @@ def _export_feature_to_xml(feature, isobject=True):
         for scenario in scenarios
         if get_status(scenario) == Status.failed or get_status(scenario) == Status.untested
     ]
-
     muted = [
         scenario
         for scenario in scenarios

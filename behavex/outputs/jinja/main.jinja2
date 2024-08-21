@@ -300,6 +300,8 @@
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
                         {%- set scenario_tags = scenario|get_scenario_tags -%}
+                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested')) else False -%}
+                        {%- set scenario_crashed = True if (scenario.status == 'failed' and not scenario.error_background and not scenario.error_step) else False -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario_tags|to_string_list }}">
                             <td class="text-left grey-behavex">
@@ -334,8 +336,15 @@
                                                 {%- endif -%}
                                             {%- endfor -%}
                                         </ul>
-                                    {% endif %}
-                                    {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
+                                    {%- endif -%}
+                                    {%- if scenario_crashed -%}
+                                        <br>
+                                        <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
+                                            <span class="glyphicon glyphicon-warning-sign"></span>
+                                            <b>{{ scenario.error_msg }}</b>
+                                            <br>
+                                        <hr class='line-behavex-background'>
+                                    {%- elif scenario_background_failed -%}
                                         <br>
                                         <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
                                             <span class="glyphicon glyphicon-warning-sign"></span>
@@ -402,7 +411,7 @@
 											{%- set path_log_scenario = path_log_scenario|string -%}
                                             {%- set path_img_scenario = path_join(path_log, scenario_hash, 'images.html')-%}
 											{%- set path_img_scenario = path_img_scenario|string -%}
-                                            {%- if path_log_scenario|path_exist_in_output -%}
+                                            {%- if path_log_scenario|path_exist_in_output and not scenario_crashed -%}
                                                 <a href="{{ path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    charset="utf-8" class="btn btn-info btn-xs" title="View Test Logs"
                                                    data-log>

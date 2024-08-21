@@ -44,17 +44,52 @@ LOGGING_LEVELS = {
 ELAPSED_START_TIME = time.time()
 
 
-def append_results(codes, json_reports, progress_bar_instance, lock, tuple_values):
-    codes.append(tuple_values[0])
-    json_reports.append(tuple_values[1])
+def handle_execution_complete_callback(codes,
+                                       json_reports,
+                                       progress_bar_instance,
+                                       future):
+    tuple_values = None
+    try:
+        tuple_values = future.result()
+    except: # isort:skip
+        json_reports += []
+        codes.append(1)
+    if tuple_values:
+        execution_code, map_json = tuple_values
+        json_reports += [map_json]
+        codes.append(execution_code)
     if progress_bar_instance:
-        with lock:
-            progress_bar_instance.update()
-    return
+        progress_bar_instance.update()
 
 
-def create_partial_function_append(codes, json_reports, progress_bar_instance, lock):
-    append_output = functools.partial(append_results, codes, json_reports, progress_bar_instance, lock)
+def create_execution_complete_callback_function(codes,
+                                                json_reports,
+                                                progress_bar_instance):
+    append_output = functools.partial(handle_execution_complete_callback,
+                                      codes, json_reports, progress_bar_instance)
+    return append_output
+
+
+def record_test_execution_completed_callback(
+        feature_json_skeleton,
+        parallel_tests_in_execution,
+        future
+):
+    try:
+        future.result()
+        parallel_tests_in_execution.remove(feature_json_skeleton)
+    except: # isort:skip
+        # No action
+        print("no action required")
+
+
+def create_record_test_execution_completed_callback_function(
+        feature_json_skeleton,
+        parallel_tests_in_execution
+):
+    append_output = functools.partial(record_test_execution_completed_callback,
+                                      feature_json_skeleton,
+                                      parallel_tests_in_execution)
     return append_output
 
 

@@ -25,6 +25,7 @@
 {%- macro print_scenario(scenario) -%}
 {%- set scenario_tags = scenario|get_scenario_tags-%}
 {%- set is_muted = ('MUTE' in scenario_tags and scenario.status == 'failed')-%}
+{%- set scenario_crashed = True if (scenario.status == 'failed' and not scenario.error_background and not scenario.error_step) else False -%}
 {%- set errors_step = 0-%}
         {%- for step in scenario.steps -%}
             {%- set errors_step = errors_step + (0 if step.error_message else 1) -%}
@@ -32,7 +33,11 @@
         <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ scenario.status if not is_muted else 'skipped'}}"
          classname={{scenario.feature.name|normalize|CIXC|quoteattr|safe }}>
             {%- set steps_with_exception = scenario.steps|get_list_exception_steps(scenario._background_steps) -%}
-            {%- if steps_with_exception and 'MUTE' not in scenario_tags -%}
+            {%- if scenario_crashed -%}
+                    <failure type=Exception message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
+                        <![CDATA[ {{ scenario.error_msg }} ]]>
+                    </failure>
+            {%- elif steps_with_exception and 'MUTE' not in scenario_tags -%}
                 {%- for step in steps_with_exception -%}
                     <failure type={{ step.exception.__class__.__name__ |normalize|CIXC|quoteattr|safe}} message={{step.exception.message|get_error_message|CIXC|quoteattr|safe }}>
                         <![CDATA[ Failing step: {{step|print_step|safe}} Location:{{step.filename|normalize|safe}}
