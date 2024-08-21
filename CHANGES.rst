@@ -10,6 +10,7 @@ ENHANCEMENTS:
 
 FIXES:
 * Fixed issue when running tests in parallel, as the HTML report was not generated when a scenario crashed, causing BehaveX execution to hang
+* Improvement in JUnit reports to indicate scenarios that unexpectedly crashed during execution as "failed" instead of "skipped"
 
 Version: 3.3.0
 -------------------------------------------------------------------------------
