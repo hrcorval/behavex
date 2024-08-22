@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.0.1rc2',
+    version='4.0.1rc3',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',
@@ -32,7 +32,7 @@ setup(
         'csscompressor'
     ],
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

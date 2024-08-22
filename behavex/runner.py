@@ -600,7 +600,8 @@ def execute_tests(
         ExecutionSingleton._instances[ConfigRun] = config
     extend_behave_hooks()
     try:
-        # Execution ID is only important for multiprocessing so that we can influence where output files end up
+        # Execution ID is only important for multiprocessing so that
+        # we can influence where output files end up
         execution_id = json.loads(feature_json_skeleton or '{}').get('id')
         behave_args = _set_behave_arguments(features_path=features_path,
                                             multiprocess=multiprocess,
@@ -687,8 +688,6 @@ def _launch_behave(behave_args):
     generate_report = True
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
-        if os.path.exists(stdout_file):
-            os.remove(stdout_file)
         execution_code = behave_script.main(behave_args)
         if not os.path.exists(stdout_file):
             # Code 2 means the execution crashed and test was not properly executed
@@ -706,6 +705,10 @@ def _launch_behave(behave_args):
     except:
         execution_code = 2
         generate_report = True
+    if os.path.exists(stdout_file):
+        with open(os.path.join(get_env('OUTPUT'), 'merged_behave_logs.log'), 'a+') as behave_log_file:
+            behave_log_file.write(open(stdout_file, 'r').read())
+        os.remove(stdout_file)
     return execution_code, generate_report
 
 
@@ -771,13 +774,11 @@ def remove_temporary_files(parallel_processes, json_reports):
             except Exception as remove_ex:
                 print(remove_ex)
 
-    path_behavex_logs = os.path.join(os.path.join(get_env('OUTPUT'), 'behavex', 'logs'))
-    if os.path.exists(path_behavex_logs):
-        for filename in os.listdir(path_behavex_logs):
+        path_stdout = os.path.join(gettempdir(), 'stdout{}.txt'.format(i + 1))
+        if os.path.exists(path_stdout):
             try:
-                file_path = os.path.join(path_behavex_logs, filename)
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
+                os.chmod(path_stdout, 511)  # nosec
+                os.remove(path_stdout)
             except Exception as remove_ex:
                 print(remove_ex)
 
@@ -992,11 +993,9 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                     scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
             arguments.append('--name')
             arguments.append("{}".format(scenario_outline_compatible))
-        # Need a unique path for behave, otherwise if there are multiple processes then it'll error if the
-        # directory exists
-        output_id = str(execution_id) if execution_id else multiprocessing.current_process().name.split('-')[-1]
+        name = multiprocessing.current_process().name.split('-')[-1]
         arguments.append('--outfile')
-        arguments.append(os.path.join(output_folder, 'behavex', 'logs', output_id, 'behave.log'))
+        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
     else:
         if type(features_path) is list:
             for feature_path in features_path:
