@@ -706,7 +706,7 @@ def _launch_behave(behave_args):
         execution_code = 2
         generate_report = True
     if os.path.exists(stdout_file):
-        with open(os.path.join(get_env('OUTPUT'), 'merged_behave_logs.log'), 'a+') as behave_log_file:
+        with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
             behave_log_file.write(open(stdout_file, 'r').read())
         os.remove(stdout_file)
     return execution_code, generate_report
