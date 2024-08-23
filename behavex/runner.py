@@ -25,6 +25,7 @@ import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 
 from behave import __main__ as behave_script
@@ -257,9 +258,11 @@ def launch_behavex():
         results = get_json_results()
         totals = {"features": {"passed": 0, "failed": 0, "skipped": 0},
                   "scenarios": {"passed": 0, "failed": 0, "skipped": 0}}
+        processed_feature_filenames = []
         if results:
             failures = {}
             for feature in results['features']:
+                processed_feature_filenames.append(feature['filename'])
                 filename = feature['filename']
                 failures[filename] = []
                 if feature['status'] == 'failed':
@@ -280,6 +283,11 @@ def launch_behavex():
                         totals['scenarios']['passed'] += 1
                     else:
                         totals['scenarios']['skipped'] += 1
+            if shared_removed_scenarios:
+                for feature_path in shared_removed_scenarios.keys():
+                    if feature_path not in processed_feature_filenames:
+                        totals['features']['skipped'] += 1
+                    totals['scenarios']['skipped'] += shared_removed_scenarios[feature_path]
             if failures:
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
@@ -539,7 +547,7 @@ def launch_by_scenario(features,
                                                             multiprocess=True,
                                                             config=ConfigRun(),
                                                             lock=None,
-                                                            shared_removed_scenarios=None)
+                                                            shared_removed_scenarios=shared_removed_scenarios)
                 execution_codes.append(execution_code)
                 json_reports.append(json_report)
                 if global_vars.progress_bar_instance:
@@ -830,7 +838,7 @@ def processing_xml_feature(json_output, scenario, feature_filename, lock=None, s
         feature_contains_scenarios = True if (json_output['features'] and
                                               'scenarios' in json_output['features'][0] and
                                               json_output['features'][0]["scenarios"]) else False
-        if shared_removed_scenarios is not None and not feature_contains_scenarios:
+        if type(shared_removed_scenarios) == DictProxy and not feature_contains_scenarios:
             # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in execution
             if feature_filename not in shared_removed_scenarios:
                 shared_removed_scenarios[feature_filename] = 1
@@ -838,25 +846,25 @@ def processing_xml_feature(json_output, scenario, feature_filename, lock=None, s
                 shared_removed_scenarios[feature_filename] += 1
         if feature_contains_scenarios:
             reported_scenarios = json_output['features'][0]['scenarios']
-            executed_scenario = []
+            executed_scenarios = []
             for reported_scenario in reported_scenarios:
                 reported_name = reported_scenario['name']
                 if reported_name == scenario or ('@' in reported_name and
                                                  scenario_name_matching(scenario, reported_name)):
-                    executed_scenario.append(reported_scenario)
-            json_output['features'][0]['scenarios'] = executed_scenario
+                    executed_scenarios.append(reported_scenario)
+            json_output['features'][0]['scenarios'] = executed_scenarios
             feature_name = os.path.join(
                 get_env('OUTPUT'), u'{}.tmp'.format(os.path.basename(feature_filename))
             )
             processed_feature_data = json_output['features'][0]
-            processed_feature_data['scenarios'] = executed_scenario
+            processed_feature_data['scenarios'] = executed_scenarios
             if os.path.exists(feature_name):
                 for _ in range(0, 10):
                     try:
                         processed_feature_data = json.load(open(feature_name, 'r'))
                         with open(feature_name, 'w') as feature_file:
-                            for scen in executed_scenario:
-                                processed_feature_data['scenarios'].append(scen)
+                            for executed_scenario in executed_scenarios:
+                                processed_feature_data['scenarios'].append(executed_scenario)
                             json.dump(processed_feature_data, feature_file)
                         break
                     except Exception as ex:
