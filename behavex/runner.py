@@ -256,8 +256,8 @@ def launch_behavex():
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
         results = get_json_results()
-        totals = {"features": {"passed": 0, "failed": 0, "skipped": 0},
-                  "scenarios": {"passed": 0, "failed": 0, "skipped": 0}}
+        totals = {"features": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0},
+                  "scenarios": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0}}
         processed_feature_filenames = []
         if results:
             failures = {}
@@ -269,6 +269,8 @@ def launch_behavex():
                     totals['features']['failed'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
+                elif feature['status'] == 'untested':
+                    totals['features']['untested'] += 1
                 else:
                     totals['features']['skipped'] += 1
                     totals['scenarios']['skipped'] += len(feature['scenarios'])
@@ -281,13 +283,10 @@ def launch_behavex():
                             failing_non_muted_tests = True
                     elif scenario['status'] == 'passed':
                         totals['scenarios']['passed'] += 1
+                    elif scenario['status'] == 'untested':
+                        totals['scenarios']['untested'] += 1
                     else:
                         totals['scenarios']['skipped'] += 1
-            if shared_removed_scenarios:
-                for feature_path in shared_removed_scenarios.keys():
-                    if feature_path not in processed_feature_filenames:
-                        totals['features']['skipped'] += 1
-                    totals['scenarios']['skipped'] += shared_removed_scenarios[feature_path]
             if failures:
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
@@ -306,15 +305,22 @@ def launch_behavex():
         process_pool.shutdown(wait=False, cancel_futures=True)
         exit_code = 1
     if multiprocess:
+        untested_features = totals['features']['untested']
+        untested_scenarios = totals['scenarios']['untested']
+        untested_features_msg = ', {} untested'.format(untested_features) if untested_features > 0 else ''
+        untested_scenarios_msg = ', {} untested'.format(untested_scenarios) if untested_scenarios > 0 else ''
         def plural_char(n): return 's' if n != 1 else ''
-        print('\n{} feature{} passed, {} failed, {} skipped (*)'.format(totals['features']['passed'],
+        print('\n{} feature{} passed, {} failed, {} skipped{}'.format(totals['features']['passed'],
                                                                         plural_char(totals['features']['passed']),
                                                                         totals['features']['failed'],
-                                                                        totals['features']['skipped']))
-        print('{} scenario{} passed, {} failed, {} skipped (*)'.format(totals['scenarios']['passed'],
+                                                                        totals['features']['skipped'],
+                                                                        untested_features_msg))
+        print('{} scenario{} passed, {} failed, {} skipped{}'.format(totals['scenarios']['passed'],
                                                                        plural_char(totals['scenarios']['passed']),
                                                                        totals['scenarios']['failed'],
-                                                                       totals['scenarios']['skipped']))
+                                                                       totals['scenarios']['skipped'],
+                                                                       untested_scenarios_msg))
+        # TODO: print steps execution summary ('{} steps passed, {} failed, {} skipped{}, {} untested')
         print('Took: {}'.format(pretty_print_time(global_vars.execution_end_time - global_vars.execution_start_time)))
     if results and results['features']:
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
@@ -454,18 +460,15 @@ def launch_by_feature(features,
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
         feature_json_skeleton = parallel_feature["feature_json_skeleton"]
-        future = process_pool.submit(
-            execute_tests,
-            None,
-            feature_filename,
-            feature_json_skeleton,
-            None,
-            True,
-            ConfigRun(),
-            lock,
-            None
-        )
-
+        future = process_pool.submit(execute_tests,
+                                     features_path=None,
+                                     feature_filename=feature_filename,
+                                     feature_json_skeleton=feature_json_skeleton,
+                                     scenario_name=None,
+                                     multiprocess=True,
+                                     config=ConfigRun(),
+                                     lock=lock,
+                                     shared_removed_scenarios=None)
         future.add_done_callback(create_execution_complete_callback_function(
             execution_codes,
             json_reports,
@@ -559,17 +562,16 @@ def launch_by_scenario(features,
                 feature_filename = scenario_information["feature_filename"]
                 feature_json_skeleton = scenario_information["feature_json_skeleton"]
                 scenario_name = scenario_information["scenario_name"]
-                future = process_pool.submit(
-                    execute_tests,
-                    features_path,
-                    feature_filename,
-                    feature_json_skeleton,
-                    scenario_name,
-                    True,
-                    ConfigRun(),
-                    lock,
-                    shared_removed_scenarios
-                )
+                future = process_pool.submit(execute_tests,
+                                             features_path=features_path,
+                                             feature_filename=feature_filename,
+                                             feature_json_skeleton=feature_json_skeleton,
+                                             scenario_name=scenario_name,
+                                             multiprocess=True,
+                                             config=ConfigRun(),
+                                             lock=lock,
+                                             shared_removed_scenarios=shared_removed_scenarios
+                                             )
                 future.add_done_callback(create_execution_complete_callback_function(
                     execution_codes,
                     json_reports,
@@ -649,6 +651,9 @@ def execute_tests(
             json_output['features'] = filter_feature_executed(json_output,
                                                               text(feature_filename),
                                                               scenario_name)
+            if len(json_output['features'][0]['scenarios']) == 0:
+                # Adding scenario data if the test was removed from the execution (setting it as "Untested")
+                json_output['features'] = [json.loads(feature_json_skeleton)]
             try:
                 processing_xml_feature(json_output=json_output,
                                        scenario=scenario_name,

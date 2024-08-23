@@ -370,7 +370,7 @@
                                 {%- if "MANUAL" in scenario_tags -%}
                                     <p class="text-center">Manual</p>
                                     </td>
-                                    <td>&nbsp;&nbsp;Not&nbsp;Run</td>
+                                    <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
@@ -378,7 +378,7 @@
                                 {%- elif "WIP" in scenario_tags -%}
                                     <p class="text-center">Work In Progress</p>
                                     </td>
-                                    <td>&nbsp;&nbsp;Not&nbsp;Run</td>
+                                    <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
@@ -389,7 +389,7 @@
                                     </td>
 
                                     {%- if "Skipped" in scenario.status|capitalize -%}
-                                        <td><p><b>&nbsp;Not&nbsp;Run</b></p></td>
+                                        <td><p><b>&nbsp;Skipped</b></p></td>
                                         <td>
                                             <p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p>
                                         </td>

@@ -20,9 +20,9 @@ import jinja2
 from behavex.conf_mgr import get_env
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (calculate_status, count_by_status,
-                                          gather_errors, get_error_message,
-                                          get_string_hash, match_for_execution,
+from behavex.outputs.report_utils import (calculate_status, gather_errors,
+                                          get_error_message, get_string_hash,
+                                          match_for_execution,
                                           normalize_filename,
                                           pretty_print_time, resolving_type)
 
@@ -59,7 +59,6 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(to_string_list, 'to_string_list')
         self.add_filter(_calculate_color, 'calculate_color')
         self.add_filter(calculate_status, 'calculate_status')
-        self.add_filter(count_by_status, 'count_by_status')
         self.add_filter(_exist_extra_logs, 'exist_extra_logs')
         self.add_filter(get_extra_logs_file, 'get_extra_logs_file')
         self.add_filter(get_path_extra_logs, 'get_path_extra_logs')

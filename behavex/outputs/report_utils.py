@@ -97,30 +97,6 @@ def get_summary_definition(steps):
     return result
 
 
-def count_by_status(values, func='getitem'):
-    if func == 'getitem':
-        get_item = getitem
-    elif func == 'getattr':
-        get_item = getattr
-    elif func == 'first_value':
-
-        def get_item(x, y):
-            return x
-
-    else:
-        get_item = func
-    skipped = len(
-        [
-            1
-            for value in values
-            if get_item(value, 'status') in ('skipped', 'undefined', 'untested')
-        ]
-    )
-    passed = len([1 for value in values if get_item(value, 'status') == 'passed'])
-    failed = len([1 for value in values if get_item(value, 'status') == 'failed'])
-    return passed, failed, skipped
-
-
 def calculate_status(list_status):
     set_status = set(list_status)
     if 'untested' in set_status:
