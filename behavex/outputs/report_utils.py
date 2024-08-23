@@ -179,23 +179,15 @@ def gather_errors(scenario, retrieve_step_name=False):
 
 def pretty_print_time(seconds_float, sec_decimals=1):
     seconds_float = round(seconds_float, sec_decimals)
-    minutes, seconds = divmod(seconds_float, 60)
-    hours, minutes = divmod(minutes, 60)
-
+    hours, remainder = divmod(seconds_float, 3600)
+    minutes, seconds = divmod(remainder, 60)
     seconds = (
         int(seconds) if float(seconds).is_integer() else round(seconds, sec_decimals)
     )
-
     def _pretty_format(cant, unit):
-        return '{}{}'.format(cant, unit) if cant > 0 else ''
-
-    time_string = '{} {} {}'.format(
-        _pretty_format(int(hours), 'h'),
-        _pretty_format(int(minutes), 'm'),
-        _pretty_format(seconds, 's'),
-    )
-    time_string = '0s' if time_string.strip() == '' else time_string
-    return time_string
+        return f'{cant}{unit}' if cant > 0 else ''
+    time_string = f'{_pretty_format(int(hours), "h")} {_pretty_format(int(minutes), "m")} {_pretty_format(seconds, "s")}'
+    return "0s" if time_string.strip() == '' else time_string
 
 
 def normalize_path(path):

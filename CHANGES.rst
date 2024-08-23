@@ -6,6 +6,7 @@ Version: 4.0.1
 ENHANCEMENTS:
 
 * Changing core implementation to perform parallel executions, by using **concurrent.futures.ProcessPoolExecutor** instead of **multiprocessing.Pool**. This change was done to avoid BehaveX to crash when running in parallel and a test scenario crashes.  `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_
+* Adding execution start time and end time to the HTML report header.
 * Improved progress bar to create a new line after completion.
 
 FIXES:

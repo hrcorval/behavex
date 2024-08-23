@@ -7,6 +7,7 @@
 from __future__ import absolute_import
 
 import os
+import time
 from collections import OrderedDict
 
 import csscompressor
@@ -116,6 +117,8 @@ def export_result_to_html(
     totals, summary = export_to_html_table_summary(features)
     tags, scenarios = get_value_filters(features)
     steps_summary = gather_steps_with_definition(features, steps_definition)
+    execution_start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(global_vars.execution_start_time))
+    execution_end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(global_vars.execution_end_time))
     parameters_template = {
         'environments': environment,
         'features': features,
@@ -125,7 +128,8 @@ def export_result_to_html(
         'joined': joined,
         'report': report,
         'tags': list(tags),
-        'scenarios': scenarios,
+        'execution_start_time': execution_start_time,
+        'execution_end_time': execution_end_time
     }
     parameters_template.update(metrics_variables)
     template_handler = TemplateHandler(global_vars.jinja_templates_path)

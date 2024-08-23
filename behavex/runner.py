@@ -181,7 +181,7 @@ def launch_behavex():
     json_reports = []
     execution_codes = []
     results = None
-    time_init = time.time()
+    time_init = global_vars.execution_start_time
     config = conf_mgr.get_config()
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
@@ -243,7 +243,7 @@ def launch_behavex():
                                                               lock,
                                                               show_progress_bar)
         wrap_up_process_pools(process_pool, json_reports, scenario)
-        time_end = time.time()
+        time_end = global_vars.execution_end_time
 
         if get_param('dry_run'):
             msg = '\nDry run completed. Please, see the report in {0}' ' folder.\n\n'

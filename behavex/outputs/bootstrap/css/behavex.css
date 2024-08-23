@@ -375,3 +375,6 @@ ul.list-unstyled.scenario-step > li {
 .table-scenario{
     table-layout: fixed;
 }
+.hoverable-text:hover{
+    color: #FFFFFF;
+}

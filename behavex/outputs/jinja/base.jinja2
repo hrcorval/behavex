@@ -53,11 +53,19 @@
             <div class="navbar-header">
                 <a class="navbar-brand">BehaveX</a>
             </div>
-            <div>
+            <div class="collapse navbar-collapse">
                 <ul class="nav navbar-nav">
                     <!-- icon behavex-->
                     <li class="nav-item {% if menu == 'report' %}active{% endif %}">
                         <a class="nav-link" href="{{ path_report}}">Test Report</a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="nav-item">
+                        <div class="navbar-text" style="padding: 0;margin: 0;margin-top: 4px;">
+                            <small class="hoverable-text"><b>Start time:</b> {{ execution_start_time }}</small><br>
+                            <small class="hoverable-text">&nbsp;&nbsp;<b>End time:</b> {{ execution_end_time }}</small>
+                        </div>
                     </li>
                 </ul>
             </div>
