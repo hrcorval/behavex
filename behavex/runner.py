@@ -181,7 +181,6 @@ def launch_behavex():
     json_reports = []
     execution_codes = []
     results = None
-    time_init = global_vars.execution_start_time
     config = conf_mgr.get_config()
     features_path = os.environ.get('FEATURES_PATH')
     parallel_scheme = get_param('parallel_scheme')
@@ -212,6 +211,7 @@ def launch_behavex():
     process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
                                        initializer=init_multiprocessing(),
                                        initargs=(lock,))
+    global_vars.execution_start_time = time.time()
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -315,7 +315,7 @@ def launch_behavex():
                                                                        plural_char(totals['scenarios']['passed']),
                                                                        totals['scenarios']['failed'],
                                                                        totals['scenarios']['skipped']))
-        print('Took: {}'.format(pretty_print_time(time_end - time_init)))
+        print('Took: {}'.format(pretty_print_time(global_vars.execution_end_time - global_vars.execution_start_time)))
     if results and results['features']:
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
     print('Exit code: {}'.format(exit_code))
