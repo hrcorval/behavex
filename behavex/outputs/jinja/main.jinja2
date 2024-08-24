@@ -576,13 +576,23 @@
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
             } else if (status == 'passed'){
-                $('tr[feature_passed]   span').click();
                 $('tr[feature_failed]').hide();
                 $('tr[feature_skipped]').hide();
                 $('tr[feature_skipped] + tr[data-feature-id] td');
-                $($('tr[feature_passed] e + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
-                $($('tr[feature_passed]  + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
+                $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
+                $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
                 $('tr[feature_failed]').each(function(){
+                    var clickear = false;
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
+                        div.find('span').click();
+                        div.show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
+                    }
+                });
+                $('tr[feature_passed]').each(function(){
                     var clickear = false;
                     var div = $(this);
                     if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
