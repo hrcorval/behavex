@@ -81,6 +81,10 @@ class GlobalVars:
     def execution_start_time(self):
         return self._execution_start_time
 
+    @execution_start_time.setter
+    def execution_start_time(self, execution_start_time):
+        self._execution_start_time = execution_start_time
+
     @property
     def execution_elapsed_time(self):
         return time.time() - self._execution_start_time
