@@ -1084,8 +1084,8 @@ def _get_feature_json_skeleton(behave_element):
         feature.scenarios = [behave_element]
     else:
         raise Exception("No feature or scenario to process...")
-    json_skeleton = json.dumps(generate_execution_info([feature])[0])
-    return json_skeleton
+    execution_info = generate_execution_info([feature])
+    return json.dumps(execution_info[0]) if execution_info else {}
 
 
 def _get_progress_bar_instance(parallel_scheme, total_elements):

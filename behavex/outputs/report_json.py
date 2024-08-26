@@ -153,45 +153,44 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
     scenario_outline_index = 0
     overall_status = 'passed'
     for scenario in scenarios:
-        if not (scenario.status in ["skipped", "untested"] and get_env("RERUN_FAILURES")):
-            # Set MANUAL to False in order filter regardless of it
-            error_msg, error_lines, error_step, error_background = _get_error_scenario(
-                scenario
-            )
-            # pylint: disable=W0123
-            scenario_tags = get_scenario_tags(scenario)
-            if match_for_execution(scenario_tags):
-                # Scenario was selectable
-                scenario_info = {}
-                scenario_info['name'] = getattr(scenario, 'name')
-                scenario_info['duration'] = getattr(scenario, 'duration')
-                scenario_info['status'] = getattr(scenario, 'status').name
-                scenario_info['tags'] = getattr(scenario, 'effective_tags')
-                scenario_info['filename'] = text(scenario.filename)
-                scenario_info['feature'] = scenario.feature.name
-                scenario_info['id_feature'] = id_feature
-                steps = []
-                for step in scenario.steps:
-                    add_step_info(step, steps)
-                scenario_info['steps'] = steps
-                scenario_info['outline_index'] = scenario_outline_index
-                if scenario_info['status'] == 'failed':
-                    overall_status = 'failed'
-                scenario_outline_index += 1
-                scenario_info['background'] = _processing_background(scenario)
-                scenario_info['error_msg'] = error_msg
-                scenario_info['error_lines'] = error_lines
-                scenario_info['error_step'] = error_step
-                scenario_info['error_background'] = error_background
-                scenario_info['id_hash'] = _generate_hash(scenario.name)
-                if scenario.feature.name in global_vars.retried_scenarios:
-                    if (
-                        scenario.name
-                        in global_vars.retried_scenarios[scenario.feature.name]
-                    ):
-                        scenario_info['retried'] = True
+        # Set MANUAL to False in order filter regardless of it
+        error_msg, error_lines, error_step, error_background = _get_error_scenario(
+            scenario
+        )
+        # pylint: disable=W0123
+        scenario_tags = get_scenario_tags(scenario)
+        if match_for_execution(scenario_tags):
+            # Scenario was selectable
+            scenario_info = {}
+            scenario_info['name'] = getattr(scenario, 'name')
+            scenario_info['duration'] = getattr(scenario, 'duration')
+            scenario_info['status'] = getattr(scenario, 'status').name
+            scenario_info['tags'] = getattr(scenario, 'effective_tags')
+            scenario_info['filename'] = text(scenario.filename)
+            scenario_info['feature'] = scenario.feature.name
+            scenario_info['id_feature'] = id_feature
+            steps = []
+            for step in scenario.steps:
+                add_step_info(step, steps)
+            scenario_info['steps'] = steps
+            scenario_info['outline_index'] = scenario_outline_index
+            if scenario_info['status'] == 'failed':
+                overall_status = 'failed'
+            scenario_outline_index += 1
+            scenario_info['background'] = _processing_background(scenario)
+            scenario_info['error_msg'] = error_msg
+            scenario_info['error_lines'] = error_lines
+            scenario_info['error_step'] = error_step
+            scenario_info['error_background'] = error_background
+            scenario_info['id_hash'] = _generate_hash(scenario.name)
+            if scenario.feature.name in global_vars.retried_scenarios:
+                if (
+                    scenario.name
+                    in global_vars.retried_scenarios[scenario.feature.name]
+                ):
+                    scenario_info['retried'] = True
 
-                scenario_list.append(scenario_info)
+            scenario_list.append(scenario_info)
     return overall_status, scenario_list
 
 
