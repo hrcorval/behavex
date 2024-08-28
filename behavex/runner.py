@@ -651,7 +651,7 @@ def execute_tests(
             json_output['features'] = filter_feature_executed(json_output,
                                                               text(feature_filename),
                                                               scenario_name)
-            if len(json_output['features'][0]['scenarios']) == 0:
+            if len(json_output['features']) == 0 or len(json_output['features'][0]['scenarios']) == 0:
                 # Adding scenario data if the test was removed from the execution (setting it as "Untested")
                 json_output['features'] = [json.loads(feature_json_skeleton)]
             try:
