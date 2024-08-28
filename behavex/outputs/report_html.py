@@ -128,6 +128,7 @@ def export_result_to_html(
         'joined': joined,
         'report': report,
         'tags': list(tags),
+        'scenarios': scenarios,
         'execution_start_time': execution_start_time,
         'execution_end_time': execution_end_time
     }
