@@ -684,6 +684,7 @@ def filter_feature_executed(json_output, filename, scenario_name):
                     mapping_scenarios.append(scenario)
             feature['scenarios'] = mapping_scenarios
             return [feature]
+    return []
 
 
 def _launch_behave(behave_args):
