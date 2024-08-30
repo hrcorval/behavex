@@ -294,11 +294,13 @@ def launch_behavex():
                     failures_file.write(parameters)
         # Calculates final exit code. execution_codes is 1 only if an execution exception arises
         if isinstance(execution_codes, list):
-            execution_exception = True if sum(execution_codes) > 0 else False
+            execution_failed = True if sum(execution_codes) > 0 else False
+            execution_interrupted_or_crashed = True if any([code == 2 for code in execution_codes]) else False
         else:
-            execution_exception = True if execution_codes > 0 else False
+            execution_failed = True if execution_codes > 0 else False
+            execution_interrupted_or_crashed = True if execution_codes == 2 else False
         exit_code = (
-            EXIT_ERROR if execution_exception or failing_non_muted_tests else EXIT_OK
+            EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK
         )
     except KeyboardInterrupt:
         print('Caught KeyboardInterrupt, terminating workers')
