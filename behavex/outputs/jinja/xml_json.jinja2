@@ -29,11 +29,11 @@
         <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ 'skipped' if is_muted else scenario.status }}"
          classname={{scenario.feature|normalize|CIXC|quoteattr|safe }} >
             {% set step_with_exception = scenario.error_step %}
-            {%- if scenario_crashed -%}
+            {%- if scenario_crashed and not is_muted -%}
                     <failure type=Exception message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
                         <![CDATA[ {{ scenario.error_msg }} ]]>
                     </failure>
-            {%- elif step_with_exception and 'MUTE' not in scenario_tags  -%}
+            {%- elif step_with_exception and not is_muted -%}
                 <failure message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }} type="AssertionError">
                     <![CDATA[ Failing step: {{step_with_exception|print_step_json|safe}} Location:{{step_with_exception.index}}
                         {{step_with_exception|safe}}
