@@ -474,7 +474,6 @@ def launch_by_feature(features,
             json_reports,
             global_vars.progress_bar_instance,
         ))
-
     return execution_codes, json_reports
 
 
@@ -744,13 +743,12 @@ def wrap_up_process_pools(process_pool,
     except Exception as ex:
         if process_pool.is_alive():
             process_pool.shutdown(wait=False, cancel_futures=True)
-    if json_reports:
-        if type(json_reports) is list:
-            if scenario:
-                json_reports = join_scenario_reports(json_reports)
-            merged_json = join_feature_reports(json_reports)
-        else:
-            merged_json = json_reports
+    if json_reports and type(json_reports) is list:
+        if scenario:
+            json_reports = join_scenario_reports(json_reports)
+        merged_json = join_feature_reports(json_reports)
+    else:
+        merged_json = json_reports
     if global_vars.progress_bar_instance:
         global_vars.progress_bar_instance.finish()
     status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
