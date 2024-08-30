@@ -741,9 +741,8 @@ def wrap_up_process_pools(process_pool,
     try:
         process_pool.shutdown(wait=True)
     except Exception as ex:
-        if process_pool.is_alive():
-            process_pool.shutdown(wait=False, cancel_futures=True)
-    if json_reports and type(json_reports) is list:
+        process_pool.shutdown(wait=False, cancel_futures=True)
+    if type(json_reports) is list:
         if scenario:
             json_reports = join_scenario_reports(json_reports)
         merged_json = join_feature_reports(json_reports)
