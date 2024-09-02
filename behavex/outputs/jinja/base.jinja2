@@ -62,9 +62,8 @@
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li class="nav-item">
-                        <div class="navbar-text" style="padding: 0;margin: 0;margin-top: 4px;">
-                            <small class="hoverable-text"><b>Start time:</b> {{ execution_start_time }}</small><br>
-                            <small class="hoverable-text">&nbsp;&nbsp;<b>End time:</b> {{ execution_end_time }}</small>
+                        <div class="navbar-text" style="padding: 0;margin: 0;margin-top: 10px;">
+                            <span class="glyphicon glyphicon-info-sign btn btn-info" data-toggle="tooltip_info"></span>
                         </div>
                     </li>
                 </ul>
@@ -131,6 +130,21 @@
             );
         });
 
+        $(document).ready(function() {
+            $('[data-toggle="tooltip_info"]').tooltip({
+                title: '<b>Execution Info:</b>' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel processes:</b> {{ parallel_processes }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel scheme:</b> {{ parallel_scheme }}' +
+                       '<br><b>Times:</b>' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution start time:</b> {{ execution_start_time }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution end time:</b> {{ execution_end_time }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution time:</b> {{execution_time|pretty_print_time }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Scenarios duration:</b> {{fields_total['Duration']|pretty_print_time }}',
+                placement: "bottom",
+                template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner tooltip-info"></div></div>',
+                html: true,
+            });
+        });
     </script>
     </body>
 </html>

@@ -129,8 +129,11 @@ def export_result_to_html(
         'report': report,
         'tags': list(tags),
         'scenarios': scenarios,
+        'parallel_processes': os.getenv('PARALLEL_PROCESSES', '1'),
+        'parallel_scheme': os.getenv('PARALLEL_SCHEME', 'scenario'),
         'execution_start_time': execution_start_time,
-        'execution_end_time': execution_end_time
+        'execution_end_time': execution_end_time,
+        'execution_time': global_vars.execution_end_time - global_vars.execution_start_time
     }
     parameters_template.update(metrics_variables)
     template_handler = TemplateHandler(global_vars.jinja_templates_path)
