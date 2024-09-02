@@ -62,8 +62,8 @@
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li class="nav-item">
-                        <div class="navbar-text" style="padding: 0;margin: 0;margin-top: 10px;">
-                            <span class="glyphicon glyphicon-info-sign btn btn-info" data-toggle="tooltip_info"></span>
+                        <div class="navbar-text" style="padding: 0;margin: 0;margin-top: 0px;">
+                            <span class="glyphicon glyphicon-info-sign btn-lg" data-toggle="tooltip_info"></span>
                         </div>
                     </li>
                 </ul>
@@ -138,8 +138,8 @@
                        '<br><b>Times:</b>' +
                        '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution start time:</b> {{ execution_start_time }}' +
                        '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution end time:</b> {{ execution_end_time }}' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution time:</b> {{execution_time|pretty_print_time }}' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Scenarios duration:</b> {{fields_total['Duration']|pretty_print_time }}',
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total execution time:</b> {{execution_time|pretty_print_time }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total scenarios duration:</b> {{fields_total['Duration']|pretty_print_time }}',
                 placement: "bottom",
                 template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner tooltip-info"></div></div>',
                 html: true,
