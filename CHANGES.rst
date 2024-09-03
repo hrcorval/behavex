@@ -9,6 +9,7 @@ ENHANCEMENTS:
 * Adding execution start time and end time to the HTML report header.
 * Managing "Untested" scenarios, by displaying them in the HTML report as "Untested" instead of "Skipped".
 * Updated progress bar to create a new line after completion.
+* Adding ENVIRONMENT_DETAILS variable to enable users to provide additional information about the environment to the JSON and HTML reports.
 
 FIXES:
 * Fixed issue in HTML report generation when running in parallel and a scenario crashed, which caused BehaveX to hang.

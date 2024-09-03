@@ -182,7 +182,7 @@ def after_all(context):
     try:
         # noinspection PyProtectedMember
         feature_list = report_json.generate_execution_info(context._runner.features)
-        report_json.save_info_json(context, feature_list)
+        report_json.generate_json_report(feature_list)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
 

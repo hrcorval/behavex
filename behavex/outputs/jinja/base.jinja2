@@ -132,16 +132,22 @@
 
         $(document).ready(function() {
             $('[data-toggle="tooltip_info"]').tooltip({
-                title: '<b>Execution Info:</b>' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel processes:</b> {{ parallel_processes }}' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel scheme:</b> {{ parallel_scheme }}' +
-                       '<br><b>Times:</b>' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution start time:</b> {{ execution_start_time }}' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution end time:</b> {{ execution_end_time }}' +
-                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total execution time:</b> {{execution_time|pretty_print_time }}' +
+                title: '<b>Execution Details:</b>' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel processes:</b> {{ execution_details["parallel_processes"] }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel scheme:</b> {{ execution_details["parallel_scheme"] }}' +
+                        {%- if environment_details is defined and environment_details|length-%}
+                            '<br><br><b>Environment Details:</b>' +
+                            {% for environment_details_item in environment_details %}
+                                '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>{{ environment_details_item }}</b>' +
+                            {%- endfor -%}
+                        {%- endif -%}
+                       '<br><br><b>Execution Times:</b>' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution start time:</b> {{ execution_times["execution_start_time"] }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution end time:</b> {{ execution_times["execution_end_time"] }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total execution time:</b> {{execution_times["total_execution_time"]|pretty_print_time }}' +
                        '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total scenarios duration:</b> {{fields_total['Duration']|pretty_print_time }}',
                 placement: "bottom",
-                template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner tooltip-info"></div></div>',
+                template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner tooltip-info textarea"></div></div>',
                 html: true,
             });
         });

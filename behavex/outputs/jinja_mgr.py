@@ -53,7 +53,6 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(resolving_type, 'resolving_type')
         self.add_filter(self._get_text, 'get_text')
         self.add_filter(_create_progress_html, 'create_progress_html')
-        self.add_filter(_export_environments_title, 'export_environments_title')
         self.add_filter(match_for_execution, 'match_for_execution')
         self.add_filter(create_tags_set, 'create_tags_set')
         self.add_filter(to_string_list, 'to_string_list')
@@ -249,20 +248,6 @@ def _resolving_color_class(status):
         return 'warning'
     else:
         return 'active'
-
-
-# environment.keys() has been forced to be a list
-def _export_environments_title(environments):
-    result = ''
-    max_name = max(len(list(environment.keys())[0]) for environment in environments)
-    row = '{} --{}>  {}\n'
-    for environment in environments:
-        result += row.format(
-            list(environment.keys())[0],
-            '-' * (max_name - len(list(environment.keys())[0])),
-            list(environment.values())[0],
-        )
-    return result
 
 
 def create_tags_set(feature):

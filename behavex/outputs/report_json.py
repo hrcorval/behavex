@@ -24,7 +24,8 @@ from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
-from behavex.outputs.report_utils import (get_error_message,
+from behavex.outputs.report_utils import (get_environment_details,
+                                          get_error_message,
                                           match_for_execution, text)
 from behavex.utils import get_scenario_tags, try_operate_descriptor
 
@@ -79,13 +80,9 @@ def generate_execution_info(features):
     return feature_list
 
 
-def save_info_json(context, feature_list):
-    environment_info = ''
-    if hasattr(context, 'environment'):
-        environment_info = context.environment
-
+def generate_json_report(feature_list):
     output = {
-        'environment': environment_info,
+        'environment': get_environment_details(),
         'features': feature_list,
         'steps_definition': global_vars.steps_definitions,
     }

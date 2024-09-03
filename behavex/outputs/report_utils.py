@@ -442,3 +442,11 @@ def normalize_filename(input_name):
         )
         print(err_msg)
         return
+
+
+def get_environment_details():
+    """ Get environment information from the ENVIRONMENT_DETAILS environment variable.
+    The environment information is a comma-separated string that is split into a list."""
+    environment_details_raw_data = os.getenv('ENVIRONMENT_DETAILS', None)
+    environment_details = environment_details_raw_data.split(',') if environment_details_raw_data else []
+    return environment_details

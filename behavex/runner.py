@@ -942,6 +942,7 @@ def _set_env_variables(args):
             'TEMP',
             'LOGS',
             'LOGGING_LEVEL',
+            'ENVIRONMENT_DETAILS',
         ]
     )
 
@@ -1170,7 +1171,7 @@ def dump_json_results():
             json_output_converted = json.loads(json_output_file)
         return json_output_converted
 
-    json_output = {'environment': '', 'features': [], 'steps_definition': ''}
+    json_output = {'environment': [], 'features': [], 'steps_definition': []}
     if os.path.exists(path_info):
         json_output = try_operate_descriptor(path_info, _load_json, return_value=True)
     return json_output

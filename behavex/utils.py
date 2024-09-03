@@ -297,21 +297,17 @@ def set_env_variable(key, value):
 def print_env_variables(keys):
     key_length = 20
     value_length = 60
-    print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
-    print(
-        '|{}| {}|'.format(
-            'ENV. VARIABLE'.ljust(key_length), 'VALUE'.ljust(value_length)
-        )
-    )
-    print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
+    separator = '|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-'))
+    header = '|{}| {}|'.format('ENV. VARIABLE'.ljust(key_length), 'VALUE'.ljust(value_length))
+
+    print(separator)
+    print(header)
+    print(separator)
     for key in keys:
-        print(
-            '|{}| {}|'.format(
-                key.upper().ljust(key_length),
-                str(os.environ.get(key)).ljust(value_length),
-            )
-        )
-    print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
+        value = os.environ.get(key)
+        value = value if value else '----'
+        print('|{}| {}|'.format(key.upper().ljust(key_length), str(value).ljust(value_length)))
+    print(separator)
 
 
 def set_environ_config(args_parsed):
