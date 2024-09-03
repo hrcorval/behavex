@@ -9,7 +9,7 @@ ENHANCEMENTS:
 * Added information popup in HTML report, containing parallel execution settings and execution times (start time, end time, total time and scenarios duration).
 * Displayed "Untested" scenarios in the HTML report.
 * Updated progress bar to create a new line after completion.
-* Added ENVIRONMENT_DETAILS variable to include additional environment information in JSON and HTML reports.
+* Managed ENVIRONMENT_DETAILS environment variable to enable users to provide additional environment information in JSON and HTML reports.
 
 FIXES:
 
