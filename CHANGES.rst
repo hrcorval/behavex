@@ -4,6 +4,7 @@ Version History
 Version: 4.0.1
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
+
 * Changed core implementation to use **concurrent.futures.ProcessPoolExecutor** for parallel executions, avoiding crashes when a test scenario fails. `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_
 * Added information popup in HTML report, containing parallel execution settings and execution times (start time, end time, total time and scenarios duration).
 * Displayed "Untested" scenarios in the HTML report.
