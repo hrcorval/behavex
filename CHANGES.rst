@@ -20,7 +20,7 @@ FIXES:
 
 CONTRIBUTIONS:
 
-* Contribution from `Jonathan Bridger <https://github.com/jbridger>`__ for reporting and solving `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_. This is a significant milestone for this framework (Thanks Jonathan!!)
+* Contribution from `Jonathan Bridger <https://github.com/jbridger>`__ for reporting and providing a solution to `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_. This is a significant improvement for this framework (Thanks Jonathan!!)
 
 
 Version: 3.3.0
