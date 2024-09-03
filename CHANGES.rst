@@ -4,17 +4,23 @@ Version History
 Version: 4.0.1
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
-
-* Changing core implementation to perform parallel executions, by using **concurrent.futures.ProcessPoolExecutor** instead of **multiprocessing.Pool**. This change was done to avoid BehaveX to crash when running in parallel and a test scenario crashes.  `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_
-* Adding execution start time and end time to the HTML report header.
-* Managing "Untested" scenarios, by displaying them in the HTML report as "Untested" instead of "Skipped".
+* Changed core implementation to use **concurrent.futures.ProcessPoolExecutor** for parallel executions, avoiding crashes when a test scenario fails. `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_
+* Added information popup in HTML report, containing parallel execution settings and execution times (start time, end time, total time and scenarios duration).
+* Displayed "Untested" scenarios in the HTML report.
 * Updated progress bar to create a new line after completion.
-* Adding ENVIRONMENT_DETAILS variable to enable users to provide additional information about the environment to the JSON and HTML reports.
+* Added ENVIRONMENT_DETAILS variable to include additional environment information in JSON and HTML reports.
 
 FIXES:
-* Fixed issue in HTML report generation when running in parallel and a scenario crashed, which caused BehaveX to hang.
-* Updated JUnit reports to mark scenarios that crashed unexpectedly as "failed" instead of "skipped".
-* Fixed parallel execution summary to correctly report the number of skipped scenarios.
+
+* Fixed HTML report generation issue when running in parallel and a scenario crashed, causing BehaveX to hang.
+* Updated JUnit reports to mark unexpectedly crashed scenarios as "failed" instead of "skipped".
+* Corrected parallel execution summary to report the number of skipped scenarios accurately.
+* Fixed progress bar issue when running tests in parallel by feature.
+
+CONTRIBUTIONS:
+
+* Contribution from `Jonathan Bridger <https://github.com/jbridger>`__ for reporting and solving `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_. This is a significant milestone for this framework (Thanks Jonathan!!)
+
 
 Version: 3.3.0
 -------------------------------------------------------------------------------
@@ -22,6 +28,10 @@ ENHANCEMENTS:
 
 * Enabling BehaveX to attach screenshots to the HTML report (by incorporating the behavex-images library)
 * Improvement in progress bar, to remove any trailing content displayed in console when printing the progress bar
+
+CONTRIBUTIONS:
+
+* Contribution from `Ana Mercado <https://github.com/abmercado19>`__ by providing the implementation of the `behavex-images <https://github.com/abmercado19/behavex-images>`__ library (Thanks Ana!!)
 
 
 Version: 3.2.13

@@ -941,8 +941,7 @@ def _set_env_variables(args):
             'FEATURES_PATH',
             'TEMP',
             'LOGS',
-            'LOGGING_LEVEL',
-            'ENVIRONMENT_DETAILS',
+            'LOGGING_LEVEL'
         ]
     )
 
