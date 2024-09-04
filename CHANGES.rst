@@ -17,6 +17,7 @@ FIXES:
 * Updated JUnit reports to mark unexpectedly crashed scenarios as "failed" instead of "skipped".
 * Corrected parallel execution summary to report the number of skipped scenarios accurately.
 * Fixed progress bar issue when running tests in parallel by feature.
+* Fixed issue when processing scenario tags, to always consider the tags associated with the scenario outline examples.
 
 CONTRIBUTIONS:
 
