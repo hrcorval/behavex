@@ -391,17 +391,14 @@ def len_scenarios(feature_file):
     feature = parse_feature(data=data)
     amount_scenarios = 0
     for scenario in feature.scenarios:
-        scenario_tags = get_scenario_tags(scenario)
-        if match_for_execution(scenario_tags):
-            if isinstance(scenario, ScenarioOutline):
-                outline_instances = 1
-                total_rows = 0
-                for example in scenario.examples:
-                    total_rows += len(example.table.rows)
-                    if total_rows > outline_instances:
-                        outline_instances = total_rows
-                amount_scenarios += outline_instances
-            else:
+        if isinstance(scenario, ScenarioOutline):
+            scenario_tags = get_scenario_tags(scenario, include_outline_example_tags=False)
+            amount_scenarios += sum(
+                len(example.table.rows) for example in scenario.examples
+                if match_for_execution(scenario_tags + example.tags)
+            )
+        else:
+            if match_for_execution(get_scenario_tags(scenario)):
                 amount_scenarios += 1
     return amount_scenarios
 
@@ -435,15 +432,15 @@ def set_behave_tags():
     )
 
 
-def get_scenario_tags(scenario):
+def get_scenario_tags(scenario, include_outline_example_tags=True):
     if type(scenario) is dict:
         scenario_tags_set = set(scenario['tags'])
     else:
         scenario_tags = scenario.effective_tags
-        if isinstance(scenario, ScenarioOutline):
-            for example in scenario.examples:
-                scenario_tags.extend(example.tags)
-        scenario_tags.extend(scenario.feature.tags)
+        if include_outline_example_tags:
+            if isinstance(scenario, ScenarioOutline):
+                for example in scenario.examples:
+                    scenario_tags.extend(example.tags)
         scenario_tags_set = set(scenario_tags)
     result = list(scenario_tags_set)
     return result
