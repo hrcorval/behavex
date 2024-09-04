@@ -507,7 +507,7 @@ def launch_by_scenario(features,
         for scenario in scenarios:
             if include_path_match(scenario.filename, scenario.line) \
                     and include_name_match(scenario.name):
-                scenario_tags = get_scenario_tags(scenario, include_example_tags=True)
+                scenario_tags = get_scenario_tags(scenario)
                 if match_for_execution(scenario_tags):
                     if scenario.name == "":
                         features_with_empty_scenario_descriptions.append(scenario.filename)
