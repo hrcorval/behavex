@@ -30,11 +30,8 @@ def get_config():
     [output]
     path=string(default="output")
 
-    [outputs]
-    types=string_list(default=list("html", "xml"))
-
-    [screenshots]
-    hash_detail=string(default="0")
+    [progress_bar]
+    print_updates_in_new_lines=boolean(default=False)
 
     [test_run]
     tags_to_skip=string(default="")

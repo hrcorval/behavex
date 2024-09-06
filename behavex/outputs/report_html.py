@@ -7,6 +7,7 @@
 from __future__ import absolute_import
 
 import os
+import time
 from collections import OrderedDict
 
 import csscompressor
@@ -15,22 +16,21 @@ import htmlmin
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
-from behavex.outputs.report_utils import (
-    gather_steps_with_definition,
-    get_save_function,
-    try_operate_descriptor,
-)
+from behavex.outputs.report_utils import (gather_steps_with_definition,
+                                          get_environment_details,
+                                          get_save_function,
+                                          try_operate_descriptor)
 
 
 def generate_report(output, joined=None, report=None):
-    environment = output['environment']
+    environment_details = get_environment_details()
     features = output['features']
     steps_definition = output['steps_definition']
     all_scenarios = sum((feature['scenarios'] for feature in features), [])
     features.sort(key=lambda feature: feature['name'])
     metrics_variables = get_metrics_variables(all_scenarios)
     html = export_result_to_html(
-        environment, features, metrics_variables, steps_definition, joined, report
+        environment_details, features, metrics_variables, steps_definition, joined, report
     )
     content_to_file = {'report.html': html}
     _create_files_report(content_to_file)
@@ -113,13 +113,14 @@ def get_metrics_variables(scenarios):
 
 
 def export_result_to_html(
-    environment, features, metrics_variables, steps_definition, joined=None, report=None
+    environment_details, features, metrics_variables, steps_definition, joined=None, report=None
 ):
     totals, summary = export_to_html_table_summary(features)
     tags, scenarios = get_value_filters(features)
     steps_summary = gather_steps_with_definition(features, steps_definition)
+    execution_start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(global_vars.execution_start_time))
+    execution_end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(global_vars.execution_end_time))
     parameters_template = {
-        'environments': environment,
         'features': features,
         'steps': steps_summary,
         'fields_total': totals,
@@ -128,6 +129,12 @@ def export_result_to_html(
         'report': report,
         'tags': list(tags),
         'scenarios': scenarios,
+        'execution_details': {'parallel_processes': os.getenv('PARALLEL_PROCESSES', '1'),
+                              'parallel_scheme': os.getenv('PARALLEL_SCHEME', 'scenario')},
+        'environment_details': environment_details,
+        'execution_times': {'execution_start_time': execution_start_time,
+                            'execution_end_time': execution_end_time,
+                            'total_execution_time': global_vars.execution_end_time - global_vars.execution_start_time}
     }
     parameters_template.update(metrics_variables)
     template_handler = TemplateHandler(global_vars.jinja_templates_path)

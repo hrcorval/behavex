@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from functools import reduce
 from tempfile import gettempdir
 
@@ -28,13 +29,9 @@ from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (
-    get_save_function,
-    match_for_execution,
-    normalize_filename,
-    get_string_hash,
-    try_operate_descriptor,
-)
+from behavex.outputs.report_utils import (get_save_function, get_string_hash,
+                                          match_for_execution,
+                                          try_operate_descriptor)
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
@@ -44,15 +41,32 @@ LOGGING_LEVELS = {
     'error': logging.ERROR,
     'critical': logging.CRITICAL,
 }
+ELAPSED_START_TIME = time.time()
 
 
-def append_results(codes, json_reports, tuple_values):
-    codes.append(tuple_values[0])
-    json_reports.append(tuple_values[1])
+def handle_execution_complete_callback(codes,
+                                       json_reports,
+                                       progress_bar_instance,
+                                       future):
+    tuple_values = None
+    try:
+        tuple_values = future.result()
+    except: # isort:skip
+        json_reports += []
+        codes.append(1)
+    if tuple_values:
+        execution_code, map_json = tuple_values
+        json_reports += [map_json]
+        codes.append(execution_code)
+    if progress_bar_instance:
+        progress_bar_instance.update()
 
 
-def create_partial_function_append(codes, json_reports):
-    append_output = functools.partial(append_results, codes, json_reports)
+def create_execution_complete_callback_function(codes,
+                                                json_reports,
+                                                progress_bar_instance):
+    append_output = functools.partial(handle_execution_complete_callback,
+                                      codes, json_reports, progress_bar_instance)
     return append_output
 
 
@@ -192,7 +206,7 @@ def should_feature_be_run(path_feature):
         tags_list = []
         if hasattr(feature, 'scenarios'):
             for scenario in feature.scenarios:
-                scenario_tags = get_scenario_tags(scenario, include_example_tags=True)
+                scenario_tags = get_scenario_tags(scenario)
                 tags_list.append(scenario_tags)
     match_tag = any(match_for_execution(tags) for tags in tags_list)
     filename = feature.filename
@@ -283,21 +297,17 @@ def set_env_variable(key, value):
 def print_env_variables(keys):
     key_length = 20
     value_length = 60
-    print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
-    print(
-        '|{}| {}|'.format(
-            'ENV. VARIABLE'.ljust(key_length), 'VALUE'.ljust(value_length)
-        )
-    )
-    print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
+    separator = '|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-'))
+    header = '|{}| {}|'.format('ENV. VARIABLE'.ljust(key_length), 'VALUE'.ljust(value_length))
+
+    print(separator)
+    print(header)
+    print(separator)
     for key in keys:
-        print(
-            '|{}| {}|'.format(
-                key.upper().ljust(key_length),
-                str(os.environ.get(key)).ljust(value_length),
-            )
-        )
-    print('|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-')))
+        value = os.environ.get(key)
+        value = value if value else '----'
+        print('|{}| {}|'.format(key.upper().ljust(key_length), str(value).ljust(value_length)))
+    print(separator)
 
 
 def set_environ_config(args_parsed):
@@ -381,17 +391,14 @@ def len_scenarios(feature_file):
     feature = parse_feature(data=data)
     amount_scenarios = 0
     for scenario in feature.scenarios:
-        scenario_tags = get_scenario_tags(scenario)
-        if match_for_execution(scenario_tags):
-            if isinstance(scenario, ScenarioOutline):
-                outline_instances = 1
-                total_rows = 0
-                for example in scenario.examples:
-                    total_rows += len(example.table.rows)
-                    if total_rows > outline_instances:
-                        outline_instances = total_rows
-                amount_scenarios += outline_instances
-            else:
+        if isinstance(scenario, ScenarioOutline):
+            scenario_tags = get_scenario_tags(scenario, include_outline_example_tags=False)
+            amount_scenarios += sum(
+                len(example.table.rows) for example in scenario.examples
+                if match_for_execution(scenario_tags + example.tags)
+            )
+        else:
+            if match_for_execution(get_scenario_tags(scenario)):
                 amount_scenarios += 1
     return amount_scenarios
 
@@ -425,15 +432,15 @@ def set_behave_tags():
     )
 
 
-def get_scenario_tags(scenario, include_example_tags=False):
+def get_scenario_tags(scenario, include_outline_example_tags=True):
     if type(scenario) is dict:
         scenario_tags_set = set(scenario['tags'])
     else:
         scenario_tags = scenario.effective_tags
-        if isinstance(scenario, ScenarioOutline) and include_example_tags:
-            for example in scenario.examples:
-                scenario_tags.extend(example.tags)
-        scenario_tags.extend(scenario.feature.tags)
+        if include_outline_example_tags:
+            if isinstance(scenario, ScenarioOutline):
+                for example in scenario.examples:
+                    scenario_tags.extend(example.tags)
         scenario_tags_set = set(scenario_tags)
     result = list(scenario_tags_set)
     return result

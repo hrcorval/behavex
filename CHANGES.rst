@@ -1,6 +1,56 @@
 Version History
 ===============================================================================
 
+Version: 4.0.2
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Changed core implementation to use **concurrent.futures.ProcessPoolExecutor** for parallel executions, avoiding crashes when a test scenario fails. `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_
+* Added information popup in HTML report, containing parallel execution settings and execution times (start time, end time, total time and scenarios duration).
+* Displayed "Untested" scenarios in the HTML report.
+* Updated progress bar to create a new line after completion.
+* Included ENVIRONMENT_DETAILS environment variable to enable users to provide environment information in JSON and HTML reports.
+
+FIXES:
+
+* Fixed HTML report generation issue when running in parallel and a scenario crashed, causing BehaveX to hang.
+* Updated JUnit reports to mark unexpectedly crashed scenarios as "failed" instead of "skipped".
+* Corrected parallel execution summary to report the number of skipped scenarios accurately.
+* Fixed progress bar issue when running tests in parallel by feature.
+* Fixed issue when processing scenario tags, to always consider the tags associated with the scenario outline examples.
+
+CONTRIBUTIONS:
+
+* Contributions from `Zoran Lazarevic <https://github.com/lazareviczoran>`__, `Simon Sawert <https://github.com/bombsimon>`__, `Jonathan Bridger <https://github.com/jbridger>`__ for reporting and providing a solution to `Issue #114 <https://github.com/hrcorval/behavex/issues/114>`_. This is a significant improvement for this framework (Thanks!!)
+
+
+Version: 3.3.0
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Enabling BehaveX to attach screenshots to the HTML report (by incorporating the behavex-images library)
+* Improvement in progress bar, to remove any trailing content displayed in console when printing the progress bar
+
+CONTRIBUTIONS:
+
+* Contribution from `Ana Mercado <https://github.com/abmercado19>`__ by providing the implementation of the `behavex-images <https://github.com/abmercado19/behavex-images>`__ library (Thanks Ana!!)
+
+
+Version: 3.2.13
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Adding a progress bar to the console when running in parallel to better track the execution progress (arguments: -spb or --show-progress-bar)
+* Adding workflow to validate the BehaveX wrapper is properly installed in latest python versions (v3.8 to v3.11)
+* Updated pre-commit hooks to use them in every commit
+* Removing some parameters that are no longer used
+
+FIXES:
+
+* Fixed blank report issue reported in some cases when running tests in parallel
+* Fixed issues when performing a dry-run when there are no features/scenarios tagged as MANUAL
+
+
 Version: 3.2.0
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
@@ -171,4 +221,3 @@ ENHANCEMENTS:
 DOCUMENTATION:
 
 * Adding HTML report screenshots to documentation
-

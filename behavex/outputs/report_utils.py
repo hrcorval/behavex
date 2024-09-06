@@ -97,30 +97,6 @@ def get_summary_definition(steps):
     return result
 
 
-def count_by_status(values, func='getitem'):
-    if func == 'getitem':
-        get_item = getitem
-    elif func == 'getattr':
-        get_item = getattr
-    elif func == 'first_value':
-
-        def get_item(x, y):
-            return x
-
-    else:
-        get_item = func
-    skipped = len(
-        [
-            1
-            for value in values
-            if get_item(value, 'status') in ('skipped', 'undefined', 'untested')
-        ]
-    )
-    passed = len([1 for value in values if get_item(value, 'status') == 'passed'])
-    failed = len([1 for value in values if get_item(value, 'status') == 'failed'])
-    return passed, failed, skipped
-
-
 def calculate_status(list_status):
     set_status = set(list_status)
     if 'untested' in set_status:
@@ -179,23 +155,15 @@ def gather_errors(scenario, retrieve_step_name=False):
 
 def pretty_print_time(seconds_float, sec_decimals=1):
     seconds_float = round(seconds_float, sec_decimals)
-    minutes, seconds = divmod(seconds_float, 60)
-    hours, minutes = divmod(minutes, 60)
-
+    hours, remainder = divmod(seconds_float, 3600)
+    minutes, seconds = divmod(remainder, 60)
     seconds = (
         int(seconds) if float(seconds).is_integer() else round(seconds, sec_decimals)
     )
-
     def _pretty_format(cant, unit):
-        return '{}{}'.format(cant, unit) if cant > 0 else ''
-
-    time_string = '{} {} {}'.format(
-        _pretty_format(int(hours), 'h'),
-        _pretty_format(int(minutes), 'm'),
-        _pretty_format(seconds, 's'),
-    )
-    time_string = '0s' if time_string.strip() == '' else time_string
-    return time_string
+        return f'{cant}{unit}' if cant > 0 else ''
+    time_string = f'{_pretty_format(int(hours), "h")} {_pretty_format(int(minutes), "m")} {_pretty_format(seconds, "s")}'
+    return "0s" if time_string.strip() == '' else time_string
 
 
 def normalize_path(path):
@@ -295,6 +263,7 @@ def match_for_execution(tags):
     if get_param('dry_run'):
         if 'BHX_MANUAL_DRY_RUN' in tags:
             tags.remove('BHX_MANUAL_DRY_RUN')
+        if 'MANUAL' in tags:
             tags.remove('MANUAL')
     # Set scenario tags in filter
     for tag in tags:
@@ -312,7 +281,7 @@ def match_for_execution(tags):
     for tag in tag_re.findall(tags_filter):
         if tag not in ('not', 'and', 'or', 'True', 'False'):
             tags_filter = tags_filter.replace(tag + ' ', 'False ')
-    return tags_filter == '' or eval(tags_filter)
+    return tags_filter == '' or eval(tags_filter)  # nosec
 
 
 def copy_bootstrap_html_generator(output):
@@ -473,3 +442,11 @@ def normalize_filename(input_name):
         )
         print(err_msg)
         return
+
+
+def get_environment_details():
+    """ Get environment information from the ENVIRONMENT_DETAILS environment variable.
+    The environment information is a comma-separated string that is split into a list."""
+    environment_details_raw_data = os.getenv('ENVIRONMENT_DETAILS', None)
+    environment_details = environment_details_raw_data.split(',') if environment_details_raw_data else []
+    return environment_details

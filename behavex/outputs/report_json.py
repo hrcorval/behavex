@@ -19,13 +19,15 @@ import random
 import traceback
 from tempfile import gettempdir
 
-from behave.step_registry import registry
 from behave.model import ScenarioOutline
+from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
-from behavex.outputs.report_utils import get_error_message, match_for_execution, text
-from behavex.utils import try_operate_descriptor, get_scenario_tags
+from behavex.outputs.report_utils import (get_environment_details,
+                                          get_error_message,
+                                          match_for_execution, text)
+from behavex.utils import get_scenario_tags, try_operate_descriptor
 
 
 def add_step_info(step, parent_node):
@@ -78,13 +80,9 @@ def generate_execution_info(features):
     return feature_list
 
 
-def save_info_json(context, feature_list):
-    environment_info = ''
-    if hasattr(context, 'environment'):
-        environment_info = context.environment
-
+def generate_json_report(feature_list):
     output = {
-        'environment': environment_info,
+        'environment': get_environment_details(),
         'features': feature_list,
         'steps_definition': global_vars.steps_definitions,
     }
@@ -152,45 +150,44 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
     scenario_outline_index = 0
     overall_status = 'passed'
     for scenario in scenarios:
-        if not (scenario.status == "skipped" and get_env("RERUN_FAILURES")):
-            # Set MANUAL to False in order filter regardless of it
-            error_msg, error_lines, error_step, error_background = _get_error_scenario(
-                scenario
-            )
-            # pylint: disable=W0123
-            scenario_tags = get_scenario_tags(scenario)
-            if match_for_execution(scenario_tags):
-                # Scenario was selectable
-                scenario_info = {}
-                scenario_info['name'] = getattr(scenario, 'name')
-                scenario_info['duration'] = getattr(scenario, 'duration')
-                scenario_info['status'] = getattr(scenario, 'status').name
-                scenario_info['tags'] = getattr(scenario, 'effective_tags')
-                scenario_info['filename'] = text(scenario.filename)
-                scenario_info['feature'] = scenario.feature.name
-                scenario_info['id_feature'] = id_feature
-                steps = []
-                for step in scenario.steps:
-                    add_step_info(step, steps)
-                scenario_info['steps'] = steps
-                scenario_info['outline_index'] = scenario_outline_index
-                if scenario_info['status'] == 'failed':
-                    overall_status = 'failed'
-                scenario_outline_index += 1
-                scenario_info['background'] = _processing_background(scenario)
-                scenario_info['error_msg'] = error_msg
-                scenario_info['error_lines'] = error_lines
-                scenario_info['error_step'] = error_step
-                scenario_info['error_background'] = error_background
-                scenario_info['id_hash'] = _generate_hash(scenario.name)
-                if scenario.feature.name in global_vars.retried_scenarios:
-                    if (
-                        scenario.name
-                        in global_vars.retried_scenarios[scenario.feature.name]
-                    ):
-                        scenario_info['retried'] = True
+        # Set MANUAL to False in order filter regardless of it
+        error_msg, error_lines, error_step, error_background = _get_error_scenario(
+            scenario
+        )
+        # pylint: disable=W0123
+        scenario_tags = get_scenario_tags(scenario)
+        if match_for_execution(scenario_tags):
+            # Scenario was selectable
+            scenario_info = {}
+            scenario_info['name'] = getattr(scenario, 'name')
+            scenario_info['duration'] = getattr(scenario, 'duration')
+            scenario_info['status'] = getattr(scenario, 'status').name
+            scenario_info['tags'] = getattr(scenario, 'effective_tags')
+            scenario_info['filename'] = text(scenario.filename)
+            scenario_info['feature'] = scenario.feature.name
+            scenario_info['id_feature'] = id_feature
+            steps = []
+            for step in scenario.steps:
+                add_step_info(step, steps)
+            scenario_info['steps'] = steps
+            scenario_info['outline_index'] = scenario_outline_index
+            if scenario_info['status'] == 'failed':
+                overall_status = 'failed'
+            scenario_outline_index += 1
+            scenario_info['background'] = _processing_background(scenario)
+            scenario_info['error_msg'] = error_msg
+            scenario_info['error_lines'] = error_lines
+            scenario_info['error_step'] = error_step
+            scenario_info['error_background'] = error_background
+            scenario_info['id_hash'] = _generate_hash(scenario.name)
+            if scenario.feature.name in global_vars.retried_scenarios:
+                if (
+                    scenario.name
+                    in global_vars.retried_scenarios[scenario.feature.name]
+                ):
+                    scenario_info['retried'] = True
 
-                scenario_list.append(scenario_info)
+            scenario_list.append(scenario_info)
     return overall_status, scenario_list
 
 
@@ -256,9 +253,9 @@ def _step_to_dict(index, step):
 def process_step_definition(step, step_info):
     definition = registry.find_step_definition(step)
     if definition:
-        hash_step = _generate_hash(definition.string)
+        hash_step = _generate_hash(definition.pattern)
         if hash_step not in global_vars.steps_definitions:
-            global_vars.steps_definitions[hash_step] = definition.string
+            global_vars.steps_definitions[hash_step] = definition.pattern
         step_info['hash'] = hash_step
     else:
         step_info['hash'] = 0
