@@ -217,19 +217,6 @@
                                         </button>
                                     </div>
                                 </div>
-                            {%- if environments is defined and environments|count > 0 -%}
-                                <div class="col-md-2  pull-right" style="vertical-align: middle" >
-                                    {% set title_env = environments|sort|export_environments_title %}
-                                    <span class="title-environment pull-right" data-title-environment>
-                                        <b>Environment</b>
-                                        <span class="glyphicon glyphicon-eye-open glyphicon-align-right"
-                                              style="color: #333;font-size: 10px;"
-                                              title="{{ title_env }}"
-                                                data-title-environment data-change-title="0">
-                                        </span>
-                                    </span>
-                                </div>
-                            {%- endif -%}
                             </div>
                         </div>
                     </div>
@@ -300,6 +287,8 @@
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
                         {%- set scenario_tags = scenario|get_scenario_tags -%}
+                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested')) else False -%}
+                        {%- set scenario_crashed = True if (scenario.status == 'failed' and not scenario.error_background and not scenario.error_step) else False -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario_tags|to_string_list }}">
                             <td class="text-left grey-behavex">
@@ -334,8 +323,15 @@
                                                 {%- endif -%}
                                             {%- endfor -%}
                                         </ul>
-                                    {% endif %}
-                                    {%- if scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested' )-%}
+                                    {%- endif -%}
+                                    {%- if scenario_crashed -%}
+                                        <br>
+                                        <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
+                                            <span class="glyphicon glyphicon-warning-sign"></span>
+                                            <b>{{ scenario.error_msg }}</b>
+                                            <br>
+                                        <hr class='line-behavex-background'>
+                                    {%- elif scenario_background_failed -%}
                                         <br>
                                         <p style="padding-left:12px;padding-top:15px;padding-bottom:2px" data-div-id_hash="{{ scenario.id_hash }}">
                                             <span class="glyphicon glyphicon-warning-sign"></span>
@@ -361,7 +357,7 @@
                                 {%- if "MANUAL" in scenario_tags -%}
                                     <p class="text-center">Manual</p>
                                     </td>
-                                    <td>&nbsp;&nbsp;Not&nbsp;Run</td>
+                                    <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
@@ -369,7 +365,7 @@
                                 {%- elif "WIP" in scenario_tags -%}
                                     <p class="text-center">Work In Progress</p>
                                     </td>
-                                    <td>&nbsp;&nbsp;Not&nbsp;Run</td>
+                                    <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
                                         <span class="glyphicon glyphicon-copy"></span></a>
@@ -380,7 +376,7 @@
                                     </td>
 
                                     {%- if "Skipped" in scenario.status|capitalize -%}
-                                        <td><p><b>&nbsp;Not&nbsp;Run</b></p></td>
+                                        <td><p><b>&nbsp;Skipped</b></p></td>
                                         <td>
                                             <p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p>
                                         </td>
@@ -402,7 +398,7 @@
 											{%- set path_log_scenario = path_log_scenario|string -%}
                                             {%- set path_img_scenario = path_join(path_log, scenario_hash, 'images.html')-%}
 											{%- set path_img_scenario = path_img_scenario|string -%}
-                                            {%- if path_log_scenario|path_exist_in_output -%}
+                                            {%- if path_log_scenario|path_exist_in_output and not scenario_crashed -%}
                                                 <a href="{{ path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    charset="utf-8" class="btn btn-info btn-xs" title="View Test Logs"
                                                    data-log>
@@ -567,13 +563,23 @@
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
             } else if (status == 'passed'){
-                $('tr[feature_passed]   span').click();
                 $('tr[feature_failed]').hide();
                 $('tr[feature_skipped]').hide();
                 $('tr[feature_skipped] + tr[data-feature-id] td');
-                $($('tr[feature_passed] e + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
-                $($('tr[feature_passed]  + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
+                $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
+                $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
                 $('tr[feature_failed]').each(function(){
+                    var clickear = false;
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
+                        div.find('span').click();
+                        div.show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
+                    }
+                });
+                $('tr[feature_passed]').each(function(){
                     var clickear = false;
                     var div = $(this);
                     if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
@@ -819,22 +825,6 @@
             var body_modal = modal.find('div.modal-body');
             body_modal.html('<iframe style="width:100%;height:100%;" frameborder="0" src="' + url + '" />');
             modal.modal('show');
-        });
-
-         $('[data-title-environment]').on('click mouseover', function(){
-            var span = $('span [data-title-environment]');
-            var change_title = parseInt(span.attr('data-change-title'));
-            if (change_title  < 3) {
-                span.attr('title', span.attr('title') + '  ');
-                span.attr('data-change-title', change_title + 1);
-            } else {
-                span.attr('title', span.attr('title').trim());
-                if (change_title > 5){
-                    change_title = 0;
-                }
-                span.attr('data-change-title', change_title + 1);
-            }
-            span.focus();
         });
 
         $('[data-close-iframe]').click(function(){

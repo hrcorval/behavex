@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import time
 
 
 class GlobalVars:
@@ -25,6 +26,8 @@ class GlobalVars:
         self._steps_definitions = {}
         self._rerun_failures = False
         self._progress_bar_instance = None
+        self._execution_start_time = time.time()
+        self._execution_end_time = None
 
     @property
     def execution_path(self):
@@ -74,5 +77,22 @@ class GlobalVars:
     def progress_bar_instance(self, progress_bar_instance):
         self._progress_bar_instance = progress_bar_instance
 
+    @property
+    def execution_start_time(self):
+        return self._execution_start_time
+
+    @execution_start_time.setter
+    def execution_start_time(self, execution_start_time):
+        self._execution_start_time = execution_start_time
+
+    @property
+    def execution_elapsed_time(self):
+        return time.time() - self._execution_start_time
+
+    @property
+    def execution_end_time(self):
+        if not self._execution_end_time:
+            self._execution_end_time = time.time()
+        return self._execution_end_time
 
 global_vars = GlobalVars()

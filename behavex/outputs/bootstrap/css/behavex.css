@@ -375,3 +375,8 @@ ul.list-unstyled.scenario-step > li {
 .table-scenario{
     table-layout: fixed;
 }
+.tooltip-info{
+    width: 300px !important;
+    max-width: 300px !important;
+    text-align: left !important;
+}

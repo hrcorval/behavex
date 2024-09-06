@@ -53,11 +53,18 @@
             <div class="navbar-header">
                 <a class="navbar-brand">BehaveX</a>
             </div>
-            <div>
+            <div class="collapse navbar-collapse">
                 <ul class="nav navbar-nav">
                     <!-- icon behavex-->
                     <li class="nav-item {% if menu == 'report' %}active{% endif %}">
                         <a class="nav-link" href="{{ path_report}}">Test Report</a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="nav-item">
+                        <div class="navbar-text" style="padding: 0;margin: 0;margin-top: 0px;">
+                            <span class="glyphicon glyphicon-info-sign btn-lg" data-toggle="tooltip_info"></span>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -123,6 +130,27 @@
             );
         });
 
+        $(document).ready(function() {
+            $('[data-toggle="tooltip_info"]').tooltip({
+                title: '<b>Execution Details:</b>' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel processes:</b> {{ execution_details["parallel_processes"] }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Parallel scheme:</b> {{ execution_details["parallel_scheme"] }}' +
+                        {%- if environment_details is defined and environment_details|length-%}
+                            '<br><br><b>Environment Details:</b>' +
+                            {% for environment_details_item in environment_details %}
+                                '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>{{ environment_details_item }}</b>' +
+                            {%- endfor -%}
+                        {%- endif -%}
+                       '<br><br><b>Execution Times:</b>' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution start time:</b> {{ execution_times["execution_start_time"] }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Execution end time:</b> {{ execution_times["execution_end_time"] }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total execution time:</b> {{execution_times["total_execution_time"]|pretty_print_time }}' +
+                       '<br>&nbsp;&nbsp;&nbsp;&nbsp;<b>Total scenarios duration:</b> {{fields_total['Duration']|pretty_print_time }}',
+                placement: "bottom",
+                template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner tooltip-info textarea"></div></div>',
+                html: true,
+            });
+        });
     </script>
     </body>
 </html>

@@ -20,9 +20,9 @@ import jinja2
 from behavex.conf_mgr import get_env
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (calculate_status, count_by_status,
-                                          gather_errors, get_error_message,
-                                          get_string_hash, match_for_execution,
+from behavex.outputs.report_utils import (calculate_status, gather_errors,
+                                          get_error_message, get_string_hash,
+                                          match_for_execution,
                                           normalize_filename,
                                           pretty_print_time, resolving_type)
 
@@ -53,13 +53,11 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(resolving_type, 'resolving_type')
         self.add_filter(self._get_text, 'get_text')
         self.add_filter(_create_progress_html, 'create_progress_html')
-        self.add_filter(_export_environments_title, 'export_environments_title')
         self.add_filter(match_for_execution, 'match_for_execution')
         self.add_filter(create_tags_set, 'create_tags_set')
         self.add_filter(to_string_list, 'to_string_list')
         self.add_filter(_calculate_color, 'calculate_color')
         self.add_filter(calculate_status, 'calculate_status')
-        self.add_filter(count_by_status, 'count_by_status')
         self.add_filter(_exist_extra_logs, 'exist_extra_logs')
         self.add_filter(get_extra_logs_file, 'get_extra_logs_file')
         self.add_filter(get_path_extra_logs, 'get_path_extra_logs')
@@ -250,20 +248,6 @@ def _resolving_color_class(status):
         return 'warning'
     else:
         return 'active'
-
-
-# environment.keys() has been forced to be a list
-def _export_environments_title(environments):
-    result = ''
-    max_name = max(len(list(environment.keys())[0]) for environment in environments)
-    row = '{} --{}>  {}\n'
-    for environment in environments:
-        result += row.format(
-            list(environment.keys())[0],
-            '-' * (max_name - len(list(environment.keys())[0])),
-            list(environment.values())[0],
-        )
-    return result
 
 
 def create_tags_set(feature):
