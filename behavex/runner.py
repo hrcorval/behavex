@@ -70,8 +70,6 @@ match_include = None
 include_path_match = None
 include_name_match = None
 scenario_lines = {}
-# Define a global variable to store the lock
-process_lock = None
 
 
 def main():
@@ -169,15 +167,13 @@ def setup_running_failures(args_parsed):
         return EXIT_OK, None
 
 
-def init_multiprocessing(lock, idQueue):
+def init_multiprocessing(idQueue):
     """Initialize multiprocessing by ignoring SIGINT signals."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    global process_lock
-    process_lock = lock  
     # Retrieve one of the unique IDs
-    id = idQueue.get()
+    worker_id = idQueue.get()
     # Use the unique ID to name the process
-    multiprocessing.current_process().name = f'behave_worker-{id}'
+    multiprocessing.current_process().name = f'behave_worker-{worker_id}'
 
 
 def launch_behavex():
@@ -217,13 +213,13 @@ def launch_behavex():
     shared_removed_scenarios = manager.dict()
     lock = manager.Lock()
     # Create a queue containing unique IDs from 0 to the number of parallel processes - 1
-    # These IDs will be attributed to the process when they will be initialized 
+    # These IDs will be attributed to the process when they will be initialized
     idQueue = manager.Queue()
     for i in range(parallel_processes):
         idQueue.put(i)
     process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
-                                       initializer=init_multiprocessing(),
-                                       initargs=(lock, idQueue))
+                                       initializer=init_multiprocessing,
+                                       initargs=(idQueue,))
     global_vars.execution_start_time = time.time()
     try:
         config = ConfigRun()
@@ -312,9 +308,7 @@ def launch_behavex():
         else:
             execution_failed = True if execution_codes > 0 else False
             execution_interrupted_or_crashed = True if execution_codes == 2 else False
-        exit_code = (
-            EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK
-        )
+        exit_code = (EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK)
     except KeyboardInterrupt:
         print('Caught KeyboardInterrupt, terminating workers')
         process_pool.shutdown(wait=False, cancel_futures=True)
@@ -1022,7 +1016,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
             arguments.append('--name')
             arguments.append("{}".format(scenario_outline_compatible))
         worker_id = multiprocessing.current_process().name.split('-')[-1]
-            
+
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(worker_id)))
 

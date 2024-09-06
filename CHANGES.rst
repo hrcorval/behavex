@@ -1,6 +1,17 @@
 Version History
 ===============================================================================
 
+Version: 4.0.3
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Added the 'worker_id' context.config.userdata parameter to allow users to identify which worker is executing every feature or scenario when running tests in parallel. `PR #121 <https://github.com/hrcorval/behavex/pull/121>`_
+
+CONTRIBUTIONS:
+
+* Contributions from `JackHerRrer <https://github.com/JackHerRrer>`__, by providing the implementation to include the 'worker_id' context.config.userdata parameter (Thanks JackHerRrer!!)
+
+
 Version: 4.0.2
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
