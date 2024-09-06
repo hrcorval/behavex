@@ -5,7 +5,7 @@ from behavex.global_vars import global_vars
 
 
 class ProgressBar:
-    def __init__(self, prefix, total, bar_length=20, print_updates_in_new_lines=False):
+    def __init__(self, prefix, total, bar_length=15, print_updates_in_new_lines=False):
         self.prefix = prefix
         self.total = total
         self.bar_length = bar_length
@@ -32,7 +32,7 @@ class ProgressBar:
             percent = 100
             filled_length = int(self.bar_length)
         else:
-            percent = 100 * (self.current_iteration / float(self.total))
+            percent = 100 * float(self.current_iteration / float(self.total))
             filled_length = int(self.bar_length * self.current_iteration // self.total)
         bar = '█' * filled_length + '-' * (self.bar_length - filled_length)
         elapsed_time = global_vars.execution_elapsed_time
