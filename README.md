@@ -8,7 +8,7 @@
 
 # BehaveX
 
-BehaveX is a BDD tesing solution designed to enhance your Behave-based testing workflow by providing additional features and performance improvements. It's particularly beneficial in the following scenarios:
+BehaveX is a BDD testing solution designed to enhance your Behave-based testing workflow by providing additional features and performance improvements. It's particularly beneficial in the following scenarios:
 
 * **Accelerating test execution**: When you need to significantly reduce test run times through parallel execution by feature or scenario.
 * **Enhancing test reporting**: When comprehensive and visually appealing HTML and JSON reports are required for in-depth analysis and integration with other tools.
