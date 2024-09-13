@@ -1,11 +1,12 @@
 Version History
 ===============================================================================
 
-Version: 4.0.3
+Version: 4.0.4
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
 
 * Added the 'worker_id' context.config.userdata parameter to allow users to identify which worker is executing every feature or scenario when running tests in parallel. `PR #121 <https://github.com/hrcorval/behavex/pull/121>`_
+* Adding the --parallel-delay argument, to enable setting a staggered execution when running tests in parallel. `Issue #142 <https://github.com/hrcorval/behavex/issues/142>`_
 
 CONTRIBUTIONS:
 

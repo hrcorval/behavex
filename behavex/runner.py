@@ -167,13 +167,16 @@ def setup_running_failures(args_parsed):
         return EXIT_OK, None
 
 
-def init_multiprocessing(idQueue):
+def init_multiprocessing(idQueue, parallel_delay):
     """Initialize multiprocessing by ignoring SIGINT signals."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     # Retrieve one of the unique IDs
     worker_id = idQueue.get()
     # Use the unique ID to name the process
     multiprocessing.current_process().name = f'behave_worker-{worker_id}'
+    # Add delay
+    if parallel_delay > 0:
+        time.sleep(parallel_delay / 1000.0)
 
 
 def launch_behavex():
@@ -217,9 +220,10 @@ def launch_behavex():
     idQueue = manager.Queue()
     for i in range(parallel_processes):
         idQueue.put(i)
+    parallel_delay = get_param('parallel_delay')
     process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
                                        initializer=init_multiprocessing,
-                                       initargs=(idQueue,))
+                                       initargs=(idQueue, parallel_delay))
     global_vars.execution_start_time = time.time()
     try:
         config = ConfigRun()
