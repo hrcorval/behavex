@@ -38,7 +38,11 @@ def add_step_info(step, parent_node):
 def add_step_info_background(step, parent_node):
     step_info = {}
     for attrib in ('step_type', 'name', 'text', 'status'):
+        if not hasattr(step, attrib):
+            continue
         step_info[attrib] = text(getattr(step, attrib))
+    step_info['start'] = getattr(step, 'start') if hasattr(step, 'start') else 0
+    step_info['stop'] = getattr(step, 'stop') if hasattr(step, 'stop') else 0
     step_info['duration'] = step.duration or 0
     if step.table:
         step_info['table'] = {}
@@ -69,9 +73,13 @@ def generate_execution_info(features):
         if scenario_list:
             feature_info = {}
             for attrib in ('name', 'status', 'duration'):
+                if not hasattr(feature, attrib):
+                    continue
                 value = getattr(feature, attrib)
                 value = value.name if attrib == 'status' else value
                 feature_info[attrib] = value
+            feature_info['start'] = getattr(feature, 'start') if hasattr(feature, 'start') else 0
+            feature_info['stop'] = getattr(feature, 'stop') if hasattr(feature, 'stop') else 0
             feature_info['filename'] = text(feature.filename)
             feature_info['scenarios'] = scenario_list
             feature_info['background'] = _processing_background_feature(feature)
@@ -161,6 +169,8 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info = {}
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
+            scenario_info['start'] = getattr(scenario, 'start') if hasattr(scenario, 'start') else 0
+            scenario_info['stop'] = getattr(scenario, 'stop') if hasattr(scenario, 'stop') else 0
             scenario_info['status'] = getattr(scenario, 'status').name
             scenario_info['tags'] = getattr(scenario, 'effective_tags')
             scenario_info['filename'] = text(scenario.filename)
@@ -227,9 +237,13 @@ def _get_error_scenario(scenario):
 def _step_to_dict(index, step):
     step_info = {}
     for attrib in ('step_type', 'name', 'text', 'status'):
+        if not hasattr(step, attrib):
+            continue
         step_info[attrib] = (
             text(getattr(step, attrib)) if text(getattr(step, attrib)) else ''
         )
+    step_info['start'] = getattr(step, 'start') if hasattr(step, 'start') else 0
+    step_info['stop'] = getattr(step, 'stop') if hasattr(step, 'stop') else 0
     step_info['duration'] = 0.0
     if hasattr(step, 'duration'):
         step_info['duration'] = step.duration or 0.0

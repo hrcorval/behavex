@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 import sys
+import time
 
 from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 from behave.log_capture import capture
@@ -108,6 +109,7 @@ def before_feature(context, feature):
             configured_attempts = get_autoretry_attempts(scenario_tags)
             if configured_attempts > 0:
                 patch_scenario_with_autoretry(scenario, configured_attempts)
+        setattr(feature, "start", time.time())
     except Exception as exception:
         _log_exception_and_continue('before_feature (behavex)', exception)
 
@@ -126,12 +128,14 @@ def before_scenario(context, scenario):
         if retrying_execution:
             logging.info('Retrying scenario execution...\n'.format())
             shutil.rmtree(context.evidence_path)
+        # Setting the scenario start time
+        setattr(scenario, "start", time.time())
     except Exception as exception:
         _log_exception_and_continue('before_scenario (behavex)', exception)
 
 
 def before_step(context, step):
-    pass
+    setattr(step, "start", time.time())
 
 
 def before_tag(context, tag):
@@ -144,6 +148,7 @@ def after_tag(context, tag):
 
 def after_step(context, step):
     try:
+        setattr(step, "stop", time.time())
         if step.exception:
             step.error_message = step.error_message
             logging.error(step.exception)
@@ -154,6 +159,7 @@ def after_step(context, step):
 @capture
 def after_scenario(context, scenario):
     try:
+        setattr(scenario, "stop", time.time())
         scenario_tags = get_scenario_tags(scenario)
         configured_attempts = get_autoretry_attempts(scenario_tags)
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
@@ -171,6 +177,7 @@ def after_scenario(context, scenario):
 # noinspection PyUnusedLocal
 def after_feature(context, feature):
     try:
+        setattr(feature, "stop", time.time())
         if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
             return
         report_xml.export_feature_to_xml(feature)
