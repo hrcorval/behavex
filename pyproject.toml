@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.0.2"
+version = "4.0.4rc1"
 description = "Agile test wrapper on top of Behave (BDD)."
 readme = "README.md"
 license = { text = "MIT" }
@@ -12,6 +12,14 @@ authors = [
     { name = "Hernan Rey", email = "behavex_users@googlegroups.com" }
 ]
 requires-python = ">=3.5"
+dependencies = [
+    "behave==1.2.6",
+    "behavex-images",
+    "jinja2",
+    "configobj",
+    "htmlmin",
+    "csscompressor"
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -32,14 +40,6 @@ classifiers = [
 
 [project.urls]
 homepage = "https://github.com/hrcorval/behavex"
-
-[project.dependencies]
-behave = "==1.2.6"
-behavex-images = "*"
-jinja2 = "*"
-configobj = "*"
-htmlmin = "*"
-csscompressor = "*"
 
 [project.optional-dependencies]
 dev = [
