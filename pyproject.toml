@@ -52,5 +52,5 @@ dev = [
 [tool.setuptools.packages.find]
 exclude = ["tests"]
 
-[tool.setuptools.entry-points.console_scripts]
+[project.scripts]
 behavex = "behavex.runner:main"
