@@ -495,7 +495,12 @@ def launch_by_feature(features,
             global_vars.progress_bar_instance,
         ))
     for parallel_process in parallel_processes:
-        parallel_process.result()
+        try:
+            parallel_process.result()
+        except Exception as e:
+            logging.error(f"Exception in parallel_process: {e}")
+            process_pool.shutdown(wait=False, cancel_futures=True)
+            raise
     return execution_codes, json_reports
 
 
@@ -605,7 +610,12 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance
                 ))
         for parallel_process in parallel_processes:
-            parallel_process.result()
+            try:
+                parallel_process.result()
+            except Exception as e:
+                logging.error(f"Exception in parallel_process: {e}")
+                process_pool.shutdown(wait=False, cancel_futures=True)
+                raise
     return execution_codes, json_reports
 
 
@@ -636,67 +646,71 @@ def execute_tests(
     Returns:
         tuple: Execution code and JSON report.
     """
-    behave_args = None
-    if multiprocess:
-        ExecutionSingleton._instances[ConfigRun] = config
-    extend_behave_hooks()
     try:
-        # Execution ID is only important for multiprocessing so that
-        # we can influence where output files end up
-        execution_id = json.loads(feature_json_skeleton or '{}').get('id')
-        behave_args = _set_behave_arguments(features_path=features_path,
-                                            multiprocess=multiprocess,
-                                            execution_id=execution_id,
-                                            feature=feature_filename,
-                                            scenario=scenario_name,
-                                            config=config)
-    except Exception as exception:
-        traceback.print_exc()
-        print(exception)
-    execution_code, generate_report = _launch_behave(behave_args)
-    # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
-    if generate_report:
-        # print execution code
-        if execution_code == 2:
-            if feature_json_skeleton:
-                json_output = {'environment': [],
-                               'features': [json.loads(feature_json_skeleton)],
-                               'steps_definition': []}
-                for skeleton_feature in json_output["features"]:
-                    if scenario_name:
-                        for skeleton_scenario in skeleton_feature["scenarios"]:
-                            if scenario_name_matching(scenario_name, skeleton_scenario['name']):
+        behave_args = None
+        if multiprocess:
+            ExecutionSingleton._instances[ConfigRun] = config
+        extend_behave_hooks()
+        try:
+            # Execution ID is only important for multiprocessing so that
+            # we can influence where output files end up
+            execution_id = json.loads(feature_json_skeleton or '{}').get('id')
+            behave_args = _set_behave_arguments(features_path=features_path,
+                                                multiprocess=multiprocess,
+                                                execution_id=execution_id,
+                                                feature=feature_filename,
+                                                scenario=scenario_name,
+                                                config=config)
+        except Exception as exception:
+            traceback.print_exc()
+            print(exception)
+        execution_code, generate_report = _launch_behave(behave_args)
+        # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
+        if generate_report:
+            # print execution code
+            if execution_code == 2:
+                if feature_json_skeleton:
+                    json_output = {'environment': [],
+                                   'features': [json.loads(feature_json_skeleton)],
+                                   'steps_definition': []}
+                    for skeleton_feature in json_output["features"]:
+                        if scenario_name:
+                            for skeleton_scenario in skeleton_feature["scenarios"]:
+                                if scenario_name_matching(scenario_name, skeleton_scenario['name']):
+                                    skeleton_scenario['status'] = 'failed'
+                                    skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
+                        else:
+                            skeleton_feature['status'] = 'failed'
+                            skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
+                            for skeleton_scenario in skeleton_feature["scenarios"]:
                                 skeleton_scenario['status'] = 'failed'
-                                skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
-                    else:
-                        skeleton_feature['status'] = 'failed'
-                        skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
-                        for skeleton_scenario in skeleton_feature["scenarios"]:
-                            skeleton_scenario['status'] = 'failed'
-                            skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                                skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                else:
+                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
             else:
-                json_output = {'environment': [], 'features': [], 'steps_definition': []}
+                json_output = dump_json_results()
+            if scenario_name:
+                json_output['features'] = filter_feature_executed(json_output,
+                                                                  text(feature_filename),
+                                                                  scenario_name)
+                if len(json_output['features']) == 0 or len(json_output['features'][0]['scenarios']) == 0:
+                    # Adding scenario data if the test was removed from the execution (setting it as "Untested")
+                    json_output['features'] = [json.loads(feature_json_skeleton)]
+                try:
+                    processing_xml_feature(json_output=json_output,
+                                           scenario=scenario_name,
+                                           feature_filename=feature_filename,
+                                           scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                           lock=lock,
+                                           shared_removed_scenarios=shared_removed_scenarios)
+                except Exception as ex:
+                    logging.exception("There was a problem processing the xml file: {}".format(ex))
         else:
-            json_output = dump_json_results()
-        if scenario_name:
-            json_output['features'] = filter_feature_executed(json_output,
-                                                              text(feature_filename),
-                                                              scenario_name)
-            if len(json_output['features']) == 0 or len(json_output['features'][0]['scenarios']) == 0:
-                # Adding scenario data if the test was removed from the execution (setting it as "Untested")
-                json_output['features'] = [json.loads(feature_json_skeleton)]
-            try:
-                processing_xml_feature(json_output=json_output,
-                                       scenario=scenario_name,
-                                       feature_filename=feature_filename,
-                                       scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                       lock=lock,
-                                       shared_removed_scenarios=shared_removed_scenarios)
-            except Exception as ex:
-                logging.exception("There was a problem processing the xml file: {}".format(ex))
-    else:
-        json_output = {'environment': [], 'features': [], 'steps_definition': []}
-    return execution_code, join_feature_reports(json_output)
+            json_output = {'environment': [], 'features': [], 'steps_definition': []}
+        return execution_code, join_feature_reports(json_output)
+    except Exception as e:
+        logging.error(f"Exception in execute_tests: {e}")
+        raise
 
 
 def filter_feature_executed(json_output, filename, scenario_name):
