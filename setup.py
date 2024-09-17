@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.0.4rc1',
+    version='4.0.4rc2',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',
@@ -15,7 +15,7 @@ setup(
     url='https://github.com/hrcorval/behavex',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
-    description='Agile test wrapper on top of Behave (BDD).',
+    description='Agile testing framework on top of Behave (BDD).',
     long_description_content_type='text/markdown',
     long_description=long_description,
     entry_points={

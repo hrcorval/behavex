@@ -168,15 +168,18 @@ def setup_running_failures(args_parsed):
 
 
 def init_multiprocessing(idQueue, parallel_delay):
-    """Initialize multiprocessing by ignoring SIGINT signals."""
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    # Retrieve one of the unique IDs
-    worker_id = idQueue.get()
-    # Use the unique ID to name the process
-    multiprocessing.current_process().name = f'behave_worker-{worker_id}'
-    # Add delay
-    if parallel_delay > 0:
-        time.sleep(parallel_delay / 1000.0)
+    try:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Retrieve one of the unique IDs
+        worker_id = idQueue.get()
+        # Use the unique ID to name the process
+        multiprocessing.current_process().name = f'behave_worker-{worker_id}'
+        # Add an initial delay to avoid all processes starting at the same time
+        if parallel_delay > 0:
+            time.sleep(parallel_delay / 1000.0)
+    except Exception as e:
+        logging.error(f"Exception in init_multiprocessing: {e}")
+        raise
 
 
 def launch_behavex():

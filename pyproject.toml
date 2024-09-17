@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.0.4rc1"
-description = "Agile test wrapper on top of Behave (BDD)."
+version = "4.0.4rc2"
+description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
