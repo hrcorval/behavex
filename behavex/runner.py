@@ -167,7 +167,7 @@ def setup_running_failures(args_parsed):
         return EXIT_OK, None
 
 
-def init_multiprocessing(idQueue):
+def init_multiprocessing(idQueue, parallel_delay):
     """Initialize multiprocessing by ignoring SIGINT signals."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     # Retrieve one of the unique IDs
@@ -223,7 +223,7 @@ def launch_behavex():
     parallel_delay = get_param('parallel_delay')
     process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
                                        initializer=init_multiprocessing,
-                                       initargs=(idQueue,))
+                                       initargs=(idQueue, parallel_delay))
     global_vars.execution_start_time = time.time()
     try:
         config = ConfigRun()
@@ -471,6 +471,7 @@ def launch_by_feature(features,
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
+    parallel_processes = []
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
         feature_json_skeleton = parallel_feature["feature_json_skeleton"]
@@ -484,11 +485,14 @@ def launch_by_feature(features,
                                      config=ConfigRun(),
                                      lock=lock,
                                      shared_removed_scenarios=None)
+        parallel_processes.append(future)
         future.add_done_callback(create_execution_complete_callback_function(
             execution_codes,
             json_reports,
             global_vars.progress_bar_instance,
         ))
+    for parallel_process in parallel_processes:
+        parallel_process.result()
     return execution_codes, json_reports
 
 
@@ -573,6 +577,7 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
         print_parallel('scenario.running_parallels')
+        parallel_processes = []
         for features_path in parallel_scenarios.keys():
             for scenario_information in parallel_scenarios[features_path]:
                 scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
@@ -590,11 +595,14 @@ def launch_by_scenario(features,
                                              lock=lock,
                                              shared_removed_scenarios=shared_removed_scenarios
                                              )
+                parallel_processes.append(future)
                 future.add_done_callback(create_execution_complete_callback_function(
                     execution_codes,
                     json_reports,
                     global_vars.progress_bar_instance
                 ))
+        for parallel_process in parallel_processes:
+            parallel_process.result()
     return execution_codes, json_reports
 
 
