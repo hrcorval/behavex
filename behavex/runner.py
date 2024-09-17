@@ -175,8 +175,8 @@ def init_multiprocessing(idQueue, parallel_delay):
         # Use the unique ID to name the process
         multiprocessing.current_process().name = f'behave_worker-{worker_id}'
         # Add an initial delay to avoid all processes starting at the same time
-        if parallel_delay > 0:
-            time.sleep(parallel_delay / 1000.0)
+        if isinstance(parallel_delay, int) and parallel_delay > 0:
+            time.sleep(parallel_delay * worker_id / 1000.0)
     except Exception as e:
         logging.error(f"Exception in init_multiprocessing: {e}")
         raise
@@ -241,6 +241,7 @@ def launch_behavex():
             execution_codes, json_reports = execute_tests(features_path=all_paths,
                                                           feature_filename=None,
                                                           feature_json_skeleton=None,
+                                                          scenarios_to_run_in_feature=None,
                                                           scenario_name=None,
                                                           multiprocess=False,
                                                           config=config,
@@ -494,13 +495,8 @@ def launch_by_feature(features,
             json_reports,
             global_vars.progress_bar_instance,
         ))
-    for parallel_process in parallel_processes:
-        try:
-            parallel_process.result()
-        except Exception as e:
-            logging.error(f"Exception in parallel_process: {e}")
-            process_pool.shutdown(wait=False, cancel_futures=True)
-            raise
+    for parallel_process in as_completed(parallel_processes):
+        parallel_process.result()
     return execution_codes, json_reports
 
 
@@ -610,12 +606,7 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance
                 ))
         for parallel_process in parallel_processes:
-            try:
-                parallel_process.result()
-            except Exception as e:
-                logging.error(f"Exception in parallel_process: {e}")
-                process_pool.shutdown(wait=False, cancel_futures=True)
-                raise
+            parallel_process.result()
     return execution_codes, json_reports
 
 
