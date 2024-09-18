@@ -335,23 +335,22 @@ def create_log_path(name, execution_retry=False):
     return path
 
 
-def get_error_message(message_error):
-    if not message_error:
+def get_error_message(error_message):
+    if not error_message:
         return u''
-    if isinstance(message_error, Exception):
-        if hasattr(message_error, 'message'):
+    if isinstance(error_message, Exception):
+        if hasattr(error_message, 'message'):
             # noinspection PyBroadException
             try:
-                message_error = traceback.format_tb(message_error.message)
+                error_message = traceback.format_tb(error_message.message)
             except BaseException:
-                message_error = repr(message_error.message)
-        if hasattr(message_error, 'exc_traceback'):
-            message_error = traceback.format_tb(message_error.exc_traceback)
-    elif not isinstance(message_error, str):
-        message_error = repr(message_error)
-    return u'\n'.join(
-        [16 * u' ' + line for line in text(message_error).split('\n')]
-    ).strip()
+                error_message = repr(error_message.message)
+        if hasattr(error_message, 'exc_traceback'):
+            error_message = traceback.format_tb(error_message.exc_traceback)
+    elif not isinstance(error_message, str):
+        error_message = repr(error_message)
+    formatted_error = u'\n'.join([16 * u' ' + line for line in text(error_message).split('\n')]).strip()
+    return formatted_error
 
 
 def text(value, encoding=None, errors=None):

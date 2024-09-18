@@ -163,7 +163,11 @@ def _print_step_json(step):
 
 
 def get_lines_exception(step):
-    if step.exception:
+    if type(step) is dict:
+        return u'\n'.join(
+            [16 * u' ' + line for line in step['error_lines']]
+        ).strip()
+    elif step.exception:
         return u'\n'.join(
             [16 * u' ' + line for line in traceback.format_tb(step.exc_traceback)]
         ).strip()
@@ -192,8 +196,8 @@ def _get_path_log(scenario):
         return path_logs
 
 
-def _quoteattr(string):
-    return "''" if not string else quoteattr(string)
+def _quoteattr(string_to_quote):
+    return "''" if not string_to_quote else quoteattr(string_to_quote)
 
 
 def _print_tag_xml(tags):

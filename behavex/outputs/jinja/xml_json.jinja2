@@ -20,7 +20,7 @@
             {{'\n'}}
         {%- endfor -%}
     {%- endif -%}
-        {{ 16*' ' ~ step|print_step_json ~ '\n'}}
+        {{ 16*' ' ~ step|print_step_json|safe ~ '\n'}}
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
 {%- set scenario_tags = scenario|get_scenario_tags-%}
@@ -30,13 +30,13 @@
          classname={{scenario.feature|normalize|CIXC|quoteattr|safe }} >
             {% set step_with_exception = scenario.error_step %}
             {%- if scenario_crashed and not is_muted -%}
-                    <failure type=Exception message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
-                        <![CDATA[ {{ scenario.error_msg }} ]]>
-                    </failure>
+                <failure type="Exception" message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
+                    <![CDATA[ {{ scenario.error_msg }} ]]>
+                </failure>
             {%- elif step_with_exception and not is_muted -%}
-                <failure message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }} type="AssertionError">
-                    <![CDATA[ Failing step: {{step_with_exception|print_step_json|safe}} Location:{{step_with_exception.index}}
-                        {{step_with_exception|safe}}
+                <failure type="AssertionError" message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }}>
+                    <![CDATA[ Failing step: {{step_with_exception|print_step_json|safe}} Location:{{feature["filename"]}}
+                        {{step_with_exception|get_lines_exception|safe}}
                     ]]>
                 </failure>
             {%- endif -%}
