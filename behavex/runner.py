@@ -167,9 +167,19 @@ def setup_running_failures(args_parsed):
         return EXIT_OK, None
 
 
-def init_multiprocessing():
-    """Initialize multiprocessing by ignoring SIGINT signals."""
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+def init_multiprocessing(idQueue, parallel_delay):
+    try:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Retrieve one of the unique IDs
+        worker_id = idQueue.get()
+        # Use the unique ID to name the process
+        multiprocessing.current_process().name = f'behave_worker-{worker_id}'
+        # Add an initial delay to avoid all processes starting at the same time
+        if isinstance(parallel_delay, int) and parallel_delay > 0:
+            time.sleep(parallel_delay * worker_id / 1000.0)
+    except Exception as e:
+        logging.error(f"Exception in init_multiprocessing: {e}")
+        raise
 
 
 def launch_behavex():
@@ -208,9 +218,15 @@ def launch_behavex():
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     lock = manager.Lock()
+    # Create a queue containing unique IDs from 0 to the number of parallel processes - 1
+    # These IDs will be attributed to the process when they will be initialized
+    idQueue = manager.Queue()
+    for i in range(parallel_processes):
+        idQueue.put(i)
+    parallel_delay = get_param('parallel_delay')
     process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
-                                       initializer=init_multiprocessing(),
-                                       initargs=(lock,))
+                                       initializer=init_multiprocessing,
+                                       initargs=(idQueue, parallel_delay))
     global_vars.execution_start_time = time.time()
     try:
         config = ConfigRun()
@@ -225,6 +241,7 @@ def launch_behavex():
             execution_codes, json_reports = execute_tests(features_path=all_paths,
                                                           feature_filename=None,
                                                           feature_json_skeleton=None,
+                                                          scenarios_to_run_in_feature=None,
                                                           scenario_name=None,
                                                           multiprocess=False,
                                                           config=config,
@@ -299,9 +316,7 @@ def launch_behavex():
         else:
             execution_failed = True if execution_codes > 0 else False
             execution_interrupted_or_crashed = True if execution_codes == 2 else False
-        exit_code = (
-            EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK
-        )
+        exit_code = (EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK)
     except KeyboardInterrupt:
         print('Caught KeyboardInterrupt, terminating workers')
         process_pool.shutdown(wait=False, cancel_futures=True)
@@ -449,6 +464,7 @@ def launch_by_feature(features,
             execution_code, map_json = execute_tests(features_path=None,
                                                      feature_filename=serial_feature["feature_filename"],
                                                      feature_json_skeleton=serial_feature["feature_json_skeleton"],
+                                                     scenarios_to_run_in_feature=None,
                                                      scenario_name=None,
                                                      multiprocess=True,
                                                      config=ConfigRun(),
@@ -459,6 +475,7 @@ def launch_by_feature(features,
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
+    parallel_processes = []
     for parallel_feature in parallel_features:
         feature_filename = parallel_feature["feature_filename"]
         feature_json_skeleton = parallel_feature["feature_json_skeleton"]
@@ -466,16 +483,20 @@ def launch_by_feature(features,
                                      features_path=None,
                                      feature_filename=feature_filename,
                                      feature_json_skeleton=feature_json_skeleton,
+                                     scenarios_to_run_in_feature=None,
                                      scenario_name=None,
                                      multiprocess=True,
                                      config=ConfigRun(),
                                      lock=lock,
                                      shared_removed_scenarios=None)
+        parallel_processes.append(future)
         future.add_done_callback(create_execution_complete_callback_function(
             execution_codes,
             json_reports,
             global_vars.progress_bar_instance,
         ))
+    for parallel_process in as_completed(parallel_processes):
+        parallel_process.result()
     return execution_codes, json_reports
 
 
@@ -501,8 +522,8 @@ def launch_by_scenario(features,
     parallel_scenarios = {}
     serial_scenarios = {}
     duplicated_scenarios = {}
-    total_scenarios = 0
-    features_with_empty_scenario_descriptions = []
+    total_scenarios_to_run = {}
+    features_with_no_scen_desc = []
     for features_path, scenarios in features.items():
         for scenario in scenarios:
             if include_path_match(scenario.filename, scenario.line) \
@@ -510,43 +531,45 @@ def launch_by_scenario(features,
                 scenario_tags = get_scenario_tags(scenario)
                 if match_for_execution(scenario_tags):
                     if scenario.name == "":
-                        features_with_empty_scenario_descriptions.append(scenario.filename)
+                        features_with_no_scen_desc.append(scenario.filename)
                     feature_json_skeleton = _get_feature_json_skeleton(scenario)
-                    scenario_information = {"feature_filename": scenario.feature.filename,
+                    feature_filename = scenario.feature.filename
+                    scenario_information = {"feature_filename": feature_filename,
                                             "feature_json_skeleton": feature_json_skeleton,
                                             "scenario_name": scenario.name}
+                    total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
                     if 'SERIAL' in scenario_tags:
                         for key, list_scenarios in serial_scenarios.items():
                             if scenario_information in list_scenarios:
                                 duplicated_scenarios.setdefault(key, []).append(scenario.name)
                         serial_scenarios.setdefault(features_path, []).append(scenario_information)
-                        total_scenarios += 1
                     else:
                         for key, list_scenarios in parallel_scenarios.items():
                             if scenario_information in list_scenarios:
                                 duplicated_scenarios.setdefault(key, []).append(scenario.name)
                         parallel_scenarios.setdefault(features_path, []).append(scenario_information)
-                        total_scenarios += 1
     if show_progress_bar:
         global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
-                                                                       total_elements=total_scenarios)
+                                                                       total_elements=sum(total_scenarios_to_run.values()))
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
     if duplicated_scenarios:
         print_parallel('scenario.duplicated_scenarios',
                        json.dumps(duplicated_scenarios, indent=4))
         exit(1)
-    if features_with_empty_scenario_descriptions:
+    if features_with_no_scen_desc:
         print_parallel('feature.empty_scenario_descriptions',
-                       '\n* '.join(features_with_empty_scenario_descriptions))
+                       '\n* '.join(features_with_no_scen_desc))
         exit(1)
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
         for features_path, scenarios_in_feature in serial_scenarios.items():
             for scen_info in scenarios_in_feature:
+                scenarios_to_run_in_feature = total_scenarios_to_run[scen_info["feature_filename"]]
                 execution_code, json_report = execute_tests(features_path=features_path,
                                                             feature_filename=scen_info["feature_filename"],
                                                             feature_json_skeleton=scen_info["feature_json_skeleton"],
+                                                            scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                                             scenario_name=scen_info["scenario_name"],
                                                             multiprocess=True,
                                                             config=ConfigRun(),
@@ -558,8 +581,10 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
         print_parallel('scenario.running_parallels')
+        parallel_processes = []
         for features_path in parallel_scenarios.keys():
             for scenario_information in parallel_scenarios[features_path]:
+                scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
                 feature_filename = scenario_information["feature_filename"]
                 feature_json_skeleton = scenario_information["feature_json_skeleton"]
                 scenario_name = scenario_information["scenario_name"]
@@ -567,17 +592,21 @@ def launch_by_scenario(features,
                                              features_path=features_path,
                                              feature_filename=feature_filename,
                                              feature_json_skeleton=feature_json_skeleton,
+                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                              scenario_name=scenario_name,
                                              multiprocess=True,
                                              config=ConfigRun(),
                                              lock=lock,
                                              shared_removed_scenarios=shared_removed_scenarios
                                              )
+                parallel_processes.append(future)
                 future.add_done_callback(create_execution_complete_callback_function(
                     execution_codes,
                     json_reports,
                     global_vars.progress_bar_instance
                 ))
+        for parallel_process in parallel_processes:
+            parallel_process.result()
     return execution_codes, json_reports
 
 
@@ -585,6 +614,7 @@ def execute_tests(
         features_path,
         feature_filename,
         feature_json_skeleton,
+        scenarios_to_run_in_feature,
         scenario_name,
         multiprocess,
         config,
@@ -597,6 +627,7 @@ def execute_tests(
         features_path (str): Path to the features.
         feature_filename (str): Name of the feature file.
         feature_json_skeleton (str): JSON skeleton of the feature.
+        scenarios_to_run_in_feature (int): Number of scenarios to run in the feature.
         scenario_name (str): Name of the scenario.
         multiprocess (bool): Whether to use multiprocessing.
         config (ConfigRun): Configuration object.
@@ -606,66 +637,71 @@ def execute_tests(
     Returns:
         tuple: Execution code and JSON report.
     """
-    behave_args = None
-    if multiprocess:
-        ExecutionSingleton._instances[ConfigRun] = config
-    extend_behave_hooks()
     try:
-        # Execution ID is only important for multiprocessing so that
-        # we can influence where output files end up
-        execution_id = json.loads(feature_json_skeleton or '{}').get('id')
-        behave_args = _set_behave_arguments(features_path=features_path,
-                                            multiprocess=multiprocess,
-                                            execution_id=execution_id,
-                                            feature=feature_filename,
-                                            scenario=scenario_name,
-                                            config=config)
-    except Exception as exception:
-        traceback.print_exc()
-        print(exception)
-    execution_code, generate_report = _launch_behave(behave_args)
-    # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
-    if generate_report:
-        # print execution code
-        if execution_code == 2:
-            if feature_json_skeleton:
-                json_output = {'environment': [],
-                               'features': [json.loads(feature_json_skeleton)],
-                               'steps_definition': []}
-                for skeleton_feature in json_output["features"]:
-                    if scenario_name:
-                        for skeleton_scenario in skeleton_feature["scenarios"]:
-                            if scenario_name_matching(scenario_name, skeleton_scenario['name']):
+        behave_args = None
+        if multiprocess:
+            ExecutionSingleton._instances[ConfigRun] = config
+        extend_behave_hooks()
+        try:
+            # Execution ID is only important for multiprocessing so that
+            # we can influence where output files end up
+            execution_id = json.loads(feature_json_skeleton or '{}').get('id')
+            behave_args = _set_behave_arguments(features_path=features_path,
+                                                multiprocess=multiprocess,
+                                                execution_id=execution_id,
+                                                feature=feature_filename,
+                                                scenario=scenario_name,
+                                                config=config)
+        except Exception as exception:
+            traceback.print_exc()
+            print(exception)
+        execution_code, generate_report = _launch_behave(behave_args)
+        # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
+        if generate_report:
+            # print execution code
+            if execution_code == 2:
+                if feature_json_skeleton:
+                    json_output = {'environment': [],
+                                   'features': [json.loads(feature_json_skeleton)],
+                                   'steps_definition': []}
+                    for skeleton_feature in json_output["features"]:
+                        if scenario_name:
+                            for skeleton_scenario in skeleton_feature["scenarios"]:
+                                if scenario_name_matching(scenario_name, skeleton_scenario['name']):
+                                    skeleton_scenario['status'] = 'failed'
+                                    skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
+                        else:
+                            skeleton_feature['status'] = 'failed'
+                            skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
+                            for skeleton_scenario in skeleton_feature["scenarios"]:
                                 skeleton_scenario['status'] = 'failed'
-                                skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
-                    else:
-                        skeleton_feature['status'] = 'failed'
-                        skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
-                        for skeleton_scenario in skeleton_feature["scenarios"]:
-                            skeleton_scenario['status'] = 'failed'
-                            skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                                skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                else:
+                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
             else:
-                json_output = {'environment': [], 'features': [], 'steps_definition': []}
+                json_output = dump_json_results()
+            if scenario_name:
+                json_output['features'] = filter_feature_executed(json_output,
+                                                                  text(feature_filename),
+                                                                  scenario_name)
+                if len(json_output['features']) == 0 or len(json_output['features'][0]['scenarios']) == 0:
+                    # Adding scenario data if the test was removed from the execution (setting it as "Untested")
+                    json_output['features'] = [json.loads(feature_json_skeleton)]
+                try:
+                    processing_xml_feature(json_output=json_output,
+                                           scenario=scenario_name,
+                                           feature_filename=feature_filename,
+                                           scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                           lock=lock,
+                                           shared_removed_scenarios=shared_removed_scenarios)
+                except Exception as ex:
+                    logging.exception("There was a problem processing the xml file: {}".format(ex))
         else:
-            json_output = dump_json_results()
-        if scenario_name:
-            json_output['features'] = filter_feature_executed(json_output,
-                                                              text(feature_filename),
-                                                              scenario_name)
-            if len(json_output['features']) == 0 or len(json_output['features'][0]['scenarios']) == 0:
-                # Adding scenario data if the test was removed from the execution (setting it as "Untested")
-                json_output['features'] = [json.loads(feature_json_skeleton)]
-            try:
-                processing_xml_feature(json_output=json_output,
-                                       scenario=scenario_name,
-                                       feature_filename=feature_filename,
-                                       lock=lock,
-                                       shared_removed_scenarios=shared_removed_scenarios)
-            except Exception as ex:
-                logging.exception("There was a problem processing the xml file: {}".format(ex))
-    else:
-        json_output = {'environment': [], 'features': [], 'steps_definition': []}
-    return execution_code, join_feature_reports(json_output)
+            json_output = {'environment': [], 'features': [], 'steps_definition': []}
+        return execution_code, join_feature_reports(json_output)
+    except Exception as e:
+        logging.error(f"Exception in execute_tests: {e}")
+        raise
 
 
 def filter_feature_executed(json_output, filename, scenario_name):
@@ -828,7 +864,9 @@ def remove_temporary_files(parallel_processes, json_reports):
                     print(remove_ex)
 
 
-def processing_xml_feature(json_output, scenario, feature_filename, lock=None, shared_removed_scenarios=None):
+def processing_xml_feature(json_output, scenario, feature_filename,
+                           scenarios_to_run_in_feature=None, lock=None,
+                           shared_removed_scenarios=None):
     """
     Process the XML feature and update the JSON output.
 
@@ -836,6 +874,7 @@ def processing_xml_feature(json_output, scenario, feature_filename, lock=None, s
         json_output (dict): JSON output of the test execution.
         scenario (Scenario): Scenario object.
         feature_filename (str): Name of the feature file.
+        scenarios_to_run_in_feature (int): Number of scenarios to run in the feature.
         lock (Lock): Multiprocessing lock.
         shared_removed_scenarios (dict): Shared dictionary of removed scenarios.
     """
@@ -885,7 +924,10 @@ def processing_xml_feature(json_output, scenario, feature_filename, lock=None, s
             removed_scenarios = 0
             if shared_removed_scenarios and feature_filename in shared_removed_scenarios:
                 removed_scenarios = shared_removed_scenarios[feature_filename]
-            total_scenarios = len_scenarios(feature_filename) - removed_scenarios
+            if scenarios_to_run_in_feature is None:
+                total_scenarios = len_scenarios(feature_filename) - removed_scenarios
+            else:
+                total_scenarios = scenarios_to_run_in_feature - removed_scenarios
             if len(processed_feature_data['scenarios']) == total_scenarios:
                 try:
                     report_xml.export_feature_to_xml(processed_feature_data, False)
@@ -1008,9 +1050,13 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                     scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
             arguments.append('--name')
             arguments.append("{}".format(scenario_outline_compatible))
-        name = multiprocessing.current_process().name.split('-')[-1]
+        worker_id = multiprocessing.current_process().name.split('-')[-1]
+
         arguments.append('--outfile')
-        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(name)))
+        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(worker_id)))
+
+        arguments.append('-D')
+        arguments.append(f'worker_id={worker_id}')
     else:
         if type(features_path) is list:
             for feature_path in features_path:
@@ -1025,6 +1071,8 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append(output_folder)
         arguments.append('--outfile')
         arguments.append(os.path.join(output_folder, 'behave', 'behave.log'))
+        arguments.append('-D')
+        arguments.append(f'worker_id=0')
     arguments.append('--no-skipped')
     arguments.append('--no-junit')
     run_wip_tests = False

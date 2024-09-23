@@ -18,6 +18,8 @@ eggs/
 .eggs/
 .idea
 .pypirc
+.cursorrules
+.vscode
 lib/
 lib64/
 parts/
