@@ -286,6 +286,11 @@ def parse_arguments(args):
         required=False,
     )
     parser.add_argument(
+        '--parallel-delay',
+        type=int,
+        default=0,
+        help='Delay in milliseconds before starting each parallel process')
+    parser.add_argument(
         '-ip',
         '--include-paths',
         default=[],
