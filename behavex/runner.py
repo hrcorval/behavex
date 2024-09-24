@@ -25,6 +25,7 @@ import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 
@@ -79,7 +80,11 @@ def main():
     """
     args = sys.argv[1:]
     exit_code = run(args)
-    exit(exit_code)
+    try:
+        exit(exit_code)
+    except:
+        # force exit
+        sys.exit(exit_code)
 
 
 def run(args):
@@ -228,6 +233,8 @@ def launch_behavex():
                                        initializer=init_multiprocessing,
                                        initargs=(idQueue, parallel_delay))
     global_vars.execution_start_time = time.time()
+    totals = {"features": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0},
+            "scenarios": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0}}
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -249,16 +256,16 @@ def launch_behavex():
                                                           shared_removed_scenarios=None)
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
-                                                               process_pool,
-                                                               lock,
-                                                               shared_removed_scenarios,
-                                                               show_progress_bar)
+                                                            process_pool,
+                                                            lock,
+                                                            shared_removed_scenarios,
+                                                            show_progress_bar)
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(updated_features_list,
-                                                              process_pool,
-                                                              lock,
-                                                              show_progress_bar)
+                                                            process_pool,
+                                                            lock,
+                                                            show_progress_bar)
         wrap_up_process_pools(process_pool, json_reports, scenario)
         time_end = global_vars.execution_end_time
 
@@ -273,8 +280,6 @@ def launch_behavex():
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
         results = get_json_results()
-        totals = {"features": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0},
-                  "scenarios": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0}}
         processed_feature_filenames = []
         if results:
             failures = {}
@@ -317,11 +322,18 @@ def launch_behavex():
             execution_failed = True if execution_codes > 0 else False
             execution_interrupted_or_crashed = True if execution_codes == 2 else False
         exit_code = (EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK)
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
-        process_pool.shutdown(wait=False, cancel_futures=True)
-        exit_code = 1
-    if multiprocess:
+        try:
+            while active_children():
+                for process in active_children():  # Terminate all active child processes
+                    process.terminate()  # Forcefully terminate each process
+                time.sleep(1)
+            process_pool.shutdown(wait=False)
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
+        exit_code = EXIT_ERROR
+    if multiprocess and totals:
         untested_features = totals['features']['untested']
         untested_scenarios = totals['scenarios']['untested']
         untested_features_msg = ', {} untested'.format(untested_features) if untested_features > 0 else ''
