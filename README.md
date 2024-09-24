@@ -239,50 +239,66 @@ Providing ample evidence in test execution reports is crucial for identifying th
 
 The evidence folder path is automatically generated and stored in the **"context.evidence_path"** context variable. This variable is updated by the wrapper before executing each scenario, and all files copied into that path will be accessible from the HTML report linked to the executed scenario.
 
-## Test Logs and Metrics
+## Test Logs per Scenario
 
-The HTML report provides test execution logs per scenario. Metrics include:
+The HTML report includes detailed test execution logs for each scenario. These logs are generated using the **logging** library and are linked to the specific test scenario. This feature allows for easy debugging and analysis of test failures.
 
-- Automation Rate
-- Pass Rate
-- Steps execution counter and average execution time
+## Metrics and Insights
+
+The HTML report provides a range of metrics to help you understand the performance and effectiveness of your test suite. These metrics include:
+
+* **Automation Rate**: The percentage of scenarios that are automated.
+* **Pass Rate**: The percentage of scenarios that have passed.
+* **Steps Execution Counter and Average Execution Time**: These metrics provide insights into the execution time and frequency of steps within scenarios.
+
+## Dry Runs
+
+BehaveX enhances the traditional Behave dry run feature to provide more value. The HTML report generated during a dry run can be shared with stakeholders to discuss scenario specifications and test plans.
+
+To execute a dry run, we recommend using the following command:
+
+> behavex -t=@TAG --dry-run
 
 ## Muting Test Scenarios
 
-To mute failing test scenarios, add the `@MUTE` tag. This allows the test to run without being included in JUnit reports.
+In some cases, you may want to mute test scenarios that are failing but are not critical to the build process. This can be achieved by adding the @MUTE tag to the scenario. Muted scenarios will still be executed, but their failures will not be reported in the JUnit reports. However, the execution details will be visible in the HTML report.
 
 ## Handling Failing Scenarios
 
 ### @AUTORETRY Tag
-This tag can be used for flaky scenarios or when the testing infrastructure is not stable. The `@AUTORETRY` tag can be applied to any scenario or feature, and it is used to automatically re-execute the test scenario when it fails.
 
-### Rerun All Failed Scenarios
-Whenever you perform an automated test execution and there are failing scenarios, the **failing_scenarios.txt** file will be created in the execution output folder. This file allows you to run all failing scenarios again.
+For scenarios that are prone to intermittent failures or are affected by infrastructure issues, you can use the @AUTORETRY tag. This tag enables automatic re-execution of the scenario in case of failure.
 
-To rerun failing scenarios, execute:
-```bash
-behavex -rf=./<OUTPUT_FOLDER>/failing_scenarios.txt
-```
+### Rerunning Failed Scenarios
+
+After executing tests, if there are failing scenarios, a **failing_scenarios.txt** file will be generated in the output folder. This file allows you to rerun all failed scenarios using the following command:
+
+> behavex -rf=./<OUTPUT_FOLDER\>/failing_scenarios.txt
+
 or
-```bash
-behavex --rerun-failures=./<OUTPUT_FOLDER>/failing_scenarios.txt
-```
 
-To avoid overwriting the previous test report, provide a different output folder using the **-o** or **--output-folder** argument.
+> behavex --rerun-failures=./<OUTPUT_FOLDER\>/failing_scenarios.txt
 
-## FAQs
+To avoid overwriting the previous test report, it is recommended to specify a different output folder using the **-o** or **--output-folder** argument.
 
-- **How do I install BehaveX?**
-  - Use `pip install behavex`.
+Note that the **-o** or **--output-folder** argument does not work with parallel test executions.
 
-- **What is the purpose of the `@AUTORETRY` tag?**
-  - It automatically re-executes failing scenarios.
+## Displaying Progress Bar in Console
 
-- **How can I mute a test scenario?**
-  - Add the `@MUTE` tag to the scenario.
+When running tests in parallel, you can display a progress bar in the console to monitor the test execution progress. To enable the progress bar, use the **--show-progress-bar** argument:
+
+> behavex -t=@TAG --parallel-processes=3 --show-progress-bar
+
+If you are printing logs in the console, you can configure the progress bar to display updates on a new line by adding the following setting to the BehaveX configuration file:
+
+> [progress_bar]
+>
+> print_updates_in_new_lines="true"
 
 ## Show Your Support
 
-If you find this project helpful, please give it a star! Your support helps us gain visibility and motivates us to continue improving the project.
+**If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.
 
-Thank you for your support!
+By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
+
+Thank you in advance for your support! We truly appreciate it.
