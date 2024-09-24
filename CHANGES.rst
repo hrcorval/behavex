@@ -1,6 +1,13 @@
 Version History
 ===============================================================================
 
+Version: 4.0.6
+-------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Improved KeyboardInterrupt handling when running BehaveX in parallel, by terminating all child processes before exiting.
+
+
 Version: 4.0.5
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
