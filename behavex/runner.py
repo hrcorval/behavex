@@ -333,7 +333,7 @@ def launch_behavex():
         except Exception as e:
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
-    if multiprocess and totals:
+    if multiprocess:
         untested_features = totals['features']['untested']
         untested_scenarios = totals['scenarios']['untested']
         untested_features_msg = ', {} untested'.format(untested_features) if untested_features > 0 else ''
