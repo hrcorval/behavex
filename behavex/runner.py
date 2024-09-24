@@ -495,7 +495,7 @@ def launch_by_feature(features,
             json_reports,
             global_vars.progress_bar_instance,
         ))
-    for parallel_process in as_completed(parallel_processes):
+    for parallel_process in parallel_processes:
         parallel_process.result()
     return execution_codes, json_reports
 
