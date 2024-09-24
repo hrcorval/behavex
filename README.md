@@ -22,7 +22,7 @@
 - [Test Logs and Metrics](#test-logs-and-metrics)
 - [Muting Test Scenarios](#muting-test-scenarios)
 - [Handling Failing Scenarios](#handling-failing-scenarios)
-- [FAQs](#faqs)
+- [Displaying Progress Bar in Console](#displaying-progress-bar-in-console)
 - [Show Your Support](#show-your-support)
 
 ## Introduction
