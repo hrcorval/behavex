@@ -24,7 +24,7 @@ import signal
 import sys
 import time
 import traceback
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 
