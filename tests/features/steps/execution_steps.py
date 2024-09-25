@@ -23,7 +23,7 @@ def step_impl(context):
 
 @when('I run the behavex command with a skipped test')
 def step_impl(context):
-    context.result = subprocess.run(['behavex', './tests/features/secondary_features/skipped_tests.feature', '-o', 'output/skipped'], capture_output=True, text=True)
+    context.result = subprocess.run(['behavex', './tests/features/secondary_features/skippedd_tests.feature', '-o', 'output/skipped'], capture_output=True, text=True)
     logging.info(context.result.stdout)
 
 @when('I run the behavex command with an untested test')
