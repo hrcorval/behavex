@@ -26,5 +26,4 @@ jobs:
           pip install behavex
 
       - name: Verify behavex command
-        run: behavex ./tests/features
-
+        run: behavex ./tests/features/*.feature
