@@ -1,4 +1,5 @@
 # nosec B404
+import logging
 import subprocess
 
 from behave import given, then, when
@@ -12,6 +13,7 @@ def step_impl(context):
 @when('I run the behavex command')
 def step_impl(context):
     context.result = subprocess.run(['behavex', '--help'], capture_output=True, text=True)
+    logging.info(context.result.stdout)
 
 
 @then('I should see the behavex output')
