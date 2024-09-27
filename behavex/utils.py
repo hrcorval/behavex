@@ -393,7 +393,6 @@ def len_scenarios(feature_file):
     amount_scenarios = 0
     scenarios_instances = get_scenarios_instances(feature.scenarios)
     for scenario in scenarios_instances:
-        scenario_tags = get_scenario_tags(scenario, include_outline_example_tags=False)
         if match_for_execution(get_scenario_tags(scenario)):
             amount_scenarios += 1
     return amount_scenarios
@@ -433,10 +432,9 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
         scenario_tags_set = set(scenario['tags'])
     else:
         scenario_tags = scenario.effective_tags
-        if include_outline_example_tags:
-            if isinstance(scenario, ScenarioOutline):
-                for example in scenario.examples:
-                    scenario_tags.extend(example.tags)
+        if include_outline_example_tags and isinstance(scenario, ScenarioOutline):
+            for example in scenario.examples:
+                scenario_tags.extend(example.tags)
         scenario_tags_set = set(scenario_tags)
     result = list(scenario_tags_set)
     return result
