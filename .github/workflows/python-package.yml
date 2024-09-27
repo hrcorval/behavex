@@ -23,7 +23,8 @@ jobs:
       - name: Install behavex
         run: |
           python -m pip install --upgrade pip
-          pip install --index-url https://test.pypi.org/simple/ behavex
+          python setup.py sdist
+          pip install ./dist/behavex-4.0.7rc1.tar.gz
 
       - name: Verify behavex command
         run: behavex ./tests/features/*.feature
