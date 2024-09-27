@@ -10,6 +10,7 @@ import sys
 
 from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 from behave.log_capture import capture
+from behave.model import ScenarioOutline
 from behave.runner import Context, ModelRunner
 
 from behavex import conf_mgr
@@ -19,7 +20,7 @@ from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import create_log_path
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_autoretry_attempts, get_logging_level,
-                           get_scenario_tags)
+                           get_scenario_tags, get_scenarios_instances)
 
 Context.__getattribute__ = create_custom_log_when_called
 
@@ -99,7 +100,8 @@ def before_all(context):
 def before_feature(context, feature):
     try:
         context.bhx_execution_attempts = {}
-        for scenario in feature.scenarios:
+        scenarios_instances = get_scenarios_instances(feature.scenarios)
+        for scenario in scenarios_instances:
             scenario_tags = get_scenario_tags(scenario)
             if get_param('dry_run'):
                 if 'MANUAL' not in scenario_tags:

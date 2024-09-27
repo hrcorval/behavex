@@ -34,7 +34,8 @@ def step_impl(context):
         context.scenario.skip("This scenario is skipped")
     elif context.condition == 'exit':
         # This step will be skipped
-        pass
+        print("Exiting the scenario")
+        exit(1)
     elif context.condition == 'untested':
         # This step will be skipped
         pass

@@ -32,7 +32,6 @@ Feature: Parallel executions
     Examples:
       | parallel_scheme | parallel_processes | tags                                   |
       | scenario        | 3                  | -t=@PASSING_TAG_3 -t=@PASSING_TAG_3_1  |
-    @WIP
-    Examples:
-      | parallel_scheme | parallel_processes | tags                                   |
+      | scenario        | 2                  | -t=@PASSING_TAG_3 -t=~@PASSING_TAG_3_1 |
+      | feature         | 3                  | -t=@PASSING_TAG_3 -t=@PASSING_TAG_3_1  |
       | feature         | 2                  | -t=@PASSING_TAG_3 -t=~@PASSING_TAG_3_1 |
