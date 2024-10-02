@@ -53,7 +53,8 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            create_execution_complete_callback_function,
                            explore_features, generate_reports,
                            get_json_results, get_logging_level,
-                           get_scenario_tags, get_text, join_feature_reports,
+                           get_scenario_tags, get_scenarios_instances,
+                           get_text, join_feature_reports,
                            join_scenario_reports, len_scenarios,
                            print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
@@ -130,7 +131,7 @@ def run(args):
                 os.environ['FEATURES_PATH'] = features_path + ',' + paths
     features_path = os.environ.get('FEATURES_PATH')
     if features_path == '' or features_path is None:
-        os.environ['FEATURES_PATH'] = os.path.join(os.getcwd(), 'features')
+        os.environ['FEATURES_PATH'] = os.path.abspath(os.path.join('.', 'features'))
     _set_env_variables(args_parsed)
     set_system_paths()
     cleanup_folders()
@@ -245,15 +246,18 @@ def launch_behavex():
                 all_paths = features_path.split(",")
             else:
                 all_paths = [key for key in updated_features_list]
-            execution_codes, json_reports = execute_tests(features_path=all_paths,
-                                                          feature_filename=None,
-                                                          feature_json_skeleton=None,
-                                                          scenarios_to_run_in_feature=None,
-                                                          scenario_name=None,
-                                                          multiprocess=False,
-                                                          config=config,
-                                                          lock=None,
-                                                          shared_removed_scenarios=None)
+            if len(all_paths) > 0:
+                execution_codes, json_reports = execute_tests(features_path=all_paths,
+                                                                feature_filename=None,
+                                                                feature_json_skeleton=None,
+                                                                scenarios_to_run_in_feature=None,
+                                                                scenario_name=None,
+                                                                multiprocess=False,
+                                                                config=config,
+                                                                lock=None,
+                                                                shared_removed_scenarios=None)
+            else:
+                execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                             process_pool,
@@ -537,7 +541,8 @@ def launch_by_scenario(features,
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
     for features_path, scenarios in features.items():
-        for scenario in scenarios:
+        scenarios_instances = get_scenarios_instances(scenarios)
+        for scenario in scenarios_instances:
             if include_path_match(scenario.filename, scenario.line) \
                     and include_name_match(scenario.name):
                 scenario_tags = get_scenario_tags(scenario)
