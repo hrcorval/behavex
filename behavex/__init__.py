@@ -10,4 +10,5 @@ import os
 # Set the framework path
 os.environ['BEHAVEX_PATH'] = os.path.dirname(os.path.realpath(__file__))
 # Set the features path
-os.environ['FEATURES_PATH'] = os.environ.get('FEATURES_PATH', os.path.abspath(os.path.join('.', 'features')))
+os.environ['FEATURES_PATH'] = os.environ.get('FEATURES_PATH', 'features')
+
