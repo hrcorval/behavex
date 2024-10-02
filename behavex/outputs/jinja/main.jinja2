@@ -296,9 +296,8 @@
                                     &nbsp;
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
-                                          <b class="span-behavex" style="cursor: pointer;">{{scenario.name|e}}</b>
-                                          &nbsp;<b class="glyphicon glyphicon-copy glyphicon-scenario link-cursor" title="Copy scenario name"
-                                                   onclick="copyToClipboard('{{scenario.name|e}}'); event.stopPropagation();"></b>
+                                          <b class="span-behavex" style="cursor: pointer;">{{scenario.name|e}}</b>&nbsp;<b class="glyphicon glyphicon-copy glyphicon-scenario link-cursor"
+                                             title="Copy scenario name" onclick="copyToClipboard('{{scenario.name|e}}'); event.stopPropagation();"></b>
                                         {%- if ('MUTE' in scenario|get_scenario_tags) -%}
                                             &nbsp;<b class="glyphicon glyphicon-volume-off glyphicon-scenario" title="{{ 'report.muted'|get_text }}"></b>
                                         {%- endif -%}
