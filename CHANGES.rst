@@ -8,9 +8,10 @@ ENHANCEMENTS:
 * Improved KeyboardInterrupt handling when running BehaveX in parallel, by terminating all child processes before exiting.
 * Simplified library documentation (README.md)
 * Added more tests to validate BehaveX is working as expected when using latest stable Behave version (1.2.6)
+* Adding the possibility to copy the scenario name in the HTML report
 
 FIXES:
-
+* Fix done when generating be features path (if not specified, BehaveX will use the current path as features path)
 * Fix done when managing tags in scenario outlines
 * Fix done when analyzing empty features
 

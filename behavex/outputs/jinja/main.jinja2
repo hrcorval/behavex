@@ -296,16 +296,16 @@
                                     &nbsp;
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
-                                          <b class="span-behavex">{{scenario.name|e}}</b>
+                                          <b class="span-behavex" style="cursor: pointer;">{{scenario.name|e}}</b>
+                                          &nbsp;<b class="glyphicon glyphicon-duplicate glyphicon-scenario link-cursor" title="Copy scenario name"
+                                                   onclick="copyToClipboard('{{scenario.name|e}}'); event.stopPropagation();"></b>
                                         {%- if ('MUTE' in scenario|get_scenario_tags) -%}
-                                            &nbsp;<b class="glyphicon glyphicon-volume-off"
-                                               title="{{ 'report.muted'|get_text }}">
-                                            </b>
+                                            &nbsp;<b class="glyphicon glyphicon-volume-off glyphicon-scenario" title="{{ 'report.muted'|get_text }}"></b>
                                         {%- endif -%}
                                     </span>
                                     {% if scenario.retried is defined %}
-                                        <span class="glyphicon glyphicon-repeat btn-xs disabled pull-right red-behavex"
-                                          title="{{ 'report.icon_repeat.title'|get_text}}" data-duplicated data-id_hash="{{ scenario.id_hash }}"></span>
+                                        &nbsp;<b class="glyphicon glyphicon-repeat disabled red-behavex glyphicon-scenario" title="{{ 'report.icon_repeat.title'|get_text}}"
+                                                 data-duplicated data-id_hash="{{ scenario.id_hash }}"></b>
                                     {% endif %}
                                 </div>
                                 <div data-div-id_hash="{{ scenario.id_hash }}"
