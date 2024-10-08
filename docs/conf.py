@@ -7,7 +7,7 @@ author = 'hrcorval'
 
 # -- General configuration ---------------------------------------------------
 extensions = [
-    'recommonmark',
+    'myst_parser',
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
 ]
@@ -24,3 +24,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'sphinx_rtd_theme'
+
+# -- MyST Parser configuration -----------------------------------------------
+myst_enable_extensions = [
+    "colon_fence",
+]
