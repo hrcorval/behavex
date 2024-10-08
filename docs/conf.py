@@ -32,6 +32,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'sphinx_rtd_theme'
+templates_path = ['_templates']
 
 # -- MyST Parser configuration -----------------------------------------------
 myst_enable_extensions = [
@@ -43,14 +44,14 @@ import commonmark
 
 
 def setup(app):
-    app.connect('source-read', process_markdown)
+    app.connect('html-page-context', add_readme_html)
 
-def process_markdown(app, docname, source):
-    if docname == 'index':
+def add_readme_html(app, pagename, templatename, context, doctree):
+    if pagename == 'index':
         with open('../README.md', 'r') as f:
             markdown_content = f.read()
         parser = commonmark.Parser()
         ast = parser.parse(markdown_content)
         renderer = commonmark.HtmlRenderer()
         html = renderer.render(ast)
-        source[0] = html
+        context['readme_html'] = html
