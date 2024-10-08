@@ -1,3 +1,4 @@
+commonmark
 myst-parser>=0.15
 sphinx>=4.0
 sphinx_rtd_theme
