@@ -2,7 +2,7 @@
 
 # -- Project information -----------------------------------------------------
 project = 'BehaveX'
-copyright = '2024, hrcorval'
+copyright = '2023, hrcorval'
 author = 'hrcorval'
 
 # -- General configuration ---------------------------------------------------
@@ -16,7 +16,10 @@ extensions = [
 master_doc = 'index'
 
 # The suffix(es) of source filenames.
-source_suffix = ['.rst', '.md']
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
