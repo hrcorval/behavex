@@ -296,16 +296,15 @@
                                     &nbsp;
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
-                                          <b class="span-behavex">{{scenario.name|e}}</b>
+                                          <b class="span-behavex" style="cursor: pointer;">{{scenario.name|e}}</b>&nbsp;<b class="glyphicon glyphicon-copy glyphicon-scenario link-cursor"
+                                             title="Copy scenario name" onclick="copyToClipboard('{{scenario.name|e}}'); event.stopPropagation();"></b>
                                         {%- if ('MUTE' in scenario|get_scenario_tags) -%}
-                                            &nbsp;<b class="glyphicon glyphicon-volume-off"
-                                               title="{{ 'report.muted'|get_text }}">
-                                            </b>
+                                            &nbsp;<b class="glyphicon glyphicon-volume-off glyphicon-scenario" title="{{ 'report.muted'|get_text }}"></b>
                                         {%- endif -%}
                                     </span>
                                     {% if scenario.retried is defined %}
-                                        <span class="glyphicon glyphicon-repeat btn-xs disabled pull-right red-behavex"
-                                          title="{{ 'report.icon_repeat.title'|get_text}}" data-duplicated data-id_hash="{{ scenario.id_hash }}"></span>
+                                        &nbsp;<b class="glyphicon glyphicon-repeat disabled red-behavex glyphicon-scenario" title="{{ 'report.icon_repeat.title'|get_text}}"
+                                                 data-duplicated data-id_hash="{{ scenario.id_hash }}"></b>
                                     {% endif %}
                                 </div>
                                 <div data-div-id_hash="{{ scenario.id_hash }}"
@@ -360,7 +359,7 @@
                                     <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
-                                        <span class="glyphicon glyphicon-copy"></span></a>
+                                        <span class="glyphicon glyphicon-share"></span></a>
                                     </td>
                                 {%- elif "WIP" in scenario_tags -%}
                                     <p class="text-center">Work In Progress</p>
@@ -368,7 +367,7 @@
                                     <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
                                     <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
-                                        <span class="glyphicon glyphicon-copy"></span></a>
+                                        <span class="glyphicon glyphicon-share"></span></a>
                                     </td>
                                 {%- else -%}
                                     {%- set scenario_hash = scenario_hash|string -%}
@@ -425,7 +424,7 @@
                                                 </div>
                                             {% endif %}
                                             <a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
-                                                <span class="glyphicon glyphicon-copy"></span>
+                                                <span class="glyphicon glyphicon-share"></span>
                                             </a>
                                         </div>
                                     </td>
@@ -498,7 +497,7 @@
             var ua = navigator.userAgent.toLowerCase();
             if (ua.indexOf('safari') != -1) {
                 if (ua.indexOf('chrome') == -1) {
-                    $('span.glyphicon-copy').hide();
+                    $('span.glyphicon-share').hide();
                 }
             }
             var url = $(location).attr('href');
@@ -768,7 +767,7 @@
             }
 
         }
-        $('.glyphicon-copy').click(function(){
+        $('.glyphicon-share').click(function(){
             var scenario = $(this).closest('tr').find("td:first").find('span:first');
             var feature_id = scenario.parents('div.feature').parents('tr[data-feature-id]').attr('data-feature-id');
             var url = $(location).attr('href').split('#')[0];

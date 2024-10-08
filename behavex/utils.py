@@ -205,7 +205,8 @@ def should_feature_be_run(path_feature):
     else:
         tags_list = []
         if hasattr(feature, 'scenarios'):
-            for scenario in feature.scenarios:
+            scenarios_instances = get_scenarios_instances(feature.scenarios)
+            for scenario in scenarios_instances:
                 scenario_tags = get_scenario_tags(scenario)
                 tags_list.append(scenario_tags)
     match_tag = any(match_for_execution(tags) for tags in tags_list)
@@ -390,16 +391,10 @@ def len_scenarios(feature_file):
     data = codecs.open(feature_file, encoding='utf8').read()
     feature = parse_feature(data=data)
     amount_scenarios = 0
-    for scenario in feature.scenarios:
-        if isinstance(scenario, ScenarioOutline):
-            scenario_tags = get_scenario_tags(scenario, include_outline_example_tags=False)
-            amount_scenarios += sum(
-                len(example.table.rows) for example in scenario.examples
-                if match_for_execution(scenario_tags + example.tags)
-            )
-        else:
-            if match_for_execution(get_scenario_tags(scenario)):
-                amount_scenarios += 1
+    scenarios_instances = get_scenarios_instances(feature.scenarios)
+    for scenario in scenarios_instances:
+        if match_for_execution(get_scenario_tags(scenario)):
+            amount_scenarios += 1
     return amount_scenarios
 
 
@@ -437,13 +432,23 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
         scenario_tags_set = set(scenario['tags'])
     else:
         scenario_tags = scenario.effective_tags
-        if include_outline_example_tags:
-            if isinstance(scenario, ScenarioOutline):
-                for example in scenario.examples:
-                    scenario_tags.extend(example.tags)
+        if include_outline_example_tags and isinstance(scenario, ScenarioOutline):
+            for example in scenario.examples:
+                scenario_tags.extend(example.tags)
         scenario_tags_set = set(scenario_tags)
     result = list(scenario_tags_set)
     return result
+
+
+def get_scenarios_instances(scenarios):
+    scenarios_to_iterate = []
+    for scenario in scenarios:
+        if isinstance(scenario, ScenarioOutline):
+            for scenario_outline_instance in scenario.scenarios:
+                scenarios_to_iterate.append(scenario_outline_instance)
+        else:
+            scenarios_to_iterate.append(scenario)
+    return scenarios_to_iterate
 
 
 def set_system_paths():
