@@ -51,7 +51,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
-                           explore_features, generate_reports,
+                           explore_features, generate_hash, generate_reports,
                            get_json_results, get_logging_level,
                            get_scenario_tags, get_scenarios_instances,
                            get_text, join_feature_reports,
@@ -71,7 +71,6 @@ os.environ.setdefault('EXECUTION_CODE', '1')
 match_include = None
 include_path_match = None
 include_name_match = None
-scenario_lines = {}
 
 
 def main():
@@ -286,11 +285,10 @@ def launch_behavex():
         results = get_json_results()
         processed_feature_filenames = []
         if results:
-            failures = {}
+            failures = []
             for feature in results['features']:
                 processed_feature_filenames.append(feature['filename'])
                 filename = feature['filename']
-                failures[filename] = []
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
                 elif feature['status'] == 'passed':
@@ -304,7 +302,7 @@ def launch_behavex():
                 for scenario in feature['scenarios']:
                     if scenario['status'] == 'failed':
                         totals['scenarios']['failed'] += 1
-                        failures[filename].append(scenario['name'])
+                        failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
                     elif scenario['status'] == 'passed':
@@ -316,8 +314,7 @@ def launch_behavex():
             if failures:
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
-                    parameters = create_test_list(failures)
-                    failures_file.write(parameters)
+                    failures_file.write(','.join(failures))
         # Calculates final exit code. execution_codes is 1 only if an execution exception arises
         if isinstance(execution_codes, list):
             execution_failed = True if sum(execution_codes) > 0 else False
@@ -375,23 +372,6 @@ def notify_missing_features(features_path):
                 print_parallel('path.not_found', os.path.realpath(include_path))
 
 
-def create_test_list(test_list):
-    """Create a list of tests to run.
-
-    Args:
-        test_list (dict): Dictionary of features and their scenarios.
-
-    Returns:
-        str: Comma-separated list of test paths.
-    """
-    paths = []
-    sce_lines = get_env('scenario_lines')
-    for feature, scenarios in test_list.items():
-        for scenario_name in scenarios:
-            paths.append('{}:{}'.format(feature, sce_lines[feature][scenario_name]))
-    return ','.join(paths)
-
-
 def create_scenario_line_references(features):
     """Create references for scenario lines in the features.
 
@@ -401,13 +381,10 @@ def create_scenario_line_references(features):
     Returns:
         dict: Updated features with scenario line references.
     """
-    sce_lines = {}
     updated_features = {}
     for feature_path, scenarios in features.items():
         for scenario in scenarios:
             scenario_filename = text(scenario.filename)
-            if scenario_filename not in sce_lines:
-                sce_lines[scenario_filename] = {}
             if global_vars.rerun_failures or ".feature:" in feature_path:
                 feature_without_scenario_line = feature_path.split(":")[0]
                 if feature_without_scenario_line not in updated_features:
@@ -417,27 +394,22 @@ def create_scenario_line_references(features):
                         if scenario_outline_instance.line == int(feature_path.split(":")[1]):
                             if scenario_outline_instance not in updated_features[feature_without_scenario_line]:
                                 updated_features[feature_without_scenario_line].append(scenario_outline_instance)
-                            sce_lines[scenario_filename][scenario_outline_instance.name] = scenario_outline_instance.line
                             break
                 else:
                     if scenario.line == int(feature_path.split(":")[1]):
                         if scenario not in updated_features[feature_without_scenario_line]:
                             updated_features[feature_without_scenario_line].append(scenario)
-                        sce_lines[scenario_filename][scenario.name] = scenario.line
             else:
                 updated_features_path = scenario.feature.filename
                 if updated_features_path not in updated_features:
                     updated_features[updated_features_path] = []
                 if isinstance(scenario, ScenarioOutline):
                     for scenario_outline_instance in scenario.scenarios:
-                        sce_lines[scenario_filename][scenario_outline_instance.name] = scenario_outline_instance.line
                         if scenario_outline_instance not in updated_features[updated_features_path]:
                             updated_features[updated_features_path].append(scenario_outline_instance)
                 else:
-                    sce_lines[scenario_filename][scenario.name] = scenario.line
                     if scenario not in updated_features[updated_features_path]:
                         updated_features[updated_features_path].append(scenario)
-    set_env('scenario_lines', sce_lines)
     return updated_features
 
 

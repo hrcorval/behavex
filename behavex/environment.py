@@ -122,8 +122,8 @@ def before_scenario(context, scenario):
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-        concat_feature_and_scenario_name = "{}-{}".format(str(context.feature.name), str(scenario.name))
-        context.log_path = create_log_path(concat_feature_and_scenario_name, retrying_execution)
+        concat_feature_and_scenario_line = "{}-{}".format(str(context.feature.filename), str(scenario.line))
+        context.log_path = create_log_path(concat_feature_and_scenario_line, retrying_execution)
         context.bhx_log_handler = _add_log_handler(context.log_path)
         if retrying_execution:
             logging.info('Retrying scenario execution...\n'.format())

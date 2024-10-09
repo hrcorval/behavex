@@ -120,7 +120,7 @@ def _exist_extra_logs(scenario):
 def get_path_extra_logs(scenario):
     extra_logs_folder = os.path.join(
         get_env('logs'),
-        str(get_string_hash("{}-{}".format(str(scenario["feature"]), str(scenario["name"])))),
+        str(get_string_hash("{}-{}".format(str(scenario["filename"]), str(scenario["line"])))),
         'evidence',
     )
     return extra_logs_folder
@@ -132,7 +132,7 @@ def get_relative_extra_logs_path(scenario):
             [
                 'outputs',
                 'logs',
-                get_string_hash("{}-{}".format(str(scenario["feature"]), str(scenario["name"]))),
+                get_string_hash("{}-{}".format(str(scenario["filename"]), str(scenario["line"]))),
                 'evidence',
             ]
         )
