@@ -12,7 +12,7 @@ ENHANCEMENTS:
 
 FIXES:
 
-* Fix done when generating be features path (if not specified, BehaveX will use the current path as features path)
+* Fix done when generating the features path (if not specified, BehaveX will use the current path as features path)
 * Fix done when managing tags in scenario outlines
 * Fix done when analyzing empty features
 
