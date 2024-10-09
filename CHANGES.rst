@@ -11,6 +11,7 @@ ENHANCEMENTS:
 * Adding the possibility to copy the scenario name in the HTML report
 
 FIXES:
+
 * Fix done when generating be features path (if not specified, BehaveX will use the current path as features path)
 * Fix done when managing tags in scenario outlines
 * Fix done when analyzing empty features
