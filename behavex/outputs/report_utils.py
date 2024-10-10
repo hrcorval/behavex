@@ -147,10 +147,11 @@ def gather_steps(features):
 
 
 def gather_errors(scenario, retrieve_step_name=False):
+    error_msg = list(map(lambda line: strip_ansi_codes(line), scenario['error_msg']))
     if retrieve_step_name:
-        return scenario['error_msg'], scenario['error_lines'], scenario['error_step']
+        return error_msg, scenario['error_lines'], scenario['error_step']
     else:
-        return scenario['error_msg'], scenario['error_lines']
+        return error_msg, scenario['error_lines']
 
 
 def pretty_print_time(seconds_float, sec_decimals=1):
@@ -449,3 +450,6 @@ def get_environment_details():
     environment_details_raw_data = os.getenv('ENVIRONMENT_DETAILS', None)
     environment_details = environment_details_raw_data.split(',') if environment_details_raw_data else []
     return environment_details
+
+def strip_ansi_codes(from_str: str): 
+    return re.sub(r'\x1B\[[0-?9;]*[mGJK]', '', from_str)

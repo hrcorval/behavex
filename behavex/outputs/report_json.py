@@ -27,7 +27,8 @@ from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message,
                                           match_for_execution, text)
-from behavex.utils import get_scenario_tags, try_operate_descriptor
+from behavex.utils import (generate_hash, get_scenario_tags,
+                           try_operate_descriptor)
 
 
 def add_step_info(step, parent_node):
@@ -159,6 +160,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
         if match_for_execution(scenario_tags):
             # Scenario was selectable
             scenario_info = {}
+            scenario_info['line'] = getattr(scenario, 'line')
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
             scenario_info['status'] = getattr(scenario, 'status').name
@@ -179,7 +181,8 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_lines'] = error_lines
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
-            scenario_info['id_hash'] = _generate_hash(scenario.name)
+            scenario_info['id_hash'] = generate_hash("{}:{}".format(scenario.filename,
+                                                                    scenario.line))
             if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name
@@ -253,13 +256,9 @@ def _step_to_dict(index, step):
 def process_step_definition(step, step_info):
     definition = registry.find_step_definition(step)
     if definition:
-        hash_step = _generate_hash(definition.pattern)
+        hash_step = generate_hash(definition.pattern)
         if hash_step not in global_vars.steps_definitions:
             global_vars.steps_definitions[hash_step] = definition.pattern
         step_info['hash'] = hash_step
     else:
         step_info['hash'] = 0
-
-
-def _generate_hash(word):
-    return abs(hash(word)) % (10 ** 8)
