@@ -9,7 +9,7 @@ ENHANCEMENTS:
 
 FIXES:
 
-* Avoid using the scenario name as part of the hash to generate output paths, as if the scenario name is changed, the path do not match. Instead, the feature filename and the line where the scenario is located is used to generate the hash.
+* Avoid using the scenario name as part of the hash to generate output paths, as if the scenario name is changed, the path does not match. Instead, the feature filename and the line where the scenario is located is used to generate the hash.
 
 
 Version: 4.0.7
