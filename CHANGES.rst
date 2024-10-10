@@ -3,6 +3,10 @@ Version History
 
 Version: 4.0.8
 -------------------------------------------------------------------------------
+ENHANCEMENTS:
+
+* Enhanced parallel scenario execution management by utilizing scenario lines over scenario names. This allows running scenarios that might change their name without causing issues in parallel executions.
+
 FIXES:
 
 * Avoid using the scenario name as part of the hash to generate output paths, as if the scenario name is changed, the path do not match. Instead, the feature filename and the line where the scenario is located is used to generate the hash.

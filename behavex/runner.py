@@ -250,7 +250,7 @@ def launch_behavex():
                                                                 feature_filename=None,
                                                                 feature_json_skeleton=None,
                                                                 scenarios_to_run_in_feature=None,
-                                                                scenario_name=None,
+                                                                scenario_line=None,
                                                                 multiprocess=False,
                                                                 config=config,
                                                                 lock=None,
@@ -453,7 +453,7 @@ def launch_by_feature(features,
                                                      feature_filename=serial_feature["feature_filename"],
                                                      feature_json_skeleton=serial_feature["feature_json_skeleton"],
                                                      scenarios_to_run_in_feature=None,
-                                                     scenario_name=None,
+                                                     scenario_line=None,
                                                      multiprocess=True,
                                                      config=ConfigRun(),
                                                      lock=None,
@@ -472,7 +472,7 @@ def launch_by_feature(features,
                                      feature_filename=feature_filename,
                                      feature_json_skeleton=feature_json_skeleton,
                                      scenarios_to_run_in_feature=None,
-                                     scenario_name=None,
+                                     scenario_line=None,
                                      multiprocess=True,
                                      config=ConfigRun(),
                                      lock=lock,
@@ -525,7 +525,7 @@ def launch_by_scenario(features,
                     feature_filename = scenario.feature.filename
                     scenario_information = {"feature_filename": feature_filename,
                                             "feature_json_skeleton": feature_json_skeleton,
-                                            "scenario_name": scenario.name}
+                                            "scenario_line": scenario.line}
                     total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
                     if 'SERIAL' in scenario_tags:
                         for key, list_scenarios in serial_scenarios.items():
@@ -559,7 +559,7 @@ def launch_by_scenario(features,
                                                             feature_filename=scen_info["feature_filename"],
                                                             feature_json_skeleton=scen_info["feature_json_skeleton"],
                                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                                            scenario_name=scen_info["scenario_name"],
+                                                            scenario_line=scen_info["scenario_line"],
                                                             multiprocess=True,
                                                             config=ConfigRun(),
                                                             lock=None,
@@ -576,13 +576,13 @@ def launch_by_scenario(features,
                 scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
                 feature_filename = scenario_information["feature_filename"]
                 feature_json_skeleton = scenario_information["feature_json_skeleton"]
-                scenario_name = scenario_information["scenario_name"]
+                scenario_line = scenario_information["scenario_line"]
                 future = process_pool.submit(execute_tests,
                                              features_path=features_path,
                                              feature_filename=feature_filename,
                                              feature_json_skeleton=feature_json_skeleton,
                                              scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                             scenario_name=scenario_name,
+                                             scenario_line=scenario_line,
                                              multiprocess=True,
                                              config=ConfigRun(),
                                              lock=lock,
@@ -604,7 +604,7 @@ def execute_tests(
         feature_filename,
         feature_json_skeleton,
         scenarios_to_run_in_feature,
-        scenario_name,
+        scenario_line,
         multiprocess,
         config,
         lock,
@@ -617,7 +617,7 @@ def execute_tests(
         feature_filename (str): Name of the feature file.
         feature_json_skeleton (str): JSON skeleton of the feature.
         scenarios_to_run_in_feature (int): Number of scenarios to run in the feature.
-        scenario_name (str): Name of the scenario.
+        scenario_line (int): Line of the scenario.
         multiprocess (bool): Whether to use multiprocessing.
         config (ConfigRun): Configuration object.
         lock (Lock): Multiprocessing lock.
@@ -639,7 +639,7 @@ def execute_tests(
                                                 multiprocess=multiprocess,
                                                 execution_id=execution_id,
                                                 feature=feature_filename,
-                                                scenario=scenario_name,
+                                                scenario_line=scenario_line,
                                                 config=config)
         except Exception as exception:
             traceback.print_exc()
@@ -654,9 +654,9 @@ def execute_tests(
                                    'features': [json.loads(feature_json_skeleton)],
                                    'steps_definition': []}
                     for skeleton_feature in json_output["features"]:
-                        if scenario_name:
+                        if scenario_line:
                             for skeleton_scenario in skeleton_feature["scenarios"]:
-                                if scenario_name_matching(scenario_name, skeleton_scenario['name']):
+                                if str(skeleton_scenario['line']) == str(scenario_line):
                                     skeleton_scenario['status'] = 'failed'
                                     skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
                         else:
@@ -669,16 +669,16 @@ def execute_tests(
                     json_output = {'environment': [], 'features': [], 'steps_definition': []}
             else:
                 json_output = dump_json_results()
-            if scenario_name:
+            if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),
-                                                                  scenario_name)
+                                                                  scenario_line=scenario_line)
                 if len(json_output['features']) == 0 or len(json_output['features'][0]['scenarios']) == 0:
                     # Adding scenario data if the test was removed from the execution (setting it as "Untested")
                     json_output['features'] = [json.loads(feature_json_skeleton)]
                 try:
                     processing_xml_feature(json_output=json_output,
-                                           scenario=scenario_name,
+                                           scenario_line=scenario_line,
                                            feature_filename=feature_filename,
                                            scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                            lock=lock,
@@ -693,20 +693,20 @@ def execute_tests(
         raise
 
 
-def filter_feature_executed(json_output, filename, scenario_name):
+def filter_feature_executed(json_output, filename, scenario_line):
     """
     Filter the executed feature from the JSON output.
 
     Args:
         json_output (dict): JSON output of the test execution.
         filename (str): Name of the feature file.
-        scenario_name (str): Name of the scenario.
+        scenario_line (str): Line of the scenario.
     """
     for feature in json_output.get('features', '')[:]:
         if feature.get('filename', '') == filename:
             mapping_scenarios = []
             for scenario in feature['scenarios']:
-                if scenario_name_matching(scenario_name, scenario['name']):
+                if str(scenario['line']) == str(scenario_line):
                     mapping_scenarios.append(scenario)
             feature['scenarios'] = mapping_scenarios
             return [feature]
@@ -853,7 +853,7 @@ def remove_temporary_files(parallel_processes, json_reports):
                     print(remove_ex)
 
 
-def processing_xml_feature(json_output, scenario, feature_filename,
+def processing_xml_feature(json_output, scenario_line, feature_filename,
                            scenarios_to_run_in_feature=None, lock=None,
                            shared_removed_scenarios=None):
     """
@@ -883,9 +883,7 @@ def processing_xml_feature(json_output, scenario, feature_filename,
             reported_scenarios = json_output['features'][0]['scenarios']
             executed_scenarios = []
             for reported_scenario in reported_scenarios:
-                reported_name = reported_scenario['name']
-                if reported_name == scenario or ('@' in reported_name and
-                                                 scenario_name_matching(scenario, reported_name)):
+                if reported_scenario['line'] == scenario_line:
                     executed_scenarios.append(reported_scenario)
             json_output['features'][0]['scenarios'] = executed_scenarios
             feature_name = os.path.join(
@@ -1003,7 +1001,7 @@ def _store_tags_to_env_variable(tags):
         set_env_variable('TAGS', '')
 
 
-def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario=None, config=None):
+def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):
     """
     Set the arguments for Behave framework based on the given parameters.
 
@@ -1012,7 +1010,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         multiprocess (bool): Whether to use multiprocessing.
         execution_id (str): Execution ID.
         feature (Feature): Feature object.
-        scenario (Scenario): Scenario object.
+        scenario_line (int): Scenario line.
         config (ConfigRun): Configuration object.
 
     Returns:
@@ -1021,24 +1019,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
     arguments = []
     output_folder = config.get_env('OUTPUT')
     if multiprocess:
-        if not feature:
-            arguments.append(features_path)
-        else:
-            arguments.append(feature)
+        updated_features_path = features_path if not feature else feature
+        updated_features_path = updated_features_path if not scenario_line else "{}:{}".format(updated_features_path, scenario_line)
+        arguments.append(updated_features_path)
         arguments.append('--no-summary')
-        if scenario:
-            outline_examples_in_name = re.findall('<[\\S]*>', scenario)
-            pattern = "(.?--.?@\\d+.\\d+\\s*\\S*)"
-            if bool(re.search(pattern, scenario)):
-                scenario_outline_compatible = '^{}$'.format(re.escape(scenario))
-            else:
-                scenario_outline_compatible = '^{}{}?$'.format(re.escape(scenario), pattern)
-            if outline_examples_in_name:
-                for example_name in outline_examples_in_name:
-                    escaped_example_name = re.escape(example_name)
-                    scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
-            arguments.append('--name')
-            arguments.append("{}".format(scenario_outline_compatible))
         worker_id = multiprocessing.current_process().name.split('-')[-1]
 
         arguments.append('--outfile')
@@ -1162,26 +1146,6 @@ def set_args_captures(args, args_sys):
     for default_arg in ['capture', 'capture_stderr', 'logcapture']:
         if not getattr(args_sys, 'no_{}'.format(default_arg)):
             args.append('--no-{}'.format(default_arg.replace('_', '-')))
-
-
-def scenario_name_matching(abstract_scenario_name, scenario_name):
-    """
-    Check if the scenario name matches the abstract scenario name (as the scenario might represent a Scenario Outline, with example parameters in name).
-
-    Args:
-        abstract_scenario_name (str): Abstract scenario name
-        scenario_name (str): Scenario name to map against the abstract scenario name.
-
-    Returns:
-        bool: Whether the scenario name matches the abstract scenario name.
-    """
-    outline_examples_in_name = re.findall('<\\S*>', abstract_scenario_name)
-    scenario_outline_compatible = '^{}(.--.@\\d+.\\d+\\s*\\S*)?$'.format(re.escape(abstract_scenario_name))
-    for example_name in outline_examples_in_name:
-        escaped_example_name = re.escape(example_name)
-        scenario_outline_compatible = scenario_outline_compatible.replace(escaped_example_name, "[\\S ]*")
-    pattern = re.compile(scenario_outline_compatible)
-    return pattern.match(scenario_name)
 
 
 def dump_json_results():
