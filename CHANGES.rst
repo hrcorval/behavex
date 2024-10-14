@@ -15,6 +15,7 @@ FIXES:
 * Fix done when generating the features path (if not specified, BehaveX will use the current path as features path)
 * Fix done when managing tags in scenario outlines
 * Fix done when analyzing empty features
+* Fix done to remove ansi color codes from the log files and HTML reporter (`fd3c375 <https://github.com/hrcorval/behavex/commit/fd3c3756a13d9e47823f286022980e54e306d6da>`_)
 
 
 Version: 4.0.5
