@@ -17,7 +17,7 @@ from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs import report_json, report_xml
-from behavex.outputs.report_utils import create_log_path
+from behavex.outputs.report_utils import create_log_path, strip_ansi_codes
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_autoretry_attempts, get_logging_level,
                            get_scenario_tags, get_scenarios_instances)
@@ -197,6 +197,7 @@ def _add_log_handler(log_path):
     )
     log_level = get_logging_level()
     logging.getLogger().setLevel(log_level)
+    file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
     file_handler.setFormatter(_get_log_formatter())
     logging.getLogger().addHandler(file_handler)
     return file_handler
