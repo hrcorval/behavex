@@ -18,6 +18,15 @@ def step_impl(context):
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/passing_tests.feature'), '-o', 'output/output_{}'.format(get_random_number(6))]
     execute_command(context, execution_args)
 
+@when('I run the behavex command that renames scenarios and features')
+def step_impl(context):
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/rename_tests.feature'), '-o', 'output/output_{}'.format(get_random_number(6))]
+    if hasattr(context, 'parallel_processes'):
+        execution_args += ['--parallel-processes', context.parallel_processes]
+    if hasattr(context, 'parallel_scheme'):
+        execution_args += ['--parallel-scheme', context.parallel_scheme]
+    execute_command(context, execution_args)
+
 @when('I run the behavex command with a failing test')
 def step_impl(context):
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/failing_tests.feature'), '-o', 'output/output_{}'.format(get_random_number(6))]
@@ -51,6 +60,12 @@ def step_impl(context):
 def step_impl(context, parallel_processes, parallel_schema):
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/'), '-o', 'output/output_{}'.format(get_random_number(6)), '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_schema]
     execute_command(context, execution_args)
+
+
+@when('I setup the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def step_impl(context, parallel_processes, parallel_scheme):
+    context.parallel_processes = parallel_processes
+    context.parallel_scheme = parallel_scheme
 
 
 @when('I run the behavex command with the following scheme, processes and tags')
