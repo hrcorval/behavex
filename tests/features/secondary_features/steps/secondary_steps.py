@@ -46,12 +46,13 @@ def step_impl(context):
         # This step will be skipped
         pass
 
-@given('I rename the scenario from context to have the suffix "{suffix}"')
-def step_impl(context, suffix):
-    context.new_scenario_name = context.scenario.name + suffix
-    logging.info('I rename the scenario from \n"{}" \nto \n"{}"'.format(context.scenario.name, context.new_scenario_name))
-
-@given('I rename the feature from context to have the suffix "{suffix}"')
-def step_impl(context, suffix):
-    context.new_feature_name = context.feature.name + suffix
-    logging.info('I rename the feature from \n"{}" \nto \n"{}"'.format(context.feature.name, context.new_feature_name))
+@given('I rename the {feature_or_scenario} from context to have the suffix "{suffix}"')
+def step_impl(context, feature_or_scenario, suffix):
+    if feature_or_scenario == 'feature':
+        context.new_feature_name = context.feature.name + suffix
+        logging.info('I rename the feature from \n"{}" \nto \n"{}"'.format(context.feature.name, context.new_feature_name))
+    elif feature_or_scenario == 'scenario':
+        context.new_scenario_name = context.scenario.name + suffix
+        logging.info('I rename the scenario from \n"{}" \nto \n"{}"'.format(context.scenario.name, context.new_scenario_name))
+    else:
+        raise ValueError('Invalid element, it should be "feature" or "scenario"')

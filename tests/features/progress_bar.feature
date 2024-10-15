@@ -2,7 +2,7 @@ Feature: Progress Bar
 
 Background:
   Given I have installed behavex
-  And I have the progress bar enabled
+  And The progress bar is enabled
 
   @PROGRESS_BAR @PARALLEL
   Scenario Outline: Progress bar should be shown when running tests in parallel
