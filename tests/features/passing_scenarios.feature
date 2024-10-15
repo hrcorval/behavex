@@ -9,7 +9,7 @@ Feature: Passing Scenarios
     | scenarios passed, 0 failed, 0 skipped    |
     | Exit code: 0                             |
     And I should not see error messages in the output
-
+    And I should see the same number of scenarios in the reports and the console output
 
   @PASSING
   Scenario: Passing tests with AND tags
@@ -22,6 +22,7 @@ Feature: Passing Scenarios
     | 1 scenario passed, 0 failed       |
     | Exit code: 0                      |
     And I should not see error messages in the output
+    And I should see the same number of scenarios in the reports
 
   @PASSING @WIP
   Scenario: Passing tests with NOT tags
@@ -34,3 +35,4 @@ Feature: Passing Scenarios
     | 1 scenario passed, 0 failed       |
     | Exit code: 0                      |
     And I should not see error messages in the output
+    And I should see the same number of scenarios in the reports and the console output

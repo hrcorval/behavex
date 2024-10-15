@@ -282,8 +282,8 @@
                         <th style="width: 180px;height: 24px" class="text-center">Evidence</th>
                     </tr>
                     {%- for scenario in feature.scenarios -%}
-                        {%- set concat_feature_and_scenario_name = feature.name + "-" + scenario.name -%}
-                        {%- set scenario_hash = concat_feature_and_scenario_name|get_string_hash -%}
+                        {%- set concat_feature_and_scenario_line = feature.filename + "-" + scenario.line|string -%}
+                        {%- set scenario_hash = concat_feature_and_scenario_line|get_string_hash -%}
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
                         {%- set scenario_tags = scenario|get_scenario_tags -%}

@@ -9,6 +9,7 @@ from __future__ import absolute_import, print_function
 
 import codecs
 import functools
+import hashlib
 import json
 import logging
 import multiprocessing
@@ -81,7 +82,6 @@ def get_logging_level():
 
 # noinspection PyDictCreation
 def join_feature_reports(json_reports):
-    scenario_lines = get_env('scenario_lines')
     if type(json_reports) is list:
         if len(json_reports) == 1:
             merged_json = json_reports[0]
@@ -95,13 +95,12 @@ def join_feature_reports(json_reports):
     if merged_json['features'] and (IncludeNameMatch().bool() or IncludePathsMatch().bool() or MatchInclude().bool()):
         delete = []
         for index, feature in enumerate(merged_json['features'][:]):
-            lines = scenario_lines.get(feature['filename'], {})
             scenarios = [
                 scenario
                 for scenario in feature['scenarios']
                 if IncludeNameMatch()(scenario['name'])
                 and MatchInclude()(feature['filename'])
-                and IncludePathsMatch()(scenario['filename'], lines.get(scenario['name'], -1))
+                and IncludePathsMatch()(scenario['filename'], scenario['line'])
             ]
             if not scenarios:
                 # create index list for delete after iterated the feature list.
@@ -466,7 +465,7 @@ def create_custom_log_when_called(self, key):
             if not hasattr(self, 'scenario'):
                 ex_msg = '"evidence_path" is only accessible in the context of a test scenario'
                 raise Exception(ex_msg)
-            self.log_path = get_string_hash("{}-{}".format(str(self.feature.name), str(self.scenario.name)))
+            self.log_path = get_string_hash("{}-{}".format(str(self.feature.filename), str(self.scenario.line)))
         evidence_path = os.path.join(self.log_path, 'evidence')
         self.evidence_path = evidence_path
         try:
@@ -574,3 +573,13 @@ def get_autoretry_attempts(tags):
             attempts_in_tag = result.group(2)
             attempts = int(attempts_in_tag) if attempts_in_tag else 2
     return attempts
+
+def generate_hash(word):
+    # Use SHA-256 for better distribution
+    sha256 = hashlib.sha256(word.encode('utf-8')).digest()
+    # Take the first 6 bytes (48 bits) of the hash
+    truncated_hash = sha256[:6]
+    # Convert to an integer
+    hash_int = int.from_bytes(truncated_hash, byteorder='big')
+    # Ensure the result fits in 48 bits (optional, for consistency)
+    return hash_int & 0xFFFFFFFFFFFF

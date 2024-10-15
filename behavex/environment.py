@@ -17,7 +17,7 @@ from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs import report_json, report_xml
-from behavex.outputs.report_utils import create_log_path
+from behavex.outputs.report_utils import create_log_path, strip_ansi_codes
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_autoretry_attempts, get_logging_level,
                            get_scenario_tags, get_scenarios_instances)
@@ -122,8 +122,8 @@ def before_scenario(context, scenario):
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-        concat_feature_and_scenario_name = "{}-{}".format(str(context.feature.name), str(scenario.name))
-        context.log_path = create_log_path(concat_feature_and_scenario_name, retrying_execution)
+        concat_feature_and_scenario_line = "{}-{}".format(str(context.feature.filename), str(scenario.line))
+        context.log_path = create_log_path(concat_feature_and_scenario_line, retrying_execution)
         context.bhx_log_handler = _add_log_handler(context.log_path)
         if retrying_execution:
             logging.info('Retrying scenario execution...\n'.format())
@@ -197,6 +197,7 @@ def _add_log_handler(log_path):
     )
     log_level = get_logging_level()
     logging.getLogger().setLevel(log_level)
+    file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
     file_handler.setFormatter(_get_log_formatter())
     logging.getLogger().addHandler(file_handler)
     return file_handler

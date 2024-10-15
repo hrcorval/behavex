@@ -9,3 +9,4 @@ Feature: Failing Scenarios
     | 0 scenarios passed, 1 failed, 0 skipped |
     | Exit code: 1                            |
     And I should not see exception messages in the output
+    And I should see the same number of scenarios in the reports and the console output
