@@ -269,6 +269,10 @@ In some cases, you may want to mute test scenarios that are failing but are not 
 
 For scenarios that are prone to intermittent failures or are affected by infrastructure issues, you can use the @AUTORETRY tag. This tag enables automatic re-execution of the scenario in case of failure.
 
+You can also specify the number of retries by adding the total retries as a suffix in the @AUTORETRY tag. For example, @AUTORETRY_3 will retry the scenario 3 times if the scenario fails.
+
+The re-execution will be performed right after the failed execution arises, and the final result will be registered as the scenario execution result.
+
 ### Rerunning Failed Scenarios
 
 After executing tests, if there are failing scenarios, a **failing_scenarios.txt** file will be generated in the output folder. This file allows you to rerun all failed scenarios using the following command:
