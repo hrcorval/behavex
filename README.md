@@ -271,7 +271,7 @@ For scenarios that are prone to intermittent failures or are affected by infrast
 
 You can also specify the number of retries by adding the total retries as a suffix in the @AUTORETRY tag. For example, @AUTORETRY_3 will retry the scenario 3 times if the scenario fails.
 
-The re-execution will be performed right after the failed execution arises, and the final result will be registered as the scenario execution result.
+The re-execution will be performed right after a failing execution arises, and the latest execution is the one that will be reported.
 
 ### Rerunning Failed Scenarios
 
