@@ -18,6 +18,7 @@ import re
 import shutil
 import sys
 import time
+import uuid
 from functools import reduce
 from tempfile import gettempdir
 
@@ -583,3 +584,6 @@ def generate_hash(word):
     hash_int = int.from_bytes(truncated_hash, byteorder='big')
     # Ensure the result fits in 48 bits (optional, for consistency)
     return hash_int & 0xFFFFFFFFFFFF
+
+def generate_uuid():
+    return uuid.uuid4().hex
