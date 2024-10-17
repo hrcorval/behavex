@@ -27,7 +27,7 @@ from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message,
                                           match_for_execution, text)
-from behavex.utils import (generate_hash, get_scenario_tags,
+from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
                            try_operate_descriptor)
 
 
@@ -181,8 +181,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_lines'] = error_lines
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
-            scenario_info['id_hash'] = generate_hash("{}:{}".format(scenario.filename,
-                                                                    scenario.line))
+            scenario_info['id_hash'] = generate_uuid()
             if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name
