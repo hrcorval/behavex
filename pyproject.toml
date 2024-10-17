@@ -54,3 +54,6 @@ exclude = ["tests"]
 
 [project.scripts]
 behavex = "behavex.runner:main"
+
+[tool.setuptools]
+packages = ["behavex"]

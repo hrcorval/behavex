@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
-from setuptools import find_packages, setup
+import sys
+from pathlib import Path
+
+# Add the project root to the Python path
+project_root = Path(__file__).parent.resolve()
+sys.path.insert(0, str(project_root))
+
+try:
+    from setuptools import find_packages, setup
+except ImportError:
+    from distutils.core import setup
+
+    def find_packages():
+        return []
 
 with open('README.md', 'r') as fh:
     long_description = fh.read()
