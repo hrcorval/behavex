@@ -257,7 +257,7 @@ def launch_behavex():
                                                                 shared_removed_scenarios=None)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
-        elif parallel_scheme == 'scenario':
+        elif parallel_scheme in ['scenario', 'examples']:
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                             process_pool,
                                                             lock,
@@ -538,7 +538,7 @@ def launch_by_scenario(features,
                                 duplicated_scenarios.setdefault(key, []).append(scenario.name)
                         parallel_scenarios.setdefault(features_path, []).append(scenario_information)
     if show_progress_bar:
-        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
+        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme=get_param('parallel_scheme'),
                                                                        total_elements=sum(total_scenarios_to_run.values()))
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
@@ -569,33 +569,64 @@ def launch_by_scenario(features,
                 if global_vars.progress_bar_instance:
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
-        print_parallel('scenario.running_parallels')
-        parallel_processes = []
-        for features_path in parallel_scenarios.keys():
-            for scenario_information in parallel_scenarios[features_path]:
-                scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
-                feature_filename = scenario_information["feature_filename"]
-                feature_json_skeleton = scenario_information["feature_json_skeleton"]
-                scenario_line = scenario_information["scenario_line"]
-                future = process_pool.submit(execute_tests,
-                                             features_path=features_path,
-                                             feature_filename=feature_filename,
-                                             feature_json_skeleton=feature_json_skeleton,
-                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                             scenario_line=scenario_line,
-                                             multiprocess=True,
-                                             config=ConfigRun(),
-                                             lock=lock,
-                                             shared_removed_scenarios=shared_removed_scenarios
-                                             )
-                parallel_processes.append(future)
-                future.add_done_callback(create_execution_complete_callback_function(
-                    execution_codes,
-                    json_reports,
-                    global_vars.progress_bar_instance
-                ))
-        for parallel_process in parallel_processes:
-            parallel_process.result()
+        scheme = get_param('parallel_scheme')
+        ## TODO: refactor scheme == 'scenario' so it only runs scenarios in parallel
+        if scheme == 'scenario':
+            print_parallel('scenario.running_parallel_scenarios')
+            parallel_processes = []
+            for features_path in parallel_scenarios.keys():
+                for scenario_information in parallel_scenarios[features_path]:
+                    scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+                    feature_filename = scenario_information["feature_filename"]
+                    feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                    scenario_line = scenario_information["scenario_line"]
+                    future = process_pool.submit(execute_tests,
+                                                features_path=features_path,
+                                                feature_filename=feature_filename,
+                                                feature_json_skeleton=feature_json_skeleton,
+                                                scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                                scenario_line=scenario_line,
+                                                multiprocess=True,
+                                                config=ConfigRun(),
+                                                lock=lock,
+                                                shared_removed_scenarios=shared_removed_scenarios
+                                                )
+                    parallel_processes.append(future)
+                    future.add_done_callback(create_execution_complete_callback_function(
+                        execution_codes,
+                        json_reports,
+                        global_vars.progress_bar_instance
+                    ))
+            for parallel_process in parallel_processes:
+                parallel_process.result()
+        elif scheme == 'examples':
+            print_parallel('scenario.running_parallel_examples')
+            parallel_processes = []
+            for features_path in parallel_scenarios.keys():
+                for scenario_information in parallel_scenarios[features_path]:
+                    scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+                    feature_filename = scenario_information["feature_filename"]
+                    feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                    scenario_line = scenario_information["scenario_line"]
+                    future = process_pool.submit(execute_tests,
+                                                features_path=features_path,
+                                                feature_filename=feature_filename,
+                                                feature_json_skeleton=feature_json_skeleton,
+                                                scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                                scenario_line=scenario_line,
+                                                multiprocess=True,
+                                                config=ConfigRun(),
+                                                lock=lock,
+                                                shared_removed_scenarios=shared_removed_scenarios
+                                                )
+                    parallel_processes.append(future)
+                    future.add_done_callback(create_execution_complete_callback_function(
+                        execution_codes,
+                        json_reports,
+                        global_vars.progress_bar_instance
+                    ))
+            for parallel_process in parallel_processes:
+                parallel_process.result()
     return execution_codes, json_reports
 
 
@@ -1116,7 +1147,7 @@ def _get_progress_bar_instance(parallel_scheme, total_elements):
     Get the progress bar instance.
 
     Args:
-        parallel_scheme (str): Parallel scheme (feature or scenario).
+        parallel_scheme (str): Parallel scheme (feature, scenario, or examples).
         total_elements (int): Total number of elements.
 
     Returns:
