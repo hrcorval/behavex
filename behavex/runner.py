@@ -519,7 +519,8 @@ def launch_by_scenario(features,
     is_parallel_on_scenarios = scheme == 'scenario'
     is_parallel_on_examples = scheme == 'examples'
     for features_path, scenarios in features.items():
-        scenarios_instances = get_scenarios_instances(scenarios)
+        scenarios_instances = get_scenarios_instances(scenarios) if is_parallel_on_examples \
+                            else get_scenarios_instances(explore_features(features_path), should_expand_outline=False)
         for scenario in scenarios_instances:
             if include_path_match(scenario.filename, scenario.line) \
                     and include_name_match(scenario.name):
@@ -531,7 +532,8 @@ def launch_by_scenario(features,
                     feature_filename = scenario.feature.filename
                     scenario_information = {"feature_filename": feature_filename,
                                             "feature_json_skeleton": feature_json_skeleton,
-                                            "scenario_line": scenario.line}
+                                            "scenario_line": scenario.line,
+                                            "scenario_name": scenario.name}
                     total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
                     if 'SERIAL' in scenario_tags:
                         for key, list_scenarios in serial_scenarios.items():
@@ -576,20 +578,16 @@ def launch_by_scenario(features,
                 if global_vars.progress_bar_instance:
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
+        # spin up 1 process for each scenario / scenario outline and run those in parallel
         if is_parallel_on_scenarios:
             print_parallel('scenario.running_parallel_scenarios')
-            get_idx_of_row_id = lambda scn: scn.name.rfind('-- @')
-            get_scenario_name_without_row_id = lambda scn: scn.name[:get_idx_of_row_id(scn)].strip() if get_idx_of_row_id(scn) != -1 else scn.name.strip()
-            scenario_names = {
-                key: list(dict.fromkeys(get_scenario_name_without_row_id(scenario) for scenario in scenarios)) for key, scenarios in features.items()
-            }
             parallel_processes = []
-            for features_path in scenario_names.keys():
-                for scenario_name in scenario_names[features_path]:
-                    scenarios_to_run_in_feature = total_scenarios_to_run[features_path]
-                    feature_filename = features_path
-                    scenario_instance = next((scenario for scenario in explore_features(features_path) if scenario.name == scenario_name), None)
-                    feature_json_skeleton = _get_feature_json_skeleton(scenario_instance) ## i think we just need to fix this line
+            for features_path in parallel_scenarios.keys():
+                for scenario_information in parallel_scenarios[features_path]:
+                    scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+                    feature_filename = scenario_information["feature_filename"]
+                    feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                    scenario_name = scenario_information["scenario_name"]
                     future = process_pool.submit(execute_tests,
                                                 features_path=features_path,
                                                 feature_filename=feature_filename,
@@ -610,6 +608,8 @@ def launch_by_scenario(features,
                     ))
             for parallel_process in parallel_processes:
                 parallel_process.result()
+        # spin up 1 process for each scenario / example in scenario outline and run those in parallel
+        # this is the default behavior and remains unchanged
         elif is_parallel_on_examples:
             print_parallel('scenario.running_parallel_examples')
             parallel_processes = []
