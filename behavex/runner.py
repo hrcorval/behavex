@@ -251,6 +251,7 @@ def launch_behavex():
                                                                 feature_json_skeleton=None,
                                                                 scenarios_to_run_in_feature=None,
                                                                 scenario_line=None,
+                                                                scenario_name=None,
                                                                 multiprocess=False,
                                                                 config=config,
                                                                 lock=None,
@@ -454,6 +455,7 @@ def launch_by_feature(features,
                                                      feature_json_skeleton=serial_feature["feature_json_skeleton"],
                                                      scenarios_to_run_in_feature=None,
                                                      scenario_line=None,
+                                                     scenario_name=None,
                                                      multiprocess=True,
                                                      config=ConfigRun(),
                                                      lock=None,
@@ -473,6 +475,7 @@ def launch_by_feature(features,
                                      feature_json_skeleton=feature_json_skeleton,
                                      scenarios_to_run_in_feature=None,
                                      scenario_line=None,
+                                     scenario_name=None,
                                      multiprocess=True,
                                      config=ConfigRun(),
                                      lock=lock,
@@ -560,6 +563,7 @@ def launch_by_scenario(features,
                                                             feature_json_skeleton=scen_info["feature_json_skeleton"],
                                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                                             scenario_line=scen_info["scenario_line"],
+                                                            scenario_name=None,
                                                             multiprocess=True,
                                                             config=ConfigRun(),
                                                             lock=None,
@@ -573,6 +577,12 @@ def launch_by_scenario(features,
         ## TODO: refactor scheme == 'scenario' so it only runs scenarios in parallel
         if scheme == 'scenario':
             print_parallel('scenario.running_parallel_scenarios')
+            get_idx_of_row_id = lambda scn: scn.name.rfind('-- @')
+            get_scenario_name_without_row_id = lambda scn: scn.name[:get_idx_of_row_id(scn)].strip() if get_idx_of_row_id(scn) != -1 else scn.name.strip()
+            scenario_names = {
+                key: list(dict.fromkeys(get_scenario_name_without_row_id(scenario) for scenario in scenarios))
+                for key, scenarios in features.items()
+            }
             parallel_processes = []
             for features_path in parallel_scenarios.keys():
                 for scenario_information in parallel_scenarios[features_path]:
@@ -586,6 +596,7 @@ def launch_by_scenario(features,
                                                 feature_json_skeleton=feature_json_skeleton,
                                                 scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                                 scenario_line=scenario_line,
+                                                scenario_name=None,
                                                 multiprocess=True,
                                                 config=ConfigRun(),
                                                 lock=lock,
@@ -614,6 +625,7 @@ def launch_by_scenario(features,
                                                 feature_json_skeleton=feature_json_skeleton,
                                                 scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                                 scenario_line=scenario_line,
+                                                scenario_name=None,
                                                 multiprocess=True,
                                                 config=ConfigRun(),
                                                 lock=lock,
@@ -636,6 +648,7 @@ def execute_tests(
         feature_json_skeleton,
         scenarios_to_run_in_feature,
         scenario_line,
+        scenario_name,
         multiprocess,
         config,
         lock,
@@ -649,6 +662,7 @@ def execute_tests(
         feature_json_skeleton (str): JSON skeleton of the feature.
         scenarios_to_run_in_feature (int): Number of scenarios to run in the feature.
         scenario_line (int): Line of the scenario.
+        scenario_name (str): Name of the scenario.
         multiprocess (bool): Whether to use multiprocessing.
         config (ConfigRun): Configuration object.
         lock (Lock): Multiprocessing lock.
@@ -671,6 +685,7 @@ def execute_tests(
                                                 execution_id=execution_id,
                                                 feature=feature_filename,
                                                 scenario_line=scenario_line,
+                                                scenario_name=scenario_name,
                                                 config=config)
         except Exception as exception:
             traceback.print_exc()
@@ -1032,7 +1047,7 @@ def _store_tags_to_env_variable(tags):
         set_env_variable('TAGS', '')
 
 
-def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):
+def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, scenario_name=None, config=None):
     """
     Set the arguments for Behave framework based on the given parameters.
 
@@ -1042,6 +1057,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         execution_id (str): Execution ID.
         feature (Feature): Feature object.
         scenario_line (int): Scenario line.
+        scenario_name (str): Scenario name.
         config (ConfigRun): Configuration object.
 
     Returns:
@@ -1055,6 +1071,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append(updated_features_path)
         arguments.append('--no-summary')
         worker_id = multiprocessing.current_process().name.split('-')[-1]
+
+        if(scenario_name):
+            arguments.append('-n')
+            arguments.append(scenario_name)
 
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(worker_id)))
