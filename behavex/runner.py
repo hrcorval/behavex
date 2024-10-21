@@ -1156,7 +1156,7 @@ def _get_feature_json_skeleton(behave_element):
     elif type(behave_element) is Scenario:
         feature = copy.copy(behave_element.feature)
         feature.scenarios = [behave_element]
-    elif type(behave_element) is ScenarioOutline:
+    elif type(behave_element) is ScenarioOutline: # TODO: fix the logic here or merge this with the flow above for Scenario and modify generate_execution_info
         feature = copy.copy(behave_element.feature)
         feature.scenarios = [behave_element]
     else:
