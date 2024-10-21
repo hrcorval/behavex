@@ -440,10 +440,10 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
     return result
 
 
-def get_scenarios_instances(scenarios):
+def get_scenarios_instances(scenarios, should_expand_outline=True):
     scenarios_to_iterate = []
     for scenario in scenarios:
-        if isinstance(scenario, ScenarioOutline):
+        if isinstance(scenario, ScenarioOutline) and should_expand_outline:
             for scenario_outline_instance in scenario.scenarios:
                 scenarios_to_iterate.append(scenario_outline_instance)
         else:

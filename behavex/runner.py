@@ -251,13 +251,14 @@ def launch_behavex():
                                                                 feature_json_skeleton=None,
                                                                 scenarios_to_run_in_feature=None,
                                                                 scenario_line=None,
+                                                                scenario_name=None,
                                                                 multiprocess=False,
                                                                 config=config,
                                                                 lock=None,
                                                                 shared_removed_scenarios=None)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
-        elif parallel_scheme == 'scenario':
+        elif parallel_scheme in ['scenario', 'examples']:
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                             process_pool,
                                                             lock,
@@ -454,6 +455,7 @@ def launch_by_feature(features,
                                                      feature_json_skeleton=serial_feature["feature_json_skeleton"],
                                                      scenarios_to_run_in_feature=None,
                                                      scenario_line=None,
+                                                     scenario_name=None,
                                                      multiprocess=True,
                                                      config=ConfigRun(),
                                                      lock=None,
@@ -473,6 +475,7 @@ def launch_by_feature(features,
                                      feature_json_skeleton=feature_json_skeleton,
                                      scenarios_to_run_in_feature=None,
                                      scenario_line=None,
+                                     scenario_name=None,
                                      multiprocess=True,
                                      config=ConfigRun(),
                                      lock=lock,
@@ -512,8 +515,12 @@ def launch_by_scenario(features,
     duplicated_scenarios = {}
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
+    scheme = get_param('parallel_scheme')
+    is_parallel_on_scenarios = scheme == 'scenario'
+    is_parallel_on_examples = scheme == 'examples'
     for features_path, scenarios in features.items():
-        scenarios_instances = get_scenarios_instances(scenarios)
+        scenarios_instances = get_scenarios_instances(scenarios) if is_parallel_on_examples \
+                            else get_scenarios_instances(explore_features(features_path), should_expand_outline=False)
         for scenario in scenarios_instances:
             if include_path_match(scenario.filename, scenario.line) \
                     and include_name_match(scenario.name):
@@ -525,7 +532,8 @@ def launch_by_scenario(features,
                     feature_filename = scenario.feature.filename
                     scenario_information = {"feature_filename": feature_filename,
                                             "feature_json_skeleton": feature_json_skeleton,
-                                            "scenario_line": scenario.line}
+                                            "scenario_line": scenario.line,
+                                            "scenario_name": scenario.name}
                     total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
                     if 'SERIAL' in scenario_tags:
                         for key, list_scenarios in serial_scenarios.items():
@@ -538,7 +546,7 @@ def launch_by_scenario(features,
                                 duplicated_scenarios.setdefault(key, []).append(scenario.name)
                         parallel_scenarios.setdefault(features_path, []).append(scenario_information)
     if show_progress_bar:
-        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
+        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme=get_param('parallel_scheme'),
                                                                        total_elements=sum(total_scenarios_to_run.values()))
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
@@ -560,6 +568,7 @@ def launch_by_scenario(features,
                                                             feature_json_skeleton=scen_info["feature_json_skeleton"],
                                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
                                                             scenario_line=scen_info["scenario_line"],
+                                                            scenario_name=None,
                                                             multiprocess=True,
                                                             config=ConfigRun(),
                                                             lock=None,
@@ -569,33 +578,67 @@ def launch_by_scenario(features,
                 if global_vars.progress_bar_instance:
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
-        print_parallel('scenario.running_parallels')
-        parallel_processes = []
-        for features_path in parallel_scenarios.keys():
-            for scenario_information in parallel_scenarios[features_path]:
-                scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
-                feature_filename = scenario_information["feature_filename"]
-                feature_json_skeleton = scenario_information["feature_json_skeleton"]
-                scenario_line = scenario_information["scenario_line"]
-                future = process_pool.submit(execute_tests,
-                                             features_path=features_path,
-                                             feature_filename=feature_filename,
-                                             feature_json_skeleton=feature_json_skeleton,
-                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                             scenario_line=scenario_line,
-                                             multiprocess=True,
-                                             config=ConfigRun(),
-                                             lock=lock,
-                                             shared_removed_scenarios=shared_removed_scenarios
-                                             )
-                parallel_processes.append(future)
-                future.add_done_callback(create_execution_complete_callback_function(
-                    execution_codes,
-                    json_reports,
-                    global_vars.progress_bar_instance
-                ))
-        for parallel_process in parallel_processes:
-            parallel_process.result()
+        # spin up 1 process for each scenario / scenario outline and run those in parallel
+        if is_parallel_on_scenarios:
+            print_parallel('scenario.running_parallel_scenarios')
+            parallel_processes = []
+            for features_path in parallel_scenarios.keys():
+                for scenario_information in parallel_scenarios[features_path]:
+                    scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+                    feature_filename = scenario_information["feature_filename"]
+                    feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                    scenario_name = scenario_information["scenario_name"]
+                    future = process_pool.submit(execute_tests,
+                                                features_path=features_path,
+                                                feature_filename=feature_filename,
+                                                feature_json_skeleton=feature_json_skeleton,
+                                                scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                                scenario_line=None,
+                                                scenario_name=scenario_name,
+                                                multiprocess=True,
+                                                config=ConfigRun(),
+                                                lock=lock,
+                                                shared_removed_scenarios=shared_removed_scenarios
+                                                )
+                    parallel_processes.append(future)
+                    future.add_done_callback(create_execution_complete_callback_function(
+                        execution_codes,
+                        json_reports,
+                        global_vars.progress_bar_instance
+                    ))
+            for parallel_process in parallel_processes:
+                parallel_process.result()
+        # spin up 1 process for each scenario / example in scenario outline and run those in parallel
+        # this is the default behavior and remains unchanged
+        elif is_parallel_on_examples:
+            print_parallel('scenario.running_parallel_examples')
+            parallel_processes = []
+            for features_path in parallel_scenarios.keys():
+                for scenario_information in parallel_scenarios[features_path]:
+                    scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+                    feature_filename = scenario_information["feature_filename"]
+                    feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                    scenario_line = scenario_information["scenario_line"]
+                    future = process_pool.submit(execute_tests,
+                                                features_path=features_path,
+                                                feature_filename=feature_filename,
+                                                feature_json_skeleton=feature_json_skeleton,
+                                                scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                                scenario_line=scenario_line,
+                                                scenario_name=None,
+                                                multiprocess=True,
+                                                config=ConfigRun(),
+                                                lock=lock,
+                                                shared_removed_scenarios=shared_removed_scenarios
+                                                )
+                    parallel_processes.append(future)
+                    future.add_done_callback(create_execution_complete_callback_function(
+                        execution_codes,
+                        json_reports,
+                        global_vars.progress_bar_instance
+                    ))
+            for parallel_process in parallel_processes:
+                parallel_process.result()
     return execution_codes, json_reports
 
 
@@ -605,6 +648,7 @@ def execute_tests(
         feature_json_skeleton,
         scenarios_to_run_in_feature,
         scenario_line,
+        scenario_name,
         multiprocess,
         config,
         lock,
@@ -618,6 +662,7 @@ def execute_tests(
         feature_json_skeleton (str): JSON skeleton of the feature.
         scenarios_to_run_in_feature (int): Number of scenarios to run in the feature.
         scenario_line (int): Line of the scenario.
+        scenario_name (str): Name of the scenario.
         multiprocess (bool): Whether to use multiprocessing.
         config (ConfigRun): Configuration object.
         lock (Lock): Multiprocessing lock.
@@ -640,6 +685,7 @@ def execute_tests(
                                                 execution_id=execution_id,
                                                 feature=feature_filename,
                                                 scenario_line=scenario_line,
+                                                scenario_name=scenario_name,
                                                 config=config)
         except Exception as exception:
             traceback.print_exc()
@@ -1001,7 +1047,7 @@ def _store_tags_to_env_variable(tags):
         set_env_variable('TAGS', '')
 
 
-def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):
+def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, scenario_name=None, config=None):
     """
     Set the arguments for Behave framework based on the given parameters.
 
@@ -1011,6 +1057,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         execution_id (str): Execution ID.
         feature (Feature): Feature object.
         scenario_line (int): Scenario line.
+        scenario_name (str): Scenario name.
         config (ConfigRun): Configuration object.
 
     Returns:
@@ -1024,6 +1071,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append(updated_features_path)
         arguments.append('--no-summary')
         worker_id = multiprocessing.current_process().name.split('-')[-1]
+
+        if(scenario_name):
+            arguments.append('-n')
+            arguments.append(scenario_name)
 
         arguments.append('--outfile')
         arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(worker_id)))
@@ -1105,6 +1156,9 @@ def _get_feature_json_skeleton(behave_element):
     elif type(behave_element) is Scenario:
         feature = copy.copy(behave_element.feature)
         feature.scenarios = [behave_element]
+    elif type(behave_element) is ScenarioOutline: # TODO: fix the logic here or merge this with the flow above for Scenario and modify generate_execution_info
+        feature = copy.copy(behave_element.feature)
+        feature.scenarios = [behave_element]
     else:
         raise Exception("No feature or scenario to process...")
     execution_info = generate_execution_info([feature])
@@ -1116,7 +1170,7 @@ def _get_progress_bar_instance(parallel_scheme, total_elements):
     Get the progress bar instance.
 
     Args:
-        parallel_scheme (str): Parallel scheme (feature or scenario).
+        parallel_scheme (str): Parallel scheme (feature, scenario, or examples).
         total_elements (int): Total number of elements.
 
     Returns:

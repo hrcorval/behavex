@@ -61,7 +61,7 @@ def get_config():
                          'NOTSET', \
                          default='INFO')
     parallel_processes=integer(default=1)
-    parallel_scheme=option('feature', 'scenario', default='scenario')
+    parallel_scheme=option('feature', 'scenario', 'examples', default='examples')
     include_paths=list(default=list())
     rerun_failures=string(default="")
     """

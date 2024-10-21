@@ -173,7 +173,7 @@ def after_scenario(context, scenario):
 # noinspection PyUnusedLocal
 def after_feature(context, feature):
     try:
-        if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
+        if get_env('multiprocessing') and get_param('parallel_scheme') in ['scenario', 'examples']:
             return
         report_xml.export_feature_to_xml(feature)
     except Exception as exception:
