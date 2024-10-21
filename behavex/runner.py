@@ -515,6 +515,9 @@ def launch_by_scenario(features,
     duplicated_scenarios = {}
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
+    scheme = get_param('parallel_scheme')
+    is_parallel_on_scenarios = scheme == 'scenario'
+    is_parallel_on_examples = scheme == 'examples'
     for features_path, scenarios in features.items():
         scenarios_instances = get_scenarios_instances(scenarios)
         for scenario in scenarios_instances:
@@ -573,30 +576,27 @@ def launch_by_scenario(features,
                 if global_vars.progress_bar_instance:
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
-        scheme = get_param('parallel_scheme')
-        ## TODO: refactor scheme == 'scenario' so it only runs scenarios in parallel
-        if scheme == 'scenario':
+        if is_parallel_on_scenarios:
             print_parallel('scenario.running_parallel_scenarios')
             get_idx_of_row_id = lambda scn: scn.name.rfind('-- @')
             get_scenario_name_without_row_id = lambda scn: scn.name[:get_idx_of_row_id(scn)].strip() if get_idx_of_row_id(scn) != -1 else scn.name.strip()
             scenario_names = {
-                key: list(dict.fromkeys(get_scenario_name_without_row_id(scenario) for scenario in scenarios))
-                for key, scenarios in features.items()
+                key: list(dict.fromkeys(get_scenario_name_without_row_id(scenario) for scenario in scenarios)) for key, scenarios in features.items()
             }
             parallel_processes = []
-            for features_path in parallel_scenarios.keys():
-                for scenario_information in parallel_scenarios[features_path]:
-                    scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
-                    feature_filename = scenario_information["feature_filename"]
-                    feature_json_skeleton = scenario_information["feature_json_skeleton"]
-                    scenario_line = scenario_information["scenario_line"]
+            for features_path in scenario_names.keys():
+                for scenario_name in scenario_names[features_path]:
+                    scenarios_to_run_in_feature = total_scenarios_to_run[features_path]
+                    feature_filename = features_path
+                    scenario_instance = next((scenario for scenario in explore_features(features_path) if scenario.name == scenario_name), None)
+                    feature_json_skeleton = _get_feature_json_skeleton(scenario_instance) ## i think we just need to fix this line
                     future = process_pool.submit(execute_tests,
                                                 features_path=features_path,
                                                 feature_filename=feature_filename,
                                                 feature_json_skeleton=feature_json_skeleton,
                                                 scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                                scenario_line=scenario_line,
-                                                scenario_name=None,
+                                                scenario_line=None,
+                                                scenario_name=scenario_name,
                                                 multiprocess=True,
                                                 config=ConfigRun(),
                                                 lock=lock,
@@ -610,7 +610,7 @@ def launch_by_scenario(features,
                     ))
             for parallel_process in parallel_processes:
                 parallel_process.result()
-        elif scheme == 'examples':
+        elif is_parallel_on_examples:
             print_parallel('scenario.running_parallel_examples')
             parallel_processes = []
             for features_path in parallel_scenarios.keys():
@@ -1154,6 +1154,9 @@ def _get_feature_json_skeleton(behave_element):
     if type(behave_element) is Feature:
         feature = behave_element
     elif type(behave_element) is Scenario:
+        feature = copy.copy(behave_element.feature)
+        feature.scenarios = [behave_element]
+    elif type(behave_element) is ScenarioOutline:
         feature = copy.copy(behave_element.feature)
         feature.scenarios = [behave_element]
     else:
