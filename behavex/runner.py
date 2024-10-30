@@ -258,7 +258,7 @@ def launch_behavex():
                                                               shared_removed_scenarios=None)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
-        elif parallel_scheme == 'scenario':
+        elif parallel_scheme in ['scenario', 'examples']:
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                             process_pool,
                                                             lock,
@@ -546,7 +546,7 @@ def launch_by_scenario(features,
                                 duplicated_scenarios.setdefault(key, []).append(scenario.name)
                         parallel_scenarios.setdefault(features_path, []).append(scenario_information)
     if show_progress_bar:
-        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
+        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme=get_param('parallel_scheme'),
                                                                        total_elements=sum(total_scenarios_to_run.values()))
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
@@ -578,7 +578,12 @@ def launch_by_scenario(features,
                 if global_vars.progress_bar_instance:
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
-        print_parallel('scenario.running_parallels')
+        scheme = get_param('parallel_scheme')
+        is_parallel_scn = scheme == 'scenario'
+        is_parallel_exm = scheme == 'examples'
+        msg = 'scenario.running_parallel_scenarios' if is_parallel_scn else 'scenario.running_parallel_examples'
+        print_parallel(msg)
+
         parallel_processes = []
         for features_path in parallel_scenarios.keys():
             grouped_scenarios = {}
