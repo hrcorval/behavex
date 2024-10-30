@@ -280,8 +280,8 @@ def parse_arguments(args):
     )
     parser.add_argument(
         '--parallel-scheme',
-        choices=['feature', 'scenario'],
-        default='scenario',
+        choices=['feature', 'scenario', 'examples'],
+        default='examples',
         help="Specifies whether parallel execution should be performed at the scenario or feature level.",
         required=False,
     )

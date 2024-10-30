@@ -59,7 +59,8 @@ TEXTS = {
     },
     'scenario': {
         'serial_execution': u'\n{0}\nRunning serial scenarios (tagged as @SERIAL).\n{0}\n'.format('*' * 60),
-        'running_parallels': u'\n{0}\nRunning parallel scenarios\n{0}\n'.format('*' * 60),
+        'running_parallel_scenarios': u'\n{0}\nRunning parallel scenarios\n{0}\n'.format('*' * 60),
+        'running_parallel_examples': u'\n{0}\nRunning parallel examples\n{0}\n'.format('*' * 60),
         'run_behave': u"Running feature '{}' with scenario '{}'.",
         'duplicated_scenarios': '{0}\nThere are duplicate scenario names to run.\n'
         'Parallel test execution by scenario cannot be performed.\n'
