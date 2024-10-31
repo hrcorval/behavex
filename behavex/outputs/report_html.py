@@ -130,7 +130,7 @@ def export_result_to_html(
         'tags': list(tags),
         'scenarios': scenarios,
         'execution_details': {'parallel_processes': os.getenv('PARALLEL_PROCESSES', '1'),
-                              'parallel_scheme': os.getenv('PARALLEL_SCHEME', 'scenario')},
+                              'parallel_scheme': os.getenv('PARALLEL_SCHEME', 'examples')},
         'environment_details': environment_details,
         'execution_times': {'execution_start_time': execution_start_time,
                             'execution_end_time': execution_end_time,
