@@ -20,6 +20,9 @@ dependencies = [
     "htmlmin",
     "csscompressor"
 ]
+# Add dynamic field to handle entry points
+dynamic = ["entry-points"]
+
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
