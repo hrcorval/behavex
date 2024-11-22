@@ -31,4 +31,9 @@ jobs:
           pip install dist/behavex-4.0.9rc1.tar.gz
 
       - name: Verify behavex command
-        run: behavex ./tests/features/*.feature
+        run: |
+          if [[ "$GITHUB_OS_NAME" == "Windows" ]]; then
+            behavex .\\tests\\features\\*.feature
+          else
+            behavex ./tests/features/*.feature
+          fi
