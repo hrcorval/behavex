@@ -35,7 +35,7 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             dir
-            behavex .\\tests\\features\\*.feature
+            behavex .\\tests\\features\\
           else
             behavex ./tests/features/*.feature
           fi
