@@ -173,12 +173,16 @@ def join_scenario_reports(json_reports):
         )
     return list(result.values())
 
-
 def explore_features(features_path, features_list=None):
     if features_list is None:
         features_list = []
+
+    # Normalize path separators
+    features_path = os.path.normpath(features_path)
+
     if global_vars.rerun_failures or ".feature:" in features_path:
         features_path = features_path.split(":")[0]
+
     if os.path.isfile(features_path):
         if features_path.endswith('.feature'):
             path_feature = os.path.abspath(features_path)
@@ -186,15 +190,20 @@ def explore_features(features_path, features_list=None):
             if feature:
                 features_list.extend(feature.scenarios)
     else:
-        for node in os.listdir(features_path):
-            if os.path.isdir(os.path.join(features_path, node)):
-                explore_features(os.path.join(features_path, node), features_list)
-            else:
-                if node.endswith('.feature'):
-                    path_feature = os.path.abspath(os.path.join(features_path, node))
+        try:
+            for node in os.listdir(features_path):
+                node_path = os.path.join(features_path, node)
+                if os.path.isdir(node_path):
+                    explore_features(node_path, features_list)
+                elif node.endswith('.feature'):
+                    path_feature = os.path.abspath(node_path)
                     feature = should_feature_be_run(path_feature)
                     if feature:
                         features_list.extend(feature.scenarios)
+        except OSError as e:
+            print(f"Error accessing path {features_path}: {e}")
+            return features_list
+
     return features_list
 
 
