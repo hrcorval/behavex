@@ -34,7 +34,8 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            behavex .\\tests\\features\\*.feature
+            dir
+            behavex .\\tests\\features\\
           else
             behavex ./tests/features/*.feature
           fi
