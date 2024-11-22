@@ -723,16 +723,17 @@ def _launch_behave(behave_args):
     Returns:
         tuple: Execution code and whether to generate a report.
     """
-    # Save tags configuration to report only selected scenarios
-    # Check for tags in config file
     generate_report = True
+    execution_code = 0
+    stdout_file = None
+
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
         execution_code = behave_script.main(behave_args)
         if not os.path.exists(stdout_file):
-            # Code 2 means the execution crashed and test was not properly executed
             execution_code = 2
             generate_report = True
+
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False
@@ -745,10 +746,22 @@ def _launch_behave(behave_args):
     except:
         execution_code = 2
         generate_report = True
-    if os.path.exists(stdout_file):
-        with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
-            behave_log_file.write(open(stdout_file, 'r').read())
-        os.remove(stdout_file)
+
+    if stdout_file and os.path.exists(stdout_file):
+        def _merge_and_remove():
+            with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
+                with open(stdout_file, 'r') as source_file:
+                    behave_log_file.write(source_file.read())
+            os.close(source_file.fileno())
+            os.remove(stdout_file)
+
+        try:
+            try_operate_descriptor(stdout_file, _merge_and_remove)
+        except Exception as remove_ex:
+            logging.warning(f"Could not remove stdout file {stdout_file}: {remove_ex}")
+            # Don't fail the execution if we can't remove the file
+            pass
+
     return execution_code, generate_report
 
 
@@ -843,9 +856,7 @@ def remove_temporary_files(parallel_processes, json_reports):
         json_reports = [json_reports]
     for json_report in json_reports:
         if 'features' in json_report and json_report['features']:
-            feature_name = os.path.join(
-                get_env('OUTPUT'), u'{}.tmp'.format(json_report['features'][0]['name'])
-            )
+            feature_name = os.path.join(get_env('OUTPUT'), u'{}.tmp'.format(json_report['features'][0]['name']))
             if os.path.exists(feature_name):
                 try:
                     os.remove(feature_name)
