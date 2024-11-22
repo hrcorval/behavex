@@ -33,7 +33,7 @@ from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (get_save_function, get_string_hash,
                                           match_for_execution,
-                                          try_operate_descriptor)
+                                          retry_file_operation)
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
@@ -250,10 +250,10 @@ def copy_bootstrap_html_generator():
     bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(destination_path):
-        try_operate_descriptor(
+        retry_file_operation(
             destination_path, lambda: shutil.rmtree(destination_path)
         )
-    try_operate_descriptor(
+    retry_file_operation(
         destination_path, lambda: shutil.copytree(bootstrap_path, destination_path)
     )
 
@@ -265,18 +265,18 @@ def cleanup_folders():
     def execution():
         return shutil.rmtree(output_folder, ignore_errors=True)
 
-    try_operate_descriptor(output_folder, execution)
+    retry_file_operation(output_folder, execution)
     if not os.path.exists(output_folder):
-        try_operate_descriptor(output_folder, lambda: os.makedirs(output_folder))
+        retry_file_operation(output_folder, lambda: os.makedirs(output_folder))
     # temp folder
     temp_folder = get_env('temp')
 
     def execution():
         return shutil.rmtree(temp_folder, ignore_errors=True)
 
-    try_operate_descriptor(temp_folder, execution)
+    retry_file_operation(temp_folder, execution)
     if not os.path.exists(temp_folder):
-        try_operate_descriptor(temp_folder, lambda: os.makedirs(temp_folder))
+        retry_file_operation(temp_folder, lambda: os.makedirs(temp_folder))
 
     # behave folder
     behave_folder = os.path.join(get_env('OUTPUT'), 'behave')
@@ -284,9 +284,9 @@ def cleanup_folders():
     def execution():
         return shutil.rmtree(behave_folder, ignore_errors=True)
 
-    try_operate_descriptor(behave_folder, execution)
+    retry_file_operation(behave_folder, execution)
     if not os.path.exists(behave_folder):
-        try_operate_descriptor(behave_folder, lambda: os.makedirs(behave_folder))
+        retry_file_operation(behave_folder, lambda: os.makedirs(behave_folder))
 
 
 def set_env_variable(key, value):
@@ -422,7 +422,7 @@ def set_behave_tags():
     tags_line = ' '.join(tags)
     tags_line = tags_line.replace('~', 'not ')
     tags_line = tags_line.replace(',', ' or ')
-    try_operate_descriptor(
+    retry_file_operation(
         behave_tags, execution=get_save_function(behave_tags, tags_line)
     )
 

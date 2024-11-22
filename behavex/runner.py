@@ -44,8 +44,8 @@ from behavex.outputs import report_xml
 from behavex.outputs.report_json import generate_execution_info
 from behavex.outputs.report_utils import (get_overall_status,
                                           match_for_execution,
-                                          pretty_print_time, text,
-                                          try_operate_descriptor)
+                                          pretty_print_time,
+                                          retry_file_operation, text)
 from behavex.progress_bar import ProgressBar
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
@@ -752,11 +752,16 @@ def _launch_behave(behave_args):
             with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
                 with open(stdout_file, 'r') as source_file:
                     behave_log_file.write(source_file.read())
-            os.close(source_file.fileno())
-            os.remove(stdout_file)
-
+            # nosec B110
+            try:
+                if not source_file.closed:
+                    os.close(source_file.fileno())
+                if os.path.exists(stdout_file):
+                    os.remove(stdout_file)
+            except:
+                pass
         try:
-            try_operate_descriptor(stdout_file, _merge_and_remove)
+            retry_file_operation(stdout_file, _merge_and_remove)
         except Exception as remove_ex:
             logging.warning(f"Could not remove stdout file {stdout_file}: {remove_ex}")
             # Don't fail the execution if we can't remove the file
@@ -1184,7 +1189,7 @@ def dump_json_results():
 
     json_output = {'environment': [], 'features': [], 'steps_definition': []}
     if os.path.exists(path_info):
-        json_output = try_operate_descriptor(path_info, _load_json, return_value=True)
+        json_output = retry_file_operation(path_info, _load_json, return_value=True)
     return json_output
 
 

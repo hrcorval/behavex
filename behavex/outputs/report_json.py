@@ -28,7 +28,7 @@ from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message,
                                           match_for_execution, text)
 from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
-                           try_operate_descriptor)
+                           retry_file_operation)
 
 
 def add_step_info(step, parent_node):
@@ -105,7 +105,7 @@ def generate_json_report(feature_list):
             def write_json():
                 file_info.write(json.dumps(output))
 
-            try_operate_descriptor(path_info, execution=write_json)
+            retry_file_operation(path_info, execution=write_json)
         if multiprocessing.current_process().name != 'MainProcess':
             return output
     except IOError:

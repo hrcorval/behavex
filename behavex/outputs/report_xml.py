@@ -16,8 +16,8 @@ from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (get_save_function,
-                                          match_for_execution, text,
-                                          try_operate_descriptor)
+                                          match_for_execution,
+                                          retry_file_operation, text)
 from behavex.utils import get_scenario_tags
 
 
@@ -101,7 +101,7 @@ def _export_feature_to_xml(feature, isobject=True):
     junit_path = os.path.join(get_env('OUTPUT'), 'behave')
     path_output = os.path.join(junit_path, u'TESTS-' + name + u'.xml')
 
-    try_operate_descriptor(
+    retry_file_operation(
         path_output + '.xml', get_save_function(path_output, output_text)
     )
 
