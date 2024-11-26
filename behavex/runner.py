@@ -51,12 +51,12 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
-                           explore_features, generate_hash, generate_reports,
-                           get_json_results, get_logging_level,
-                           get_scenario_tags, get_scenarios_instances,
-                           get_text, join_feature_reports,
-                           join_scenario_reports, len_scenarios,
-                           print_env_variables, print_parallel,
+                           expand_paths, explore_features, generate_hash,
+                           generate_reports, get_json_results,
+                           get_logging_level, get_scenario_tags,
+                           get_scenarios_instances, get_text,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -110,24 +110,19 @@ def run(args):
         if execution_code == EXIT_ERROR:
             return EXIT_ERROR
     else:
+        # Handle paths parameter
         if len(get_param('paths')) > 0:
-            for path in get_param('paths'):
-                if not os.path.exists(path):
-                    print('\nSpecified path was not found: {}'.format(path))
-                    exit()
-            paths = ",".join(get_param('paths'))
+            paths = ",".join(expand_paths(get_param('paths')))
             os.environ['FEATURES_PATH'] = paths
+
+        # Handle include_paths parameter
         if len(get_param('include_paths')) > 0:
-            for path in get_param('paths'):
-                if not os.path.exists(path):
-                    print('\nSpecified path was not found: {}'.format(path))
-                    exit()
-            paths = ",".join(get_param('include_paths'))
+            include_paths = ",".join(expand_paths(get_param('include_paths')))
             features_path = os.environ.get('FEATURES_PATH')
             if features_path == '' or features_path is None:
-                os.environ['FEATURES_PATH'] = paths
+                os.environ['FEATURES_PATH'] = include_paths
             else:
-                os.environ['FEATURES_PATH'] = features_path + ',' + paths
+                os.environ['FEATURES_PATH'] = features_path + ',' + include_paths
     features_path = os.environ.get('FEATURES_PATH')
     if features_path == '' or features_path is None:
         os.environ['FEATURES_PATH'] = 'features'

@@ -9,6 +9,7 @@ from __future__ import absolute_import, print_function
 
 import codecs
 import functools
+import glob
 import hashlib
 import json
 import logging
@@ -596,3 +597,28 @@ def generate_hash(word):
 
 def generate_uuid():
     return uuid.uuid4().hex
+
+def expand_paths(paths):
+    """Expand glob patterns in paths and verify they exist.
+
+    Args:
+        paths (list): List of paths that may contain glob patterns
+
+    Returns:
+        list: List of expanded and verified paths
+    """
+    expanded = []
+    for path in paths:
+        # Handle glob patterns
+        if any(char in path for char in ['*', '?', '[']):
+            globbed = glob.glob(path)
+            if not globbed:
+                print('\nNo files found matching pattern: {}'.format(path))
+                exit()
+            expanded.extend(globbed)
+        else:
+            if not os.path.exists(path):
+                print('\nSpecified path was not found: {}'.format(path))
+                exit()
+            expanded.append(path)
+    return expanded
