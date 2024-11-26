@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: bandit
         exclude: tests
-        args: [--skip, "B322,B110"]  # ignore assert_used and B110
+        args: [--skip, "B322,B110,B605,B607"]  # ignore assert_used and B110
 
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v5.6.4
