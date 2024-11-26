@@ -80,9 +80,6 @@ def main():
     """
     # Fix for Windows console encoding
     if platform.system() == 'Windows':
-        import codecs
-        import sys
-
         # Force UTF-8 output encoding
         if sys.stdout.encoding != 'utf-8':
             sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
