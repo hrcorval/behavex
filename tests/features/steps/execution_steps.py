@@ -18,52 +18,52 @@ def step_impl(context):
 @when('I run the behavex command with a passing test')
 @when('I run the behavex command with passing tests')
 def step_impl(context):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/passing_tests.feature'), '-o', context.output_path]
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command that renames scenarios and features')
 def step_impl(context):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/rename_tests.feature'), '-o', context.output_path]
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'rename_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with a failing test')
 def step_impl(context):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/failing_tests.feature'), '-o', context.output_path]
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'failing_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with a crashing test')
 def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
-                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features/crashing_tests.feature')),
+                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_tests.feature')),
                 '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with a skipped test')
 def step_impl(context):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/skipped_tests.feature'), '-o', context.output_path]
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'skipped_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with an untested test')
 def step_impl(context):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/untested_tests.feature'), '-o', context.output_path]
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'untested_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_schema}"')
 def step_impl(context, parallel_processes, parallel_schema):
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/'), '-o', context.output_path, '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_schema]
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_schema]
     execute_command(context, execution_args)
 
 
@@ -78,10 +78,10 @@ def step_impl(context):
     scheme = context.table[0]['parallel_scheme']
     processes = context.table[0]['parallel_processes']
     tags = context.table[0]['tags']
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     tags_to_folder_name = get_tags_string(tags)
     tags_array = get_tags_arguments(tags)
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/'), '-o', context.output_path, '--parallel-processes', processes, '--parallel-scheme', scheme] + tags_array
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', processes, '--parallel-scheme', scheme] + tags_array
     execute_command(context, execution_args)
 
 
@@ -90,16 +90,16 @@ def step_impl(context):
     tags = context.table[0]['tags']
     tags_to_folder_name = get_tags_string(tags)
     tags_array = get_tags_arguments(tags)
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/'), '-o', context.output_path] + tags_array
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path] + tags_array
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command by performing a dry run')
 def step_impl(context):
     # generate a random number between 1 and 1000000 completing with zeroes to 6 digits
-    context.output_path = 'output/output_{}'.format(get_random_number(6))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features/'), '-o', context.output_path, '--dry-run']
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--dry-run']
     execute_command(context, execution_args)
 
 
