@@ -78,6 +78,17 @@ def main():
 
     Parses command-line arguments and initiates the test run.
     """
+    # Fix for Windows console encoding
+    if platform.system() == 'Windows':
+        import codecs
+        import sys
+
+        # Force UTF-8 output encoding
+        if sys.stdout.encoding != 'utf-8':
+            sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+            sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+            os.environ['PYTHONIOENCODING'] = 'utf-8'
+
     args = sys.argv[1:]
     exit_code = run(args)
     try:
@@ -85,7 +96,6 @@ def main():
     except:
         # force exit
         sys.exit(exit_code)
-
 
 def run(args):
     """Run BehaveX with the given arguments.
