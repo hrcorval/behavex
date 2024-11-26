@@ -6,6 +6,10 @@ jobs:
   test-behavex:
     runs-on: ${{ matrix.os }}
 
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYWINDOWSSTDIO: utf-8
+
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]

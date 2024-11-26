@@ -78,25 +78,6 @@ def main():
 
     Parses command-line arguments and initiates the test run.
     """
-    # Fix for Windows console encoding
-    if platform.system() == 'Windows':
-        # Force UTF-8 output encoding
-        if sys.stdout.encoding != 'utf-8':
-            # Handle both Python 3.x cases
-            try:
-                sys.stdout.reconfigure(encoding='utf-8')
-                sys.stderr.reconfigure(encoding='utf-8')
-            except AttributeError:
-                # Fallback for older Python versions
-                sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-                sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
-
-        # Ensure PYTHONIOENCODING is set
-        os.environ['PYTHONIOENCODING'] = 'utf-8'
-
-        # Set console to use UTF-8
-        os.system('chcp 65001 > NUL')
-
     args = sys.argv[1:]
     exit_code = run(args)
     try:
