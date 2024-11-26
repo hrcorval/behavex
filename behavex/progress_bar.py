@@ -1,17 +1,34 @@
+import platform
 import sys
 import time
 
 from behavex.global_vars import global_vars
 
 
+def get_progress_chars():
+    """Get appropriate progress bar characters based on platform."""
+    if platform.system() == 'Windows':
+        return {
+            'bar': '#',
+            'edge': '|',
+            'empty': '-'
+        }
+    return {
+        'bar': '█',
+        'edge': '|',
+        'empty': '-'
+    }
+
+
 class ProgressBar:
-    def __init__(self, prefix, total, bar_length=15, print_updates_in_new_lines=False):
+    def __init__(self, prefix, total, print_updates_in_new_lines=False):
         self.prefix = prefix
         self.total = total
-        self.bar_length = bar_length
+        self.print_updates_in_new_lines = print_updates_in_new_lines
+        self.progress_chars = get_progress_chars()
+        self.bar_length = 15
         self.current_iteration = 0
         self.start_time = global_vars.execution_start_time
-        self.print_in_new_lines = print_updates_in_new_lines
 
     def start(self, start_increment=0):
         self.current_iteration = start_increment
@@ -34,11 +51,11 @@ class ProgressBar:
         else:
             percent = 100 * float(self.current_iteration / float(self.total))
             filled_length = int(self.bar_length * self.current_iteration // self.total)
-        bar = '█' * filled_length + '-' * (self.bar_length - filled_length)
+        bar = self.progress_chars['bar'] * filled_length + self.progress_chars['empty'] * (self.bar_length - filled_length)
         elapsed_time = global_vars.execution_elapsed_time
         elapsed_formatted = time.strftime("%M:%S", time.gmtime(elapsed_time))
         progress_bar_content = f"\r{prefix}{percent:.0f}%|{bar}| {self.current_iteration}/{self.total} [{elapsed_formatted}]\r"
-        if self.print_in_new_lines or new_line or percent == 100:
+        if self.print_updates_in_new_lines or new_line or percent == 100:
             print(progress_bar_content)
         else:
             sys.stdout.write(progress_bar_content)
