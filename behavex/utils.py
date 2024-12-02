@@ -527,17 +527,17 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
         self.features = [
             os.path.abspath(path)
             for path in self.features_paths
-            if os.path.isfile(path) and ':' not in path
+            if os.path.isfile(path) and not self._has_line_number(path)
         ]
         self.scenarios = [
-            "{}:{}".format(os.path.abspath(path.split(":")[0]), path.split(":")[1])
+            "{}:{}".format(os.path.abspath(path.split(":")[0]), path.split(":")[-1])
             for path in self.features_paths
-            if not os.path.isdir(path) and ':' in path
+            if not os.path.isdir(path) and self._has_line_number(path)
         ]
         self.folders = [
             os.path.abspath(path)
             for path in self.features_paths
-            if os.path.isdir(path) and ':' not in path
+            if os.path.isdir(path) and not self._has_line_number(path)
         ]
 
     def __call__(self, *args, **kwargs):
@@ -622,3 +622,10 @@ def expand_paths(paths):
                 exit()
             expanded.append(path)
     return expanded
+
+
+@staticmethod
+def _has_line_number(path):
+    # Split path by colon and check if the last part is a number
+    parts = path.split(':')
+    return len(parts) > 1 and parts[-1].isdigit()
