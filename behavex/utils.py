@@ -558,6 +558,13 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
     def bool(self):
         return self.features and self.folders
 
+    @staticmethod
+    def _has_line_number(path):
+        # Split path by colon and check if the last part is a number
+        parts = path.split(':')
+        return len(parts) > 1 and parts[-1].isdigit()
+
+
 
 class IncludeNameMatch(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
@@ -622,10 +629,3 @@ def expand_paths(paths):
                 exit()
             expanded.append(path)
     return expanded
-
-
-@staticmethod
-def _has_line_number(path):
-    # Split path by colon and check if the last part is a number
-    parts = path.split(':')
-    return len(parts) > 1 and parts[-1].isdigit()
