@@ -74,14 +74,18 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 
 @when('I run the behavex command with the following scheme, processes and tags')
-def step_impl(context):
+@when('I run the behavex command using "{argument_separator}" separator with the following scheme, processes and tags')
+def run_command_with_scheme_processes_and_tags(context, argument_separator="equal"):
     scheme = context.table[0]['parallel_scheme']
     processes = context.table[0]['parallel_processes']
     tags = context.table[0]['tags']
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     tags_to_folder_name = get_tags_string(tags)
     tags_array = get_tags_arguments(tags)
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', processes, '--parallel-scheme', scheme] + tags_array
+    if argument_separator == 'equal':
+        execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes=' + processes, '--parallel-scheme=' + scheme] + tags_array
+    else:
+        execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', processes, '--parallel-scheme', scheme] + tags_array
     execute_command(context, execution_args)
 
 
@@ -201,6 +205,7 @@ def execute_command(context, execution_args, print_output=True):
         execution_args += ['--parallel-processes', context.parallel_processes]
     if hasattr(context, 'parallel_scheme'):
         execution_args += ['--parallel-scheme', context.parallel_scheme]
+    logging.info("Executing command: {}".format(" ".join(execution_args)))
     context.result = subprocess.run(execution_args, capture_output=True, text=True)
     if print_output:
         logging.info(context.result.stdout)
