@@ -75,17 +75,33 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 @when('I run the behavex command with the following scheme, processes and tags')
 @when('I run the behavex command using "{argument_separator}" separator with the following scheme, processes and tags')
-def run_command_with_scheme_processes_and_tags(context, argument_separator="equal"):
+@when('I run the behavex command using "{argument_separator}" separator for "{feature_name}" feature with the following scheme, processes and tags')
+@when('I run the behavex command using "{argument_separator}" separator for "{feature_name}" and "{feature_name_2}" features with the following scheme, processes and tags')
+def run_command_with_scheme_processes_and_tags(context, argument_separator="equal", feature_name=None, feature_name_2=None):
     scheme = context.table[0]['parallel_scheme']
     processes = context.table[0]['parallel_processes']
     tags = context.table[0]['tags']
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     tags_to_folder_name = get_tags_string(tags)
-    tags_array = get_tags_arguments(tags)
-    if argument_separator == 'equal':
-        execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes=' + processes, '--parallel-scheme=' + scheme] + tags_array
+    if not tags:
+        tags_array = []
     else:
-        execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', processes, '--parallel-scheme', scheme] + tags_array
+        tags_array = get_tags_arguments(tags)
+    if feature_name:
+        if feature_name_2:
+            feature_path = os.path.join(tests_features_path, 'secondary_features', feature_name)
+            feature_path_2 = os.path.join(tests_features_path, 'secondary_features', feature_name_2)
+        else:
+            feature_path = os.path.join(tests_features_path, 'secondary_features', feature_name)
+    else:
+        feature_path = os.path.join(tests_features_path, 'secondary_features')
+    if argument_separator == 'equal':
+        execution_args = ['behavex', feature_path, '-o', context.output_path, '--parallel-processes=' + processes, '--parallel-scheme=' + scheme] + tags_array
+    else:
+        execution_args = ['behavex', feature_path, '-o', context.output_path, '--parallel-processes', processes, '--parallel-scheme', scheme] + tags_array
+    if feature_name_2:
+        # append the second feature path to the execution arguments in index 2
+        execution_args.insert(2, feature_path_2)
     execute_command(context, execution_args)
 
 
@@ -138,17 +154,21 @@ def step_impl(context):
     logging.info(f"Total scenarios in the JUnit reports: {total_scenarios_in_junit_reports}")
     total_scenarios_in_console_output = get_total_scenarios_in_console_output(context)
     logging.info(f"Total scenarios in the console output: {total_scenarios_in_console_output}")
-    assert total_scenarios_in_html_report == total_scenarios_in_junit_reports == total_scenarios_in_console_output, f"Expected {total_scenarios} scenarios in the reports and the console output, but found {total_scenarios_in_html_report} in the HTML report, {total_scenarios_in_junit_reports} in the JUnit reports, and {total_scenarios_in_console} in the console output"
+    assert total_scenarios_in_html_report == total_scenarios_in_junit_reports == total_scenarios_in_console_output, f"Expected total scenarios to match, but found {total_scenarios_in_html_report} in the HTML report, {total_scenarios_in_junit_reports} in the JUnit reports, and {total_scenarios_in_console_output} in the console output"
 
 
 @then('I should see the same number of scenarios in the reports')
-def step_impl(context):
+def verify_total_scenarios_in_reports(context, consider_skipped_scenarios=True):
     total_scenarios_in_html_report = get_total_scenarios_in_html_report(context)
     logging.info(f"Total scenarios in the HTML report: {total_scenarios_in_html_report}")
-    total_scenarios_in_junit_reports = get_total_scenarios_in_junit_reports(context)
+    total_scenarios_in_junit_reports = get_total_scenarios_in_junit_reports(context, consider_skipped_scenarios)
     logging.info(f"Total scenarios in the JUnit reports: {total_scenarios_in_junit_reports}")
-    assert total_scenarios_in_html_report == total_scenarios_in_junit_reports, f"Expected {total_scenarios} scenarios in the reports, but found {total_scenarios_in_html_report} in the HTML report, {total_scenarios_in_junit_reports} in the JUnit reports"
+    assert total_scenarios_in_html_report == total_scenarios_in_junit_reports, f"Expected total scenarios to match, but found {total_scenarios_in_html_report} in the HTML report, {total_scenarios_in_junit_reports} in the JUnit reports"
 
+
+@then('I should see the same number of scenarios in the reports not considering the skipped scenarios')
+def step_impl(context):
+    verify_total_scenarios_in_reports(context, consider_skipped_scenarios=False)
 
 def get_tags_arguments(tags):
     tags_array = []
@@ -187,14 +207,17 @@ def get_total_scenarios_in_html_report(context):
     return html_content.count('data-scenario-tags=')
 
 
-def get_total_scenarios_in_junit_reports(context):
+def get_total_scenarios_in_junit_reports(context, consider_skipped_scenarios=True):
     junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
     total_scenarios_in_junit_reports = 0
     for file in os.listdir(junit_folder):
         if file.endswith('.xml'):
             with open(os.path.join(junit_folder, file), 'r') as file:
                 xml_content = file.read()
-                total_scenarios_in_junit_reports += xml_content.count('<testcase')
+                total_scenarios_in_junit_reports += xml_content.count('status="passed"')
+                total_scenarios_in_junit_reports += xml_content.count('status="failed"')
+                if consider_skipped_scenarios:
+                    total_scenarios_in_junit_reports += xml_content.count('status="skipped"')
     return total_scenarios_in_junit_reports
 
 

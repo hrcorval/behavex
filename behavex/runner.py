@@ -52,11 +52,12 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
                            expand_paths, explore_features, generate_hash,
-                           generate_reports, get_json_results,
-                           get_logging_level, get_scenario_tags,
-                           get_scenarios_instances, get_text,
-                           join_feature_reports, join_scenario_reports,
-                           len_scenarios, print_env_variables, print_parallel,
+                           generate_reports, get_feature_and_scenario_line,
+                           get_json_results, get_logging_level,
+                           get_scenario_tags, get_scenarios_instances,
+                           get_text, join_feature_reports,
+                           join_scenario_reports, len_scenarios,
+                           print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -118,7 +119,7 @@ def run(args):
         if len(get_param('include_paths')) > 0:
             include_paths = ",".join(expand_paths(get_param('include_paths')))
             features_path = os.environ.get('FEATURES_PATH')
-            if features_path == '' or features_path is None:
+            if features_path == '' or features_path is None or not os.path.exists(features_path):
                 os.environ['FEATURES_PATH'] = include_paths
             else:
                 os.environ['FEATURES_PATH'] = features_path + ',' + include_paths
@@ -380,19 +381,20 @@ def create_scenario_line_references(features):
         for scenario in scenarios:
             scenario_filename = text(scenario.filename)
             if global_vars.rerun_failures or ".feature:" in feature_path:
-                feature_without_scenario_line = feature_path.split(":")[0]
-                if feature_without_scenario_line not in updated_features:
-                    updated_features[feature_without_scenario_line] = []
+                if feature_path not in updated_features:
+                    updated_features[feature_path] = []
                 if isinstance(scenario, ScenarioOutline):
                     for scenario_outline_instance in scenario.scenarios:
-                        if scenario_outline_instance.line == int(feature_path.split(":")[1]):
-                            if scenario_outline_instance not in updated_features[feature_without_scenario_line]:
-                                updated_features[feature_without_scenario_line].append(scenario_outline_instance)
+                        outline_scenario_line = get_feature_and_scenario_line(scenario_outline_instance.name)[1]
+                        if outline_scenario_line and scenario_outline_instance.line == int(outline_scenario_line):
+                            if scenario_outline_instance not in updated_features[pure_feature_path]:
+                                updated_features[feature_path].append(scenario_outline_instance)
                             break
                 else:
-                    if scenario.line == int(feature_path.split(":")[1]):
-                        if scenario not in updated_features[feature_without_scenario_line]:
-                            updated_features[feature_without_scenario_line].append(scenario)
+                    scenario_line = get_feature_and_scenario_line(feature_path)[1]
+                    if scenario_line and scenario.line == int(scenario_line):
+                        if scenario not in updated_features[feature_path]:
+                            updated_features[feature_path].append(scenario)
             else:
                 updated_features_path = scenario.feature.filename
                 if updated_features_path not in updated_features:
@@ -428,11 +430,13 @@ def launch_by_feature(features,
     parallel_features = []
     for features_path in features:
         feature = features[features_path][0].feature
+        pure_feature_path, scenario_line = get_feature_and_scenario_line(features_path)
+        feature_filename = feature.filename if not scenario_line else "{}:{}".format(pure_feature_path, scenario_line)
         if 'SERIAL' in feature.tags:
-            serial_features.append({"feature_filename": feature.filename,
+            serial_features.append({"feature_filename": feature_filename,
                                     "feature_json_skeleton": _get_feature_json_skeleton(feature)})
         else:
-            parallel_features.append({"feature_filename": feature.filename,
+            parallel_features.append({"feature_filename": feature_filename,
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
     if show_progress_bar:
         total_features = len(serial_features) + len(parallel_features)

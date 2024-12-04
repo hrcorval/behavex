@@ -174,31 +174,35 @@ def join_scenario_reports(json_reports):
         )
     return list(result.values())
 
+
 def explore_features(features_path, features_list=None):
     if features_list is None:
         features_list = []
 
     # Normalize path separators
-    features_path = os.path.normpath(features_path)
-
-    if global_vars.rerun_failures or ".feature:" in features_path:
-        features_path = features_path.split(":")[0]
-
-    if os.path.isfile(features_path):
-        if features_path.endswith('.feature'):
-            path_feature = os.path.abspath(features_path)
-            feature = should_feature_be_run(path_feature)
+    pure_feature_path, scenario_line = get_feature_and_scenario_line(features_path)
+    normalized_features_path = os.path.normpath(pure_feature_path)
+    if os.path.isfile(normalized_features_path):
+        if normalized_features_path.endswith('.feature'):
+            abs_feature_path = os.path.abspath(normalized_features_path)
+            feature = should_feature_be_run(abs_feature_path)
             if feature:
-                features_list.extend(feature.scenarios)
+                if scenario_line:
+                    # iterate over scenarios and add the scenario that matches the scenario line
+                    for scenario in feature.scenarios:
+                        if scenario.line == int(scenario_line):
+                            features_list.append(scenario)
+                else:
+                    features_list.extend(feature.scenarios)
     else:
         try:
-            for node in os.listdir(features_path):
-                node_path = os.path.join(features_path, node)
+            for node in os.listdir(normalized_features_path):
+                node_path = os.path.join(normalized_features_path, node)
                 if os.path.isdir(node_path):
                     explore_features(node_path, features_list)
                 elif node.endswith('.feature'):
-                    path_feature = os.path.abspath(node_path)
-                    feature = should_feature_be_run(path_feature)
+                    abs_feature_path = os.path.abspath(node_path)
+                    feature = should_feature_be_run(abs_feature_path)
                     if feature:
                         features_list.extend(feature.scenarios)
         except OSError as e:
@@ -527,17 +531,17 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
         self.features = [
             os.path.abspath(path)
             for path in self.features_paths
-            if os.path.isfile(path) and not self._has_line_number(path)
+            if os.path.isfile(path) and not has_scenario_line_number(path)
         ]
         self.scenarios = [
-            "{}:{}".format(os.path.abspath(path.split(":")[0]), path.split(":")[-1])
+            "{}:{}".format(os.path.abspath(get_feature_and_scenario_line(path)[0]), get_feature_and_scenario_line(path)[1])
             for path in self.features_paths
-            if not os.path.isdir(path) and self._has_line_number(path)
+            if not os.path.isdir(path) and has_scenario_line_number(path)
         ]
         self.folders = [
             os.path.abspath(path)
             for path in self.features_paths
-            if os.path.isdir(path) and not self._has_line_number(path)
+            if os.path.isdir(path) and not has_scenario_line_number(path)
         ]
 
     def __call__(self, *args, **kwargs):
@@ -557,12 +561,6 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
 
     def bool(self):
         return self.features and self.folders
-
-    @staticmethod
-    def _has_line_number(path):
-        # Split path by colon and check if the last part is a number
-        parts = path.split(':')
-        return len(parts) > 1 and parts[-1].isdigit()
 
 
 
@@ -624,8 +622,23 @@ def expand_paths(paths):
                 exit()
             expanded.extend(globbed)
         else:
-            if not os.path.exists(path):
-                print('\nSpecified path was not found: {}'.format(path))
+            pure_feature_path, scenario_line = get_feature_and_scenario_line(path)
+            normalized_features_path = os.path.normpath(pure_feature_path)
+            if not os.path.exists(pure_feature_path):
+                print('\nSpecified path was not found: {}'.format(pure_feature_path))
                 exit()
             expanded.append(path)
     return expanded
+
+
+def has_scenario_line_number(path):
+    # Split path by colon and check if the last part is a number
+    parts = path.split(':')
+    return len(parts) > 1 and parts[-1].isdigit()
+
+def get_feature_and_scenario_line(path):
+    if has_scenario_line_number(path):
+        parts = path.split(':')
+        return [':'.join(parts[:-1]), parts[-1]]
+    else:
+        return [path, None]

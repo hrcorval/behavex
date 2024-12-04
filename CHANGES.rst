@@ -1,6 +1,13 @@
 Version History
 ===============================================================================
 
+Version: 4.0.9
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fixing execution issues in Windows OS when running BehaveX with a feature path different than the current path.
+
 Version: 4.0.8
 -------------------------------------------------------------------------------
 ENHANCEMENTS:
