@@ -4,9 +4,17 @@ Version History
 Version: 4.0.9
 -------------------------------------------------------------------------------
 
+ENHANCEMENTS:
+
+* Adding support for latest Python versions (3.12)
+* Performing cross-platform validations as part of github actions workflow
+* Enabling adding scenario lines in feature paths when running BehaveX
+
+
 FIXES:
 
 * Fixing execution issues in Windows OS when running BehaveX with a feature path different than the current path.
+* Fixing encoding issues in progress bar in Windows OS
 
 Version: 4.0.8
 -------------------------------------------------------------------------------
