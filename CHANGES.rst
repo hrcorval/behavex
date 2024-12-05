@@ -7,7 +7,7 @@ Version: 4.0.9
 ENHANCEMENTS:
 
 * Adding support for latest Python versions (3.12)
-* Performing cross-platform validations as part of github actions workflow
+* Performing cross-platform validations as part of github actions workflow (Linux, Windows and MacOS)
 * Enabling adding scenario lines in feature paths when running BehaveX
 
 
