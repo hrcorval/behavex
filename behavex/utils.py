@@ -303,6 +303,12 @@ def cleanup_folders():
         retry_file_operation(behave_folder, lambda: os.makedirs(behave_folder))
 
 
+
+# Implemented for backward compatibility with other libraries that use this function
+def try_operate_descriptor(dest_path, execution, return_value=False):
+    return retry_file_operation(dest_path, execution, return_value)
+
+
 def set_env_variable(key, value):
     if value:
         os.environ[key] = str(value)
