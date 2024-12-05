@@ -22,7 +22,7 @@ from tempfile import gettempdir
 from behave.model import ScenarioOutline
 from behave.step_registry import registry
 
-from behavex.conf_mgr import get_env
+from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message,
@@ -150,7 +150,11 @@ def _processing_background_feature(feature):
 def _processing_scenarios(scenarios, scenario_list, id_feature):
     scenario_outline_index = 0
     overall_status = 'passed'
+    is_dry_run = get_param('dry_run')
     for scenario in scenarios:
+        # Remove BHX_MANUAL_DRY_RUN tag if it is a dry run
+        if is_dry_run and 'BHX_MANUAL_DRY_RUN' in scenario_tags:
+            scenario.tags.remove('BHX_MANUAL_DRY_RUN')
         # Set MANUAL to False in order filter regardless of it
         error_msg, error_lines, error_step, error_background = _get_error_scenario(
             scenario

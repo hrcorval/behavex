@@ -9,7 +9,7 @@ ENHANCEMENTS:
 * Adding support for latest Python versions (3.12)
 * Performing cross-platform validations as part of github actions workflow (Linux, Windows and MacOS)
 * Enabling adding scenario lines in feature paths when running BehaveX
-
+* Fixing issue when performing dry runs, as internal @BHX_MANUAL_DRY_RUN tag was not removed from the scenario tags
 
 FIXES:
 

@@ -74,10 +74,11 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 
 @when('I run the behavex command with the following scheme, processes and tags')
+@when('I run the behavex command with scenario name "{scenario_name}" and the following scheme, processes and tags')
 @when('I run the behavex command using "{argument_separator}" separator with the following scheme, processes and tags')
 @when('I run the behavex command using "{argument_separator}" separator for "{feature_name}" feature with the following scheme, processes and tags')
 @when('I run the behavex command using "{argument_separator}" separator for "{feature_name}" and "{feature_name_2}" features with the following scheme, processes and tags')
-def run_command_with_scheme_processes_and_tags(context, argument_separator="equal", feature_name=None, feature_name_2=None):
+def run_command_with_scheme_processes_and_tags(context, scenario_name=None, argument_separator="equal", feature_name=None, feature_name_2=None):
     scheme = context.table[0]['parallel_scheme']
     processes = context.table[0]['parallel_processes']
     tags = context.table[0]['tags']
@@ -102,6 +103,9 @@ def run_command_with_scheme_processes_and_tags(context, argument_separator="equa
     if feature_name_2:
         # append the second feature path to the execution arguments in index 2
         execution_args.insert(2, feature_path_2)
+    if scenario_name:
+        execution_args.append('--name')
+        execution_args.append(scenario_name.replace(' ', '\\ '))
     execute_command(context, execution_args)
 
 
@@ -170,6 +174,38 @@ def verify_total_scenarios_in_reports(context, consider_skipped_scenarios=True):
 def step_impl(context):
     verify_total_scenarios_in_reports(context, consider_skipped_scenarios=False)
 
+
+@then('I should see the HTML report was generated and contains scenarios')
+@then('I should see the HTML report was generated and contains "{total_scenarios}" scenarios')
+def verify_total_scenarios_in_html_report(context, total_scenarios=None, consider_skipped_scenarios=True):
+    total_scenarios_in_html_report = get_total_scenarios_in_html_report(context)
+    logging.info(f"Total scenarios in the HTML report: {total_scenarios_in_html_report}")
+    if total_scenarios is not None:
+        assert total_scenarios_in_html_report == int(total_scenarios), f"Expected the HTML report to contain {total_scenarios} scenarios, but found {total_scenarios_in_html_report}"
+    else:
+        assert total_scenarios_in_html_report > 0, "Expected the HTML report to be generated and contain scenarios"
+
+
+@then('I should see the generated HTML report contains the "{string_to_search}" string')
+def verify_string_in_html_report(context, string_to_search, string_should_be_present=True):
+    total_string_instances_in_html_report = get_string_instances_from_html_report(context, string_to_search)
+    logging.info(f"Total instances of '{string_to_search}' in the HTML report: {total_string_instances_in_html_report}")
+    if string_should_be_present:
+        assert total_string_instances_in_html_report > 0, f"Expected the HTML report to contain the string '{string_to_search}'"
+    else:
+        assert total_string_instances_in_html_report == 0, f"Expected the HTML report to not contain the string '{string_to_search}'"
+
+
+@then('I should see the generated HTML report does not contain internal BehaveX variables and tags')
+def verify_string_not_in_html_report(context):
+    internal_behavex_variables_and_tags = ["BHX_", "BHX_TAG_"]
+    for variable_or_tag in internal_behavex_variables_and_tags:
+        total_string_instances_in_html_report = get_string_instances_from_html_report(context, variable_or_tag)
+        logging.info(f"Total instances of '{variable_or_tag}' in the HTML report: {total_string_instances_in_html_report}")
+        assert total_string_instances_in_html_report == 0, f"Expected the HTML report to not contain the string '{variable_or_tag}'"
+
+
+
 def get_tags_arguments(tags):
     tags_array = []
     for tag in tags.split(' '):
@@ -205,6 +241,13 @@ def get_total_scenarios_in_html_report(context):
     with open(report_path, 'r') as file:
         html_content = file.read()
     return html_content.count('data-scenario-tags=')
+
+
+def get_string_instances_from_html_report(context, string_to_search):
+    report_path = os.path.abspath(os.path.join(context.output_path, 'report.html'))
+    with open(report_path, 'r') as file:
+        html_content = file.read()
+    return html_content.lower().count(string_to_search.lower())
 
 
 def get_total_scenarios_in_junit_reports(context, consider_skipped_scenarios=True):
