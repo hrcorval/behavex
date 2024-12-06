@@ -43,3 +43,17 @@ jobs:
           else
             behavex ./tests/features/*.feature
           fi
+
+      # Set report.json to be available as an artifact for debugging
+      - name: Set report.json to be available as an artifact
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            dir
+            type .\\tests\\features\\output\\report.json
+          else
+            cat ./tests/features/output/report.json
+          fi
+        uses: actions/upload-artifact@v4
+        with:
+          name: report.json
+          path: output/report.json
