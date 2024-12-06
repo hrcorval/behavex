@@ -42,6 +42,5 @@ jobs:
             behavex .\\tests\\features\\*.feature
           else
             behavex ./tests/features/*.feature
+            cat report.json
           fi
-          # print the contents of failures.txt
-          cat failures.txt
