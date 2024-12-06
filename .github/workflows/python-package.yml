@@ -43,3 +43,5 @@ jobs:
           else
             behavex ./tests/features/*.feature
           fi
+          # print the contents of failures.txt
+          cat failures.txt
