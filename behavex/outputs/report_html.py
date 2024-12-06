@@ -19,7 +19,7 @@ from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (gather_steps_with_definition,
                                           get_environment_details,
                                           get_save_function,
-                                          try_operate_descriptor)
+                                          retry_file_operation)
 
 
 def generate_report(output, joined=None, report=None):
@@ -47,7 +47,7 @@ def _create_manifest(relative, page):
         os.makedirs(folder)
     file_manifest = os.path.join(folder, page.replace('html', 'manifest'))
 
-    try_operate_descriptor(
+    retry_file_operation(
         file_manifest, execution=get_save_function(file_manifest, output_text)
     )
 
@@ -80,7 +80,7 @@ def _create_files_report(content_to_file):
         # pylint: disable= W0703
         except Exception as ex:
             print(ex)
-        try_operate_descriptor(path_file, get_save_function(path_file, content))
+        retry_file_operation(path_file, get_save_function(path_file, content))
 
 
 def get_metrics_variables(scenarios):

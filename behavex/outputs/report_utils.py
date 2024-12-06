@@ -190,7 +190,23 @@ def resolving_type(step, scenario, background=True):
             return step['step_type'].title()
 
 
-def try_operate_descriptor(dest_path, execution, return_value=False):
+def retry_file_operation(dest_path, execution, return_value=False):
+    """Executes a file operation with retry logic for handling file access conflicts.
+
+    This function attempts to execute a file operation (like copy, delete, etc.) and
+    provides an interactive retry mechanism if the files are locked by another process.
+
+    Args:
+        dest_path (str): The file system path where the operation will be performed
+        operation (callable): A function containing the file operation to execute
+        return_value (bool, optional): Whether to return the result of the operation. Defaults to False.
+
+    Returns:
+        Any: The result of the operation if return_value is True, otherwise None
+
+    Example:
+        >>> retry_file_operation('/path/to/dir', lambda: shutil.rmtree('/path/to/dir'))
+    """
     passed = False
     following = True
     retry_number = 1
@@ -290,8 +306,8 @@ def copy_bootstrap_html_generator(output):
     bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(dest_path):
-        try_operate_descriptor(dest_path, lambda: shutil.rmtree(dest_path))
-    try_operate_descriptor(
+        retry_file_operation(dest_path, lambda: shutil.rmtree(dest_path))
+    retry_file_operation(
         dest_path, lambda: shutil.copytree(bootstrap_path, dest_path)
     )
 
@@ -451,5 +467,5 @@ def get_environment_details():
     environment_details = environment_details_raw_data.split(',') if environment_details_raw_data else []
     return environment_details
 
-def strip_ansi_codes(from_str: str): 
+def strip_ansi_codes(from_str: str):
     return re.sub(r'\x1B\[[0-?9;]*[mGJK]', '', from_str)

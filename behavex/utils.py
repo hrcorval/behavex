@@ -9,6 +9,7 @@ from __future__ import absolute_import, print_function
 
 import codecs
 import functools
+import glob
 import hashlib
 import json
 import logging
@@ -18,6 +19,7 @@ import re
 import shutil
 import sys
 import time
+import uuid
 from functools import reduce
 from tempfile import gettempdir
 
@@ -32,7 +34,7 @@ from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (get_save_function, get_string_hash,
                                           match_for_execution,
-                                          try_operate_descriptor)
+                                          retry_file_operation)
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
@@ -176,24 +178,37 @@ def join_scenario_reports(json_reports):
 def explore_features(features_path, features_list=None):
     if features_list is None:
         features_list = []
-    if global_vars.rerun_failures or ".feature:" in features_path:
-        features_path = features_path.split(":")[0]
-    if os.path.isfile(features_path):
-        if features_path.endswith('.feature'):
-            path_feature = os.path.abspath(features_path)
-            feature = should_feature_be_run(path_feature)
+
+    # Normalize path separators
+    pure_feature_path, scenario_line = get_feature_and_scenario_line(features_path)
+    normalized_features_path = os.path.normpath(pure_feature_path)
+    if os.path.isfile(normalized_features_path):
+        if normalized_features_path.endswith('.feature'):
+            abs_feature_path = os.path.abspath(normalized_features_path)
+            feature = should_feature_be_run(abs_feature_path)
             if feature:
-                features_list.extend(feature.scenarios)
+                if scenario_line:
+                    # iterate over scenarios and add the scenario that matches the scenario line
+                    for scenario in feature.scenarios:
+                        if scenario.line == int(scenario_line):
+                            features_list.append(scenario)
+                else:
+                    features_list.extend(feature.scenarios)
     else:
-        for node in os.listdir(features_path):
-            if os.path.isdir(os.path.join(features_path, node)):
-                explore_features(os.path.join(features_path, node), features_list)
-            else:
-                if node.endswith('.feature'):
-                    path_feature = os.path.abspath(os.path.join(features_path, node))
-                    feature = should_feature_be_run(path_feature)
+        try:
+            for node in os.listdir(normalized_features_path):
+                node_path = os.path.join(normalized_features_path, node)
+                if os.path.isdir(node_path):
+                    explore_features(node_path, features_list)
+                elif node.endswith('.feature'):
+                    abs_feature_path = os.path.abspath(node_path)
+                    feature = should_feature_be_run(abs_feature_path)
                     if feature:
                         features_list.extend(feature.scenarios)
+        except OSError as e:
+            print(f"Error accessing path {features_path}: {e}")
+            return features_list
+
     return features_list
 
 
@@ -249,10 +264,10 @@ def copy_bootstrap_html_generator():
     bootstrap_path = ['outputs', 'bootstrap']
     bootstrap_path = os.path.join(global_vars.execution_path, *bootstrap_path)
     if os.path.exists(destination_path):
-        try_operate_descriptor(
+        retry_file_operation(
             destination_path, lambda: shutil.rmtree(destination_path)
         )
-    try_operate_descriptor(
+    retry_file_operation(
         destination_path, lambda: shutil.copytree(bootstrap_path, destination_path)
     )
 
@@ -264,18 +279,18 @@ def cleanup_folders():
     def execution():
         return shutil.rmtree(output_folder, ignore_errors=True)
 
-    try_operate_descriptor(output_folder, execution)
+    retry_file_operation(output_folder, execution)
     if not os.path.exists(output_folder):
-        try_operate_descriptor(output_folder, lambda: os.makedirs(output_folder))
+        retry_file_operation(output_folder, lambda: os.makedirs(output_folder))
     # temp folder
     temp_folder = get_env('temp')
 
     def execution():
         return shutil.rmtree(temp_folder, ignore_errors=True)
 
-    try_operate_descriptor(temp_folder, execution)
+    retry_file_operation(temp_folder, execution)
     if not os.path.exists(temp_folder):
-        try_operate_descriptor(temp_folder, lambda: os.makedirs(temp_folder))
+        retry_file_operation(temp_folder, lambda: os.makedirs(temp_folder))
 
     # behave folder
     behave_folder = os.path.join(get_env('OUTPUT'), 'behave')
@@ -283,9 +298,15 @@ def cleanup_folders():
     def execution():
         return shutil.rmtree(behave_folder, ignore_errors=True)
 
-    try_operate_descriptor(behave_folder, execution)
+    retry_file_operation(behave_folder, execution)
     if not os.path.exists(behave_folder):
-        try_operate_descriptor(behave_folder, lambda: os.makedirs(behave_folder))
+        retry_file_operation(behave_folder, lambda: os.makedirs(behave_folder))
+
+
+
+# Implemented for backward compatibility with other libraries that use this function
+def try_operate_descriptor(dest_path, execution, return_value=False):
+    return retry_file_operation(dest_path, execution, return_value)
 
 
 def set_env_variable(key, value):
@@ -421,7 +442,7 @@ def set_behave_tags():
     tags_line = ' '.join(tags)
     tags_line = tags_line.replace('~', 'not ')
     tags_line = tags_line.replace(',', ' or ')
-    try_operate_descriptor(
+    retry_file_operation(
         behave_tags, execution=get_save_function(behave_tags, tags_line)
     )
 
@@ -516,17 +537,17 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
         self.features = [
             os.path.abspath(path)
             for path in self.features_paths
-            if os.path.isfile(path) and ':' not in path
+            if os.path.isfile(path) and not has_scenario_line_number(path)
         ]
         self.scenarios = [
-            "{}:{}".format(os.path.abspath(path.split(":")[0]), path.split(":")[1])
+            "{}:{}".format(os.path.abspath(get_feature_and_scenario_line(path)[0]), get_feature_and_scenario_line(path)[1])
             for path in self.features_paths
-            if not os.path.isdir(path) and ':' in path
+            if not os.path.isdir(path) and has_scenario_line_number(path)
         ]
         self.folders = [
             os.path.abspath(path)
             for path in self.features_paths
-            if os.path.isdir(path) and ':' not in path
+            if os.path.isdir(path) and not has_scenario_line_number(path)
         ]
 
     def __call__(self, *args, **kwargs):
@@ -546,6 +567,7 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
 
     def bool(self):
         return self.features and self.folders
+
 
 
 class IncludeNameMatch(metaclass=ExecutionSingleton):
@@ -583,3 +605,46 @@ def generate_hash(word):
     hash_int = int.from_bytes(truncated_hash, byteorder='big')
     # Ensure the result fits in 48 bits (optional, for consistency)
     return hash_int & 0xFFFFFFFFFFFF
+
+def generate_uuid():
+    return uuid.uuid4().hex
+
+def expand_paths(paths):
+    """Expand glob patterns in paths and verify they exist.
+
+    Args:
+        paths (list): List of paths that may contain glob patterns
+
+    Returns:
+        list: List of expanded and verified paths
+    """
+    expanded = []
+    for path in paths:
+        # Handle glob patterns
+        if any(char in path for char in ['*', '?', '[']):
+            globbed = glob.glob(path)
+            if not globbed:
+                print('\nNo files found matching pattern: {}'.format(path))
+                exit()
+            expanded.extend(globbed)
+        else:
+            pure_feature_path, scenario_line = get_feature_and_scenario_line(path)
+            normalized_features_path = os.path.normpath(pure_feature_path)
+            if not os.path.exists(pure_feature_path):
+                print('\nSpecified path was not found: {}'.format(pure_feature_path))
+                exit()
+            expanded.append(path)
+    return expanded
+
+
+def has_scenario_line_number(path):
+    # Split path by colon and check if the last part is a number
+    parts = path.split(':')
+    return len(parts) > 1 and parts[-1].isdigit()
+
+def get_feature_and_scenario_line(path):
+    if has_scenario_line_number(path):
+        parts = path.split(':')
+        return [':'.join(parts[:-1]), parts[-1]]
+    else:
+        return [path, None]

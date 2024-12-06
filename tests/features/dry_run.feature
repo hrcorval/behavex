@@ -9,3 +9,5 @@ Feature: Dry run
     | Dry run completed   |
     | Exit code: 0        |
     And I should not see error messages in the output
+    And I should see the HTML report was generated and contains scenarios
+    And I should see the generated HTML report does not contain internal BehaveX variables and tags

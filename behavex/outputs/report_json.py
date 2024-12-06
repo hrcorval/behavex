@@ -22,13 +22,13 @@ from tempfile import gettempdir
 from behave.model import ScenarioOutline
 from behave.step_registry import registry
 
-from behavex.conf_mgr import get_env
+from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message,
                                           match_for_execution, text)
-from behavex.utils import (generate_hash, get_scenario_tags,
-                           try_operate_descriptor)
+from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
+                           retry_file_operation)
 
 
 def add_step_info(step, parent_node):
@@ -105,7 +105,7 @@ def generate_json_report(feature_list):
             def write_json():
                 file_info.write(json.dumps(output))
 
-            try_operate_descriptor(path_info, execution=write_json)
+            retry_file_operation(path_info, execution=write_json)
         if multiprocessing.current_process().name != 'MainProcess':
             return output
     except IOError:
@@ -150,13 +150,17 @@ def _processing_background_feature(feature):
 def _processing_scenarios(scenarios, scenario_list, id_feature):
     scenario_outline_index = 0
     overall_status = 'passed'
+    is_dry_run = get_param('dry_run')
     for scenario in scenarios:
+        # Remove BHX_MANUAL_DRY_RUN tag if it is a dry run
+        scenario_tags = get_scenario_tags(scenario)
+        if is_dry_run and 'BHX_MANUAL_DRY_RUN' in scenario_tags:
+            scenario.tags.remove('BHX_MANUAL_DRY_RUN')
         # Set MANUAL to False in order filter regardless of it
         error_msg, error_lines, error_step, error_background = _get_error_scenario(
             scenario
         )
         # pylint: disable=W0123
-        scenario_tags = get_scenario_tags(scenario)
         if match_for_execution(scenario_tags):
             # Scenario was selectable
             scenario_info = {}
@@ -181,8 +185,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_lines'] = error_lines
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
-            scenario_info['id_hash'] = generate_hash("{}:{}".format(scenario.filename,
-                                                                    scenario.line))
+            scenario_info['id_hash'] = generate_uuid()
             if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name

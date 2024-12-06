@@ -44,14 +44,15 @@ from behavex.outputs import report_xml
 from behavex.outputs.report_json import generate_execution_info
 from behavex.outputs.report_utils import (get_overall_status,
                                           match_for_execution,
-                                          pretty_print_time, text,
-                                          try_operate_descriptor)
+                                          pretty_print_time,
+                                          retry_file_operation, text)
 from behavex.progress_bar import ProgressBar
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
-                           explore_features, generate_hash, generate_reports,
+                           expand_paths, explore_features, generate_hash,
+                           generate_reports, get_feature_and_scenario_line,
                            get_json_results, get_logging_level,
                            get_scenario_tags, get_scenarios_instances,
                            get_text, join_feature_reports,
@@ -86,7 +87,6 @@ def main():
         # force exit
         sys.exit(exit_code)
 
-
 def run(args):
     """Run BehaveX with the given arguments.
 
@@ -110,24 +110,19 @@ def run(args):
         if execution_code == EXIT_ERROR:
             return EXIT_ERROR
     else:
+        # Handle paths parameter
         if len(get_param('paths')) > 0:
-            for path in get_param('paths'):
-                if not os.path.exists(path):
-                    print('\nSpecified path was not found: {}'.format(path))
-                    exit()
-            paths = ",".join(get_param('paths'))
+            paths = ",".join(expand_paths(get_param('paths')))
             os.environ['FEATURES_PATH'] = paths
+
+        # Handle include_paths parameter
         if len(get_param('include_paths')) > 0:
-            for path in get_param('paths'):
-                if not os.path.exists(path):
-                    print('\nSpecified path was not found: {}'.format(path))
-                    exit()
-            paths = ",".join(get_param('include_paths'))
+            include_paths = ",".join(expand_paths(get_param('include_paths')))
             features_path = os.environ.get('FEATURES_PATH')
-            if features_path == '' or features_path is None:
-                os.environ['FEATURES_PATH'] = paths
+            if features_path == '' or features_path is None or not os.path.exists(features_path):
+                os.environ['FEATURES_PATH'] = include_paths
             else:
-                os.environ['FEATURES_PATH'] = features_path + ',' + paths
+                os.environ['FEATURES_PATH'] = features_path + ',' + include_paths
     features_path = os.environ.get('FEATURES_PATH')
     if features_path == '' or features_path is None:
         os.environ['FEATURES_PATH'] = 'features'
@@ -386,19 +381,20 @@ def create_scenario_line_references(features):
         for scenario in scenarios:
             scenario_filename = text(scenario.filename)
             if global_vars.rerun_failures or ".feature:" in feature_path:
-                feature_without_scenario_line = feature_path.split(":")[0]
-                if feature_without_scenario_line not in updated_features:
-                    updated_features[feature_without_scenario_line] = []
+                if feature_path not in updated_features:
+                    updated_features[feature_path] = []
                 if isinstance(scenario, ScenarioOutline):
                     for scenario_outline_instance in scenario.scenarios:
-                        if scenario_outline_instance.line == int(feature_path.split(":")[1]):
-                            if scenario_outline_instance not in updated_features[feature_without_scenario_line]:
-                                updated_features[feature_without_scenario_line].append(scenario_outline_instance)
+                        outline_scenario_line = get_feature_and_scenario_line(scenario_outline_instance.name)[1]
+                        if outline_scenario_line and scenario_outline_instance.line == int(outline_scenario_line):
+                            if scenario_outline_instance not in updated_features[pure_feature_path]:
+                                updated_features[feature_path].append(scenario_outline_instance)
                             break
                 else:
-                    if scenario.line == int(feature_path.split(":")[1]):
-                        if scenario not in updated_features[feature_without_scenario_line]:
-                            updated_features[feature_without_scenario_line].append(scenario)
+                    scenario_line = get_feature_and_scenario_line(feature_path)[1]
+                    if scenario_line and scenario.line == int(scenario_line):
+                        if scenario not in updated_features[feature_path]:
+                            updated_features[feature_path].append(scenario)
             else:
                 updated_features_path = scenario.feature.filename
                 if updated_features_path not in updated_features:
@@ -434,11 +430,13 @@ def launch_by_feature(features,
     parallel_features = []
     for features_path in features:
         feature = features[features_path][0].feature
+        pure_feature_path, scenario_line = get_feature_and_scenario_line(features_path)
+        feature_filename = feature.filename if not scenario_line else "{}:{}".format(pure_feature_path, scenario_line)
         if 'SERIAL' in feature.tags:
-            serial_features.append({"feature_filename": feature.filename,
+            serial_features.append({"feature_filename": feature_filename,
                                     "feature_json_skeleton": _get_feature_json_skeleton(feature)})
         else:
-            parallel_features.append({"feature_filename": feature.filename,
+            parallel_features.append({"feature_filename": feature_filename,
                                       "feature_json_skeleton": _get_feature_json_skeleton(feature)})
     if show_progress_bar:
         total_features = len(serial_features) + len(parallel_features)
@@ -723,16 +721,17 @@ def _launch_behave(behave_args):
     Returns:
         tuple: Execution code and whether to generate a report.
     """
-    # Save tags configuration to report only selected scenarios
-    # Check for tags in config file
     generate_report = True
+    execution_code = 0
+    stdout_file = None
+
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
         execution_code = behave_script.main(behave_args)
         if not os.path.exists(stdout_file):
-            # Code 2 means the execution crashed and test was not properly executed
             execution_code = 2
             generate_report = True
+
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False
@@ -745,10 +744,27 @@ def _launch_behave(behave_args):
     except:
         execution_code = 2
         generate_report = True
-    if os.path.exists(stdout_file):
-        with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
-            behave_log_file.write(open(stdout_file, 'r').read())
-        os.remove(stdout_file)
+
+    if stdout_file and os.path.exists(stdout_file):
+        def _merge_and_remove():
+            with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
+                with open(stdout_file, 'r') as source_file:
+                    behave_log_file.write(source_file.read())
+            # nosec B110
+            try:
+                if not source_file.closed:
+                    os.close(source_file.fileno())
+                if os.path.exists(stdout_file):
+                    os.remove(stdout_file)
+            except:
+                pass
+        try:
+            retry_file_operation(stdout_file, _merge_and_remove)
+        except Exception as remove_ex:
+            logging.warning(f"Could not remove stdout file {stdout_file}: {remove_ex}")
+            # Don't fail the execution if we can't remove the file
+            pass
+
     return execution_code, generate_report
 
 
@@ -843,9 +859,7 @@ def remove_temporary_files(parallel_processes, json_reports):
         json_reports = [json_reports]
     for json_report in json_reports:
         if 'features' in json_report and json_report['features']:
-            feature_name = os.path.join(
-                get_env('OUTPUT'), u'{}.tmp'.format(json_report['features'][0]['name'])
-            )
+            feature_name = os.path.join(get_env('OUTPUT'), u'{}.tmp'.format(json_report['features'][0]['name']))
             if os.path.exists(feature_name):
                 try:
                     os.remove(feature_name)
@@ -1173,7 +1187,7 @@ def dump_json_results():
 
     json_output = {'environment': [], 'features': [], 'steps_definition': []}
     if os.path.exists(path_info):
-        json_output = try_operate_descriptor(path_info, _load_json, return_value=True)
+        json_output = retry_file_operation(path_info, _load_json, return_value=True)
     return json_output
 
 
