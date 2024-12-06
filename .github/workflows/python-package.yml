@@ -42,5 +42,4 @@ jobs:
             behavex .\\tests\\features\\*.feature
           else
             behavex ./tests/features/*.feature
-            cat /home/runner/work/behavex/behavex/output/report.json
           fi

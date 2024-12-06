@@ -153,6 +153,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
     is_dry_run = get_param('dry_run')
     for scenario in scenarios:
         # Remove BHX_MANUAL_DRY_RUN tag if it is a dry run
+        scenario_tags = get_scenario_tags(scenario)
         if is_dry_run and 'BHX_MANUAL_DRY_RUN' in scenario_tags:
             scenario.tags.remove('BHX_MANUAL_DRY_RUN')
         # Set MANUAL to False in order filter regardless of it
@@ -160,7 +161,6 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario
         )
         # pylint: disable=W0123
-        scenario_tags = get_scenario_tags(scenario)
         if match_for_execution(scenario_tags):
             # Scenario was selectable
             scenario_info = {}
