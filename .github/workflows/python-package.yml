@@ -49,4 +49,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report.json
-          path: ./tests/features/output/report.json
+          path: /home/runner/work/behavex/behavex/output/report.json
