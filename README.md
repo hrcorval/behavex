@@ -155,7 +155,7 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
 
 BehaveX manages concurrent executions of Behave instances in multiple processes. You can perform parallel test executions by feature or scenario. When the parallel scheme is by scenario, the examples of a scenario outline are also executed in parallel.
 
-![Parallel Test Executions](https://github.com/hrcorval/behavex/blob/master/img/behavex_paralllel_executions.png?raw=true)
+![Parallel Test Executions](https://github.com/hrcorval/behavex/blob/release_4.1.0/img/behavex_paralllel_executions.png?raw=true)
 
 ### Examples:
 ```bash
