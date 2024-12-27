@@ -38,5 +38,3 @@ repos:
 #           # ignore  C0116: Missing function or method docstring
 #           - --disable=C0116
 #           - -d duplicate-code
-exclude: |
-  tests/features/*.txt
