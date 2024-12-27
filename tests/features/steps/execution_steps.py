@@ -23,6 +23,13 @@ def step_impl(context):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with a file of failing tests')
+def step_impl(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', '-rf', os.path.join(tests_features_path, 'failing_scenarios.txt'), '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
 @when('I run the behavex command that renames scenarios and features')
 def step_impl(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))

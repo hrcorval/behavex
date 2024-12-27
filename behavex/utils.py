@@ -178,7 +178,6 @@ def join_scenario_reports(json_reports):
 def explore_features(features_path, features_list=None):
     if features_list is None:
         features_list = []
-
     # Normalize path separators
     pure_feature_path, scenario_line = get_feature_and_scenario_line(features_path)
     normalized_features_path = os.path.normpath(pure_feature_path)
@@ -190,8 +189,14 @@ def explore_features(features_path, features_list=None):
                 if scenario_line:
                     # iterate over scenarios and add the scenario that matches the scenario line
                     for scenario in feature.scenarios:
-                        if scenario.line == int(scenario_line):
-                            features_list.append(scenario)
+                        #check if scenario is a ScenarioOutline
+                        if isinstance(scenario, ScenarioOutline):
+                            for example in scenario.scenarios:
+                                if example.line == int(scenario_line):
+                                    features_list.append(example)
+                        else:
+                            if scenario.line == int(scenario_line):
+                                features_list.append(scenario)
                 else:
                     features_list.extend(feature.scenarios)
     else:
