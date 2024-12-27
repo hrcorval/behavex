@@ -1,6 +1,6 @@
-Feature: Failing Scenarios
+Feature: Rerun Scenarios
 
-  @FAILING
+  @RERUN_SCENARIOS
   Scenario Outline: Performing rerun of failing scenarios using the -rf option
     Given I have installed behavex
     When I setup the behavex command with "<parallel_processes>" parallel processes and parallel scheme set as "<parallel_scheme>"
