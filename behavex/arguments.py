@@ -69,6 +69,7 @@ BEHAVEX_ARGS = [
     'parallel_scheme',
     'parallel_processes',
     'show_progress_bar',
+    'output_prefix'
 ]
 
 
@@ -314,6 +315,11 @@ def parse_arguments(args):
         help="Shows the execution progress bar in console.",
         default=False,
         action='store_true',
+        required=False,
+    )
+    parser.add_argument(
+        '--output-prefix',
+        help='Specifies a prefix for the file to write temporary data to.',
         required=False,
     )
 
