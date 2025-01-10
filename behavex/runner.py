@@ -830,8 +830,8 @@ def remove_temporary_files(parallel_processes, json_reports):
             except Exception as remove_ex:
                 print(remove_ex)
 
-        output_prefix = f"{get_env('OUTPUT_PREFIX')}-" if get_env("OUTPUT_PREFIX") else ""
-        path_stdout = os.path.join(gettempdir(), "{}stdout{}.txt".format(output_prefix, i + 1))
+        temp_output_prefix = get_env('TEMP_OUTPUT_PREFIX') if get_env('TEMP_OUTPUT_PREFIX') else ''
+        path_stdout = os.path.join(gettempdir(), '{}stdout{}.txt'.format(temp_output_prefix, i + 1))
         if os.path.exists(path_stdout):
             try:
                 os.chmod(path_stdout, 511)  # nosec
@@ -1040,9 +1040,9 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append('--no-summary')
         worker_id = multiprocessing.current_process().name.split('-')[-1]
 
-        output_prefix = f"{config.get_env('OUTPUT_PREFIX')}-" if config.get_env("OUTPUT_PREFIX") else ""
+        temp_output_prefix = get_env('TEMP_OUTPUT_PREFIX') if get_env('TEMP_OUTPUT_PREFIX') else ''
         arguments.append('--outfile')
-        arguments.append(os.path.join(gettempdir(), '{}stdout{}.txt'.format(output_prefix, worker_id)))
+        arguments.append(os.path.join(gettempdir(), '{}stdout{}.txt'.format(temp_output_prefix, worker_id)))
 
         arguments.append('-D')
         arguments.append(f'worker_id={worker_id}')

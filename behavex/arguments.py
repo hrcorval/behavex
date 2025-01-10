@@ -69,7 +69,7 @@ BEHAVEX_ARGS = [
     'parallel_scheme',
     'parallel_processes',
     'show_progress_bar',
-    'output_prefix'
+    'temp_output_prefix'
 ]
 
 
@@ -318,8 +318,11 @@ def parse_arguments(args):
         required=False,
     )
     parser.add_argument(
-        '--output-prefix',
-        help='Specifies a prefix for the file to write temporary data to.',
+        '-top'
+        '--temp-output-prefix',
+        help='Specifies a prefix for the file in which temporary data '
+             'is written to. Neccessary when running multiple instances '
+             'of behavex in parallel.',
         required=False,
     )
 
