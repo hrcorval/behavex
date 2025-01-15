@@ -829,8 +829,8 @@ def remove_temporary_files(parallel_processes, json_reports):
                 os.remove(result_temp)
             except Exception as remove_ex:
                 print(remove_ex)
-
-        path_stdout = os.path.join(gettempdir(), 'stdout{}.txt'.format(i + 1))
+        # Appending the process ID to the stdout file as a prefix
+        path_stdout = os.path.join(gettempdir(), '{}_stdout{}.txt'.format(os.getpid(), i + 1))
         if os.path.exists(path_stdout):
             try:
                 os.chmod(path_stdout, 511)  # nosec
@@ -1040,7 +1040,8 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         worker_id = multiprocessing.current_process().name.split('-')[-1]
 
         arguments.append('--outfile')
-        arguments.append(os.path.join(gettempdir(), 'stdout{}.txt'.format(worker_id)))
+        # Appending the process ID to the stdout file as a prefix
+        arguments.append(os.path.join(gettempdir(), '{}_stdout{}.txt'.format(os.getpid(), worker_id)))
 
         arguments.append('-D')
         arguments.append(f'worker_id={worker_id}')
