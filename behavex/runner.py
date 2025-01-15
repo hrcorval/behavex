@@ -829,7 +829,7 @@ def remove_temporary_files(parallel_processes, json_reports):
                 os.remove(result_temp)
             except Exception as remove_ex:
                 print(remove_ex)
-        # Appending the process ID to the stdout file as a prefix
+        # Appending the process ID to the stdout file as a prefix, to avoid conflicts with other BehaveX processes
         path_stdout = os.path.join(gettempdir(), '{}_stdout{}.txt'.format(os.getpid(), i + 1))
         if os.path.exists(path_stdout):
             try:
@@ -1040,7 +1040,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         worker_id = multiprocessing.current_process().name.split('-')[-1]
 
         arguments.append('--outfile')
-        # Appending the process ID to the stdout file as a prefix
+        # Appending the process ID to the stdout file as a prefix, to avoid conflicts with other BehaveX processes
         arguments.append(os.path.join(gettempdir(), '{}_stdout{}.txt'.format(os.getpid(), worker_id)))
 
         arguments.append('-D')
