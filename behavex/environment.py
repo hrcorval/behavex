@@ -33,51 +33,64 @@ def extend_behave_hooks():
     global hooks_already_set
     behave_run_hook = ModelRunner.run_hook
     behavex_env = sys.modules[__name__]
+    is_dry_run = get_param('dry_run')
 
     def run_hook(self, name, context, *args):
+
         if name == 'before_all':
             # noinspection PyUnresolvedReferences
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.before_all(context)
         elif name == 'before_feature':
             # noinspection PyUnresolvedReferences
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.before_feature(context, *args)
         elif name == 'before_scenario':
             # noinspection PyUnresolvedReferences
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.before_scenario(context, *args)
         elif name == 'before_step':
             # noinspection PyUnresolvedReferences
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.before_step(context, *args)
         elif name == 'before_tag':
             # noinspection PyUnresolvedReferences
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.before_tag(context, *args)
         elif name == 'after_tag':
             # noinspection PyUnresolvedReferences
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.after_tag(context, *args)
-            behave_run_hook(self, name, context, *args)
         elif name == 'after_step':
             # noinspection PyUnresolvedReferences
             behavex_env.after_step(context, *args)
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
         elif name == 'after_scenario':
             # noinspection PyUnresolvedReferences
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
             behavex_env.after_scenario(context, *args)
-            behave_run_hook(self, name, context, *args)
         elif name == 'after_feature':
             # noinspection PyUnresolvedReferences
             behavex_env.after_feature(context, *args)
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
         elif name == 'after_all':
             # noinspection PyUnresolvedReferences
             behavex_env.after_all(context, *args)
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
         else:
             # noinspection PyUnresolvedReferences
-            behave_run_hook(self, name, context, *args)
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
 
     if not hooks_already_set:
         hooks_already_set = True
