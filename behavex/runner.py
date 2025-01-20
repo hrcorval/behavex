@@ -104,7 +104,7 @@ def run(args):
     ConfigRun().set_args(args_parsed)
     execution_code, rerun_list = setup_running_failures(args_parsed)
     if rerun_list:
-        paths = ",".join(rerun_list)
+        paths = ",".join(rerun_list).replace('\n', '')
         os.environ['FEATURES_PATH'] = paths
         global_vars.rerun_failures = True
         if execution_code == EXIT_ERROR:
@@ -112,12 +112,12 @@ def run(args):
     else:
         # Handle paths parameter
         if len(get_param('paths')) > 0:
-            paths = ",".join(expand_paths(get_param('paths')))
+            paths = ",".join(expand_paths(get_param('paths'))).replace('\n', '')
             os.environ['FEATURES_PATH'] = paths
 
         # Handle include_paths parameter
         if len(get_param('include_paths')) > 0:
-            include_paths = ",".join(expand_paths(get_param('include_paths')))
+            include_paths = ",".join(expand_paths(get_param('include_paths'))).replace('\n', '')
             features_path = os.environ.get('FEATURES_PATH')
             if features_path == '' or features_path is None or not os.path.exists(features_path):
                 os.environ['FEATURES_PATH'] = include_paths

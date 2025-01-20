@@ -1,6 +1,17 @@
 Version History
 ===============================================================================
 
+Version: 4.1.0
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Cosmetic improvements in documentation
+
+FIXES:
+
+* Fixing issue when re-executing failing scenarios using the -rf option, as there where scenario outline examples not being considered in the re-execution
+
 Version: 4.0.10
 -------------------------------------------------------------------------------
 
