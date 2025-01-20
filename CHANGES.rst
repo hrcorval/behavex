@@ -12,6 +12,17 @@ FIXES:
 
 * Fixing issue when re-executing failing scenarios using the -rf option, as there where scenario outline examples not being considered in the re-execution
 
+Version: 4.0.10
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Enable multiple BehaveX processes to run at the same time, by creating unique execution output files in temporary folders for each process.
+
+FIXES:
+
+* Avoid executing environment.py hooks when a dry run is performed.
+
 Version: 4.0.9
 -------------------------------------------------------------------------------
 
