@@ -1,6 +1,14 @@
 Version History
 ===============================================================================
 
+Version: 4.1.1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Improvement done when reporting exceptions, as despite the traceback is being reported, the exception message was not being displayed.
+
+
 Version: 4.1.0
 -------------------------------------------------------------------------------
 
