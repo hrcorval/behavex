@@ -53,12 +53,16 @@ def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
     execute_command(context, execution_args)
 
 
-@when('I run the behavex command with a test that uses a crashing environment')
-def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
+@when('I run the behavex command with a test that crashes in "{behave_hook}" hook')
+@when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def step_impl(context, behave_hook, parallel_processes="1", parallel_scheme='scenario'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                 os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_environment_tests.feature')),
-                '-o', context.output_path]
+                '-o', context.output_path,
+                '--parallel-processes', parallel_processes,
+                '--parallel-scheme', parallel_scheme,
+                '-D', 'crashing_behave_hook=' + behave_hook]
     execute_command(context, execution_args)
 
 

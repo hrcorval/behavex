@@ -728,7 +728,8 @@ def _launch_behave(behave_args):
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
         execution_code = behave_script.main(behave_args)
-        if not os.path.exists(stdout_file):
+        # check that stdout_file exists and is not empty, otherwise set execution crashed
+        if not os.path.exists(stdout_file) or os.path.getsize(stdout_file) == 0:
             execution_code = 2
             generate_report = True
 
@@ -749,7 +750,13 @@ def _launch_behave(behave_args):
         def _merge_and_remove():
             with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
                 with open(stdout_file, 'r') as source_file:
-                    behave_log_file.write(source_file.read())
+                    source_content = source_file.read()
+                    # if number of lines is 1, it means that the execution crashed as no scenarios are executed
+                    total_lines = len([line for line in source_content.split('\n') if line.strip()])
+                    if total_lines == 1:
+                        execution_code = 2
+                        return execution_code
+                    behave_log_file.write(source_content)
             # nosec B110
             try:
                 if not source_file.closed:
@@ -758,13 +765,15 @@ def _launch_behave(behave_args):
                     os.remove(stdout_file)
             except:
                 pass
+            return 0
         try:
-            retry_file_operation(stdout_file, _merge_and_remove)
+            return_value = retry_file_operation(stdout_file, _merge_and_remove, return_value=True)
+            if return_value == 2:
+                execution_code = 2
         except Exception as remove_ex:
             logging.warning(f"Could not remove stdout file {stdout_file}: {remove_ex}")
             # Don't fail the execution if we can't remove the file
             pass
-
     return execution_code, generate_report
 
 
