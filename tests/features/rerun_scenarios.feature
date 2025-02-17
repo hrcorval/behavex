@@ -16,4 +16,6 @@ Feature: Rerun Scenarios
       | parallel_scheme | parallel_processes |
       | scenario        | 1                  |
       | scenario        | 3                  |
+
+      # TODO: Uncomment this when enable performing rerun of failing scenarios using parallel scheme set as feature
       # | feature         | 2                  |
