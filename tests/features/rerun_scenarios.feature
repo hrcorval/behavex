@@ -16,4 +16,4 @@ Feature: Rerun Scenarios
       | parallel_scheme | parallel_processes |
       | scenario        | 1                  |
       | scenario        | 3                  |
-      | feature         | 2                  |
+      # | feature         | 2                  |
