@@ -30,3 +30,13 @@ Feature: Crashing Tests
     | output_line                              |
     | Exit code: 1                             |
     And I should not see exception messages in the output
+
+
+  @CRASHING
+  Scenario: Crashing tests should be reported
+    Given I have installed behavex
+    When I run the behavex command with a test that uses a crashing environment
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line                              |
+    | Exit code: 1                             |
+    And I should not see exception messages in the output

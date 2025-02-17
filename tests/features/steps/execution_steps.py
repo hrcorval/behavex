@@ -53,6 +53,15 @@ def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with a test that uses a crashing environment')
+def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_environment_tests.feature')),
+                '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
 @when('I run the behavex command with a skipped test')
 def step_impl(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
