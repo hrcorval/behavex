@@ -734,14 +734,18 @@ def _launch_behave(behave_args):
             generate_report = True
         elif execution_code == 1:
             # Open stdout_file and check if it contains more than 1 line, otherwise, the execution crashed
-            with open(stdout_file, 'r') as file:
-                content = file.read()
-                # if number of lines is 1, it means that the execution crashed, as only the feature name is printed
-                total_lines = len([line for line in content.split('\n') if line.strip()])
+            try:
+                with open(stdout_file, 'r', encoding='utf-8') as file:
+                    # Use more efficient line counting approach
+                    total_lines = sum(1 for line in file if line.strip())
+                # Check for execution crash (only feature name printed)
                 if total_lines <= 1:
                     execution_code = 2
                     generate_report = True
-
+            except (IOError, OSError) as e:
+                # File access errors
+                execution_code = 2
+                generate_report = True
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False
