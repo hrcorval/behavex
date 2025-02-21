@@ -736,7 +736,7 @@ def _launch_behave(behave_args):
 
         # Check if HOOK_ERROR is present in the captured output
         captured_output_value = captured_output.getvalue()
-        if "HOOK" in captured_output_value:
+        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in ["HOOK-ERROR in before_all", "HOOK-ERROR in before_feature", "HOOK-ERROR in after_feature", "HOOK-ERROR in after_all"]):
             print(captured_output_value)
             execution_code = 2  # Indicate an error occurred
         # check that stdout_file exists and is not empty, otherwise set execution crashed
