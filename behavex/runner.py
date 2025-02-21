@@ -735,7 +735,9 @@ def _launch_behave(behave_args):
         sys.stdout = sys.__stdout__  # Reset stdout to its original value
 
         # Check if HOOK_ERROR is present in the captured output
-        if "HOOK_ERROR" in captured_output.getvalue():
+        captured_output_value = captured_output.getvalue()
+        if "HOOK" in captured_output_value:
+            print(captured_output_value)
             execution_code = 2  # Indicate an error occurred
         # check that stdout_file exists and is not empty, otherwise set execution crashed
         if not os.path.exists(stdout_file) or os.path.getsize(stdout_file) == 0:
