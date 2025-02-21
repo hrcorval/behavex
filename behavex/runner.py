@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function
 
 import codecs
 import copy
+import io
 import json
 import logging.config
 import multiprocessing
@@ -727,25 +728,19 @@ def _launch_behave(behave_args):
 
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
+        # Capture the output of behave_script.main(behave_args) to check for HOOK_ERROR
+        captured_output = io.StringIO()
+        sys.stdout = captured_output
         execution_code = behave_script.main(behave_args)
+        sys.stdout = sys.__stdout__  # Reset stdout to its original value
+
+        # Check if HOOK_ERROR is present in the captured output
+        if "HOOK_ERROR" in captured_output.getvalue():
+            execution_code = 2  # Indicate an error occurred
         # check that stdout_file exists and is not empty, otherwise set execution crashed
         if not os.path.exists(stdout_file) or os.path.getsize(stdout_file) == 0:
             execution_code = 2
             generate_report = True
-        elif execution_code == 1:
-            # Open stdout_file and check if it contains more than 1 line, otherwise, the execution crashed
-            try:
-                with open(stdout_file, 'r', encoding='utf-8') as file:
-                    # Use more efficient line counting approach
-                    total_lines = sum(1 for line in file if line.strip())
-                # Check for execution crash (only feature name printed)
-                if total_lines <= 1:
-                    execution_code = 2
-                    generate_report = True
-            except (IOError, OSError) as e:
-                # File access errors
-                execution_code = 2
-                generate_report = True
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False
