@@ -244,7 +244,7 @@ def _step_to_dict(index, step):
     if step.exception:
         # step.exception is forced to be a str type variable
         step_info['error_msg'] = get_error_message(str(step.exception))
-        step_info['error_lines'] = traceback.format_exception(step.exception)
+        step_info['error_lines'] = traceback.format_exception(None, step.exception, step.exception.__traceback__)
     if step.table:
         step_info['table'] = {}
         for heading in step.table.headings:

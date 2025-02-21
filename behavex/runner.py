@@ -728,21 +728,21 @@ def _launch_behave(behave_args):
 
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
-        # Capture the output of behave_script.main(behave_args) to check for HOOK_ERROR
+        # Capture the output of behave_script.main(behave_args) to check for HOOK_ERRORs
         captured_output = io.StringIO()
         sys.stdout = captured_output
         execution_code = behave_script.main(behave_args)
         sys.stdout = sys.__stdout__  # Reset stdout to its original value
-
-        # Check if HOOK_ERROR is present in the captured output
         captured_output_value = captured_output.getvalue()
-        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in ["HOOK-ERROR in before_all", "HOOK-ERROR in before_feature", "HOOK-ERROR in after_feature", "HOOK-ERROR in after_all"]):
-            print("@"*100)
-            print(captured_output_value)
-            print("@"*100)
+        print(captured_output_value)
+        # Check if HOOK_ERROR is present in the captured output
+        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in ["HOOK-ERROR in before_all",
+                                                                                                    "HOOK-ERROR in before_feature",
+                                                                                                    "HOOK-ERROR in after_feature",
+                                                                                                    "HOOK-ERROR in after_all"]):
             execution_code = 2  # Indicate an error occurred
-        # check that stdout_file exists and is not empty, otherwise set execution crashed
-        if not os.path.exists(stdout_file) or os.path.getsize(stdout_file) == 0:
+            generate_report = True
+        elif not os.path.exists(stdout_file):
             execution_code = 2
             generate_report = True
     except KeyboardInterrupt:
