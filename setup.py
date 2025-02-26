@@ -28,7 +28,7 @@ setup(
         'behavex-images',
         'jinja2',
         'configobj',
-        'htmlmin',
+        'minify-html',
         'csscompressor'
     ],
     classifiers=[
