@@ -20,6 +20,12 @@ from behavex.outputs.report_utils import (get_save_function,
                                           retry_file_operation, text)
 from behavex.utils import get_scenario_tags
 
+def testname_from_filename(filename):
+    exp = re.compile('\\\\|/')
+    exp2 = re.compile('\\.feature$')
+    base_name = filename.partition('features')[2] if ('features' in filename) else filename
+    processed_name = exp2.sub('', base_name.lstrip('/.\\'))
+    return u'TESTS-' + u'.'.join(exp.split(processed_name)) + u'.xml'
 
 def _export_feature_to_xml(feature, isobject=True):
     def get_scenarios(feature_):
@@ -94,12 +100,11 @@ def _export_feature_to_xml(feature, isobject=True):
         parameters_template,
     )
     output_text = output_text.replace('status="Status.', 'status="')
-    exp = re.compile('\\\\|/')
     filename = feature.filename if isobject else feature['filename']
     filename = text(filename)
-    name = u'.'.join(exp.split(filename.partition('features')[2][1:-8]))
+    testname = testname_from_filename(filename) 
     junit_path = os.path.join(get_env('OUTPUT'), 'behave')
-    path_output = os.path.join(junit_path, u'TESTS-' + name + u'.xml')
+    path_output = os.path.join(junit_path, testname)
 
     retry_file_operation(
         path_output + '.xml', get_save_function(path_output, output_text)
