@@ -73,7 +73,15 @@ def _create_files_report(content_to_file):
             path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
         try:
-            content = minify_html.minify(content)
+            content = minify_html.minify(
+                content,
+                keep_closing_tags=True,
+                keep_spaces_between_attributes=True,
+                keep_html_and_head_opening_tags=True,
+                ensure_spec_compliant_unquoted_attribute_values=True,
+                minify_js=True,
+                minify_css=True
+            )
         # pylint: disable= W0703
         except Exception as ex:
             print(ex)
