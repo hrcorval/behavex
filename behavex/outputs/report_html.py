@@ -11,7 +11,7 @@ import time
 from collections import OrderedDict
 
 import csscompressor
-import htmlmin
+import minify_html
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
@@ -73,10 +73,7 @@ def _create_files_report(content_to_file):
             path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
         try:
-            content = htmlmin.minify(
-                input=content,
-                pre_tags=(u'pre', u'textarea'),
-            )
+            content = minify_html.minify(content)
         # pylint: disable= W0703
         except Exception as ex:
             print(ex)
