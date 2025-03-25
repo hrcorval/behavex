@@ -76,9 +76,7 @@ def _create_files_report(content_to_file):
             content = minify_html.minify(
                 content,
                 keep_closing_tags=True,
-                keep_spaces_between_attributes=True,
                 keep_html_and_head_opening_tags=True,
-                ensure_spec_compliant_unquoted_attribute_values=True,
                 minify_js=True,
                 minify_css=True
             )
