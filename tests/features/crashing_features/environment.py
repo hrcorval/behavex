@@ -18,6 +18,7 @@ def before_scenario(context, scenario):
 def before_step(context, step):
     logging.info('before_step')
     crash_hook_if_specified(context, 'before_step')
+    context.step = step
 
 def before_tag(context, tag):
     logging.info('before_tag')
