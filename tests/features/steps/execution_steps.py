@@ -163,21 +163,21 @@ def step_impl(context, expected_exit_code=None):
     if expected_exit_code is not None:
         assert int(context.result.returncode) == int(expected_exit_code), "Behavex exit code is not expected"
     for row in context.table:
-        assert row['output_line'] in context.result.stdout, f"Unexpected output in step '{context.step.name}': {context.result.stdout}\n\nOutput line not found: {row['output_line']}\n"
+        assert row['output_line'] in context.result.stdout, f"Unexpected output when checking console outputs: {context.result.stdout}\n\nOutput line not found: {row['output_line']}\n"
 
 
 @then('I should not see error messages in the output')
 def step_impl(context):
     error_messages = ["error", "exception", "traceback"]
     for message in error_messages:
-        assert message not in context.result.stdout.lower(), f"Unexpected output in step '{context.step.name}': {context.result.stdout}\n"
+        assert message not in context.result.stdout.lower(), f"Unexpected output when checking error messages in the console output: {context.result.stdout}\n"
 
 
 @then('I should not see exception messages in the output')
 def step_impl(context):
     exception_messages = ["exception", "traceback"]
     for message in exception_messages:
-        assert message not in context.result.stdout.lower(), f"Unexpected output in step '{context.step.name}': {context.result.stdout}\n"
+        assert message not in context.result.stdout.lower(), f"Unexpected output when checking exception messages in the console output: {context.result.stdout}\n"
 
 
 @then('I should see the same number of scenarios in the reports and the console output')
