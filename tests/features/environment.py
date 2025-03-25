@@ -4,7 +4,3 @@ def before_scenario(context, scenario):
 
 def before_step(context, step):
     context.step = step
-
-def after_scenario(context, scenario):
-    # print the scenario name and the execution status
-    print(f"Scenario: {scenario.name} - Execution Status: {scenario.status}")
