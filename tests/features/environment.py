@@ -2,6 +2,8 @@
 def before_scenario(context, scenario):
     context.progress_bar = False
 
+def before_step(context, step):
+    context.step = step
 
 def after_scenario(context, scenario):
     # print the scenario name and the execution status
