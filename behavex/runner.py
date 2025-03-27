@@ -728,19 +728,46 @@ def _launch_behave(behave_args):
     execution_completed = False
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
-        # Capture the output of behave_script.main(behave_args) to check for HOOK_ERRORs
-        captured_output = io.StringIO()
-        sys.stdout = captured_output
+
+        # Use a custom output capture class that mirrors to console and captures
+        class TeePrint:
+            def __init__(self, original_stdout):
+                self.original_stdout = original_stdout
+                self.captured = io.StringIO()
+
+            def write(self, data):
+                self.original_stdout.write(data)
+                self.captured.write(data)
+
+            def flush(self):
+                self.original_stdout.flush()
+                self.captured.flush()
+
+            def getvalue(self):
+                return self.captured.getvalue()
+
+        # Create the tee capture object
+        tee = TeePrint(sys.__stdout__)
+
+        # Redirect stdout to our tee object
+        old_stdout = sys.stdout
+        sys.stdout = tee
+
+        # Run behave
         execution_code = behave_script.main(behave_args)
-        sys.stdout = sys.__stdout__  # Reset stdout to its original value
-        captured_output_value = captured_output.getvalue()
+
+        # Reset stdout to its original value
+        sys.stdout = old_stdout
+
+        # Get the captured output
+        captured_output_value = tee.getvalue()
         execution_completed = True
-        print(captured_output_value)
+
         # Check if HOOK_ERROR is present in the captured output
         if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in ["HOOK-ERROR in before_all",
-                                                                                                    "HOOK-ERROR in before_feature",
-                                                                                                    "HOOK-ERROR in after_feature",
-                                                                                                    "HOOK-ERROR in after_all"]):
+                                                                                                  "HOOK-ERROR in before_feature",
+                                                                                                  "HOOK-ERROR in after_feature",
+                                                                                                  "HOOK-ERROR in after_all"]):
             execution_code = 2  # Indicate an error occurred
             generate_report = True
         elif not os.path.exists(stdout_file):

@@ -142,20 +142,20 @@
                      role="tabpanel" aria-labelledby="headingOne">
                     <div class="panel-body">
                         <div class="container-fluid behavex-row-total">
-                            <span class="col-xs-12">
+                            <div class="col-xs-12">
                                 <div class="col-xs-3">
                                     <h5><b>Automation Rate: {{ '%10.0f' % (((total - not_automated)/ total)|float * 100.0)|round }}%</b></h5>
-                                    <canvas id="chart-automation-rate"/>
+                                    <canvas id="chart-automation-rate"></canvas>
                                 </div>
                                 <div class="col-xs-3">
                                     <h5 id="h5-status"><b>Pass Rate: {{ '%10.0f' % ((passed/((passed + failed) or 1))|float * 100.0)|round }}%</b></h5>
-                                    <canvas id="chart-pass-rate"/>
+                                    <canvas id="chart-pass-rate"></canvas>
                                 </div>
                                 <div class="col-xs-6">
                                     <h5 id="h5-status"><b>Steps: {{ total_steps }}</b><b class="span-behavex" id="reusability"></b></h5>
-                                    <canvas id="chart-steps"/>
+                                    <canvas id="chart-steps"></canvas>
                                 </div>
-                            </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -297,7 +297,7 @@
                                     <span class="glyphicon glyphicon-menu-right" data-id-hash="{{ scenario.id_hash }}"
                                           title="{{ ('commons.expand'|get_text).format('scenario') }}" data-scenario>
                                           <b class="span-behavex" style="cursor: pointer;">{{scenario.name|e}}</b>&nbsp;<b class="glyphicon glyphicon-copy glyphicon-scenario link-cursor"
-                                             title="Copy scenario name" onclick="copyToClipboard('{{scenario.name|e}}'); event.stopPropagation();"></b>
+                                             title="Copy scenario name" data-copy-text="{{scenario.name|e}}"></b>
                                         {%- if ('MUTE' in scenario|get_scenario_tags) -%}
                                             &nbsp;<b class="glyphicon glyphicon-volume-off glyphicon-scenario" title="{{ 'report.muted'|get_text }}"></b>
                                         {%- endif -%}
@@ -315,10 +315,10 @@
                                                 {%- if [tag]|match_for_execution -%}
                                                     <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;"
                                                         class="{{ [scenario.status]|calculate_color}}-behavex" title="{{ 'report.execution_tag'|get_text }}">
-                                                                <a class="link-cursor text-info" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
+                                                                <a class="link-cursor text-info" data-tag="{{ tag }}">{{ tag }}</a></li>
                                                 {%- else -%}
                                                     <li style="float:left;vertical-align: middle;padding:4px 14px 2px 2px;">
-                                                                <a class="link-cursor text-secondary" onclick="show_tag('{{ tag }}');">{{ tag }}</a></li>
+                                                                <a class="link-cursor text-secondary" data-tag="{{ tag }}">{{ tag }}</a></li>
                                                 {%- endif -%}
                                             {%- endfor -%}
                                         </ul>
@@ -358,7 +358,7 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}"><b>0s</b></p></td>
-                                    <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                    <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}" data-share>
                                         <span class="glyphicon glyphicon-share"></span></a>
                                     </td>
                                 {%- elif "WIP" in scenario_tags -%}
@@ -366,7 +366,7 @@
                                     </td>
                                     <td>&nbsp;&nbsp;Untested</td>
                                     <td ><p class="text-center" title="{{ 'commons.text.total_time'|get_text }}">0s</p></td>
-                                    <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                    <td><a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}" data-share>
                                         <span class="glyphicon glyphicon-share"></span></a>
                                     </td>
                                 {%- else -%}
@@ -423,7 +423,7 @@
                                                 {% endfor %}
                                                 </div>
                                             {% endif %}
-                                            <a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}">
+                                            <a charset=utf-8 class="btn btn-info btn-xs" title="{{ 'report.icon_duplicate.title'|get_text}}" data-share>
                                                 <span class="glyphicon glyphicon-share"></span>
                                             </a>
                                         </div>
@@ -491,8 +491,174 @@
         {%- block javascript -%}
 
         {{ super() }}
+
+//<![CDATA[
+        // This JavaScript has been refactored to:
+        // 1. Use proper CDATA markers to prevent minification issues
+        // 2. Replace inline onclick handlers with data-* attributes
+        // 3. Add event delegation using $(document).on() to handle dynamically added elements
+        // 4. Move handlers into the document.ready function for better organization
+        // 5. Ensure all JavaScript is properly encapsulated and follows best practices
+
         $(document).ready(function(){
             iframe = false;
+
+            // Event handler for copy buttons
+            $(document).on('click', '[data-copy-text]', function(e){
+                e.stopPropagation();
+                var text = $(this).attr('data-copy-text');
+                copyToClipboard(text);
+            });
+
+            // Event handler for tag links
+            $(document).on('click', '[data-tag]', function(e){
+                e.preventDefault();
+                var tag = $(this).attr('data-tag');
+                show_tag(tag);
+            });
+
+            // Event handler for share buttons
+            $(document).on('click', '[data-share]', function(e){
+                e.preventDefault();
+                var scenario = $(this).closest('tr').find("td:first").find('span:first');
+                var feature_id = scenario.parents('div.feature').parents('tr[data-feature-id]').attr('data-feature-id');
+                var url = $(location).attr('href').split('#')[0];
+                result = url + '#scenario=' + feature_id + '-' + scenario.attr('data-id-hash');
+                copyToClipboard(result);
+                alert("Test scenario link copied!");
+            });
+
+            // Event handler for scenario expand/collapse
+            $(document).on('click', '[data-scenario]', function(e){
+                e.stopPropagation();
+                var element = $(this);
+                var id = element.attr('data-id-hash');
+                var div = $('[data-div-id_hash='+ id +']');
+                if (element.hasClass('glyphicon-menu-right')) {
+                    div.css('display', '');
+                    element.removeClass('glyphicon-menu-right');
+                    element.addClass('glyphicon-menu-down');
+                    element.attr('title', "{{ ('commons.collapse'|get_text).format('scenario')}}");
+                } else {
+                    div.css('display', 'None')
+                    element.removeClass('glyphicon-menu-down');
+                    element.addClass('glyphicon-menu-right');
+                    element.attr('title', "{{ ('commons.expand'|get_text).format('scenario')}}");
+                    element.parent().parent().parent().find('div.list-extra-log').css('display', 'none');
+                }
+            });
+
+            // Event handler for feature expand/collapse
+            $(document).on('click', '[data-feature]', function(e){
+                e.stopPropagation();
+                var element = $(this);
+                click_data_feature(element, true);
+            });
+
+            // Event handler for background expand/collapse
+            $(document).on('click', '[data-background]', function(e){
+                e.stopPropagation();
+                var element = $(this);
+                var name = element.attr('data-name-background');
+                var tr = $('[data-info-background="'+ name +'"]');
+                if(element.hasClass('panel-header')) {
+                    // this for click of the tr
+                    var tr = element;
+                    element = element.find('+ tr').find('small');
+                }
+                if (element.text().trim() == '{{ 'report.show_background'|get_text }}') {
+                    tr.css('display', '')
+                    element.text('{{ 'report.hide_background'|get_text }}')
+                    element.attr('title', "{{ ('commons.collapse'|get_text).format('background')}}");
+                    element.parent('a').attr('data-show', 'true');
+                } else {
+                    tr.css('display', 'None')
+                    element.text('{{ 'report.show_background'|get_text }}');
+                    element.attr('title', "{{ ('commons.expand'|get_text).format('background')}}");
+                    element.parent('a').attr('data-show', 'false');
+                }
+            });
+
+            // Event handler for view elements
+            $(document).on('click', '[view]', function(e){
+                e.stopPropagation();
+                var element = $(this);
+                var find  = element.attr('find');
+                var finder = $(find);
+                var word = element.attr('word') || 'scenario';
+                if (element.hasClass('glyphicon-menu-right')) {
+                    finder.css('display', '')
+                    element.removeClass('glyphicon-menu-right');
+                    element.addClass('glyphicon-menu-down');
+                    element.attr('title', "{{ ('commons.collapse'|get_text).format(word)}}");
+                } else {
+                    finder.css('display', 'None')
+                    element.removeClass('glyphicon-menu-down');
+                    element.addClass('glyphicon-menu-right');
+                    element.attr('title', "{{ ('commons.expand'|get_text).format(word)}}");
+                }
+            });
+
+            // Event handler for log and image links
+            $(document).on('click', '[data-log],[data-image]', function(e){
+                e.preventDefault();
+                iframe = true;
+                var link = $(this);
+                var url = decodeURI(link.attr('href')).replace('C:\\', 'file:///C:/');
+                var modal = $('#modal-logs');
+                var body_modal = modal.find('div.modal-body');
+                body_modal.html('<iframe style="width:100%;height:100%;" frameborder="0" src="' + url + '" />');
+                modal.modal('show');
+            });
+
+            // Event handler for closing iframe
+            $(document).on('click', '[data-close-iframe]', function(){
+                iframe = false;
+                $('#iframe-container').css('display', 'none');
+                $('div.container_body').show();
+                $('nav.nav-behavex').show();
+                $('html, body').animate({scrollTop: $('tr[data-feature-id='+ scenario_frame+']').offset().top});
+            });
+
+            // Event handler for extra logs
+            $(document).on('click', '[data-path-extra]', function(e){
+                e.preventDefault();
+                var div = $($(this).find(" + div")[0]);
+
+                var modal = $('#modal-logs');
+                var body_modal = modal.find('div.modal-body');
+                var clone_div = div.clone();
+                clone_div.css('display', '');
+
+                body_modal.html(clone_div);
+                modal.modal('show');
+            });
+
+            // Event handler for filter status
+            $(document).on('change', '[data-select-filter-status]', function(){
+                var selected = $(this).val();
+                if (selected == 'all') {
+                    show_all();
+                } else {
+                    filter_status(selected);
+                }
+            });
+
+            // Event handler for filter tags
+            $(document).on('change', '[data-select-filter-tags]', function(){
+                var selected = $(this).val();
+                if (selected == 'all') {
+                    show_all();
+                } else {
+                    show_tag(selected);
+                }
+            });
+
+            // Event handler for reset filter
+            $(document).on('click', '[data-reset-filter]', function(){
+                reset_filters();
+                show_all();
+            });
 
             var ua = navigator.userAgent.toLowerCase();
             if (ua.indexOf('safari') != -1) {
@@ -533,23 +699,7 @@
             modal.modal('show');
         })
 
-        $('[data-select-filter-status]').change(function(){
-            var selected = $(this).val();
-            if (selected == 'all') {
-                show_all();
-            } else {
-                filter_status(selected);
-            }
-        });
-
-        $('[data-select-filter-tags]').change(function(){
-            var selected = $(this).val();
-            if (selected == 'all') {
-                show_all();
-            } else {
-                show_tag(selected);
-            }
-        });
+        // Old event handlers have been moved to use event delegation in document.ready
 
         function filter_status(status){
             show_all()
@@ -699,56 +849,6 @@
             }
         }
 
-        $('[data-scenario]').click(function(e){
-            e.stopPropagation();
-            var element = $(this);
-            var id = element.attr('data-id-hash');
-            var div = $('[data-div-id_hash='+ id +']');
-            if (element.hasClass('glyphicon-menu-right')) {
-                div.css('display', '');
-                element.removeClass('glyphicon-menu-right');
-                element.addClass('glyphicon-menu-down');
-                element.attr('title', "{{ ('commons.collapse'|get_text).format('scenario')}}");
-            } else {
-                div.css('display', 'None')
-                element.removeClass('glyphicon-menu-down');
-                element.addClass('glyphicon-menu-right');
-                element.attr('title', "{{ ('commons.expand'|get_text).format('scenario')}}");
-                element.parent().parent().parent().find('div.list-extra-log').css('display', 'none');
-            }
-
-        });
-        $('[data-background]').on('click',function(e){
-            e.stopPropagation();
-            var element = $(this);
-            var name = element.attr('data-name-background');
-            var tr = $('[data-info-background="'+ name +'"]');
-            if(element.hasClass('panel-header')) {
-                // this for click of the tr
-                var tr = element;
-                element = element.find('+ tr').find('small');
-            }
-            if (element.text().trim() == '{{ 'report.show_background'|get_text }}') {
-                tr.css('display', '')
-                element.text('{{ 'report.hide_background'|get_text }}')
-                element.attr('title', "{{ ('commons.collapse'|get_text).format
-                ('background')}}");
-                element.parent('a').attr('data-show', 'true');
-            } else {
-                tr.css('display', 'None')
-                element.text('{{ 'report.show_background'|get_text }}');
-                element.attr('title', "{{ ('commons.expand'|get_text).format
-                ('background')}}");
-                element.parent('a').attr('data-show', 'false');
-            }
-        });
-
-        $('[data-feature]').click(function(e){
-            e.stopPropagation();
-            var element = $(this);
-            click_data_feature(element, true);
-        });
-
         function click_data_feature(element, all) {
             element.children('tr .feature-scenario').show();
 
@@ -767,15 +867,6 @@
             }
 
         }
-        $('.glyphicon-share').click(function(){
-            var scenario = $(this).closest('tr').find("td:first").find('span:first');
-            var feature_id = scenario.parents('div.feature').parents('tr[data-feature-id]').attr('data-feature-id');
-            var url = $(location).attr('href').split('#')[0];
-            result = url + '#scenario=' + feature_id + '-' + scenario.attr('data-id-hash');
-            copyToClipboard(result);
-            alert("Test scenario link copied!");
-        });
-
         function copyToClipboard(value) {
               // Create a "hidden" input
               var aux = document.createElement("input");
@@ -796,43 +887,10 @@
               document.body.removeChild(aux);
         }
 
-        $('[view]').on('click', function(e){
-            e.stopPropagation();
-            var element = $(this);
-            var find  = element.attr('find');
-            var  finder = $(find);
-            var word = element.attr('word') || 'scenario';
-            if (element.hasClass('glyphicon-menu-right')) {
-                finder.css('display', '')
-                element.removeClass('glyphicon-menu-right');
-                element.addClass('glyphicon-menu-down');
-                element.attr('title', "{{ ('commons.collapse'|get_text).format(word)}}");
-            } else {
-                finder.css('display', 'None')
-                element.removeClass('glyphicon-menu-down');
-                element.addClass('glyphicon-menu-right');
-                element.attr('title', "{{ ('commons.expand'|get_text).format(word)}}");
-            }
-        });
         var scenario_frame = '';
-        $('[data-log],[data-image]').click(function(e){
-            e.preventDefault();
-            iframe = true;
-            var link = $(this);
-            var url = decodeURI(link.attr('href')).replace('C:\\', 'file:///C:/');
-            var modal = $('#modal-logs');
-            var body_modal = modal.find('div.modal-body');
-            body_modal.html('<iframe style="width:100%;height:100%;" frameborder="0" src="' + url + '" />');
-            modal.modal('show');
-        });
-
-        $('[data-close-iframe]').click(function(){
-            iframe = false;
-            $('#iframe-container').css('display', 'none');
-            $('div.container_body').show();
-            $('nav.nav-behavex').show();
-            $('html, body').animate({scrollTop: $('tr[data-feature-id='+ scenario_frame+']').offset().top});
-        });
+        // These direct event bindings have been replaced with event delegation in document.ready
+        // $('[data-log],[data-image]').click(function(e){ ... });
+        // $('[data-close-iframe]').click(function(){ ... });
         var scenarios_autocomplete = Array();
         {%- for scenario, id in scenarios -%}
             scenarios_autocomplete.push({'label':'{{ scenario|replace("\\", "\\\\")|replace("'","\\'")|safe }}',
@@ -985,5 +1043,5 @@
         {%- if total_executions > 0 and total_steps > 0 -%}
             document.getElementById("reusability").innerHTML = "&nbsp;&nbsp;&nbsp;(Executions: {{ total_executions }}, Avg. Reusability: {{ '%0.1f' % (total_executions/total_steps) }})";
         {%- endif -%}
-
+        //]]>
 {% endblock %}

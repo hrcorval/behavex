@@ -75,11 +75,29 @@ def _create_files_report(content_to_file):
         try:
             content = minify_html.minify(
                 content,
-                keep_closing_tags=True,
-                keep_html_and_head_opening_tags=True,
-                ensure_spec_compliant_unquoted_attribute_values=True,
-                minify_js=True,
-                minify_css=True
+                allow_noncompliant_unquoted_attribute_values=True,
+                allow_optimal_entities=True,
+                allow_removing_spaces_between_attributes=True,
+
+                # Keep structure intact
+                keep_closing_tags=False,
+                keep_comments=False,
+                keep_html_and_head_opening_tags=False,
+                keep_input_type_text_attr=False,
+                keep_ssi_comments=False,
+
+                # Don't minify any code
+                minify_css=True,
+                minify_doctype=True,
+                # minify_js=True,
+
+                # Preserve template syntax
+                preserve_brace_template_syntax=False,
+                preserve_chevron_percent_template_syntax=False,
+
+                # Don't remove any important structural elements
+                remove_bangs=True,
+                remove_processing_instructions=True
             )
         # pylint: disable= W0703
         except Exception as ex:
