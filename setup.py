@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.1.2rc5',
+    version='4.1.2rc6',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',

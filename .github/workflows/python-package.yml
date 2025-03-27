@@ -32,7 +32,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python setup.py sdist
-          pip install dist/behavex-4.1.2rc5.tar.gz
+          pip install dist/behavex-4.1.2rc6.tar.gz
 
 
       - name: Verify behavex command
