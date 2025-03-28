@@ -25,7 +25,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'behavex-images>=3.1.0',
+        'behavex-images>=3.0.10',
         'jinja2',
         'configobj',
         'minify-html',
