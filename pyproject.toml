@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.1.2rc6"
+version = "4.1.2"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = { text = "MIT" }
@@ -14,7 +14,7 @@ authors = [
 requires-python = ">=3.5"
 dependencies = [
     "behave==1.2.6",
-    "behavex-images",
+    "behavex-images>=3.1.0",
     "jinja2",
     "configobj",
     "minify-html",

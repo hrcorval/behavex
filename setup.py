@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.1.2rc6',
+    version='4.1.2',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',
@@ -25,7 +25,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'behavex-images',
+        'behavex-images>=3.1.0',
         'jinja2',
         'configobj',
         'minify-html',

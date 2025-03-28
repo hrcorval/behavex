@@ -1,6 +1,15 @@
 Version History
 ===============================================================================
 
+Version: 4.1.2
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Support for Python 3.13
+* Improvement done to replace the htmlmin library with minify-html, as htmlmin is deprecated.
+
+
 Version: 4.1.1
 -------------------------------------------------------------------------------
 
