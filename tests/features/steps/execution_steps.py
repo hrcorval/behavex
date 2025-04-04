@@ -53,6 +53,29 @@ def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with no tests')
+def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_tests.feature')),
+                '-t', 'NO_TESTS',
+                '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with a test that crashes in "{behave_hook}" hook')
+@when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def step_impl(context, behave_hook, parallel_processes="1", parallel_scheme='scenario'):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_environment_tests.feature')),
+                '-o', context.output_path,
+                '--parallel-processes', parallel_processes,
+                '--parallel-scheme', parallel_scheme,
+                '-D', 'crashing_behave_hook=' + behave_hook]
+    execute_command(context, execution_args)
+
+
 @when('I run the behavex command with a skipped test')
 def step_impl(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
@@ -140,21 +163,21 @@ def step_impl(context, expected_exit_code=None):
     if expected_exit_code is not None:
         assert int(context.result.returncode) == int(expected_exit_code), "Behavex exit code is not expected"
     for row in context.table:
-        assert row['output_line'] in context.result.stdout, f"Unexpected output: {context.result.stdout}\n\nOutput line not found: {row['output_line']}"
+        assert row['output_line'] in context.result.stdout, f"Unexpected output when checking console outputs: {context.result.stdout}\n\nOutput line not found: {row['output_line']}\n"
 
 
 @then('I should not see error messages in the output')
 def step_impl(context):
     error_messages = ["error", "exception", "traceback"]
     for message in error_messages:
-        assert message not in context.result.stdout.lower(), f"Unexpected output: {context.result.stdout}"
+        assert message not in context.result.stdout.lower(), f"Unexpected output when checking error messages in the console output: {context.result.stdout}\n"
 
 
 @then('I should not see exception messages in the output')
 def step_impl(context):
     exception_messages = ["exception", "traceback"]
     for message in exception_messages:
-        assert message not in context.result.stdout.lower(), f"Unexpected output: {context.result.stdout}"
+        assert message not in context.result.stdout.lower(), f"Unexpected output when checking exception messages in the console output: {context.result.stdout}\n"
 
 
 @then('I should see the same number of scenarios in the reports and the console output')

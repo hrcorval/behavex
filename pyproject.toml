@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.1.0"
+version = "4.1.2"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = { text = "MIT" }
@@ -14,10 +14,10 @@ authors = [
 requires-python = ">=3.5"
 dependencies = [
     "behave==1.2.6",
-    "behavex-images",
+    "behavex-images>=3.0.10",
     "jinja2",
     "configobj",
-    "htmlmin",
+    "minify-html",
     "csscompressor"
 ]
 # Add dynamic field to handle entry points

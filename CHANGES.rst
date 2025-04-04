@@ -1,6 +1,24 @@
 Version History
 ===============================================================================
 
+Version: 4.1.2
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Support for Python 3.13
+* Improvement done to replace the htmlmin library with minify-html, as htmlmin is deprecated.
+
+
+Version: 4.1.1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Improvement done when reporting exceptions, as despite the traceback is being reported, the exception message was not being displayed.
+* Improvement done to display the correct exit code when execution crashes in environment hooks.
+
+
 Version: 4.1.0
 -------------------------------------------------------------------------------
 

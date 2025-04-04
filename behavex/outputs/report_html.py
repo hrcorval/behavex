@@ -11,7 +11,7 @@ import time
 from collections import OrderedDict
 
 import csscompressor
-import htmlmin
+import minify_html
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
@@ -73,9 +73,31 @@ def _create_files_report(content_to_file):
             path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
         try:
-            content = htmlmin.minify(
-                input=content,
-                pre_tags=(u'pre', u'textarea'),
+            content = minify_html.minify(
+                content,
+                allow_noncompliant_unquoted_attribute_values=True,
+                allow_optimal_entities=True,
+                allow_removing_spaces_between_attributes=True,
+
+                # Keep structure intact
+                keep_closing_tags=False,
+                keep_comments=False,
+                keep_html_and_head_opening_tags=False,
+                keep_input_type_text_attr=False,
+                keep_ssi_comments=False,
+
+                # Don't minify any code
+                minify_css=True,
+                minify_doctype=True,
+                # minify_js=True,
+
+                # Preserve template syntax
+                preserve_brace_template_syntax=False,
+                preserve_chevron_percent_template_syntax=False,
+
+                # Don't remove any important structural elements
+                remove_bangs=True,
+                remove_processing_instructions=True
             )
         # pylint: disable= W0703
         except Exception as ex:

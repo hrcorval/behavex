@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.1.0',
+    version='4.1.2',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',
@@ -25,10 +25,10 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'behavex-images',
+        'behavex-images>=3.0.10',
         'jinja2',
         'configobj',
-        'htmlmin',
+        'minify-html',
         'csscompressor'
     ],
     classifiers=[
@@ -47,6 +47,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Software Development :: Testing',
     ],
 )

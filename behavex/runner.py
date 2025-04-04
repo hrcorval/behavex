@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function
 
 import codecs
 import copy
+import io
 import json
 import logging.config
 import multiprocessing
@@ -724,14 +725,54 @@ def _launch_behave(behave_args):
     generate_report = True
     execution_code = 0
     stdout_file = None
-
+    execution_completed = False
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
+
+        # Use a custom output capture class that mirrors to console and captures
+        class TeePrint:
+            def __init__(self, original_stdout):
+                self.original_stdout = original_stdout
+                self.captured = io.StringIO()
+
+            def write(self, data):
+                self.original_stdout.write(data)
+                self.captured.write(data)
+
+            def flush(self):
+                self.original_stdout.flush()
+                self.captured.flush()
+
+            def getvalue(self):
+                return self.captured.getvalue()
+
+        # Create the tee capture object
+        tee = TeePrint(sys.__stdout__)
+
+        # Redirect stdout to our tee object
+        old_stdout = sys.stdout
+        sys.stdout = tee
+
+        # Run behave
         execution_code = behave_script.main(behave_args)
-        if not os.path.exists(stdout_file):
+
+        # Reset stdout to its original value
+        sys.stdout = old_stdout
+
+        # Get the captured output
+        captured_output_value = tee.getvalue()
+        execution_completed = True
+
+        # Check if HOOK_ERROR is present in the captured output
+        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in ["HOOK-ERROR in before_all",
+                                                                                                  "HOOK-ERROR in before_feature",
+                                                                                                  "HOOK-ERROR in after_feature",
+                                                                                                  "HOOK-ERROR in after_all"]):
+            execution_code = 2  # Indicate an error occurred
+            generate_report = True
+        elif not os.path.exists(stdout_file):
             execution_code = 2
             generate_report = True
-
     except KeyboardInterrupt:
         execution_code = 1
         generate_report = False
@@ -744,6 +785,9 @@ def _launch_behave(behave_args):
     except:
         execution_code = 2
         generate_report = True
+    finally:
+        if not execution_completed:
+            sys.stdout = sys.__stdout__  # Reset stdout to its original value
 
     if stdout_file and os.path.exists(stdout_file):
         def _merge_and_remove():
@@ -764,7 +808,6 @@ def _launch_behave(behave_args):
             logging.warning(f"Could not remove stdout file {stdout_file}: {remove_ex}")
             # Don't fail the execution if we can't remove the file
             pass
-
     return execution_code, generate_report
 
 
