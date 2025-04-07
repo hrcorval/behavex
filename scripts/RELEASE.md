@@ -9,7 +9,7 @@ Quick reference for releasing to PyPI.
 rm -rf build/ dist/ *.egg-info/
 
 # Build source distribution and wheel
-python setup.py sdist bdist_wheel
+python -m build
 ```
 
 ## Deploy to PyPI
