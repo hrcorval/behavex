@@ -317,6 +317,23 @@ def parse_arguments(args):
         required=False,
     )
 
+    parser.add_argument(
+        '-f',
+        '--formatter',
+        help="Specify a custom formatter to use for report generation. Format: module_path:FormatterClass",
+        metavar='MODULE:CLASS',
+        required=False,
+    )
+
+    parser.add_argument(
+        '-fo',
+        '--formatter-outdir',
+        help="Specify the output directory for the custom formatter relative to the output folder",
+        metavar='DIR',
+        default='',
+        required=False,
+    )
+
     # parser.add_argument('--logging-format',
     #                    help="Specify custom format to print statements. Uses "
     #                          " the same format as used by standard logging "
