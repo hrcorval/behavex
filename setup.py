@@ -26,6 +26,7 @@ setup(
     install_requires=[
         'behave==1.2.6',
         'behavex-images>=3.0.10',
+        'allure-python-commons',
         'jinja2',
         'configobj',
         'minify-html',
