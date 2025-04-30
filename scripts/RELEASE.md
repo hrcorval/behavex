@@ -9,7 +9,7 @@ Quick reference for releasing to PyPI.
 rm -rf build/ dist/ *.egg-info/
 
 # Build source distribution and wheel
-python setup.py sdist bdist_wheel
+python -m build
 ```
 
 ## Deploy to PyPI
@@ -26,8 +26,8 @@ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 ```bash
 # Build and deploy to PyPI
-rm -rf build/ dist/ *.egg-info/ && python3 setup.py sdist bdist_wheel && twine upload dist/*
+rm -rf build/ dist/ *.egg-info/ && python setup.py sdist bdist_wheel && twine upload dist/*
 
 # Build and deploy to TestPyPI
-rm -rf build/ dist/ *.egg-info/ && python setup.py sdist bdist_wheel && twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+rm -rf build/ dist/ *.egg-info/ && python -m build && twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 ```
