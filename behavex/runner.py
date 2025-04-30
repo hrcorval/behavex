@@ -1007,8 +1007,9 @@ def _set_env_variables(args):
         set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
         set_env_variable('NAME', args.name)
-    if get_param('formatter_outdir'):
-        set_env_variable('LOGS', os.path.join(get_env('output'), get_param('formatter_outdir')))
+    if get_param('formatter'):
+        formatter_outdir = get_param('formatter_outdir') if get_param('formatter_outdir') else 'report_artifacts'
+        set_env_variable('LOGS', os.path.join(get_env('output'), formatter_outdir))
     else:
         set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     for arg in BEHAVEX_ARGS[4:]:
