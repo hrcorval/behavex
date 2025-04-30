@@ -1007,11 +1007,14 @@ def _set_env_variables(args):
         set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
         set_env_variable('NAME', args.name)
+    if get_param('formatter_outdir'):
+        set_env_variable('LOGS', os.path.join(get_env('output'), get_param('formatter_outdir')))
+    else:
+        set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     for arg in BEHAVEX_ARGS[4:]:
         set_env_variable(arg.upper(), get_param(arg))
 
     set_env_variable('TEMP', os.path.join(get_env('output'), 'temp'))
-    set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))

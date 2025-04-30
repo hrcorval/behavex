@@ -25,7 +25,7 @@ from behave.step_registry import registry
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
-                                          get_error_message,
+                                          get_error_message, get_string_hash,
                                           match_for_execution, text)
 from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
                            retry_file_operation)
@@ -196,6 +196,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
             scenario_info['id_hash'] = generate_uuid()
+            scenario_info['identifier_hash'] = scenario.identifier_hash if hasattr(scenario, 'identifier_hash') else get_string_hash(f"{str(scenario.feature.filename)}-{str(scenario.line)}")
             if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name
@@ -251,6 +252,8 @@ def _step_to_dict(index, step):
         step_info['duration'] = step.duration or 0.0
     else:
         step_info['duration'] = 0.0
+    if hasattr(step, 'line'):
+        step_info['line'] = getattr(step, 'line')
     # Add start and stop times if they exist
     if hasattr(step, 'start'):
         step_info['start'] = getattr(step, 'start')

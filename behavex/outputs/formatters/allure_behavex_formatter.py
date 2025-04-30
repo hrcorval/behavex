@@ -42,6 +42,32 @@ from behavex.outputs.report_utils import get_string_hash
 class AllureBehaveXFormatter:
     """Allure formatter for BehaveX test results."""
 
+    def _get_step_line_from_image(self, filename):
+        """Extract step line number from image filename.
+
+        Args:
+            filename (str): Image filename in format <scenario_hash>_<5_digits_step_line><5_digits_image_number>
+
+        Returns:
+            int: Step line number or None if not found
+        """
+        try:
+            # Split by underscore and get the last part containing line and image numbers
+            numbers_part = filename.split('_')[-1]
+            # Extract the first 5 digits which represent the step line
+            return int(numbers_part[:5])
+        except (IndexError, ValueError):
+            return None
+
+    def _get_mime_type(self, filename):
+        """Get MIME type based on file extension."""
+        if filename.lower().endswith('.png'):
+            return "image/png"
+        elif filename.lower().endswith('.gif'):
+            return "image/gif"
+        else:
+            return "image/jpeg"
+
     def parse_json_to_allure(self, json_data):
         """
         Parses the JSON report data and converts it into Allure-compatible results.
@@ -64,8 +90,10 @@ class AllureBehaveXFormatter:
                 test_case.name = scenario['name']
                 test_case.fullName = scenario['name']
 
+                # Use the stored identifier hash
+                scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+
                 # Add scenario logs as attachment
-                scenario_hash = get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}")
                 log_path = os.path.join(get_env('logs'), str(scenario_hash), 'scenario.log')
                 if os.path.exists(log_path):
                     with open(log_path, 'r') as f:
@@ -74,12 +102,63 @@ class AllureBehaveXFormatter:
                         test_case.attachments.append(
                             Attachment(name="scenario.log",
                                      source=attachment_source,
-                                     type="text/plain")  # Use MIME type directly
+                                     type="text/plain")
                         )
                         # Write attachment content to a file in allure results
                         attachment_file = os.path.join(output_dir, attachment_source)
                         with open(attachment_file, 'w') as f:
                             f.write(log_content)
+
+                # Create steps first
+                steps_with_lines = []
+                for step in scenario['steps']:
+                    allure_step = TestStepResult(name=step["step_type"].capitalize() + " " + step["name"])
+                    allure_step.status = step["status"]
+                    allure_step.start = step["start"] if "start" in step else now()
+                    allure_step.stop = step["stop"] if "stop" in step else now()
+
+                    if step["status"] in ("failed", "broken"):
+                        allure_step.statusDetails = {"message": step['error_msg'],
+                                                     "trace": step['error_lines'][0]}
+
+                    # Store step line number for image matching
+                    line_number = step.get('line', 0)
+                    steps_with_lines.append((allure_step, line_number))
+                    test_case.steps.append(allure_step)
+
+                # First, collect and sort all images for this scenario
+                scenario_images = []
+                for filename in os.listdir(output_dir):
+                    if filename.startswith(str(scenario_hash)) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                        scenario_images.append(filename)
+
+                # Sort images by name to ensure consistent numbering
+                scenario_images.sort()
+
+                # Add screenshots as attachments - using existing images with scenario hash prefix
+                screenshot_counter = {}  # Keep track of screenshots per step
+                for filename in scenario_images:
+                    step_line = self._get_step_line_from_image(filename)
+                    if step_line is not None:
+                        # Find matching step by line number
+                        for allure_step, line_number in steps_with_lines:
+                            if line_number == step_line:
+                                # Initialize counter for this step if not exists
+                                if line_number not in screenshot_counter:
+                                    screenshot_counter[line_number] = 1
+                                else:
+                                    screenshot_counter[line_number] += 1
+
+                                # Create friendly name
+                                friendly_name = f"step_image_{screenshot_counter[line_number]}"
+
+                                # Add image as attachment to the step
+                                allure_step.attachments.append(
+                                    Attachment(name=friendly_name,
+                                             source=filename,  # Keep original filename as source
+                                             type=self._get_mime_type(filename))
+                                )
+                                break
 
                 if scenario["status"] in ("failed", "broken"):
                     test_case.statusDetails = {"message": scenario['error_msg'][0],
@@ -100,34 +179,41 @@ class AllureBehaveXFormatter:
                     else:
                         test_case.labels.append({"name": "tag", "value": tag})
 
-                for step in scenario['steps']:
-                    allure_step = TestStepResult(name=step["step_type"].capitalize() + " " + step["name"], start=now())
-                    allure_step.status = step["status"]
-                    allure_step.start = step["start"] if "start" in step else None
-                    allure_step.stop = step["stop"] if "stop" in step else None
-                    if step["status"] in ("failed", "broken"):
-                        allure_step.statusDetails = {"message": step['error_msg'],
-                                                     "trace": step['error_lines'][0]}
-                    test_case.steps.append(allure_step)
-
                 if scenario.get('parameters'):
                     for param in scenario['parameters']:
                         test_case.parameters.append(Parameter(name=param['name'], value=param['value']))
 
-                test_case.start = scenario["start"] if "start" in scenario else None
-                test_case.stop = scenario["stop"] if "stop" in scenario else None
+                test_case.start = scenario["start"] if "start" in scenario else now()
+                test_case.stop = scenario["stop"] if "stop" in scenario else now()
                 test_case.status = scenario['status']
+
+                # Create test case dictionary with step attachments
+                steps_json = []
+                for step in test_case.steps:
+                    step_dict = {
+                        "name": step.name,
+                        "status": step.status,
+                        "start": step.start,
+                        "stop": step.stop,
+                        "statusDetails": step.statusDetails if hasattr(step, 'statusDetails') else {},
+                        "attachments": []
+                    }
+
+                    # Add step attachments
+                    if hasattr(step, 'attachments'):
+                        for attachment in step.attachments:
+                            step_dict["attachments"].append({
+                                "name": attachment.name,
+                                "source": attachment.source,
+                                "type": attachment.type
+                            })
+
+                    steps_json.append(step_dict)
 
                 test_case_dict = {
                     "name": test_case.name,
                     "status": test_case.status,
-                    "steps": [{
-                        "name": step.name,
-                        "start": step.start,
-                        "stop": step.stop,
-                        "status": step.status,
-                        "statusDetails": step.statusDetails if step.status in ("failed", "broken") else {}
-                    } for step in test_case.steps],
+                    "steps": steps_json,
                     "start": test_case.start,
                     "stop": test_case.stop,
                     "uuid": test_case.uuid,
@@ -137,7 +223,7 @@ class AllureBehaveXFormatter:
                     "attachments": [{
                         "name": attachment.name,
                         "source": attachment.source,
-                        "type": attachment.type  # This will now be a string
+                        "type": attachment.type
                     } for attachment in test_case.attachments]
                 }
                 test_case_dict["labels"].append({"name": "feature", "value": feature['name']})
@@ -145,7 +231,7 @@ class AllureBehaveXFormatter:
                 test_case_dict["labels"].append({"name": "language", "value": "Python"})
 
                 path = os.path.join(output_dir, f"{uuid.uuid4()}-result.json")
-                json_object = json.dumps(test_case_dict)
+                json_object = json.dumps(test_case_dict, default=str)
                 with open(path, "w") as outfile:
                     outfile.write(json_object)
 

@@ -69,6 +69,8 @@ BEHAVEX_ARGS = [
     'parallel_scheme',
     'parallel_processes',
     'show_progress_bar',
+    'formatter',
+    'formatter_outdir',
 ]
 
 

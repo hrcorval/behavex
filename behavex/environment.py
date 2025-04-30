@@ -21,7 +21,8 @@ from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import create_log_path, strip_ansi_codes
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_autoretry_attempts, get_logging_level,
-                           get_scenario_tags, get_scenarios_instances)
+                           get_scenario_tags, get_scenarios_instances,
+                           get_string_hash)
 
 Context.__getattribute__ = create_custom_log_when_called
 
@@ -140,8 +141,12 @@ def before_scenario(context, scenario):
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-        concat_feature_and_scenario_line = "{}-{}".format(str(context.feature.filename), str(scenario.line))
-        context.log_path = create_log_path(concat_feature_and_scenario_line, retrying_execution)
+
+        # Calculate and store the scenario identifier hash
+        scenario_identifier = f"{str(context.feature.filename)}-{str(scenario.line)}"
+        scenario.identifier_hash = get_string_hash(scenario_identifier)
+
+        context.log_path = create_log_path(scenario_identifier, retrying_execution)
         context.bhx_log_handler = _add_log_handler(context.log_path)
         if retrying_execution:
             logging.info('Retrying scenario execution...\n'.format())
