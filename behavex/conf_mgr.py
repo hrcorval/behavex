@@ -89,8 +89,9 @@ class ConfigRun(metaclass=ExecutionSingleton):
         self.environ['temp'] = os.path.join(output, 'temp')
 
         # If a formatter is specified in command line arguments, use its output as logs path
-        formatter_output = self.get_param('formatter.outdir', 'formatter_outdir')
-        if formatter_output:
+        formatter = self.get_param('formatter', 'formatter')
+        if formatter:
+            formatter_output = self.get_param('formatter.outdir', 'formatter_outdir')
             self.environ['logs'] = os.path.join(output, formatter_output)
         else:
             self.environ['logs'] = os.path.join(output, 'outputs', 'logs')
