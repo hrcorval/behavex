@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 import sys
+from datetime import datetime
 
 from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
 from behave.log_capture import capture
@@ -25,6 +26,10 @@ from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
 Context.__getattribute__ = create_custom_log_when_called
 
 hooks_already_set = False
+
+def _get_current_timestamp_ms():
+    """Get current time as Unix epoch milliseconds."""
+    return int(datetime.now().timestamp() * 1000)
 
 def extend_behave_hooks():
     """
@@ -143,10 +148,11 @@ def before_scenario(context, scenario):
             shutil.rmtree(context.evidence_path)
     except Exception as exception:
         _log_exception_and_continue('before_scenario (behavex)', exception)
+    scenario.start = _get_current_timestamp_ms()
 
 
 def before_step(context, step):
-    pass
+    step.start = _get_current_timestamp_ms()
 
 
 def before_tag(context, tag):
@@ -158,6 +164,7 @@ def after_tag(context, tag):
 
 
 def after_step(context, step):
+    step.stop = _get_current_timestamp_ms()
     try:
         if step.exception:
             step.error_message = step.error_message
@@ -168,6 +175,7 @@ def after_step(context, step):
 
 @capture
 def after_scenario(context, scenario):
+    scenario.stop = _get_current_timestamp_ms()
     try:
         scenario_tags = get_scenario_tags(scenario)
         configured_attempts = get_autoretry_attempts(scenario_tags)

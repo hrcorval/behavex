@@ -41,6 +41,11 @@ def add_step_info_background(step, parent_node):
     for attrib in ('step_type', 'name', 'text', 'status'):
         step_info[attrib] = text(getattr(step, attrib))
     step_info['duration'] = step.duration or 0
+    # Add start and stop times if they exist
+    if hasattr(step, 'start'):
+        step_info['start'] = getattr(step, 'start')
+    if hasattr(step, 'stop'):
+        step_info['stop'] = getattr(step, 'stop')
     if step.table:
         step_info['table'] = {}
         for heading in step.table.headings:
@@ -168,6 +173,11 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
             scenario_info['status'] = getattr(scenario, 'status').name
+            # Add start and stop times if they exist
+            if hasattr(scenario, 'start'):
+                scenario_info['start'] = getattr(scenario, 'start')
+            if hasattr(scenario, 'stop'):
+                scenario_info['stop'] = getattr(scenario, 'stop')
             scenario_info['tags'] = getattr(scenario, 'effective_tags')
             scenario_info['filename'] = text(scenario.filename)
             scenario_info['feature'] = scenario.feature.name
@@ -241,6 +251,11 @@ def _step_to_dict(index, step):
         step_info['duration'] = step.duration or 0.0
     else:
         step_info['duration'] = 0.0
+    # Add start and stop times if they exist
+    if hasattr(step, 'start'):
+        step_info['start'] = getattr(step, 'start')
+    if hasattr(step, 'stop'):
+        step_info['stop'] = getattr(step, 'stop')
     if step.exception:
         # step.exception is forced to be a str type variable
         step_info['error_msg'] = get_error_message(str(step.exception))

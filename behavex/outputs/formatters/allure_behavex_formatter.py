@@ -20,9 +20,6 @@ Run the Script: Execute the Python script to parse the report.json file from the
 * python3 allure_behavex_report.py
 
 Generate Allure Report: Use the Allure command-line tool to generate the Allure report from the results. This will create the report in the allure-report directory.
-* allure generate allure-results -o allure-report
-
-Serve Allure Report: Start a local server to view the Allure report in your default web browser.
 * allure serve allure-results
 """
 
@@ -32,11 +29,14 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-from allure_commons.model2 import Parameter, TestResult, TestStepResult
+from allure_commons.model2 import (Attachment, Parameter, TestResult,
+                                   TestStepResult)
+from allure_commons.types import AttachmentType
 from allure_commons.utils import now
 
 from behavex.conf_mgr import get_env
 from behavex.outputs.formatter_manager import FormatterManager
+from behavex.outputs.report_utils import get_string_hash
 
 
 class AllureBehaveXFormatter:
@@ -63,6 +63,24 @@ class AllureBehaveXFormatter:
                 test_case = TestResult(uuid=scenario["id_hash"])
                 test_case.name = scenario['name']
                 test_case.fullName = scenario['name']
+
+                # Add scenario logs as attachment
+                scenario_hash = get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}")
+                log_path = os.path.join(get_env('logs'), str(scenario_hash), 'scenario.log')
+                if os.path.exists(log_path):
+                    with open(log_path, 'r') as f:
+                        log_content = f.read()
+                        attachment_source = str(uuid.uuid4())
+                        test_case.attachments.append(
+                            Attachment(name="scenario.log",
+                                     source=attachment_source,
+                                     type="text/plain")  # Use MIME type directly
+                        )
+                        # Write attachment content to a file in allure results
+                        attachment_file = os.path.join(output_dir, attachment_source)
+                        with open(attachment_file, 'w') as f:
+                            f.write(log_content)
+
                 if scenario["status"] in ("failed", "broken"):
                     test_case.statusDetails = {"message": scenario['error_msg'][0],
                                                "trace": scenario['error_lines'][0]}
@@ -116,6 +134,11 @@ class AllureBehaveXFormatter:
                     "historyId": test_case.historyId,
                     "fullName": test_case.fullName,
                     "labels": [item for item in test_case.labels],
+                    "attachments": [{
+                        "name": attachment.name,
+                        "source": attachment.source,
+                        "type": attachment.type  # This will now be a string
+                    } for attachment in test_case.attachments]
                 }
                 test_case_dict["labels"].append({"name": "feature", "value": feature['name']})
                 test_case_dict["labels"].append({"name": "framework", "value": "BehaveX"})
