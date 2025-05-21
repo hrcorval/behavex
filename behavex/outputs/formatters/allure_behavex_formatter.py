@@ -66,12 +66,86 @@ class AllureBehaveXFormatter:
 
     def _get_mime_type(self, filename):
         """Get MIME type based on file extension."""
+        # Image formats
         if filename.lower().endswith('.png'):
             return "image/png"
+        elif filename.lower().endswith(('.jpg', '.jpeg')):
+            return "image/jpeg"
         elif filename.lower().endswith('.gif'):
             return "image/gif"
+        elif filename.lower().endswith('.svg'):
+            return "image/svg+xml"
+        elif filename.lower().endswith('.webp'):
+            return "image/webp"
+        elif filename.lower().endswith('.bmp'):
+            return "image/bmp"
+
+        # Document formats
+        elif filename.lower().endswith('.pdf'):
+            return "application/pdf"
+        elif filename.lower().endswith('.doc'):
+            return "application/msword"
+        elif filename.lower().endswith(('.docx', '.docm')):
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif filename.lower().endswith('.xls'):
+            return "application/vnd.ms-excel"
+        elif filename.lower().endswith(('.xlsx', '.xlsm')):
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        elif filename.lower().endswith('.ppt'):
+            return "application/vnd.ms-powerpoint"
+        elif filename.lower().endswith(('.pptx', '.pptm')):
+            return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+        # Text and data formats
+        elif filename.lower().endswith('.txt'):
+            return "text/plain"
+        elif filename.lower().endswith('.csv'):
+            return "text/csv"
+        elif filename.lower().endswith('.html'):
+            return "text/html"
+        elif filename.lower().endswith('.htm'):
+            return "text/html"
+        elif filename.lower().endswith('.xml'):
+            return "application/xml"
+        elif filename.lower().endswith('.json'):
+            return "application/json"
+        elif filename.lower().endswith('.yaml'):
+            return "application/x-yaml"
+        elif filename.lower().endswith('.yml'):
+            return "application/x-yaml"
+
+        # Archive formats
+        elif filename.lower().endswith('.zip'):
+            return "application/zip"
+        elif filename.lower().endswith('.tar'):
+            return "application/x-tar"
+        elif filename.lower().endswith('.gz'):
+            return "application/gzip"
+        elif filename.lower().endswith('.7z'):
+            return "application/x-7z-compressed"
+
+        # Audio/Video formats
+        elif filename.lower().endswith('.mp4'):
+            return "video/mp4"
+        elif filename.lower().endswith('.webm'):
+            return "video/webm"
+        elif filename.lower().endswith('.mp3'):
+            return "audio/mpeg"
+        elif filename.lower().endswith('.wav'):
+            return "audio/wav"
+
+        # Logs & code
+        elif filename.lower().endswith('.log'):
+            return "text/plain"
+        elif filename.lower().endswith(('.js', '.py', '.java', '.c', '.cpp', '.cs', '.php', '.rb', '.sh')):
+            return "text/plain"
+
+        # Default for unknown types
         else:
-            return "image/jpeg"
+            # Use a generic binary format for unknown file types
+            # This will cause the browser to offer to download the file
+            # rather than trying to display it incorrectly
+            return "application/octet-stream"
 
     def _sanitize_error_message(self, message):
         """Sanitize error message for use as category name.
@@ -157,6 +231,72 @@ class AllureBehaveXFormatter:
 
             return buffer.getvalue()
 
+    def _attach_evidence_files(self, test_case, scenario_hash, output_dir):
+        """Attach evidence files from the evidence directory to the test case.
+
+        Args:
+            test_case (TestResult): The test case to attach evidence to
+            scenario_hash (str): The hash identifying the scenario
+            output_dir (str): Output directory for Allure results
+
+        Returns:
+            TestResult: The updated test case with evidence attachments
+        """
+
+        evidence_dir = os.path.join(get_env('logs', 'output/allure-results'), str(scenario_hash), 'evidence')
+
+        if not os.path.exists(evidence_dir):
+            return test_case
+
+        # Process all files in the evidence directory
+        evidence_files = sorted(os.listdir(evidence_dir))
+        # Filter out system files like .DS_Store, Thumbs.db, etc.
+        evidence_files = [f for f in evidence_files if not f.startswith('.') and not f == 'Thumbs.db']
+
+        # If there are no valid evidence files, return without attaching anything
+        if not evidence_files:
+            return test_case
+
+        evidence_attachments = []
+
+        for filename in evidence_files:
+            file_path = os.path.join(evidence_dir, filename)
+            if os.path.isfile(file_path):
+                # In test mode, just print what we would attach
+                if test_case is None:
+                    continue
+
+                # Get the relative path from the output directory to the evidence file
+                # This ensures the file can be found when viewing the report
+                try:
+                    rel_path = os.path.relpath(file_path, output_dir)
+                except ValueError:
+                    # If the files are on different drives (Windows), use the absolute path
+                    rel_path = file_path
+
+                # Create an attachment object that references the original file
+                evidence_attachments.append(
+                    Attachment(
+                        source=rel_path,
+                        name=f"🔍 Evidence: {filename}",
+                        type=self._get_mime_type(filename)
+                    )
+                )
+
+        # If we have evidence files, add them directly to the test case
+        if evidence_attachments and test_case is not None:
+            # Create a parameter to indicate these are evidence files
+            test_case.parameters.append(Parameter(
+                name="🔍 Evidence Files",
+                value=f"{len(evidence_attachments)} files attached"
+            ))
+
+            # Add all evidence attachments directly to the test case
+            for attachment in evidence_attachments:
+                test_case.attachments.append(attachment)
+
+        return test_case
+
     def parse_json_to_allure(self, json_data):
         """
         Parses the JSON report data and converts it into Allure-compatible results.
@@ -225,6 +365,23 @@ class AllureBehaveXFormatter:
                     allure_step.start = step.get("start", now())
                     allure_step.stop = step.get("stop", now())
                     allure_step.line = step.get("line", 0)
+
+                    # Add multiline text as an attachment if present
+                    if 'text' in step and step['text'] and step['text'] != 'None':
+                        # Create text attachment with step text content
+                        text_content = step['text']
+                        attachment_source = str(uuid.uuid4())
+                        attachment_file = os.path.join(output_dir, attachment_source)
+                        with open(attachment_file, 'w') as f:
+                            f.write(text_content)
+
+                        # Add the text as an attachment to the step
+                        allure_step.attachments.append(
+                            Attachment(source=attachment_source,
+                                     name="Step Text",
+                                     type="text/plain")
+                        )
+
                     # Add table data as parameters if present
                     if 'table' in step and step['table']:
                         # Create CSV formatted table data
@@ -327,6 +484,9 @@ class AllureBehaveXFormatter:
                                  name="scenario.log",
                                  type="text/plain")
                     )
+
+                # Process evidence files
+                test_case = self._attach_evidence_files(test_case, scenario_hash, output_dir)
 
                 # Process screenshots
                 scenario_images = []
