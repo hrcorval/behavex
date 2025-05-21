@@ -399,6 +399,22 @@ class AllureBehaveXFormatter:
                     "stop": test_case.stop
                 }
 
+                # Add hierarchical labels for better organization in Allure report
+                if feature_file_path:
+                    # Create hierarchical representation from feature file path
+                    hierarchical_package = feature_file_path.replace("/", ".").rstrip(".feature")
+                    basename = os.path.splitext(os.path.basename(feature_file_path))[0]
+
+                    # Remove existing package and suite labels to avoid duplication
+                    test_case_dict["labels"] = [label for label in test_case_dict["labels"]
+                                               if label.get("name") != "package" and label.get("name") != "suite"]
+
+                    # Add new hierarchical labels
+                    test_case_dict["labels"].append({"name": "package", "value": hierarchical_package})
+                    test_case_dict["labels"].append({"name": "parentSuite", "value": os.path.dirname(feature_file_path)})
+                    test_case_dict["labels"].append({"name": "suite", "value": basename})
+                    test_case_dict["labels"].append({"name": "subSuite", "value": f"Feature: {feature['name']}"})
+
                 with open(test_case_path, "w") as f:
                     json.dump(test_case_dict, f, default=str)
 
