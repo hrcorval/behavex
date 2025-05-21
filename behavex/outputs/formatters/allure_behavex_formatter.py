@@ -23,8 +23,11 @@ Generate Allure Report: Use the Allure command-line tool to generate the Allure 
 * allure serve allure-results
 """
 
+import argparse
 import json
 import os
+import re
+import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -68,40 +71,161 @@ class AllureBehaveXFormatter:
         else:
             return "image/jpeg"
 
+    def _sanitize_error_message(self, message):
+        """Sanitize error message for use as category name.
+
+        Args:
+            message (str): Error message
+
+        Returns:
+            str: Sanitized message for use as category name
+        """
+        if not message:
+            return "Unknown Error"
+
+        # Get first line or up to 50 chars
+        first_line = message.split("\n")[0].strip()
+        if len(first_line) > 50:
+            first_line = first_line[:47] + "..."
+
+        return first_line or "Unknown Error"
+
     def parse_json_to_allure(self, json_data):
         """
         Parses the JSON report data and converts it into Allure-compatible results.
 
         Args:
             json_data (dict): Dictionary containing the test results data.
-
-        Returns:
-            None
         """
         output_dir = FormatterManager.get_formatter_output_dir()
-        if not output_dir:
-            output_dir = os.path.join(get_env('OUTPUT'), 'allure-results')
+        if not output_dir or output_dir == 'output/':
+            output_dir = os.path.join(get_env('OUTPUT', 'output'), 'allure-results')
 
         os.makedirs(output_dir, exist_ok=True)
 
+        # Collect unique error messages for categories
+        error_messages = set()
+
+        # Process each feature
         for feature in json_data['features']:
+            # Create a container for all scenarios in this feature
+            feature_uuid = str(uuid.uuid4())
+
+            # Create the container.json file for the feature suite
+            container_data = {
+                "uuid": feature_uuid,
+                "children": [],  # Will store scenario UUIDs
+                "befores": [],
+                "afters": []
+            }
+
             for scenario in feature['scenarios']:
-                test_case = TestResult(uuid=scenario["id_hash"])
+                scenario_uuid = scenario["id_hash"]
+                container_data["children"].append(scenario_uuid)
+
+                test_case = TestResult(uuid=scenario_uuid)
                 test_case.name = scenario['name']
-                test_case.fullName = scenario['name']
+                test_case.fullName = f"{feature['name']}: {scenario['name']}"
+                test_case.historyId = get_string_hash(f"{feature['name']}:{scenario['name']}")
 
-                # Use the stored identifier hash
-                scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+                # Initialize the labels list
+                test_case.labels = []
 
-                # Add scenario logs as attachment
-                log_path = os.path.join(get_env('logs'), str(scenario_hash), 'scenario.log')
+                # Add basic labels for test organization
+                test_case.labels.append({"name": "feature", "value": feature['name']})
+                test_case.labels.append({"name": "suite", "value": feature['name']})
+                test_case.labels.append({"name": "testClass", "value": feature['name']})
+                test_case.labels.append({"name": "testMethod", "value": scenario['name']})
+                test_case.labels.append({"name": "framework", "value": "BehaveX"})
+                test_case.labels.append({"name": "language", "value": "Python"})
+
+                # Process steps and look for failures
+                test_error_msg = None  # Store test's error message
+
+                for step in scenario['steps']:
+                    allure_step = TestStepResult(
+                        name=f"{step['step_type'].capitalize()} {step['name']}"
+                    )
+                    allure_step.status = step["status"]
+                    allure_step.start = step.get("start", now())
+                    allure_step.stop = step.get("stop", now())
+
+                    if step["status"] in ("failed", "broken"):
+                        error_msg = step.get('error_msg', '')
+                        if error_msg and not test_error_msg:  # Save first error
+                            test_error_msg = error_msg
+                            # Add to our collection of unique errors
+                            error_messages.add(error_msg)
+
+                        allure_step.statusDetails = {
+                            "message": error_msg,
+                            "trace": step.get('error_lines', [''])[0]
+                        }
+
+                    test_case.steps.append(allure_step)
+
+                # If test failed, add its error as a direct category
+                if test_error_msg:
+                    category_name = self._sanitize_error_message(test_error_msg)
+
+                    # Explicitly mark this test case as a Product Defect
+                    test_case.labels.append({"name": "category", "value": "Product Defects"})
+
+                    # Add error details to the test case
+                    test_case.statusDetails = {
+                        "message": test_error_msg,
+                        "flaky": False
+                    }
+
+                    # Add a parameter to help with subcategorization
+                    test_case.parameters.append(Parameter(
+                        name="Error Category",
+                        value=category_name
+                    ))
+
+                # Process tags
+                for tag in scenario['tags']:
+                    if tag.startswith("epic="):
+                        test_case.labels.append({"name": "epic", "value": tag.split("=")[-1]})
+                    elif tag.startswith("RC-"):
+                        test_case.labels.append({"name": "epic", "value": tag})
+                    elif tag.startswith("story="):
+                        test_case.labels.append({"name": "story", "value": tag.split("=")[-1]})
+                    elif tag.startswith("VPD"):
+                        test_case.labels.append({"name": "story", "value": tag})
+                    elif tag.startswith("severity="):
+                        test_case.labels.append({"name": "severity", "value": tag.split("=")[-1]})
+                    elif tag.startswith("author:"):
+                        test_case.labels.append({"name": "author", "value": tag.split(":")[-1]})
+                    elif tag.startswith("allure.tms:"):
+                        test_case.links.append({
+                            "type": "tms",
+                            "url": tag.split("tms:")[-1],
+                            "name": tag.split("tms:")[-1]
+                        })
+                    elif tag.startswith("allure.issue:"):
+                        test_case.links.append({
+                            "type": "issue",
+                            "url": tag.split("issue:")[-1],
+                            "name": tag.split("issue:")[-1]
+                        })
+                    else:
+                        test_case.labels.append({"name": "tag", "value": tag})
+
+                # Add scenario timing
+                test_case.start = scenario.get("start", now())
+                test_case.stop = scenario.get("stop", now())
+                test_case.status = scenario['status']
+
+                # Process scenario logs as attachment
+                log_path = os.path.join(get_env('logs', 'allure-results'), str(scenario["id_hash"]), 'scenario.log')
                 if os.path.exists(log_path):
                     with open(log_path, 'r') as f:
                         log_content = f.read()
                         attachment_source = str(uuid.uuid4())
                         test_case.attachments.append(
-                            Attachment(name="scenario.log",
-                                     source=attachment_source,
+                            Attachment(source=attachment_source,
+                                     name="scenario.log",
                                      type="text/plain")
                         )
                         # Write attachment content to a file in allure results
@@ -109,135 +233,146 @@ class AllureBehaveXFormatter:
                         with open(attachment_file, 'w') as f:
                             f.write(log_content)
 
-                # Create steps first
-                steps_with_lines = []
-                for step in scenario['steps']:
-                    allure_step = TestStepResult(name=step["step_type"].capitalize() + " " + step["name"])
-                    allure_step.status = step["status"]
-                    allure_step.start = step["start"] if "start" in step else now()
-                    allure_step.stop = step["stop"] if "stop" in step else now()
-
-                    if step["status"] in ("failed", "broken"):
-                        allure_step.statusDetails = {"message": step['error_msg'],
-                                                     "trace": step['error_lines'][0]}
-
-                    # Store step line number for image matching
-                    line_number = step.get('line', 0)
-                    steps_with_lines.append((allure_step, line_number))
-                    test_case.steps.append(allure_step)
-
-                # First, collect and sort all images for this scenario
+                # Process screenshots
                 scenario_images = []
                 for filename in os.listdir(output_dir):
-                    if filename.startswith(str(scenario_hash)) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                    if filename.startswith(str(scenario["id_hash"])) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
                         scenario_images.append(filename)
 
                 # Sort images by name to ensure consistent numbering
                 scenario_images.sort()
 
-                # Add screenshots as attachments - using existing images with scenario hash prefix
+                # Add screenshots as attachments
                 screenshot_counter = {}  # Keep track of screenshots per step
                 for filename in scenario_images:
                     step_line = self._get_step_line_from_image(filename)
                     if step_line is not None:
                         # Find matching step by line number
-                        for allure_step, line_number in steps_with_lines:
-                            if line_number == step_line:
+                        for step in test_case.steps:
+                            if step_line == step.line:
                                 # Initialize counter for this step if not exists
-                                if line_number not in screenshot_counter:
-                                    screenshot_counter[line_number] = 1
+                                if step_line not in screenshot_counter:
+                                    screenshot_counter[step_line] = 1
                                 else:
-                                    screenshot_counter[line_number] += 1
+                                    screenshot_counter[step_line] += 1
 
                                 # Create friendly name
-                                friendly_name = f"step_image_{screenshot_counter[line_number]}"
+                                friendly_name = f"step_image_{screenshot_counter[step_line]}"
 
                                 # Add image as attachment to the step
-                                allure_step.attachments.append(
-                                    Attachment(name=friendly_name,
-                                             source=filename,  # Keep original filename as source
+                                step.attachments.append(
+                                    Attachment(source=filename,
+                                             name=friendly_name,
                                              type=self._get_mime_type(filename))
                                 )
                                 break
 
-                if scenario["status"] in ("failed", "broken"):
-                    test_case.statusDetails = {"message": scenario['error_msg'][0],
-                                               "trace": scenario['error_lines'][0]}
-                for tag in scenario['tags']:
-                    if "epic" in tag:
-                        test_case.labels.append({"name": "epic", "value": tag.split("=")[-1]}),
-                    elif "author" in tag:
-                        test_case.labels.append({"name": "author", "value": tag.split(":")[-1]}),
-                    elif "allure.tms" in tag:
-                        test_case.links.append(
-                            {"type": "tms", "url": tag.split("tms:")[-1], "name": tag.split("tms:")[-1]}),
-                    elif "allure.issue" in tag:
-                        test_case.links.append(
-                            {"type": "issue", "url": tag.split("issue:")[-1], "name": tag.split("issue:")[-1]}),
-                    elif tag in ("normal", "trivial", "minor", "critical", "blocker"):
-                        test_case.labels.append({"name": "severity", "value": tag}),
-                    else:
-                        test_case.labels.append({"name": "tag", "value": tag})
-
-                if scenario.get('parameters'):
-                    for param in scenario['parameters']:
-                        test_case.parameters.append(Parameter(name=param['name'], value=param['value']))
-
-                test_case.start = scenario["start"] if "start" in scenario else now()
-                test_case.stop = scenario["stop"] if "stop" in scenario else now()
-                test_case.status = scenario['status']
-
-                # Create test case dictionary with step attachments
-                steps_json = []
-                for step in test_case.steps:
-                    step_dict = {
+                # Save test result
+                test_case_path = os.path.join(output_dir, f"{scenario_uuid}-result.json")
+                test_case_dict = {
+                    "uuid": test_case.uuid,
+                    "historyId": test_case.historyId,
+                    "name": test_case.name,
+                    "fullName": test_case.fullName,
+                    "status": test_case.status,
+                    "statusDetails": test_case.statusDetails if hasattr(test_case, 'statusDetails') else {},
+                    "labels": test_case.labels,
+                    "links": test_case.links if hasattr(test_case, 'links') else [],
+                    "steps": [{
                         "name": step.name,
                         "status": step.status,
                         "start": step.start,
                         "stop": step.stop,
-                        "statusDetails": step.statusDetails if hasattr(step, 'statusDetails') else {},
-                        "attachments": []
-                    }
-
-                    # Add step attachments
-                    if hasattr(step, 'attachments'):
-                        for attachment in step.attachments:
-                            step_dict["attachments"].append({
-                                "name": attachment.name,
-                                "source": attachment.source,
-                                "type": attachment.type
-                            })
-
-                    steps_json.append(step_dict)
-
-                test_case_dict = {
-                    "name": test_case.name,
-                    "status": test_case.status,
-                    "steps": steps_json,
-                    "start": test_case.start,
-                    "stop": test_case.stop,
-                    "uuid": test_case.uuid,
-                    "historyId": test_case.historyId,
-                    "fullName": test_case.fullName,
-                    "labels": [item for item in test_case.labels],
+                        "statusDetails": getattr(step, 'statusDetails', {}),
+                        "attachments": [{
+                            "name": attachment.name,
+                            "source": attachment.source,
+                            "type": attachment.type
+                        } for attachment in (getattr(step, 'attachments', []) or [])]
+                    } for step in test_case.steps],
                     "attachments": [{
                         "name": attachment.name,
                         "source": attachment.source,
                         "type": attachment.type
-                    } for attachment in test_case.attachments]
+                    } for attachment in test_case.attachments],
+                    "parameters": [{"name": p.name, "value": p.value} for p in test_case.parameters] if hasattr(test_case, 'parameters') else [],
+                    "start": test_case.start,
+                    "stop": test_case.stop
                 }
-                test_case_dict["labels"].append({"name": "feature", "value": feature['name']})
-                test_case_dict["labels"].append({"name": "framework", "value": "BehaveX"})
-                test_case_dict["labels"].append({"name": "language", "value": "Python"})
 
-                path = os.path.join(output_dir, f"{uuid.uuid4()}-result.json")
-                json_object = json.dumps(test_case_dict, default=str)
-                with open(path, "w") as outfile:
-                    outfile.write(json_object)
+                with open(test_case_path, "w") as f:
+                    json.dump(test_case_dict, f, default=str)
 
+            # Save the container file for the feature
+            container_path = os.path.join(output_dir, f"{feature_uuid}-container.json")
+            with open(container_path, "w") as f:
+                json.dump(container_data, f, default=str)
+
+        # Create categories.json using a different approach that forces nesting
+        categories = [
+            # The Product Defects top-level category that captures all failed tests
+            {
+                "name": "Product Defects",
+                "matchedStatuses": ["failed"]
+            },
+            # Add a separate category for broken tests
+            {
+                "name": "Broken Tests",
+                "matchedStatuses": ["broken"]
+            }
+        ]
+
+        # Create a simpler "categories.json" format that guarantees proper nesting
+        # This is the minimal format that works reliably with Allure
+        with open(os.path.join(output_dir, "categories.json"), "w") as f:
+            json.dump(categories, f, indent=2)
+
+        # Only create this file if we have error messages to categorize
+        if error_messages:
+            # Create an environment-categories.json file that defines the subcategories
+            # This separates the category definitions to avoid conflicts
+            env_categories = []
+
+            # Add subcategories for each unique error
+            for error_msg in error_messages:
+                clean_message = self._sanitize_error_message(error_msg)
+
+                # Skip duplicates
+                if any(cat.get("name") == clean_message for cat in env_categories):
+                    continue
+
+                env_categories.append({
+                    "name": clean_message,
+                    "matchedStatuses": ["failed"],
+                    "messageRegex": ".*" + re.escape(clean_message) + ".*",
+                    "parentName": "Product Defects"
+                })
+
+            # Write the environment-based categories file
+            with open(os.path.join(output_dir, "environment-categories.json"), "w") as f:
+                json.dump(env_categories, f, indent=2)
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Parse BehaveX report.json into Allure format')
+    parser.add_argument('--report-path',
+                       type=str,
+                       default=os.path.join(Path(__file__).resolve().parent, "output", "report.json"),
+                       help='Path to the report.json file (default: ./output/report.json)')
+
+    args = parser.parse_args()
+
+    formatter = AllureBehaveXFormatter()
+
+    try:
+        with open(args.report_path) as f:
+            formatter.parse_json_to_allure(json.load(f))
+    except FileNotFoundError:
+        print(f"Error: Could not find report file at {args.report_path}")
+        sys.exit(1)
+    except json.JSONDecodeError:
+        print(f"Error: Invalid JSON format in report file at {args.report_path}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    # Update the path information to point to the report.json file generated in test execution
-    path = os.path.join(Path(__file__).resolve().parent, "output", "report.json")
-    formatter = AllureBehaveXFormatter()
-    formatter.parse_json_to_allure(json.load(open(path)))
+    main()

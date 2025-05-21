@@ -121,7 +121,7 @@ class ConfigRun(metaclass=ExecutionSingleton):
     def get_param(self, key_chain, arg=None):
         if not arg:
             arg = key_chain.split('.')[-1]
-        if getattr(self.args, arg):
+        if self.args and getattr(self.args, arg):
             return getattr(self.args, arg)
         else:
             return self.get_param_config(key_chain)

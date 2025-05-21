@@ -71,7 +71,7 @@ class FormatterManager:
         Returns:
             Absolute path to the formatter output directory
         """
-        base_output = get_env('OUTPUT')
+        base_output = get_env('OUTPUT', 'output')
         formatter_outdir = get_param('formatter_outdir', '')
         return os.path.join(base_output, formatter_outdir)
 
