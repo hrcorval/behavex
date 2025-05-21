@@ -24,6 +24,8 @@ Generate Allure Report: Use the Allure command-line tool to generate the Allure 
 """
 
 import argparse
+import csv
+import io
 import json
 import os
 import re
@@ -90,6 +92,71 @@ class AllureBehaveXFormatter:
 
         return first_line or "Unknown Error"
 
+    def _get_package_from_path(self, feature_file_path):
+        """Extract package name from feature file path.
+
+        Args:
+            feature_file_path (str): Path to the feature file
+
+        Returns:
+            str: Package name derived from path
+        """
+        if not feature_file_path:
+            return "default"
+
+        # Normalize path and split into components
+        parts = os.path.normpath(feature_file_path).split(os.sep)
+
+        # Find key directory markers like 'features', 'automated', etc.
+        key_dirs = ['features', 'automated', 'manual']
+        for key_dir in key_dirs:
+            if key_dir in parts:
+                idx = parts.index(key_dir)
+                if idx + 1 < len(parts):
+                    # Get subdirectories after the key directory but before the filename
+                    package_parts = parts[idx+1:-1]
+                    if package_parts:
+                        return '.'.join(package_parts)
+
+        # Fallback: use parent directory name
+        if len(parts) > 1:
+            return parts[-2]
+
+        return "default"
+
+    def _format_table_as_csv(self, table):
+        """Format a table as CSV from BehaveX's table format.
+
+        Args:
+            table (dict): Dictionary where keys are column headers and values are lists of values
+
+        Returns:
+            str: CSV representation of the table
+        """
+        if not table:
+            return ""
+
+        headers = list(table.keys())
+        if not headers:
+            return ""
+
+        # Get number of rows
+        row_count = len(table[headers[0]])
+
+        # Create CSV using StringIO and csv module
+        with io.StringIO() as buffer:
+            writer = csv.writer(buffer)
+            writer.writerow(headers)
+
+            # Write each row
+            for row_idx in range(row_count):
+                row_values = []
+                for header in headers:
+                    row_values.append(table[header][row_idx])
+                writer.writerow(row_values)
+
+            return buffer.getvalue()
+
     def parse_json_to_allure(self, json_data):
         """
         Parses the JSON report data and converts it into Allure-compatible results.
@@ -119,6 +186,10 @@ class AllureBehaveXFormatter:
                 "afters": []
             }
 
+            # Extract package from feature file path
+            feature_file_path = feature.get('filename', '')
+            package_name = self._get_package_from_path(feature_file_path)
+
             for scenario in feature['scenarios']:
                 scenario_uuid = scenario["id_hash"]
                 container_data["children"].append(scenario_uuid)
@@ -139,6 +210,10 @@ class AllureBehaveXFormatter:
                 test_case.labels.append({"name": "framework", "value": "BehaveX"})
                 test_case.labels.append({"name": "language", "value": "Python"})
 
+                # Add package label if available
+                if package_name:
+                    test_case.labels.append({"name": "package", "value": package_name})
+
                 # Process steps and look for failures
                 test_error_msg = None  # Store test's error message
 
@@ -149,6 +224,22 @@ class AllureBehaveXFormatter:
                     allure_step.status = step["status"]
                     allure_step.start = step.get("start", now())
                     allure_step.stop = step.get("stop", now())
+
+                    # Add table data as parameters if present
+                    if 'table' in step and step['table']:
+                        # Create CSV formatted table data
+                        table_csv = self._format_table_as_csv(step['table'])
+                        attachment_source = str(uuid.uuid4())
+                        attachment_file = os.path.join(output_dir, attachment_source)
+                        with open(attachment_file, 'w') as f:
+                            f.write(table_csv)
+
+                        # Add the table as an attachment to the step, following allure-behave's approach
+                        allure_step.attachments.append(
+                            Attachment(source=attachment_source,
+                                     name=".table",
+                                     type="text/csv")
+                        )
 
                     if step["status"] in ("failed", "broken"):
                         error_msg = step.get('error_msg', '')
@@ -184,6 +275,7 @@ class AllureBehaveXFormatter:
                     ))
 
                 # Process tags
+                package_from_tag = None
                 for tag in scenario['tags']:
                     if tag.startswith("epic="):
                         test_case.labels.append({"name": "epic", "value": tag.split("=")[-1]})
@@ -209,6 +301,13 @@ class AllureBehaveXFormatter:
                             "url": tag.split("issue:")[-1],
                             "name": tag.split("issue:")[-1]
                         })
+                    elif tag.startswith("package="):
+                        # Override package from file path with the one from tag
+                        package_from_tag = tag.split("=")[-1]
+                        # Remove the previous package label
+                        test_case.labels = [label for label in test_case.labels if label.get("name") != "package"]
+                        # Add the package from tag
+                        test_case.labels.append({"name": "package", "value": package_from_tag})
                     else:
                         test_case.labels.append({"name": "tag", "value": tag})
 
@@ -374,5 +473,12 @@ def main():
         print(f"Error: Invalid JSON format in report file at {args.report_path}")
         sys.exit(1)
 
+
+
 if __name__ == "__main__":
+    # you can run this script from the command line like this:
+    # pipenv run python3 /behavex/outputs/formatters/allure_behavex_formatter.py --report-path ./output/report.json
+    #
+    # Also, you can generate the report from the command line like this:
+    # allure generate output/allure-results --output ./output/allure-report --clean --single-file
     main()
