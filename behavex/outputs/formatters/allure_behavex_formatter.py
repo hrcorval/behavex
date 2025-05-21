@@ -191,13 +191,13 @@ class AllureBehaveXFormatter:
             package_name = self._get_package_from_path(feature_file_path)
 
             for scenario in feature['scenarios']:
-                scenario_uuid = scenario["id_hash"]
-                container_data["children"].append(scenario_uuid)
+                scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+                container_data["children"].append(scenario_hash)
 
-                test_case = TestResult(uuid=scenario_uuid)
+                test_case = TestResult(uuid=scenario_hash)
                 test_case.name = scenario['name']
                 test_case.fullName = f"{feature['name']}: {scenario['name']}"
-                test_case.historyId = get_string_hash(f"{feature['name']}:{scenario['name']}")
+                test_case.historyId = get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}")
 
                 # Initialize the labels list
                 test_case.labels = []
@@ -224,7 +224,7 @@ class AllureBehaveXFormatter:
                     allure_step.status = step["status"]
                     allure_step.start = step.get("start", now())
                     allure_step.stop = step.get("stop", now())
-
+                    allure_step.line = step.get("line", 0)
                     # Add table data as parameters if present
                     if 'table' in step and step['table']:
                         # Create CSV formatted table data
@@ -317,25 +317,21 @@ class AllureBehaveXFormatter:
                 test_case.status = scenario['status']
 
                 # Process scenario logs as attachment
-                log_path = os.path.join(get_env('logs', 'allure-results'), str(scenario["id_hash"]), 'scenario.log')
+                scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+                log_path = os.path.join(get_env('logs', 'output/allure-results'), str(scenario_hash), 'scenario.log')
                 if os.path.exists(log_path):
-                    with open(log_path, 'r') as f:
-                        log_content = f.read()
-                        attachment_source = str(uuid.uuid4())
-                        test_case.attachments.append(
-                            Attachment(source=attachment_source,
-                                     name="scenario.log",
-                                     type="text/plain")
-                        )
-                        # Write attachment content to a file in allure results
-                        attachment_file = os.path.join(output_dir, attachment_source)
-                        with open(attachment_file, 'w') as f:
-                            f.write(log_content)
+                    # Use relative path for the source if possible to avoid duplication
+                    rel_path = os.path.relpath(log_path, output_dir) if output_dir in log_path else log_path
+                    test_case.attachments.append(
+                        Attachment(source=rel_path,
+                                 name="scenario.log",
+                                 type="text/plain")
+                    )
 
                 # Process screenshots
                 scenario_images = []
                 for filename in os.listdir(output_dir):
-                    if filename.startswith(str(scenario["id_hash"])) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                    if filename.startswith(str(scenario_hash)) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
                         scenario_images.append(filename)
 
                 # Sort images by name to ensure consistent numbering
@@ -367,7 +363,7 @@ class AllureBehaveXFormatter:
                                 break
 
                 # Save test result
-                test_case_path = os.path.join(output_dir, f"{scenario_uuid}-result.json")
+                test_case_path = os.path.join(output_dir, f"{scenario_hash}-result.json")
                 test_case_dict = {
                     "uuid": test_case.uuid,
                     "historyId": test_case.historyId,
@@ -403,17 +399,15 @@ class AllureBehaveXFormatter:
                 if feature_file_path:
                     # Create hierarchical representation from feature file path
                     hierarchical_package = feature_file_path.replace("/", ".").rstrip(".feature")
-                    basename = os.path.splitext(os.path.basename(feature_file_path))[0]
 
                     # Remove existing package and suite labels to avoid duplication
                     test_case_dict["labels"] = [label for label in test_case_dict["labels"]
                                                if label.get("name") != "package" and label.get("name") != "suite"]
 
-                    # Add new hierarchical labels
+                    # Add new hierarchical labels, skipping the feature filename level
                     test_case_dict["labels"].append({"name": "package", "value": hierarchical_package})
                     test_case_dict["labels"].append({"name": "parentSuite", "value": os.path.dirname(feature_file_path)})
-                    test_case_dict["labels"].append({"name": "suite", "value": basename})
-                    test_case_dict["labels"].append({"name": "subSuite", "value": f"Feature: {feature['name']}"})
+                    test_case_dict["labels"].append({"name": "suite", "value": feature['name']})
 
                 with open(test_case_path, "w") as f:
                     json.dump(test_case_dict, f, default=str)
