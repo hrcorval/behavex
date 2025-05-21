@@ -6,7 +6,7 @@ Version: 4.2.0
 
 ENHANCEMENTS:
 
-* Adding support for allure reports
+* Adding support for allure reports, by providing a new formatter that will be an alternative to the default reporter.
 
 Version: 4.1.2
 -------------------------------------------------------------------------------
