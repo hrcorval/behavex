@@ -332,10 +332,10 @@ After running the tests, you can generate and view the Allure report using the f
 # Serve the report (opens in a browser)
 allure serve output/allure-results
 
-# Generate a single HTML file report
+# Or... generate a single HTML file report
 allure generate output/allure-results --output output/allure-report --clean --single-file
 
-# Or generate a static report
+# Or... generate a static report
 allure generate output/allure-results --output output/allure-report --clean
 ```
 
