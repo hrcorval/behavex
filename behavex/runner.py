@@ -348,7 +348,7 @@ def launch_behavex():
                                                                        untested_scenarios_msg))
         # TODO: print steps execution summary ('{} steps passed, {} failed, {} skipped{}, {} untested')
         print('Took: {}'.format(pretty_print_time(global_vars.execution_end_time - global_vars.execution_start_time)))
-    if results and results['features']:
+    if results and results['features'] and not get_param('formatter'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
     print('Exit code: {}'.format(exit_code))
     return exit_code
