@@ -39,7 +39,7 @@ from allure_commons.model2 import (Attachment, Parameter, TestResult,
 from allure_commons.types import AttachmentType
 from allure_commons.utils import now
 
-from behavex.conf_mgr import get_env
+from behavex.conf_mgr import get_env, get_param
 from behavex.outputs.formatter_manager import FormatterManager
 from behavex.outputs.report_utils import get_string_hash
 
@@ -304,9 +304,20 @@ class AllureBehaveXFormatter:
         Args:
             json_data (dict): Dictionary containing the test results data.
         """
-        output_dir = FormatterManager.get_formatter_output_dir()
-        if not output_dir or output_dir == 'output/':
-            output_dir = os.path.join(get_env('OUTPUT', 'output'), 'allure-results')
+        # Get the formatter output directory from FormatterManager
+        formatter_output_dir = FormatterManager.get_formatter_output_dir()
+        base_output = get_env('OUTPUT', 'output')
+
+        # Check if a custom formatter output directory was explicitly set via --formatter-outdir
+        custom_outdir = get_param('formatter_outdir', '')
+
+        # Check if the user explicitly set a non-default formatter output directory
+        if custom_outdir and custom_outdir != 'report_artifacts':
+            # Use the custom directory if explicitly specified (not the default)
+            output_dir = formatter_output_dir
+        else:
+            # Default to allure-results subdirectory in the main output folder
+            output_dir = os.path.join(base_output, 'allure-results')
 
         os.makedirs(output_dir, exist_ok=True)
 
