@@ -8,6 +8,14 @@
 
 # BehaveX Documentation
 
+## 📢 Important News
+
+**🎉 NEW: Allure Reports Integration!** *(Available since BehaveX 4.2.0)*
+
+BehaveX now provides seamless integration with Allure, the popular test reporting framework! Generate beautiful, comprehensive test reports with detailed evidence. 
+
+[Learn more about Allure integration](#allure-reports-integration) 👈
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Features](#features)
