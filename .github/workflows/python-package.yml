@@ -2,6 +2,9 @@ name: Test behavex in latest python versions
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   test-behavex:
     runs-on: ${{ matrix.os }}
