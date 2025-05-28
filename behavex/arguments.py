@@ -69,6 +69,8 @@ BEHAVEX_ARGS = [
     'parallel_scheme',
     'parallel_processes',
     'show_progress_bar',
+    'formatter',
+    'formatter_outdir',
 ]
 
 
@@ -314,6 +316,23 @@ def parse_arguments(args):
         help="Shows the execution progress bar in console.",
         default=False,
         action='store_true',
+        required=False,
+    )
+
+    parser.add_argument(
+        '-f',
+        '--formatter',
+        help="Specify a custom formatter to use for report generation. Format: module_path:FormatterClass",
+        metavar='MODULE:CLASS',
+        required=False,
+    )
+
+    parser.add_argument(
+        '-fo',
+        '--formatter-outdir',
+        help="Specify the output directory for the custom formatter relative to the output folder",
+        metavar='DIR',
+        default='report_artifacts',
         required=False,
     )
 

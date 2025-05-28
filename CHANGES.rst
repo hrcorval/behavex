@@ -1,6 +1,17 @@
 Version History
 ===============================================================================
 
+Version: 4.2.0
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Adding support for allure reports, by providing a new formatter that will be an alternative to the default reporter.
+
+CONTRIBUTIONS:
+
+* Special thanks to `afritachi <https://github.com/afritachi>`__ for sponsoring BehaveX! Your support helps us keep improving and growing the project — we truly appreciate it!
+
 Version: 4.1.2
 -------------------------------------------------------------------------------
 

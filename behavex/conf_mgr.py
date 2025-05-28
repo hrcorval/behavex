@@ -87,7 +87,14 @@ class ConfigRun(metaclass=ExecutionSingleton):
         output = self.get_param('output.path', 'output_folder')
         self.environ['output'] = output
         self.environ['temp'] = os.path.join(output, 'temp')
-        self.environ['logs'] = os.path.join(output, 'outputs', 'logs')
+
+        # If a formatter is specified in command line arguments, use its output as logs path
+        formatter = self.get_param('formatter', 'formatter')
+        if formatter:
+            formatter_output = self.get_param('formatter.outdir', 'formatter_outdir')
+            self.environ['logs'] = os.path.join(output, formatter_output)
+        else:
+            self.environ['logs'] = os.path.join(output, 'outputs', 'logs')
 
     def set_args(self, args):
         self.args = args
@@ -114,7 +121,7 @@ class ConfigRun(metaclass=ExecutionSingleton):
     def get_param(self, key_chain, arg=None):
         if not arg:
             arg = key_chain.split('.')[-1]
-        if getattr(self.args, arg):
+        if self.args and getattr(self.args, arg):
             return getattr(self.args, arg)
         else:
             return self.get_param_config(key_chain)

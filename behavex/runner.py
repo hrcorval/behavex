@@ -348,7 +348,7 @@ def launch_behavex():
                                                                        untested_scenarios_msg))
         # TODO: print steps execution summary ('{} steps passed, {} failed, {} skipped{}, {} untested')
         print('Took: {}'.format(pretty_print_time(global_vars.execution_end_time - global_vars.execution_start_time)))
-    if results and results['features']:
+    if results and results['features'] and not get_param('formatter'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
     print('Exit code: {}'.format(exit_code))
     return exit_code
@@ -1007,11 +1007,15 @@ def _set_env_variables(args):
         set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
         set_env_variable('NAME', args.name)
+    if get_param('formatter'):
+        formatter_outdir = get_param('formatter_outdir')
+        set_env_variable('LOGS', os.path.join(get_env('output'), formatter_outdir))
+    else:
+        set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     for arg in BEHAVEX_ARGS[4:]:
         set_env_variable(arg.upper(), get_param(arg))
 
     set_env_variable('TEMP', os.path.join(get_env('output'), 'temp'))
-    set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))

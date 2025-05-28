@@ -26,8 +26,8 @@ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
 ```bash
 # Build and deploy to PyPI
-rm -rf build/ dist/ *.egg-info/ && python -m build && twine upload dist/*
+rm -rf build/ dist/ *.egg-info/ && python3 -m build && twine upload dist/*
 
 # Build and deploy to TestPyPI
-rm -rf build/ dist/ *.egg-info/ && python -m build && twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+rm -rf build/ dist/ && python3 -m build && twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 ```

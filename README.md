@@ -23,6 +23,7 @@
 - [Muting Test Scenarios](#muting-test-scenarios)
 - [Handling Failing Scenarios](#handling-failing-scenarios)
 - [Displaying Progress Bar in Console](#displaying-progress-bar-in-console)
+- [Allure Reports Integration](#allure-reports-integration)
 - [Show Your Support](#show-your-support)
 
 ## Introduction
@@ -300,6 +301,45 @@ If you are printing logs in the console, you can configure the progress bar to d
 > [progress_bar]
 >
 > print_updates_in_new_lines="true"
+
+## Allure Reports Integration
+
+BehaveX provides integration with Allure, a flexible, lightweight multi-language test reporting tool. The Allure formatter creates detailed and visually appealing reports that include comprehensive test information, evidence, and categorization of test results.
+
+### Prerequisites
+
+1. Install Allure on your system. Please refer to the [official Allure installation documentation](https://docs.qameta.io/allure/#_installing_a_commandline) for detailed instructions for your operating system.
+
+### Using the Allure Formatter
+
+To generate Allure reports, use the `--formatter` argument to specify the Allure formatter:
+
+```bash
+behavex -t=@TAG --formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter
+```
+
+By default, the Allure results will be generated in the `output/allure-results` directory. You can specify a different output directory using the `--formatter-outdir` argument:
+
+```bash
+behavex -t=@TAG --formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --formatter-outdir=my-allure-results
+```
+
+### Viewing Allure Reports
+
+After running the tests, you can generate and view the Allure report using the following commands:
+
+```bash
+# Serve the report (opens in a browser)
+allure serve output/allure-results
+
+# Or... generate a single HTML file report
+allure generate output/allure-results --output output/allure-report --clean --single-file
+
+# Or... generate a static report
+allure generate output/allure-results --output output/allure-report --clean
+```
+
+For more information about Allure reports, including features, customization options, and special tags you can use in your scenarios, please refer to the [official Allure documentation](https://docs.qameta.io/allure/).
 
 ## Show Your Support
 

@@ -482,7 +482,13 @@ def set_system_paths():
 
 
 def generate_reports(json_output):
-    report_html.generate_report(json_output)
+    # Only generate HTML report if no custom formatter is specified
+    if not get_param('formatter'):
+        report_html.generate_report(json_output)
+    else:
+        # Import here to avoid circular imports
+        from behavex.outputs.formatter_manager import FormatterManager
+        FormatterManager.format_results(json_output)
 
 
 def create_custom_log_when_called(self, key):
