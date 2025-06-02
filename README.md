@@ -26,8 +26,11 @@ BehaveX now provides seamless integration with Allure, the popular test reportin
 - [Specific Arguments from BehaveX](#specific-arguments-from-behavex)
 - [Parallel Test Executions](#parallel-test-executions)
 - [Test Execution Reports](#test-execution-reports)
-- [Attaching Images and Evidence](#attaching-images-and-evidence)
-- [Test Logs and Metrics](#test-logs-and-metrics)
+- [Attaching Images to the HTML Report](#attaching-images-to-the-html-report)
+- [Attaching Additional Execution Evidence to the HTML Report](#attaching-additional-execution-evidence-to-the-html-report)
+- [Test Logs per Scenario](#test-logs-per-scenario)
+- [Metrics and Insights](#metrics-and-insights)
+- [Dry Runs](#dry-runs)
 - [Muting Test Scenarios](#muting-test-scenarios)
 - [Handling Failing Scenarios](#handling-failing-scenarios)
 - [Displaying Progress Bar in Console](#displaying-progress-bar-in-console)
@@ -314,6 +317,8 @@ If you are printing logs in the console, you can configure the progress bar to d
 
 BehaveX provides integration with Allure, a flexible, lightweight multi-language test reporting tool. The Allure formatter creates detailed and visually appealing reports that include comprehensive test information, evidence, and categorization of test results.
 
+**Note**: Since BehaveX is designed to run tests in parallel, the Allure formatter processes the consolidated `report.json` file after all parallel test executions are completed. This ensures that all test results from different parallel processes are properly aggregated before generating the final Allure report.
+
 ### Prerequisites
 
 1. Install Allure on your system. Please refer to the [official Allure installation documentation](https://docs.qameta.io/allure/#_installing_a_commandline) for detailed instructions for your operating system.
@@ -332,6 +337,16 @@ By default, the Allure results will be generated in the `output/allure-results` 
 behavex -t=@TAG --formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --formatter-outdir=my-allure-results
 ```
 
+### Attaching Screenshots and Evidence to Allure Reports
+
+When using Allure reports, you should continue to use the same methods for attaching screenshots and evidence as described in the sections above:
+
+- **For screenshots**: Use the methods described in [Attaching Images to the HTML Report](#attaching-images-to-the-html-report) section. The `attach_image_file()` and `attach_image_binary()` methods from the `behavex_images` library will automatically work with Allure reports.
+
+- **For additional evidence**: Use the approach described in [Attaching Additional Execution Evidence to the HTML Report](#attaching-additional-execution-evidence-to-the-html-report) section. Files stored in the `context.evidence_path` will be automatically included in the Allure reports.
+
+The evidence and screenshots attached using these methods will be seamlessly integrated into your Allure reports, providing comprehensive test execution documentation.
+
 ### Viewing Allure Reports
 
 After running the tests, you can generate and view the Allure report using the following commands:
@@ -346,8 +361,6 @@ allure generate output/allure-results --output output/allure-report --clean --si
 # Or... generate a static report
 allure generate output/allure-results --output output/allure-report --clean
 ```
-
-For more information about Allure reports, including features, customization options, and special tags you can use in your scenarios, please refer to the [official Allure documentation](https://docs.qameta.io/allure/).
 
 ## Show Your Support
 
