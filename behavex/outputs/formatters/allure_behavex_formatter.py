@@ -560,8 +560,10 @@ class AllureBehaveXFormatter:
                 if feature_file_path:
                     # Create hierarchical representation from feature file path
                     hierarchical_package = feature_file_path.replace("/", ".")
-                    if hierarchical_package.endswith('.feature'):
-                        hierarchical_package = hierarchical_package[:-8]
+                    if hasattr(str, 'removesuffix'):  # Python 3.9+
+                        hierarchical_package = hierarchical_package.removesuffix('.feature')
+                    elif hierarchical_package.endswith('.feature'):
+                        hierarchical_package = hierarchical_package[:-len('.feature')]
 
                     # Remove existing package and suite labels to avoid duplication
                     test_case_dict["labels"] = [label for label in test_case_dict["labels"]
