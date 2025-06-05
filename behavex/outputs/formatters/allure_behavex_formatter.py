@@ -559,13 +559,9 @@ class AllureBehaveXFormatter:
                 # Add hierarchical labels for better organization in Allure report
                 if feature_file_path:
                     # Create hierarchical representation from feature file path
-                    if hasattr(str, 'removesuffix'):  # Python 3.9+
-                        hierarchical_package = feature_file_path.replace("/", ".").removesuffix(".feature")
-                    else:  # Python < 3.9 compatibility
-                        if feature_file_path.endswith('.feature'):
-                            hierarchical_package = feature_file_path[:-8].replace("/", ".")
-                        else:
-                            hierarchical_package = feature_file_path.replace("/", ".")
+                    hierarchical_package = feature_file_path.replace("/", ".")
+                    if hierarchical_package.endswith('.feature'):
+                        hierarchical_package = hierarchical_package[:-8]
 
                     # Remove existing package and suite labels to avoid duplication
                     test_case_dict["labels"] = [label for label in test_case_dict["labels"]
