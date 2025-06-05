@@ -1,6 +1,21 @@
 Version History
 ===============================================================================
 
+Version: 4.2.1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Adding support in the Allure formatter for parameters in Scenario Outlines.
+* Adding a new `--no-formatter-attach-logs` command-line argument to allow disabling the attachment of scenario logs in the Allure report.
+
+FIXES:
+
+* Fixing an issue in the Allure formatter where the stack trace of a failed test was incorrectly categorized as a test parameter.
+* Fixing an issue with the Allure formatter's output directory logic to correctly handle custom paths.
+* Fixing an issue in the Allure formatter that caused incorrect package names to be generated in reports.
+
+
 Version: 4.2.0
 -------------------------------------------------------------------------------
 

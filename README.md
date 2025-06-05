@@ -12,7 +12,7 @@
 
 **🎉 NEW: Allure Reports Integration!** *(Available since BehaveX 4.2.0)*
 
-BehaveX now provides seamless integration with Allure, the popular test reporting framework! Generate beautiful, comprehensive test reports with detailed evidence. 
+BehaveX now provides seamless integration with Allure, the popular test reporting framework! Generate beautiful, comprehensive test reports with detailed evidence.
 
 [Learn more about Allure integration](#allure-reports-integration) 👈
 
@@ -360,6 +360,12 @@ allure generate output/allure-results --output output/allure-report --clean --si
 
 # Or... generate a static report
 allure generate output/allure-results --output output/allure-report --clean
+```
+
+### Disabling Log Attachments
+By default, `scenario.log` files are attached to each scenario in the Allure report. You can disable this by passing the `--no-formatter-attach-logs` argument:
+```bash
+behavex --formatter behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --no-formatter-attach-logs
 ```
 
 ## Show Your Support
