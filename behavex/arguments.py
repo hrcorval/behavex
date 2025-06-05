@@ -338,18 +338,11 @@ def parse_arguments(args):
     )
 
     parser.add_argument(
-        '--formatter-attach-logs',
-        help="Attach scenario logs to the report formatter.",
-        default=True,
-        action='store_true',
-        required=False,
-    )
-
-    parser.add_argument(
         '--no-formatter-attach-logs',
         dest='formatter_attach_logs',
         help="Do not attach scenario logs to the report formatter.",
         action='store_false',
+        default=True,
         required=False,
     )
 

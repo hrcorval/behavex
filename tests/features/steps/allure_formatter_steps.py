@@ -100,6 +100,19 @@ def step_impl(context):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with allure formatter and no log attachments')
+def step_impl(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter',
+        '--no-formatter-attach-logs'
+    ]
+    execute_command(context, execution_args)
+
+
 @given('I have a valid BehaveX report.json file')
 def step_impl(context):
     # Create a temporary valid report.json for testing
@@ -476,4 +489,28 @@ def step_impl(context):
 
 @then('the script should exit with non-zero code')
 def step_impl(context):
-    assert context.result.returncode != 0, f"Expected non-zero exit code but got {context.result.returncode}"
+    assert context.result.returncode != 0, f"Expected non-zero exit code, but got {context.result.returncode}"
+
+
+@then('I should see that allure result files do not contain scenario log attachments')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    # Check that no result file contains scenario.log attachments
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Check attachments at the test case level
+            attachments = result_data.get('attachments', [])
+            scenario_log_attachments = [att for att in attachments if att.get('name') == 'scenario.log']
+            assert len(scenario_log_attachments) == 0, f"Found scenario.log attachment in {result_file} when --no-formatter-attach-logs was used"
+
+            # Also check attachments in steps (just to be thorough)
+            steps = result_data.get('steps', [])
+            for step in steps:
+                step_attachments = step.get('attachments', [])
+                step_scenario_log_attachments = [att for att in step_attachments if att.get('name') == 'scenario.log']
+                assert len(step_scenario_log_attachments) == 0, f"Found scenario.log attachment in step of {result_file} when --no-formatter-attach-logs was used"
