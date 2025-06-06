@@ -69,10 +69,16 @@ class FormatterManager:
         Get the output directory for the custom formatter.
 
         Returns:
-            Absolute path to the formatter output directory
+            Absolute path to the formatter output directory, or None if no custom directory is specified
         """
         base_output = get_env('OUTPUT', 'output')
         formatter_outdir = get_param('formatter_outdir', '')
+
+        # Return None if no custom formatter output directory is specified
+        # This allows formatters to use their own default directories
+        if not formatter_outdir or formatter_outdir == 'report_artifacts':
+            return None
+
         return os.path.join(base_output, formatter_outdir)
 
     @staticmethod
@@ -92,7 +98,10 @@ class FormatterManager:
             return
 
         output_dir = FormatterManager.get_formatter_output_dir()
-        os.makedirs(output_dir, exist_ok=True)
+
+        # Create the output directory only if a custom one is specified
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
 
         try:
             formatter = formatter_class()
@@ -104,3 +113,5 @@ class FormatterManager:
             formatter.parse_json_to_allure(json_output)
         except Exception as e:
             print(f"Error running formatter {formatter_spec}: {str(e)}")
+            import traceback
+            traceback.print_exc()

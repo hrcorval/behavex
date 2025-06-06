@@ -71,6 +71,7 @@ BEHAVEX_ARGS = [
     'show_progress_bar',
     'formatter',
     'formatter_outdir',
+    'formatter_attach_logs',
 ]
 
 
@@ -333,6 +334,15 @@ def parse_arguments(args):
         help="Specify the output directory for the custom formatter relative to the output folder",
         metavar='DIR',
         default='report_artifacts',
+        required=False,
+    )
+
+    parser.add_argument(
+        '--no-formatter-attach-logs',
+        dest='formatter_attach_logs',
+        help="Do not attach scenario logs to the report formatter.",
+        action='store_false',
+        default=True,
         required=False,
     )
 

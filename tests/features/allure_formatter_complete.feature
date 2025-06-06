@@ -85,6 +85,18 @@ Feature: Allure Formatter Complete Test Suite
     And I should see that allure-results directory was created
     And I should see that allure result files were generated for passing scenarios
 
+  @ALLURE_FORMATTER @INTEGRATION
+  Scenario: Validate Allure formatter with no-formatter-attach-logs flag
+    Given I have installed behavex
+    When I run the behavex command with allure formatter and no log attachments
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line   |
+    | Exit code: 0  |
+    And I should not see error messages in the output
+    And I should see that allure-results directory was created
+    And I should see that allure result files were generated for passing scenarios
+    And I should see that allure result files do not contain scenario log attachments
+
   @ALLURE_FORMATTER @INTEGRATION @STANDALONE
   Scenario: Validate Allure formatter standalone script functionality
     Given I have installed behavex

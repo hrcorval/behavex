@@ -306,18 +306,10 @@ class AllureBehaveXFormatter:
         """
         # Get the formatter output directory from FormatterManager
         formatter_output_dir = FormatterManager.get_formatter_output_dir()
-        base_output = get_env('OUTPUT', 'output')
 
-        # Check if a custom formatter output directory was explicitly set via --formatter-outdir
-        custom_outdir = get_param('formatter_outdir', '')
-
-        # Check if the user explicitly set a non-default formatter output directory
-        if custom_outdir and custom_outdir != 'report_artifacts':
-            # Use the custom directory if explicitly specified (not the default)
-            output_dir = formatter_output_dir
-        else:
-            # Default to allure-results subdirectory in the main output folder
-            output_dir = os.path.join(base_output, 'allure-results')
+        # If a custom output directory is specified, use it.
+        # Otherwise, default to 'output/allure-results'.
+        output_dir = formatter_output_dir or os.path.join(get_env('OUTPUT', 'output'), 'allure-results')
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -364,6 +356,11 @@ class AllureBehaveXFormatter:
                 # Add package label if available
                 if package_name:
                     test_case.labels.append({"name": "package", "value": package_name})
+
+                # Process scenario outline parameters
+                if 'parameters' in scenario and scenario['parameters']:
+                    for name, value in scenario['parameters'].items():
+                        test_case.parameters.append(Parameter(name=name, value=value))
 
                 # Process steps and look for failures
                 test_error_msg = None  # Store test's error message
@@ -425,8 +422,6 @@ class AllureBehaveXFormatter:
 
                 # If test failed, add its error as a direct category
                 if test_error_msg:
-                    category_name = self._sanitize_error_message(test_error_msg)
-
                     # Explicitly mark this test case as a Product Defect
                     test_case.labels.append({"name": "category", "value": "Product Defects"})
 
@@ -435,12 +430,6 @@ class AllureBehaveXFormatter:
                         "message": test_error_msg,
                         "flaky": False
                     }
-
-                    # Add a parameter to help with subcategorization
-                    test_case.parameters.append(Parameter(
-                        name="Error Category",
-                        value=category_name
-                    ))
 
                 # Process tags
                 package_from_tag = None
@@ -485,16 +474,17 @@ class AllureBehaveXFormatter:
                 test_case.status = scenario['status']
 
                 # Process scenario logs as attachment
-                scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
-                log_path = os.path.join(get_env('logs', 'output/allure-results'), str(scenario_hash), 'scenario.log')
-                if os.path.exists(log_path):
-                    # Use relative path for the source if possible to avoid duplication
-                    rel_path = os.path.relpath(log_path, output_dir) if output_dir in log_path else log_path
-                    test_case.attachments.append(
-                        Attachment(source=rel_path,
-                                 name="scenario.log",
-                                 type="text/plain")
-                    )
+                if get_param('formatter_attach_logs'):
+                    scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+                    log_path = os.path.join(get_env('logs', 'output/allure-results'), str(scenario_hash), 'scenario.log')
+                    if os.path.exists(log_path):
+                        # Use relative path for the source if possible to avoid duplication
+                        rel_path = os.path.relpath(log_path, output_dir) if output_dir in log_path else log_path
+                        test_case.attachments.append(
+                            Attachment(source=rel_path,
+                                     name="scenario.log",
+                                     type="text/plain")
+                        )
 
                 # Process evidence files
                 test_case = self._attach_evidence_files(test_case, scenario_hash, output_dir)
@@ -569,7 +559,11 @@ class AllureBehaveXFormatter:
                 # Add hierarchical labels for better organization in Allure report
                 if feature_file_path:
                     # Create hierarchical representation from feature file path
-                    hierarchical_package = feature_file_path.replace("/", ".").rstrip(".feature")
+                    hierarchical_package = feature_file_path.replace("/", ".")
+                    if hasattr(str, 'removesuffix'):  # Python 3.9+
+                        hierarchical_package = hierarchical_package.removesuffix('.feature')
+                    elif hierarchical_package.endswith('.feature'):
+                        hierarchical_package = hierarchical_package[:-len('.feature')]
 
                     # Remove existing package and suite labels to avoid duplication
                     test_case_dict["labels"] = [label for label in test_case_dict["labels"]

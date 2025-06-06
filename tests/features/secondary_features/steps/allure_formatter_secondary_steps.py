@@ -10,7 +10,7 @@ def step_process_table(context):
     if context.table:
         logging.info(f"Processing table with {len(context.table.rows)} rows")
         for row in context.table:
-            logging.info(f"Row data: {dict(row)}")
+            logging.info(f"Row data: {row.as_dict()}")
     else:
         logging.warning("No table data found in step")
 

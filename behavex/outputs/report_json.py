@@ -182,6 +182,11 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['filename'] = text(scenario.filename)
             scenario_info['feature'] = scenario.feature.name
             scenario_info['id_feature'] = id_feature
+
+            # Extract parameters for scenario outlines
+            if hasattr(scenario, '_row') and scenario._row:
+                scenario_info['parameters'] = dict(zip(scenario._row.headings, scenario._row.cells))
+
             steps = []
             for step in scenario.steps:
                 add_step_info(step, steps)
