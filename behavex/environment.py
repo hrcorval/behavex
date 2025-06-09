@@ -28,6 +28,10 @@ Context.__getattribute__ = create_custom_log_when_called
 
 hooks_already_set = False
 
+# Constants at module level
+MANUAL_TAG = 'MANUAL'
+BHX_MANUAL_DRY_RUN_TAG = 'BHX_MANUAL_DRY_RUN'
+
 def _get_current_timestamp_ms():
     """Get current time as Unix epoch milliseconds."""
     return int(datetime.now().timestamp() * 1000)
@@ -120,16 +124,20 @@ def before_feature(context, feature):
     try:
         context.bhx_execution_attempts = {}
         scenarios_instances = get_scenarios_instances(feature.scenarios)
+
         for scenario in scenarios_instances:
             scenario_tags = get_scenario_tags(scenario)
-            if get_param('dry_run'):
-                if 'MANUAL' not in scenario_tags:
-                    scenario.tags.append(u'BHX_MANUAL_DRY_RUN')
-                    scenario.tags.append(u'MANUAL')
+
+            # Handle dry run scenario tagging
+            if get_param('dry_run') and MANUAL_TAG not in scenario_tags:
+                scenario.tags.extend([BHX_MANUAL_DRY_RUN_TAG, MANUAL_TAG])
+
+            # Configure scenario auto-retry
             configured_attempts = get_autoretry_attempts(scenario_tags)
             if configured_attempts > 0:
                 patch_scenario_with_autoretry(scenario, configured_attempts)
     except Exception as exception:
+        # Keep generic exception as fallback for truly unexpected errors
         _log_exception_and_continue('before_feature (behavex)', exception)
 
 
