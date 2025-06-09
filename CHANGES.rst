@@ -7,6 +7,7 @@ Version: 4.2.2
 FIXES:
 
 * Fixing an issue that caused incorrect XML report filenames when handling Windows paths or other edge-case feature paths.
+* Enhanced robustness in before_scenario hook, to add error handling on every method that is called in this hook.
 
 CONTRIBUTIONS:
 

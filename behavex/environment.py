@@ -135,25 +135,37 @@ def before_feature(context, feature):
 
 def before_scenario(context, scenario):
     """Initialize logs for current scenario."""
+    # Initialize critical variables first to ensure they're always set
+    context.bhx_inside_scenario = True
+
     try:
-        context.bhx_inside_scenario = True
+        # Handle execution attempts tracking
         if scenario.name not in context.bhx_execution_attempts:
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-
         # Calculate and store the scenario identifier hash
         scenario_identifier = f"{str(context.feature.filename)}-{str(scenario.line)}"
+        # Calculate the scenario identifier hash
         scenario.identifier_hash = get_string_hash(scenario_identifier)
-
-        context.log_path = create_log_path(scenario_identifier, retrying_execution)
+        # Create log path
+        context.log_path = create_log_path(scenario_identifier, retrying_execution, scenario.identifier_hash)
+        # Add log handler
         context.bhx_log_handler = _add_log_handler(context.log_path)
+        # Handle retry scenario cleanup
         if retrying_execution:
-            logging.info('Retrying scenario execution...\n'.format())
-            shutil.rmtree(context.evidence_path)
+            try:
+                logging.info('Retrying scenario execution...')
+                # Safely access evidence_path - it's created dynamically when accessed
+                if hasattr(context, 'evidence_path') and os.path.exists(context.evidence_path):
+                    shutil.rmtree(context.evidence_path)
+            except Exception as retry_ex:
+                logging.warning(f"Failed to clean up evidence path during retry: {retry_ex}")
     except Exception as exception:
+        # Log the exception but ensure execution continues
         _log_exception_and_continue('before_scenario (behavex)', exception)
-    scenario.start = _get_current_timestamp_ms()
+    finally:
+        scenario.start = _get_current_timestamp_ms()
 
 
 def before_step(context, step):
@@ -217,15 +229,19 @@ def after_all(context):
 
 def _add_log_handler(log_path):
     """Adding a new log handler to logger"""
-    log_filename = os.path.join(log_path, 'scenario.log')
-    file_handler = logging.FileHandler(
-        log_filename, mode='+a', encoding=LOGGING_CFG['file_handler']['encoding']
-    )
-    log_level = get_logging_level()
-    logging.getLogger().setLevel(log_level)
-    file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
-    file_handler.setFormatter(_get_log_formatter())
-    logging.getLogger().addHandler(file_handler)
+    file_handler = None
+    try:
+        log_filename = os.path.join(log_path, 'scenario.log')
+        file_handler = logging.FileHandler(
+            log_filename, mode='+a', encoding=LOGGING_CFG['file_handler']['encoding']
+        )
+        log_level = get_logging_level()
+        logging.getLogger().setLevel(log_level)
+        file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
+        file_handler.setFormatter(_get_log_formatter())
+        logging.getLogger().addHandler(file_handler)
+    except Exception as exception:
+        _log_exception_and_continue('_add_log_handler', exception)
     return file_handler
 
 
