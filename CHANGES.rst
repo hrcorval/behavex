@@ -1,6 +1,18 @@
 Version History
 ===============================================================================
 
+Version: 4.2.2
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fixing an issue that caused incorrect XML report filenames when handling Windows paths or other edge-case feature paths.
+
+CONTRIBUTIONS:
+
+* Thanks to `AppeltansPieter <https://github.com/AppeltansPieter>`__ for reporting the issue with XML report filenames.
+
+
 Version: 4.2.1
 -------------------------------------------------------------------------------
 

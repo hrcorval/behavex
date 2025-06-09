@@ -20,12 +20,41 @@ from behavex.outputs.report_utils import (get_save_function,
                                           retry_file_operation, text)
 from behavex.utils import get_scenario_tags
 
-def testname_from_filename(filename):
-    exp = re.compile('\\\\|/')
-    exp2 = re.compile('\\.feature$')
-    base_name = filename.partition('features')[2] if ('features' in filename) else filename
-    processed_name = exp2.sub('', base_name.lstrip('/.\\'))
-    return u'TESTS-' + u'.'.join(exp.split(processed_name)) + u'.xml'
+
+def generate_junit_xml_filename(filename):
+    """Generate JUnit XML report filename from feature file path.
+
+    Args:
+        filename (str): Path to the feature file
+
+    Returns:
+        str: JUnit XML filename in format TESTS-<name>.xml
+    """
+    if not filename:
+        return 'TESTS-default.xml'
+
+    # Normalize path for the current OS and replace backslashes for consistency
+    normalized_path = os.path.normpath(filename).replace('\\', '/')
+    path_parts = normalized_path.split('/')
+
+    # Find 'features' directory
+    if 'features' in path_parts:
+        features_idx = path_parts.index('features')
+        # Use everything after 'features'
+        name_parts = path_parts[features_idx + 1:]
+    else:
+        # Fallback: use all parts but filter out empty ones and drive letters
+        name_parts = [part for part in path_parts if part and ':' not in part]
+
+    # Remove .feature extension from the last part
+    if name_parts and name_parts[-1].endswith('.feature'):
+        name_parts[-1] = name_parts[-1][:-8]  # Remove '.feature'
+
+    # Join with dots, filter out empty parts
+    name = '.'.join(part for part in name_parts if part)
+
+    return f'TESTS-{name or "default"}.xml'
+
 
 def _export_feature_to_xml(feature, isobject=True):
     def get_scenarios(feature_):
@@ -100,14 +129,18 @@ def _export_feature_to_xml(feature, isobject=True):
         parameters_template,
     )
     output_text = output_text.replace('status="Status.', 'status="')
+
     filename = feature.filename if isobject else feature['filename']
     filename = text(filename)
-    testname = testname_from_filename(filename) 
+
+    # Generate XML filename using the helper function
+    xml_filename = generate_junit_xml_filename(filename)
+
     junit_path = os.path.join(get_env('OUTPUT'), 'behave')
-    path_output = os.path.join(junit_path, testname)
+    path_output = os.path.join(junit_path, xml_filename)
 
     retry_file_operation(
-        path_output + '.xml', get_save_function(path_output, output_text)
+        path_output, get_save_function(path_output.replace('.xml', ''), output_text)
     )
 
 
