@@ -137,6 +137,7 @@ def _export_feature_to_xml(feature, isobject=True):
     xml_filename = generate_junit_xml_filename(filename)
 
     junit_path = os.path.join(get_env('OUTPUT'), 'behave')
+    print("xml_filename", xml_filename)
     path_output = os.path.join(junit_path, xml_filename)
 
     retry_file_operation(

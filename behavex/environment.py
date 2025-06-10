@@ -153,7 +153,7 @@ def before_scenario(context, scenario):
         # Calculate the scenario identifier hash
         scenario.identifier_hash = get_string_hash(scenario_identifier)
         # Create log path
-        context.log_path = create_log_path(scenario_identifier, retrying_execution, scenario.identifier_hash)
+        context.log_path = create_log_path(scenario.identifier_hash, retrying_execution)
         # Add log handler
         context.bhx_log_handler = _add_log_handler(context.log_path)
         # Handle retry scenario cleanup

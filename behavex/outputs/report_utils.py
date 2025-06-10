@@ -333,13 +333,12 @@ def get_save_function(path, content):
     return fun_save
 
 
-def create_log_path(scenario_identifier, execution_retry=False, scenario_identifier_hash=None):
+def create_log_path(scenario_identifier_hash, execution_retry=False):
     """Create log path with fallback mechanisms for robust error handling.
 
     Args:
-        scenario_identifier: The name/identifier to create the path for
+        scenario_identifier_hash: Hash representation of the scenario
         execution_retry: Whether this is a retry execution
-        scenario_identifier_hash: Optional fallback hash for scenarios
 
     Returns:
         str: The created log path
@@ -347,9 +346,6 @@ def create_log_path(scenario_identifier, execution_retry=False, scenario_identif
     try:
         # Validate and sanitize the logs directory
         logs_dir = _get_safe_logs_directory()
-
-        # Generate and validate the hash
-        scenario_identifier_hash = get_string_hash(scenario_identifier)
 
         # Create the full path
         path = os.path.join(logs_dir, str(scenario_identifier_hash))
