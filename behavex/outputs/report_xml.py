@@ -141,7 +141,7 @@ def _export_feature_to_xml(feature, isobject=True):
     path_output = os.path.join(junit_path, xml_filename)
 
     retry_file_operation(
-        path_output, get_save_function(path_output.replace('.xml', ''), output_text)
+        path_output, get_save_function(path_output, output_text)
     )
 
 
