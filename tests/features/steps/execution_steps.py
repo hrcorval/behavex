@@ -283,8 +283,6 @@ def get_string_instances_from_html_report(context, string_to_search):
 def get_total_scenarios_in_junit_reports(context, consider_skipped_scenarios=True):
     junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
     total_scenarios_in_junit_reports = 0
-    print("junit_folder", junit_folder)
-    print("os.listdir(junit_folder)", os.listdir(junit_folder))
     for file in os.listdir(junit_folder):
         if file.endswith('.xml'):
             with open(os.path.join(junit_folder, file), 'r') as file:
