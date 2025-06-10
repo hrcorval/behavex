@@ -162,6 +162,9 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
 - **parallel-processes** (--parallel-processes): Specifies the number of parallel Behave processes.
 - **parallel-scheme** (--parallel-scheme): Performs parallel test execution by [scenario|feature].
 - **show-progress-bar** (--show-progress-bar): Displays a progress bar in the console during parallel test execution.
+- **formatter** (--formatter): Specifies a custom formatter for test reports (e.g., Allure formatter).
+- **formatter-outdir** (--formatter-outdir): Specifies the output directory for formatter results (default: output/allure-results for Allure).
+- **no-formatter-attach-logs** (--no-formatter-attach-logs): Disables automatic attachment of scenario log files to formatter reports.
 
 ## Parallel Test Executions
 
