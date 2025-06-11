@@ -39,20 +39,20 @@ BehaveX now provides seamless integration with Allure, the popular test reportin
 
 ## Introduction
 
-**BehaveX** is a BDD testing solution designed to enhance your Behave-based testing workflow by providing additional features and performance improvements. It's particularly beneficial in the following scenarios:
+**BehaveX** is a BDD testing solution built on top of the Python Behave library, orchestrating parallel test sessions to enhance your testing workflow with additional features and performance improvements. It's particularly beneficial in the following scenarios:
 
 - **Accelerating test execution**: Significantly reduce test run times through parallel execution by feature or scenario.
 - **Enhancing test reporting**: Generate comprehensive and visually appealing HTML and JSON reports for in-depth analysis and integration with other tools.
 - **Improving test visibility**: Provide detailed evidence, such as screenshots and logs, essential for understanding test failures and successes.
 - **Optimizing test automation**: Utilize features like test retries, test muting, and performance metrics for efficient test maintenance and analysis.
-- **Managing complex test suites**: Handle large test suites with advanced features for organization, execution, and reporting.
+- **Managing complex test suites**: Handle large test suites with advanced features for organization, execution, and comprehensive reporting through multiple formats and custom formatters.
 
 ## Features
 
 BehaveX provides the following features:
 
 - **Parallel Test Executions**: Execute tests using multiple processes, either by feature or by scenario.
-- **Enhanced Reporting**: Generate friendly HTML and JSON reports that can be exported and integrated with third-party tools.
+- **Enhanced Reporting**: Generate comprehensive reports in multiple formats (HTML, JSON, JUnit) and utilize custom formatters like Allure for advanced reporting capabilities that can be exported and integrated with third-party tools.
 - **Evidence Collection**: Include images/screenshots and additional evidence in the HTML report.
 - **Test Logs**: Automatically compile logs generated during test execution into individual log reports for each scenario.
 - **Test Muting**: Add the `@MUTE` tag to test scenarios to execute them without including them in JUnit reports.

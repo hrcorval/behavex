@@ -433,6 +433,7 @@ class AllureBehaveXFormatter:
 
                 # Process tags
                 package_from_tag = None
+                test_thread_already_set = False
                 for tag in scenario['tags']:
                     if tag.startswith("epic="):
                         test_case.labels.append({"name": "epic", "value": tag.split("=")[-1]})
@@ -465,9 +466,19 @@ class AllureBehaveXFormatter:
                         test_case.labels = [label for label in test_case.labels if label.get("name") != "package"]
                         # Add the package from tag
                         test_case.labels.append({"name": "package", "value": package_from_tag})
+                    elif tag.startswith("allure.label."):
+                        label_key, label_value = tag.removeprefix("allure.label.").split(":")
+                        if label_key == "thread":
+                            test_thread_already_set = True
+                        test_case.labels.append({
+                            "name": label_key,
+                            "value": label_value
+                        })
                     else:
                         test_case.labels.append({"name": "tag", "value": tag})
-
+                # Add thread label if not already set and process_id is present
+                if "process_id" in scenario.keys() and not test_thread_already_set:
+                    test_case.labels.append({"name": "thread", "value": scenario["process_id"]})
                 # Add scenario timing
                 test_case.start = scenario.get("start", now())
                 test_case.stop = scenario.get("stop", now())

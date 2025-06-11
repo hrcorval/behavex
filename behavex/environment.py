@@ -165,6 +165,11 @@ def before_scenario(context, scenario):
                     shutil.rmtree(context.evidence_path)
             except Exception as retry_ex:
                 logging.warning(f"Failed to clean up evidence path during retry: {retry_ex}")
+        scenario.process_id = os.getpid()
+        if "config" in context and "worker_id" in context.config.userdata:
+            scenario.worker_id = context.config.userdata['worker_id']
+        else:
+            scenario.worker_id = str(os.getpid())
     except Exception as exception:
         # Log the exception but ensure execution continues
         _log_exception_and_continue('before_scenario (behavex)', exception)

@@ -4,6 +4,10 @@ Version History
 Version: 4.2.2
 -------------------------------------------------------------------------------
 
+ENHANCEMENTS:
+
+* Adding "thread" label in Allure report formatter to allow associating the scenarios to parallel processes.
+
 FIXES:
 
 * Fixing an issue that caused incorrect XML report filenames when handling Windows paths or other edge-case feature paths.
