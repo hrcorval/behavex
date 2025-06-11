@@ -15,6 +15,7 @@ FIXES:
 
 CONTRIBUTIONS:
 
+* Thanks to `withnale <https://github.com/withnale>`__ for contributing to the implementation of the "thread" label.
 * Thanks to `AppeltansPieter <https://github.com/AppeltansPieter>`__ for reporting the issue with XML report filenames.
 
 
