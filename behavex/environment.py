@@ -28,9 +28,11 @@ Context.__getattribute__ = create_custom_log_when_called
 
 hooks_already_set = False
 
+
 def _get_current_timestamp_ms():
     """Get current time as Unix epoch milliseconds."""
     return int(datetime.now().timestamp() * 1000)
+
 
 def extend_behave_hooks():
     """
@@ -106,7 +108,7 @@ def extend_behave_hooks():
 def before_all(context):
     """Setup up initial tests configuration."""
     try:
-        # Initialyzing log handler
+        # Initialize critical state variables to ensure consistent state
         context.bhx_log_handler = None
         context.bhx_inside_scenario = False
         # Store framework settings to make them accessible from steps
@@ -141,6 +143,8 @@ def before_scenario(context, scenario):
     """Initialize logs for current scenario."""
     # Initialize critical variables first to ensure they're always set
     context.bhx_inside_scenario = True
+    # Initialize log handler to None to ensure it's always defined
+    context.bhx_log_handler = None
 
     try:
         # Handle execution attempts tracking
@@ -160,9 +164,14 @@ def before_scenario(context, scenario):
         if retrying_execution:
             try:
                 logging.info('Retrying scenario execution...')
-                # Safely access evidence_path - it's created dynamically when accessed
-                if hasattr(context, 'evidence_path') and os.path.exists(context.evidence_path):
-                    shutil.rmtree(context.evidence_path)
+                if hasattr(context, 'evidence_path') and context.evidence_path:
+                    try:
+                        shutil.rmtree(context.evidence_path)
+                    except FileNotFoundError:
+                        # Directory already removed by another process - this is fine
+                        pass
+                    except Exception as cleanup_ex:
+                        logging.warning(f"Failed to remove evidence directory {context.evidence_path}: {cleanup_ex}")
             except Exception as retry_ex:
                 logging.warning(f"Failed to clean up evidence path during retry: {retry_ex}")
         scenario.process_id = os.getpid()
@@ -212,9 +221,12 @@ def after_scenario(context, scenario):
             else:
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
-        _close_log_handler(context.bhx_log_handler)
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
+    finally:
+        # Always reset the scenario state flag, regardless of success or failure
+        _close_log_handler(context.bhx_log_handler)
+        context.bhx_inside_scenario = False
 
 
 # noinspection PyUnusedLocal
@@ -255,11 +267,14 @@ def _add_log_handler(log_path):
 
 
 def _close_log_handler(handler):
-    """Closing current log handlers and removing them from logger"""
+    """Closing current log handlers and removing them from logger."""
     if handler:
-        if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
-            handler.stream.close()
-        logging.getLogger().removeHandler(handler)
+        try:
+            if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
+                handler.stream.close()
+            logging.getLogger().removeHandler(handler)
+        except Exception as exception:
+            _log_exception_and_continue('_close_log_handler', exception)
 
 
 def _get_log_formatter():
