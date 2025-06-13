@@ -1,6 +1,24 @@
 Version History
 ===============================================================================
 
+Version: 4.2.2
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Adding "thread" label in Allure report formatter to allow associating the scenarios to parallel processes.
+
+FIXES:
+
+* Fixing an issue that caused incorrect XML report filenames when handling Windows paths or other edge-case feature paths.
+* Enhanced robustness in before_scenario hook, to add error handling on every method that is called in this hook.
+
+CONTRIBUTIONS:
+
+* Thanks to `withnale <https://github.com/withnale>`__ for contributing to the implementation of the "thread" label.
+* Thanks to `AppeltansPieter <https://github.com/AppeltansPieter>`__ for reporting the issue with XML report filenames.
+
+
 Version: 4.2.1
 -------------------------------------------------------------------------------
 
