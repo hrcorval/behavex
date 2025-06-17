@@ -12,6 +12,7 @@ including setup, execution, and reporting.
 from __future__ import absolute_import, print_function
 
 import codecs
+import concurrent
 import copy
 import io
 import json
@@ -81,7 +82,23 @@ def main():
     Parses command-line arguments and initiates the test run.
     """
     args = sys.argv[1:]
-    exit_code = run(args)
+    exit_code = 1  # Default to error
+    try:
+        exit_code = run(args)
+    except SystemExit as e:
+        # Handle cases where scenarios call exit() directly
+        if hasattr(e, 'code') and e.code is not None:
+            exit_code = e.code
+        else:
+            exit_code = 1
+        # Ensure we print the exit code even when scenarios crash
+        print('Exit code: {}'.format(exit_code))
+    except Exception as e:
+        # Handle unexpected exceptions
+        print(f'Unexpected error: {e}')
+        exit_code = 1
+        print('Exit code: {}'.format(exit_code))
+
     try:
         exit(exit_code)
     except:
@@ -578,7 +595,6 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
         print_parallel('scenario.running_parallels')
-        parallel_processes = []
         for features_path in parallel_scenarios.keys():
             for scenario_information in parallel_scenarios[features_path]:
                 scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
@@ -612,7 +628,7 @@ def launch_by_scenario(features,
             finally:
                 # Explicitly clear reference to help with garbage collection
                 future = None
-    parallel_processes.clear()
+        parallel_processes.clear()
     return execution_codes, json_reports
 
 
