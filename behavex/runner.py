@@ -499,7 +499,8 @@ def launch_by_feature(features,
             json_reports,
             global_vars.progress_bar_instance,
         ))
-
+    for parallel_process in parallel_processes:
+        parallel_process.result()
     parallel_processes.clear()
     return execution_codes, json_reports
 
@@ -610,7 +611,8 @@ def launch_by_scenario(features,
                     json_reports,
                     global_vars.progress_bar_instance
                 ))
-
+        for parallel_process in parallel_processes:
+            parallel_process.result()
         parallel_processes.clear()
     return execution_codes, json_reports
 
