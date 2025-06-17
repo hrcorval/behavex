@@ -51,18 +51,77 @@ def handle_execution_complete_callback(codes,
                                        json_reports,
                                        progress_bar_instance,
                                        future):
+    """Handle completion of a parallel execution future with proper resource cleanup."""
     tuple_values = None
+    execution_code = 1  # Default to error state
+    map_json = {'environment': [], 'features': [], 'steps_definition': []}
+
     try:
         tuple_values = future.result()
-    except: # isort:skip
-        json_reports += []
-        codes.append(1)
-    if tuple_values:
-        execution_code, map_json = tuple_values
-        json_reports += [map_json]
-        codes.append(execution_code)
+        if tuple_values:
+            execution_code, map_json = tuple_values
+        else:
+            execution_code = 1  # No results returned
+
+    except Exception as e:
+        # Log the exception for debugging
+        logging.error(f"Exception in future execution: {e}")
+        execution_code = 1
+
+    finally:
+        # Immediately clean up the future reference to help with garbage collection
+        try:
+            # Clear any remaining references in the future object
+            if hasattr(future, '_result'):
+                future._result = None
+            if hasattr(future, '_exception'):
+                future._exception = None
+        except:
+            pass  # Ignore cleanup errors
+
+        # Explicitly clear the future reference
+        future = None
+
+    # Add results to shared collections
+    json_reports.append(map_json)
+    codes.append(execution_code)
+
+    # Update progress bar
     if progress_bar_instance:
         progress_bar_instance.update()
+
+    # Immediate cleanup of temporary files for this execution
+    _cleanup_execution_temp_files()
+
+
+def _cleanup_execution_temp_files():
+    """Clean up temporary files created by the current process/worker."""
+    try:
+        # Get current process info
+        current_process = multiprocessing.current_process()
+        if hasattr(current_process, 'name') and '-' in current_process.name:
+            worker_id = current_process.name.split('-')[-1]
+
+            # Clean up temporary stdout file for this worker
+            stdout_file = os.path.join(gettempdir(), f'{os.getpid()}_stdout{worker_id}.txt')
+            if os.path.exists(stdout_file):
+                try:
+                    os.chmod(stdout_file, 0o777) #nosec B103
+                    os.remove(stdout_file)
+                except:
+                    pass  # File might be in use, will be cleaned up later
+
+            # Clean up temporary result file for this worker
+            result_file = os.path.join(gettempdir(), f'result{worker_id}.tmp')
+            if os.path.exists(result_file):
+                try:
+                    os.remove(result_file)
+                except:
+                    pass  # File might be in use, will be cleaned up later
+
+    except Exception:
+        # Don't let cleanup errors affect the main execution
+        pass
 
 
 def create_execution_complete_callback_function(codes,

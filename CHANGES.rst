@@ -7,6 +7,7 @@ Version: 4.2.2
 ENHANCEMENTS:
 
 * Adding "thread" label in Allure report formatter to allow associating the scenarios to parallel processes.
+* Enhanced resource cleanup in parallel execution by optimizing future reference management and implementing immediate temporary file cleanup to reduce memory usage and improve performance.
 
 FIXES:
 
