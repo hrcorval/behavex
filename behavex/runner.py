@@ -499,16 +499,7 @@ def launch_by_feature(features,
             json_reports,
             global_vars.progress_bar_instance,
         ))
-    # Wait for all futures to complete - results are already processed by callbacks
-    for future in concurrent.futures.as_completed(parallel_processes):
-        # Results are already processed by the callback, just ensure completion
-        try:
-            future.result()  # This ensures any exceptions are raised
-        except Exception:
-            pass  # Exceptions are already handled by the callback
-        finally:
-            # Explicitly clear reference to help with garbage collection
-            future = None
+
     parallel_processes.clear()
     return execution_codes, json_reports
 
@@ -619,16 +610,7 @@ def launch_by_scenario(features,
                     json_reports,
                     global_vars.progress_bar_instance
                 ))
-        # Wait for all futures to complete - results are already processed by callbacks
-        for future in concurrent.futures.as_completed(parallel_processes):
-            # Results are already processed by the callback, just ensure completion
-            try:
-                future.result()  # This ensures any exceptions are raised
-            except Exception:
-                pass  # Exceptions are already handled by the callback
-            finally:
-                # Explicitly clear reference to help with garbage collection
-                future = None
+
         parallel_processes.clear()
     return execution_codes, json_reports
 
