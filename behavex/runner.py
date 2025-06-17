@@ -537,6 +537,7 @@ def launch_by_scenario(features,
     duplicated_scenarios = {}
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
+    parallel_processes = []
     for features_path, scenarios in features.items():
         scenarios_instances = get_scenarios_instances(scenarios)
         for scenario in scenarios_instances:
