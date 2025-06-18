@@ -500,7 +500,18 @@ def launch_by_feature(features,
             global_vars.progress_bar_instance,
         ))
     for parallel_process in parallel_processes:
-        parallel_process.result()
+        try:
+            parallel_process.result()
+        except:
+            from concurrent.futures.process import BrokenProcessPool
+            e = sys.exc_info()[1]
+            if isinstance(e, BrokenProcessPool):
+                print_parallel('process.pool.broken.main', str(e))
+                # Mark as failed execution but continue processing remaining futures
+                execution_codes.append(1)
+            else:
+                print_parallel('parallel.process.error', str(e))
+                execution_codes.append(1)
     parallel_processes.clear()
     return execution_codes, json_reports
 
@@ -612,7 +623,18 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance
                 ))
         for parallel_process in parallel_processes:
-            parallel_process.result()
+            try:
+                parallel_process.result()
+            except:
+                from concurrent.futures.process import BrokenProcessPool
+                e = sys.exc_info()[1]
+                if isinstance(e, BrokenProcessPool):
+                    print_parallel('process.pool.broken.main', str(e))
+                    # Mark as failed execution but continue processing remaining futures
+                    execution_codes.append(1)
+                else:
+                    print_parallel('parallel.process.error', str(e))
+                    execution_codes.append(1)
         parallel_processes.clear()
     return execution_codes, json_reports
 

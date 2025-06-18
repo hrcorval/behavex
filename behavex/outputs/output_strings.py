@@ -68,4 +68,20 @@ TEXTS = {
     },
     'folder': {'run_behave': u"Running folder: '{}' and feature '{}'."},
     'path': {'not_found': u'\nThe path "{}" was not found.\n'},
+    'process': {
+        'pool': {
+            'broken': u'\nWarning: Process pool was terminated abruptly: {}',
+            'broken.main': u'\nWarning: A process in the pool was terminated abruptly during main execution: {}'
+        }
+    },
+    'execution': {
+        'callback': {
+            'error': u'\nError occurred during execution callback: {}'
+        }
+    },
+    'parallel': {
+        'process': {
+            'error': u'\nError occurred during parallel process execution: {}'
+        }
+    }
 }

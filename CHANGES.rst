@@ -12,6 +12,7 @@ FIXES:
 
 * Fixing an issue that caused incorrect XML report filenames when handling Windows paths or other edge-case feature paths.
 * Enhanced robustness in before_scenario hook, to add error handling on every method that is called in this hook.
+* Fixed exception handling in concurrent execution contexts to properly catch all exceptions including SystemExit, KeyboardInterrupt, and GeneratorExit, ensuring more robust parallel test execution.
 
 CONTRIBUTIONS:
 
