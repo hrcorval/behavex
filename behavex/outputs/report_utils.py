@@ -15,11 +15,13 @@ from __future__ import absolute_import, print_function
 
 import codecs
 import hashlib
+import logging
 import os
 import re
 import shutil
 import string
 import sys
+import tempfile
 import traceback
 import unicodedata
 from operator import getitem
@@ -331,25 +333,65 @@ def get_save_function(path, content):
     return fun_save
 
 
-def create_log_path(name, execution_retry=False):
-    name = get_string_hash(name)
-    if sys.version_info < (3, 0):
-        path = os.path.join(get_env('logs').decode('utf8'), str(name))
-    else:
-        path = os.path.join(get_env('logs'), str(name))
-    initial_path = path
-    scenario_outline_index = 1
-    while os.path.exists(path):
-        if execution_retry:
-            return path
-        path = initial_path + u'_' + str(scenario_outline_index)
-        scenario_outline_index += 1
+def create_log_path(scenario_identifier_hash, execution_retry=False):
+    """Create log path with fallback mechanisms for robust error handling.
+
+    Args:
+        scenario_identifier_hash: Hash representation of the scenario
+        execution_retry: Whether this is a retry execution
+
+    Returns:
+        str: The created log path
+    """
     try:
-        os.makedirs(path)
-    except FileExistsError:
-        # path already exists
-        pass
-    return path
+        # Validate and sanitize the logs directory
+        logs_dir = _get_safe_logs_directory()
+
+        # Create the full path
+        path = os.path.join(logs_dir, str(scenario_identifier_hash))
+        initial_path = path
+        scenario_outline_index = 1
+
+        # Handle existing paths
+        while os.path.exists(path):
+            if execution_retry:
+                return path
+            path = initial_path + u'_' + str(scenario_outline_index)
+            scenario_outline_index += 1
+
+        # Create the directory with robust error handling
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    except Exception as ex:
+        logging.warning(f"Primary log path creation failed: {ex}")
+        # Only use temp fallback for actual file system issues
+        temp_path = tempfile.mkdtemp(prefix=f"bhx_scenario_{scenario_identifier_hash or 'unknown'}_")
+        logging.error(f"Using temp directory as last resort: {temp_path}")
+        return temp_path
+
+
+def _get_safe_logs_directory():
+    """Get a safe logs directory, creating it if necessary."""
+    # Try to get the configured logs directory
+    logs_dir = get_env('logs')
+
+    # If not configured, use a safe default
+    if not logs_dir:
+        output_dir = get_env('output', '.')
+        logs_dir = os.path.join(output_dir, 'outputs', 'logs')
+
+    # Ensure the logs directory exists
+    try:
+        os.makedirs(logs_dir, exist_ok=True)
+    except OSError as ex:
+        # If we can't create the logs directory, fall back to output directory
+        logging.warning(f"Cannot create logs directory {logs_dir}: {ex}")
+        output_dir = get_env('output', '.')
+        logs_dir = os.path.join(output_dir, 'logs')
+        os.makedirs(logs_dir, exist_ok=True)
+
+    return logs_dir
 
 
 def get_error_message(error_message):
@@ -399,7 +441,31 @@ def text(value, encoding=None, errors=None):
 
 
 def get_string_hash(string_to_hash):
-    return str(hashlib.sha256(string_to_hash.encode('UTF-8')).hexdigest())
+    """Generate SHA256 hash for a given string input.
+
+    Args:
+        string_to_hash: String or bytes to hash
+
+    Returns:
+        str: Hexadecimal representation of the SHA256 hash
+
+    Raises:
+        TypeError: If input is not string or bytes
+    """
+    if string_to_hash is None:
+        raise ValueError("Input cannot be None")
+
+    if isinstance(string_to_hash, str):
+        # Convert string to bytes
+        bytes_to_hash = string_to_hash.encode('UTF-8')
+    elif isinstance(string_to_hash, bytes):
+        # Already bytes, use as-is
+        bytes_to_hash = string_to_hash
+    else:
+        # Convert other types to string first
+        bytes_to_hash = str(string_to_hash).encode('UTF-8')
+
+    return hashlib.sha256(bytes_to_hash).hexdigest()
 
 
 def normalize_filename(input_name):

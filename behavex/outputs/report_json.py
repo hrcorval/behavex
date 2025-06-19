@@ -202,6 +202,8 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_background'] = error_background
             scenario_info['id_hash'] = generate_uuid()
             scenario_info['identifier_hash'] = scenario.identifier_hash if hasattr(scenario, 'identifier_hash') else get_string_hash(f"{str(scenario.feature.filename)}-{str(scenario.line)}")
+            scenario_info['process_id'] = str(scenario.process_id) if hasattr(scenario, 'process_id') else str(os.getpid())
+            scenario_info['worker_id'] = str(scenario.worker_id) if hasattr(scenario, 'worker_id') else str(os.getpid())
             if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name

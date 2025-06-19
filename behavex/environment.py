@@ -28,9 +28,11 @@ Context.__getattribute__ = create_custom_log_when_called
 
 hooks_already_set = False
 
+
 def _get_current_timestamp_ms():
     """Get current time as Unix epoch milliseconds."""
     return int(datetime.now().timestamp() * 1000)
+
 
 def extend_behave_hooks():
     """
@@ -106,7 +108,7 @@ def extend_behave_hooks():
 def before_all(context):
     """Setup up initial tests configuration."""
     try:
-        # Initialyzing log handler
+        # Initialize critical state variables to ensure consistent state
         context.bhx_log_handler = None
         context.bhx_inside_scenario = False
         # Store framework settings to make them accessible from steps
@@ -120,40 +122,68 @@ def before_feature(context, feature):
     try:
         context.bhx_execution_attempts = {}
         scenarios_instances = get_scenarios_instances(feature.scenarios)
+
         for scenario in scenarios_instances:
             scenario_tags = get_scenario_tags(scenario)
-            if get_param('dry_run'):
-                if 'MANUAL' not in scenario_tags:
-                    scenario.tags.append(u'BHX_MANUAL_DRY_RUN')
-                    scenario.tags.append(u'MANUAL')
+
+            # Handle dry run scenario tagging
+            if get_param('dry_run') and 'MANUAL' not in scenario_tags:
+                scenario.tags.extend(['BHX_MANUAL_DRY_RUN', 'MANUAL'])
+
+            # Configure scenario auto-retry
             configured_attempts = get_autoretry_attempts(scenario_tags)
             if configured_attempts > 0:
                 patch_scenario_with_autoretry(scenario, configured_attempts)
     except Exception as exception:
+        # Keep generic exception as fallback for truly unexpected errors
         _log_exception_and_continue('before_feature (behavex)', exception)
 
 
 def before_scenario(context, scenario):
     """Initialize logs for current scenario."""
+    # Initialize critical variables first to ensure they're always set
+    context.bhx_inside_scenario = True
+    # Initialize log handler to None to ensure it's always defined
+    context.bhx_log_handler = None
+
     try:
-        context.bhx_inside_scenario = True
+        # Handle execution attempts tracking
         if scenario.name not in context.bhx_execution_attempts:
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-
         # Calculate and store the scenario identifier hash
         scenario_identifier = f"{str(context.feature.filename)}-{str(scenario.line)}"
+        # Calculate the scenario identifier hash
         scenario.identifier_hash = get_string_hash(scenario_identifier)
-
-        context.log_path = create_log_path(scenario_identifier, retrying_execution)
+        # Create log path
+        context.log_path = create_log_path(scenario.identifier_hash, retrying_execution)
+        # Add log handler
         context.bhx_log_handler = _add_log_handler(context.log_path)
+        # Handle retry scenario cleanup
         if retrying_execution:
-            logging.info('Retrying scenario execution...\n'.format())
-            shutil.rmtree(context.evidence_path)
+            try:
+                logging.info('Retrying scenario execution...')
+                if hasattr(context, 'evidence_path') and context.evidence_path:
+                    try:
+                        shutil.rmtree(context.evidence_path)
+                    except FileNotFoundError:
+                        # Directory already removed by another process - this is fine
+                        pass
+                    except Exception as cleanup_ex:
+                        logging.warning(f"Failed to remove evidence directory {context.evidence_path}: {cleanup_ex}")
+            except Exception as retry_ex:
+                logging.warning(f"Failed to clean up evidence path during retry: {retry_ex}")
+        scenario.process_id = os.getpid()
+        if "config" in context and "worker_id" in context.config.userdata:
+            scenario.worker_id = context.config.userdata['worker_id']
+        else:
+            scenario.worker_id = str(os.getpid())
     except Exception as exception:
+        # Log the exception but ensure execution continues
         _log_exception_and_continue('before_scenario (behavex)', exception)
-    scenario.start = _get_current_timestamp_ms()
+    finally:
+        scenario.start = _get_current_timestamp_ms()
 
 
 def before_step(context, step):
@@ -191,9 +221,12 @@ def after_scenario(context, scenario):
             else:
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
-        _close_log_handler(context.bhx_log_handler)
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
+    finally:
+        # Always reset the scenario state flag, regardless of success or failure
+        _close_log_handler(context.bhx_log_handler)
+        context.bhx_inside_scenario = False
 
 
 # noinspection PyUnusedLocal
@@ -217,24 +250,31 @@ def after_all(context):
 
 def _add_log_handler(log_path):
     """Adding a new log handler to logger"""
-    log_filename = os.path.join(log_path, 'scenario.log')
-    file_handler = logging.FileHandler(
-        log_filename, mode='+a', encoding=LOGGING_CFG['file_handler']['encoding']
-    )
-    log_level = get_logging_level()
-    logging.getLogger().setLevel(log_level)
-    file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
-    file_handler.setFormatter(_get_log_formatter())
-    logging.getLogger().addHandler(file_handler)
+    file_handler = None
+    try:
+        log_filename = os.path.join(log_path, 'scenario.log')
+        file_handler = logging.FileHandler(
+            log_filename, mode='+a', encoding=LOGGING_CFG['file_handler']['encoding']
+        )
+        log_level = get_logging_level()
+        logging.getLogger().setLevel(log_level)
+        file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
+        file_handler.setFormatter(_get_log_formatter())
+        logging.getLogger().addHandler(file_handler)
+    except Exception as exception:
+        _log_exception_and_continue('_add_log_handler', exception)
     return file_handler
 
 
 def _close_log_handler(handler):
-    """Closing current log handlers and removing them from logger"""
+    """Closing current log handlers and removing them from logger."""
     if handler:
-        if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
-            handler.stream.close()
-        logging.getLogger().removeHandler(handler)
+        try:
+            if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
+                handler.stream.close()
+            logging.getLogger().removeHandler(handler)
+        except Exception as exception:
+            _log_exception_and_continue('_close_log_handler', exception)
 
 
 def _get_log_formatter():

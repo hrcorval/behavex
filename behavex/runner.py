@@ -12,6 +12,7 @@ including setup, execution, and reporting.
 from __future__ import absolute_import, print_function
 
 import codecs
+import concurrent
 import copy
 import io
 import json
@@ -81,7 +82,23 @@ def main():
     Parses command-line arguments and initiates the test run.
     """
     args = sys.argv[1:]
-    exit_code = run(args)
+    exit_code = 1  # Default to error
+    try:
+        exit_code = run(args)
+    except SystemExit as e:
+        # Handle cases where scenarios call exit() directly
+        if hasattr(e, 'code') and e.code is not None:
+            exit_code = e.code
+        else:
+            exit_code = 1
+        # Ensure we print the exit code even when scenarios crash
+        print('Exit code: {}'.format(exit_code))
+    except Exception as e:
+        # Handle unexpected exceptions
+        print(f'Unexpected error: {e}')
+        exit_code = 1
+        print('Exit code: {}'.format(exit_code))
+
     try:
         exit(exit_code)
     except:
@@ -483,7 +500,19 @@ def launch_by_feature(features,
             global_vars.progress_bar_instance,
         ))
     for parallel_process in parallel_processes:
-        parallel_process.result()
+        try:
+            parallel_process.result()
+        except:
+            from concurrent.futures.process import BrokenProcessPool
+            e = sys.exc_info()[1]
+            if isinstance(e, BrokenProcessPool):
+                print_parallel('process.pool.broken.main', str(e))
+                # Mark as failed execution but continue processing remaining futures
+                execution_codes.append(1)
+            else:
+                print_parallel('parallel.process.error', str(e))
+                execution_codes.append(1)
+    parallel_processes.clear()
     return execution_codes, json_reports
 
 
@@ -511,6 +540,7 @@ def launch_by_scenario(features,
     duplicated_scenarios = {}
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
+    parallel_processes = []
     for features_path, scenarios in features.items():
         scenarios_instances = get_scenarios_instances(scenarios)
         for scenario in scenarios_instances:
@@ -569,7 +599,6 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance.update()
     if parallel_scenarios:
         print_parallel('scenario.running_parallels')
-        parallel_processes = []
         for features_path in parallel_scenarios.keys():
             for scenario_information in parallel_scenarios[features_path]:
                 scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
@@ -594,7 +623,19 @@ def launch_by_scenario(features,
                     global_vars.progress_bar_instance
                 ))
         for parallel_process in parallel_processes:
-            parallel_process.result()
+            try:
+                parallel_process.result()
+            except:
+                from concurrent.futures.process import BrokenProcessPool
+                e = sys.exc_info()[1]
+                if isinstance(e, BrokenProcessPool):
+                    print_parallel('process.pool.broken.main', str(e))
+                    # Mark as failed execution but continue processing remaining futures
+                    execution_codes.append(1)
+                else:
+                    print_parallel('parallel.process.error', str(e))
+                    execution_codes.append(1)
+        parallel_processes.clear()
     return execution_codes, json_reports
 
 

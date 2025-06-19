@@ -6,10 +6,8 @@ import tempfile
 from pathlib import Path
 
 from behave import given, then, when
-
-from tests.features.steps.execution_steps import (execute_command,
-                                                  get_random_number,
-                                                  root_project_path)
+from execution_steps import (execute_command, get_random_number,
+                             root_project_path)
 
 tests_features_path = os.path.join(root_project_path, 'tests', 'features')
 
