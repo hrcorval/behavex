@@ -12,7 +12,7 @@ including setup, execution, and reporting.
 from __future__ import absolute_import, print_function
 
 import codecs
-import concurrent
+import concurrent  # pyright: ignore[reportUnusedImport]
 import copy
 import io
 import json
@@ -26,6 +26,7 @@ import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
@@ -498,8 +499,10 @@ def launch_by_feature(features,
     for parallel_process in parallel_processes:
         try:
             parallel_process.result()
+        except (KeyboardInterrupt, SystemExit):
+            # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
+            raise
         except:
-            from concurrent.futures.process import BrokenProcessPool
             e = sys.exc_info()[1]
             if isinstance(e, BrokenProcessPool):
                 print_parallel('process.pool.broken.main', str(e))
@@ -621,8 +624,10 @@ def launch_by_scenario(features,
         for parallel_process in parallel_processes:
             try:
                 parallel_process.result()
+            except (KeyboardInterrupt, SystemExit):
+                # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
+                raise
             except:
-                from concurrent.futures.process import BrokenProcessPool
                 e = sys.exc_info()[1]
                 if isinstance(e, BrokenProcessPool):
                     print_parallel('process.pool.broken.main', str(e))
