@@ -16,12 +16,11 @@ import concurrent
 import copy
 import io
 import json
-import logging.config
+import logging
 import multiprocessing
 import os
 import os.path
 import platform
-import re
 import signal
 import sys
 import time
@@ -30,15 +29,15 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
+from typing import Any
 
 from behave import __main__ as behave_script
 from behave.model import Feature, Scenario, ScenarioOutline
 
 # noinspection PyUnresolvedReferences
-import behavex.outputs.report_json
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
-from behavex.conf_mgr import ConfigRun, get_env, get_param, set_env
+from behavex.conf_mgr import ConfigRun, get_env, get_param
 from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
@@ -53,13 +52,12 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
-                           expand_paths, explore_features, generate_hash,
-                           generate_reports, get_feature_and_scenario_line,
-                           get_json_results, get_logging_level,
-                           get_scenario_tags, get_scenarios_instances,
-                           get_text, join_feature_reports,
-                           join_scenario_reports, len_scenarios,
-                           print_env_variables, print_parallel,
+                           expand_paths, explore_features, generate_reports,
+                           get_feature_and_scenario_line, get_json_results,
+                           get_logging_level, get_scenario_tags,
+                           get_scenarios_instances, get_text,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -136,8 +134,8 @@ def run(args):
         # Handle include_paths parameter
         if len(get_param('include_paths')) > 0:
             include_paths = ",".join(expand_paths(get_param('include_paths'))).replace('\n', '')
-            features_path = os.environ.get('FEATURES_PATH')
-            if features_path == '' or features_path is None or not os.path.exists(features_path):
+            features_path = os.environ.get('FEATURES_PATH', '')
+            if features_path == '' or not os.path.exists(features_path):
                 os.environ['FEATURES_PATH'] = include_paths
             else:
                 os.environ['FEATURES_PATH'] = features_path + ',' + include_paths
@@ -210,7 +208,7 @@ def launch_behavex():
     execution_codes = []
     results = None
     config = conf_mgr.get_config()
-    features_path = os.environ.get('FEATURES_PATH')
+    features_path = os.environ.get('FEATURES_PATH', '')
     parallel_scheme = get_param('parallel_scheme')
     if get_param('dry_run'):
         parallel_processes = 1
@@ -221,7 +219,7 @@ def launch_behavex():
         show_progress_bar = get_param('show_progress_bar')
     multiprocess = (
         True
-        if get_param('parallel_processes') > 1 and not get_param('dry_run')
+        if parallel_processes > 1 and not get_param('dry_run')
         else False
     )
     set_behave_tags()
@@ -283,11 +281,10 @@ def launch_behavex():
                                                             lock,
                                                             show_progress_bar)
         wrap_up_process_pools(process_pool, json_reports, scenario)
-        time_end = global_vars.execution_end_time
 
         if get_param('dry_run'):
-            msg = '\nDry run completed. Please, see the report in {0}' ' folder.\n\n'
-            print(msg.format(get_env('OUTPUT')))
+            dry_run_msg = '\nDry run completed. Please, see the report in {0} folder.\n\n'.format(get_env('OUTPUT'))
+            print(dry_run_msg)
 
         remove_temporary_files(parallel_processes, json_reports)
 
@@ -397,7 +394,6 @@ def create_scenario_line_references(features):
     updated_features = {}
     for feature_path, scenarios in features.items():
         for scenario in scenarios:
-            scenario_filename = text(scenario.filename)
             if global_vars.rerun_failures or ".feature:" in feature_path:
                 if feature_path not in updated_features:
                     updated_features[feature_path] = []
@@ -867,7 +863,7 @@ def wrap_up_process_pools(process_pool,
     output = os.path.join(get_env('OUTPUT'))
     try:
         process_pool.shutdown(wait=True)
-    except Exception as ex:
+    except Exception:
         process_pool.shutdown(wait=False, cancel_futures=True)
     if type(json_reports) is list:
         if scenario:
@@ -1267,8 +1263,9 @@ def dump_json_results():
         process_name = multiprocessing.current_process().name.split('-')[-1]
         path_info = os.path.join(gettempdir(), 'result{}.tmp'.format(process_name))
 
-    def _load_json():
+    def _load_json() -> dict[str, Any]:
         """this function load from file"""
+        json_output_converted = {}
         with open(path_info, 'r') as info_file:
             json_output_file = info_file.read()
             json_output_converted = json.loads(json_output_file)
