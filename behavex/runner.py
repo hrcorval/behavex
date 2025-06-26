@@ -284,8 +284,7 @@ def launch_behavex():
         wrap_up_process_pools(process_pool, json_reports, scenario)
 
         if get_param('dry_run'):
-            dry_run_msg = '\nDry run completed. Please, see the report in {0} folder.\n\n'.format(get_env('OUTPUT'))
-            print(dry_run_msg)
+            print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
 
         remove_temporary_files(parallel_processes, json_reports)
 
