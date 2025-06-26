@@ -56,12 +56,6 @@ def handle_execution_complete_callback(codes,
     try:
         tuple_values = future.result()
     except: # isort:skip
-        # Handle BrokenProcessPool and other exceptions gracefully
-        e = sys.exc_info()[1]
-        if isinstance(e, BrokenProcessPool):
-            print_parallel('process.pool.broken', str(e))
-        else:
-            print_parallel('execution.callback.error', str(e))
         json_reports += []
         codes.append(1)
     if tuple_values:
