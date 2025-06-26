@@ -16,7 +16,7 @@ import concurrent  # pyright: ignore[reportUnusedImport]
 import copy
 import io
 import json
-import logging
+import logging.config  # pyright: ignore[reportUnusedImport]
 import multiprocessing
 import os
 import os.path
