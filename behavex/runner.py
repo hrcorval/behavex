@@ -787,6 +787,9 @@ def _launch_behave(behave_args):
             def getvalue(self):
                 return self.captured.getvalue()
 
+            def isatty(self):
+                return self.original_stdout.isatty()
+
         # Create the tee capture object
         tee = TeePrint(sys.__stdout__)
 
