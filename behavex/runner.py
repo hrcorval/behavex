@@ -30,7 +30,7 @@ from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
-from typing import Any
+from typing import Any, Dict
 
 from behave import __main__ as behave_script
 from behave.model import Feature, Scenario, ScenarioOutline
@@ -1268,7 +1268,7 @@ def dump_json_results():
         process_name = multiprocessing.current_process().name.split('-')[-1]
         path_info = os.path.join(gettempdir(), 'result{}.tmp'.format(process_name))
 
-    def _load_json() -> dict[str, Any]:
+    def _load_json() -> Dict[str, Any]:
         """this function load from file"""
         json_output_converted = {}
         with open(path_info, 'r') as info_file:
