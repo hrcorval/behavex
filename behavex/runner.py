@@ -773,20 +773,56 @@ def _launch_behave(behave_args):
 
         # Use a custom output capture class that mirrors to console and captures
         class TeePrint:
+            """A complete wrapper for stdout that captures output while maintaining all stdout functionality."""
+
             def __init__(self, original_stdout):
-                self.original_stdout = original_stdout
-                self.captured = io.StringIO()
+                # Use object.__setattr__ to avoid recursion with __setattr__
+                object.__setattr__(self, 'original_stdout', original_stdout)
+                object.__setattr__(self, 'captured', io.StringIO())
 
             def write(self, data):
+                """Override write to capture output while maintaining original behavior."""
                 self.original_stdout.write(data)
                 self.captured.write(data)
+                return len(data) if hasattr(data, '__len__') else None
 
             def flush(self):
+                """Override flush to flush both original and captured streams."""
                 self.original_stdout.flush()
                 self.captured.flush()
 
             def getvalue(self):
+                """Custom method to get captured output."""
                 return self.captured.getvalue()
+
+            def __getattr__(self, name):
+                """Delegate all other attributes/methods to the original stdout."""
+                try:
+                    return getattr(self.original_stdout, name)
+                except AttributeError:
+                    raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+            def __setattr__(self, name, value):
+                """Delegate attribute setting to original stdout (except for our internal attributes)."""
+                if name in ('original_stdout', 'captured'):
+                    object.__setattr__(self, name, value)
+                else:
+                    setattr(self.original_stdout, name, value)
+
+            def __getattribute__(self, name):
+                """Handle attribute access with proper delegation."""
+                # Handle our own methods and attributes first
+                if name in ('original_stdout', 'captured', 'write', 'flush', 'getvalue',
+                           '__class__', '__dict__', '__getattr__', '__setattr__'):
+                    return object.__getattribute__(self, name)
+
+                # For common stdout properties, delegate to original_stdout
+                try:
+                    original_stdout = object.__getattribute__(self, 'original_stdout')
+                    return getattr(original_stdout, name)
+                except (AttributeError, KeyError):
+                    # Fallback to our own implementation
+                    return object.__getattribute__(self, name)
 
         # Create the tee capture object
         tee = TeePrint(sys.__stdout__)
