@@ -25,7 +25,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'behavex-images>=3.2.0',
+        'behavex-images @ https://test.pypi.org/simple/behavex-images/3.2.1rc2/',
         'allure-python-commons',
         'jinja2',
         'configobj',
