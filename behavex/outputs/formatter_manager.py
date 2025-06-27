@@ -9,16 +9,20 @@ Formatter manager module to handle custom formatters.
 import importlib
 import os
 import sys
-from typing import Optional, Type
+from typing import (Any, Dict, Optional,  # pyright: ignore[reportDeprecated]
+                    Type)
 
 from behavex.conf_mgr import get_env, get_param
+
+# Formatter Constants
+DEFAULT_FORMATTER_DIR = 'report-artifacts'
 
 
 class FormatterManager:
     """Manager class for handling custom formatters in BehaveX."""
 
     @staticmethod
-    def load_formatter(formatter_spec: str) -> Optional[Type]:
+    def load_formatter(formatter_spec: str) -> Optional[Type[Any]]: #pyright: ignore[reportDeprecated]
         """
         Load a formatter class from a module path specification.
 
@@ -64,25 +68,27 @@ class FormatterManager:
             return None
 
     @staticmethod
-    def get_formatter_output_dir() -> str:
+    def get_formatter_output_dir(formatter_spec: str) -> Optional[str]: #pyright: ignore[reportDeprecated]
         """
-        Get the output directory for the custom formatter.
+        Get the preferred output directory from a formatter class.
+
+        Args:
+            formatter_spec: String in format "module_path:FormatterClass"
 
         Returns:
-            Absolute path to the formatter output directory, or None if no custom directory is specified
+            The formatter's preferred output directory, or None if not found
         """
-        base_output = get_env('OUTPUT', 'output')
-        formatter_outdir = get_param('formatter_outdir', '')
+        try:
+            formatter_class = FormatterManager.load_formatter(formatter_spec)
+            if formatter_class and hasattr(formatter_class, 'DEFAULT_OUTPUT_DIR'):
+                return formatter_class.DEFAULT_OUTPUT_DIR
+        except Exception as e:
+            print(f"Warning: Could not load formatter {formatter_spec} to get output directory: {str(e)}")
 
-        # Return None if no custom formatter output directory is specified
-        # This allows formatters to use their own default directories
-        if not formatter_outdir or formatter_outdir == 'report_artifacts':
-            return None
-
-        return os.path.join(base_output, formatter_outdir)
+        return None
 
     @staticmethod
-    def format_results(json_output: dict) -> None:
+    def format_results(json_output: Dict[str, Any]) -> None: #pyright: ignore[reportDeprecated]
         """
         Format test results using the specified custom formatter.
 
@@ -97,20 +103,17 @@ class FormatterManager:
         if not formatter_class:
             return
 
-        output_dir = FormatterManager.get_formatter_output_dir()
-
-        # Create the output directory only if a custom one is specified
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
+        # The formatter will handle its own output directory setup
+        # No need to create directories here since formatters manage their own paths
 
         try:
             formatter = formatter_class()
             # Check if the formatter has the expected method
-            if not hasattr(formatter, 'parse_json_to_allure'):
-                print(f"Formatter {formatter_class.__name__} does not implement required method 'parse_json_to_allure'")
+            if not hasattr(formatter, 'launch_json_formatter'):
+                print(f"Formatter {formatter_class.__name__} does not implement required method 'launch_json_formatter'")
                 return
 
-            formatter.parse_json_to_allure(json_output)
+            formatter.launch_json_formatter(json_output)
         except Exception as e:
             print(f"Error running formatter {formatter_spec}: {str(e)}")
             import traceback

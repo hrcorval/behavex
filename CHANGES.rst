@@ -1,6 +1,15 @@
 Version History
 ===============================================================================
 
+Version: 4.2.4
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Improved formatter output directory management by implementing dynamic detection of formatter-specific output directories. This ensures consistent paths between evidence storage and formatter output, resolving issues where images and attachments were not appearing in reports.
+* Standardized the formatter_manager architecture to support seamless integration of new custom formatters. Formatters can now define their preferred output directory through a `DEFAULT_OUTPUT_DIR` class attribute, enabling generic and extensible formatter loading without hardcoded dependencies.
+
+
 Version: 4.2.3
 -------------------------------------------------------------------------------
 
