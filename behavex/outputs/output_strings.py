@@ -45,8 +45,8 @@ TEXTS = {
         'description': '',
         'modal': {
             'title': '',
-            'body': '<b>Test Automation Rate:</b> % of automated scenarios.<br>'
-            '<b>Pass Rate:</b>: % of passed scenarios.<br>',
+            'body': ('<b>Test Automation Rate:</b> % of automated scenarios.<br>'
+                    '<b>Pass Rate:</b>: % of passed scenarios.<br>'),
         },
     },
     'joined': {'title': '', 'description': '', 'modal': {'title': '', 'modal': 'the'}},
@@ -61,9 +61,9 @@ TEXTS = {
         'serial_execution': u'\n{0}\nRunning serial scenarios (tagged as @SERIAL).\n{0}\n'.format('*' * 60),
         'running_parallels': u'\n{0}\nRunning parallel scenarios\n{0}\n'.format('*' * 60),
         'run_behave': u"Running feature '{}' with scenario '{}'.",
-        'duplicated_scenarios': '{0}\nThere are duplicate scenario names to run.\n'
-        'Parallel test execution by scenario cannot be performed.\n'
-        'Duplicated scenario names: \n{1}.\n{0}\n'.format('*' * 60, {}),
+        'duplicated_scenarios': ('{0}\nThere are duplicate scenario names to run.\n'
+                                'Parallel test execution by scenario cannot be performed.\n'
+                                'Duplicated scenario names: \n{1}.\n{0}\n').format('*' * 60, {}),
         'execution_crashed': 'Execution crashed or was interrupted when executing the scenario. No outputs could be generated.'
     },
     'folder': {'run_behave': u"Running folder: '{}' and feature '{}'."},
@@ -77,6 +77,9 @@ TEXTS = {
     'execution': {
         'callback': {
             'error': u'\nError occurred during execution callback: {}'
+        },
+        'dry_run': {
+            'completed': u'\nDry run completed. Please, see the report in {0} folder.\n\n'
         }
     },
     'parallel': {

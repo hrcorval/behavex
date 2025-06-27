@@ -33,6 +33,7 @@ share/python-wheels/
 TODO.txt
 *.egg
 *.bat
+pyrightconfig.json
 .DS_Store
 debug.log
 MANIFEST

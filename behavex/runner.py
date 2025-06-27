@@ -12,33 +12,33 @@ including setup, execution, and reporting.
 from __future__ import absolute_import, print_function
 
 import codecs
-import concurrent
+import concurrent  # pyright: ignore[reportUnusedImport]
 import copy
 import io
 import json
-import logging.config
+import logging.config  # pyright: ignore[reportUnusedImport]
 import multiprocessing
 import os
 import os.path
 import platform
-import re
 import signal
 import sys
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
+from typing import Any, Dict
 
 from behave import __main__ as behave_script
 from behave.model import Feature, Scenario, ScenarioOutline
 
 # noinspection PyUnresolvedReferences
-import behavex.outputs.report_json
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
-from behavex.conf_mgr import ConfigRun, get_env, get_param, set_env
+from behavex.conf_mgr import ConfigRun, get_env, get_param
 from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
@@ -53,13 +53,12 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
-                           expand_paths, explore_features, generate_hash,
-                           generate_reports, get_feature_and_scenario_line,
-                           get_json_results, get_logging_level,
-                           get_scenario_tags, get_scenarios_instances,
-                           get_text, join_feature_reports,
-                           join_scenario_reports, len_scenarios,
-                           print_env_variables, print_parallel,
+                           expand_paths, explore_features, generate_reports,
+                           get_feature_and_scenario_line, get_json_results,
+                           get_logging_level, get_scenario_tags,
+                           get_scenarios_instances, get_text,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -136,8 +135,8 @@ def run(args):
         # Handle include_paths parameter
         if len(get_param('include_paths')) > 0:
             include_paths = ",".join(expand_paths(get_param('include_paths'))).replace('\n', '')
-            features_path = os.environ.get('FEATURES_PATH')
-            if features_path == '' or features_path is None or not os.path.exists(features_path):
+            features_path = os.environ.get('FEATURES_PATH', '')
+            if features_path == '' or not os.path.exists(features_path):
                 os.environ['FEATURES_PATH'] = include_paths
             else:
                 os.environ['FEATURES_PATH'] = features_path + ',' + include_paths
@@ -210,7 +209,7 @@ def launch_behavex():
     execution_codes = []
     results = None
     config = conf_mgr.get_config()
-    features_path = os.environ.get('FEATURES_PATH')
+    features_path = os.environ.get('FEATURES_PATH', '')
     parallel_scheme = get_param('parallel_scheme')
     if get_param('dry_run'):
         parallel_processes = 1
@@ -221,7 +220,7 @@ def launch_behavex():
         show_progress_bar = get_param('show_progress_bar')
     multiprocess = (
         True
-        if get_param('parallel_processes') > 1 and not get_param('dry_run')
+        if parallel_processes > 1 and not get_param('dry_run')
         else False
     )
     set_behave_tags()
@@ -283,11 +282,9 @@ def launch_behavex():
                                                             lock,
                                                             show_progress_bar)
         wrap_up_process_pools(process_pool, json_reports, scenario)
-        time_end = global_vars.execution_end_time
 
         if get_param('dry_run'):
-            msg = '\nDry run completed. Please, see the report in {0}' ' folder.\n\n'
-            print(msg.format(get_env('OUTPUT')))
+            print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
 
         remove_temporary_files(parallel_processes, json_reports)
 
@@ -397,7 +394,6 @@ def create_scenario_line_references(features):
     updated_features = {}
     for feature_path, scenarios in features.items():
         for scenario in scenarios:
-            scenario_filename = text(scenario.filename)
             if global_vars.rerun_failures or ".feature:" in feature_path:
                 if feature_path not in updated_features:
                     updated_features[feature_path] = []
@@ -502,8 +498,10 @@ def launch_by_feature(features,
     for parallel_process in parallel_processes:
         try:
             parallel_process.result()
+        except (KeyboardInterrupt, SystemExit):
+            # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
+            raise
         except:
-            from concurrent.futures.process import BrokenProcessPool
             e = sys.exc_info()[1]
             if isinstance(e, BrokenProcessPool):
                 print_parallel('process.pool.broken.main', str(e))
@@ -625,8 +623,10 @@ def launch_by_scenario(features,
         for parallel_process in parallel_processes:
             try:
                 parallel_process.result()
+            except (KeyboardInterrupt, SystemExit):
+                # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
+                raise
             except:
-                from concurrent.futures.process import BrokenProcessPool
                 e = sys.exc_info()[1]
                 if isinstance(e, BrokenProcessPool):
                     print_parallel('process.pool.broken.main', str(e))
@@ -772,20 +772,56 @@ def _launch_behave(behave_args):
 
         # Use a custom output capture class that mirrors to console and captures
         class TeePrint:
+            """A complete wrapper for stdout that captures output while maintaining all stdout functionality."""
+
             def __init__(self, original_stdout):
-                self.original_stdout = original_stdout
-                self.captured = io.StringIO()
+                # Use object.__setattr__ to avoid recursion with __setattr__
+                object.__setattr__(self, 'original_stdout', original_stdout)
+                object.__setattr__(self, 'captured', io.StringIO())
 
             def write(self, data):
+                """Override write to capture output while maintaining original behavior."""
                 self.original_stdout.write(data)
                 self.captured.write(data)
+                return len(data) if hasattr(data, '__len__') else None
 
             def flush(self):
+                """Override flush to flush both original and captured streams."""
                 self.original_stdout.flush()
                 self.captured.flush()
 
             def getvalue(self):
+                """Custom method to get captured output."""
                 return self.captured.getvalue()
+
+            def __getattr__(self, name):
+                """Delegate all other attributes/methods to the original stdout."""
+                try:
+                    return getattr(self.original_stdout, name)
+                except AttributeError:
+                    raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+            def __setattr__(self, name, value):
+                """Delegate attribute setting to original stdout (except for our internal attributes)."""
+                if name in ('original_stdout', 'captured'):
+                    object.__setattr__(self, name, value)
+                else:
+                    setattr(self.original_stdout, name, value)
+
+            def __getattribute__(self, name):
+                """Handle attribute access with proper delegation."""
+                # Handle our own methods and attributes first
+                if name in ('original_stdout', 'captured', 'write', 'flush', 'getvalue',
+                           '__class__', '__dict__', '__getattr__', '__setattr__'):
+                    return object.__getattribute__(self, name)
+
+                # For common stdout properties, delegate to original_stdout
+                try:
+                    original_stdout = object.__getattribute__(self, 'original_stdout')
+                    return getattr(original_stdout, name)
+                except (AttributeError, KeyError):
+                    # Fallback to our own implementation
+                    return object.__getattribute__(self, name)
 
         # Create the tee capture object
         tee = TeePrint(sys.__stdout__)
@@ -867,7 +903,7 @@ def wrap_up_process_pools(process_pool,
     output = os.path.join(get_env('OUTPUT'))
     try:
         process_pool.shutdown(wait=True)
-    except Exception as ex:
+    except Exception:
         process_pool.shutdown(wait=False, cancel_futures=True)
     if type(json_reports) is list:
         if scenario:
@@ -1267,8 +1303,9 @@ def dump_json_results():
         process_name = multiprocessing.current_process().name.split('-')[-1]
         path_info = os.path.join(gettempdir(), 'result{}.tmp'.format(process_name))
 
-    def _load_json():
+    def _load_json() -> Dict[str, Any]:
         """this function load from file"""
+        json_output_converted = {}
         with open(path_info, 'r') as info_file:
             json_output_file = info_file.read()
             json_output_converted = json.loads(json_output_file)
