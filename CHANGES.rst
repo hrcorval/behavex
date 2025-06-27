@@ -18,6 +18,10 @@ ENHANCEMENTS:
 * Enhanced TeePrint stdout wrapper to support complete file-like interface, preventing AttributeError exceptions when test code calls methods like `isatty()`, `encoding`, `closed`, `fileno()`, etc. This ensures full compatibility with testing frameworks and libraries that expect complete stdout functionality.
 * Improved handling of execution interruption (Ctrl+C) by properly propagating KeyboardInterrupt and SystemExit exceptions to allow graceful termination of test execution in both single-process and parallel execution modes.
 
+CONTRIBUTIONS:
+
+* Thanks to `bombsimon <https://github.com/bombsimon>`__ for helping us to fix the issue with the TeePrint stdout wrapper.
+
 
 Version: 4.2.2
 -------------------------------------------------------------------------------
