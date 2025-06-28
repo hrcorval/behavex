@@ -333,7 +333,6 @@ def parse_arguments(args):
         '--formatter-outdir',
         help="Specify the output directory for the custom formatter relative to the output folder",
         metavar='DIR',
-        default='report_artifacts',
         required=False,
     )
 

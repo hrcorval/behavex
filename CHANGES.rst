@@ -1,6 +1,15 @@
 Version History
 ===============================================================================
 
+Version: 4.2.4
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Improved formatter output directory management by implementing dynamic detection of formatter-specific output directories. This ensures consistent paths between evidence storage and formatter output, resolving issues where images and attachments were not appearing in reports.
+* Standardized the formatter_manager architecture to support seamless integration of new custom formatters. Formatters can now define their preferred output directory through a `DEFAULT_OUTPUT_DIR` class attribute, enabling generic and extensible formatter loading without hardcoded dependencies.
+
+
 Version: 4.2.3
 -------------------------------------------------------------------------------
 
@@ -8,6 +17,10 @@ ENHANCEMENTS:
 
 * Enhanced TeePrint stdout wrapper to support complete file-like interface, preventing AttributeError exceptions when test code calls methods like `isatty()`, `encoding`, `closed`, `fileno()`, etc. This ensures full compatibility with testing frameworks and libraries that expect complete stdout functionality.
 * Improved handling of execution interruption (Ctrl+C) by properly propagating KeyboardInterrupt and SystemExit exceptions to allow graceful termination of test execution in both single-process and parallel execution modes.
+
+CONTRIBUTIONS:
+
+* Thanks to `bombsimon <https://github.com/bombsimon>`__ for helping us to fix the issue with the TeePrint stdout wrapper.
 
 
 Version: 4.2.2

@@ -8,6 +8,15 @@ from behave import given, then, when
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 tests_features_path = os.path.join(root_project_path, 'tests', 'features')
+test_images_path = os.path.join(root_project_path, 'tests', 'test_images')
+
+# Import behavex-images functionality
+try:
+    from behavex_images import image_attachments
+    behavex_images_available = True
+except ImportError:
+    behavex_images_available = False
+    logging.warning("behavex-images not available, image attachment tests will be skipped")
 
 
 @given('The progress bar is enabled')
@@ -118,6 +127,7 @@ def run_command_with_scheme_processes_and_tags(context, scenario_name=None, argu
         tags_array = []
     else:
         tags_array = get_tags_arguments(tags)
+    feature_path_2 = None
     if feature_name:
         if feature_name_2:
             feature_path = os.path.join(tests_features_path, 'secondary_features', feature_name)
@@ -292,6 +302,110 @@ def get_total_scenarios_in_junit_reports(context, consider_skipped_scenarios=Tru
                 if consider_skipped_scenarios:
                     total_scenarios_in_junit_reports += xml_content.count('status="skipped"')
     return total_scenarios_in_junit_reports
+
+
+@given('I take a screenshot using test image {image_number}')
+def step_take_screenshot_using_test_image(context, image_number):
+    """Attach a test image file using behavex-images"""
+    if not behavex_images_available:
+        logging.warning("behavex-images not available, skipping image attachment")
+        return
+
+    # Import here to avoid issues if behavex-images is not available
+    from behavex_images import image_attachments
+
+    image_path = os.path.join(test_images_path, f'test_image_{image_number}.png')
+    if os.path.exists(image_path):
+        image_attachments.attach_image_file(context, image_path)
+        logging.info(f"Attached test image: {image_path}")
+    else:
+        raise FileNotFoundError(f"Test image not found: {image_path}")
+
+
+@when('I run the behavex command with image attachments')
+def step_run_behavex_with_image_attachments(context):
+    """Run behavex with HTML formatter and image attachments enabled"""
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'simple_image_tests.feature'),
+        '-o', context.output_path,
+        '-t', '@IMAGE_ATTACHMENT',
+        '-t', '@HTML_REPORT'
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with allure formatter and image attachments')
+def step_run_behavex_with_allure_and_image_attachments(context):
+    """Run behavex with Allure formatter and image attachments enabled"""
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'simple_image_tests.feature'),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter',
+        '-t', '@IMAGE_ATTACHMENT',
+        '-t', '@ALLURE_FORMATTER'
+    ]
+    execute_command(context, execution_args)
+
+
+@then('I should see the HTML report contains screenshots')
+def step_verify_html_report_contains_screenshots(context):
+    """Verify that the HTML report contains attached screenshots"""
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    if os.path.exists(html_report_path):
+        with open(html_report_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+            # Look for image references in the HTML
+            assert 'test_image_' in html_content, "Screenshots not found in HTML report"
+            logging.info("Screenshots found in HTML report")
+    else:
+        raise FileNotFoundError(f"HTML report not found: {html_report_path}")
+
+
+@then('I should see the HTML report contains the image gallery icon')
+def step_verify_html_report_contains_gallery_icon(context):
+    """Verify that the HTML report contains the image gallery icon"""
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    if os.path.exists(html_report_path):
+        with open(html_report_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+            # Look for the specific gallery icon HTML element
+            gallery_icon = '<span class="glyphicon glyphicon-picture">'
+            assert gallery_icon in html_content, "Image gallery icon not found in HTML report"
+            logging.info("Image gallery icon found in HTML report")
+    else:
+        raise FileNotFoundError(f"HTML report not found: {html_report_path}")
+
+
+@then('I should see that images are stored in the allure formatter output directory')
+def step_verify_images_in_allure_output(context):
+    """Verify that images are stored in the Allure formatter output directory"""
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    if os.path.exists(allure_results_path):
+        # Look for image attachments in allure results
+        allure_files = os.listdir(allure_results_path)
+        image_files = [f for f in allure_files if f.endswith('.png') or f.endswith('.jpg') or f.endswith('.jpeg')]
+        assert len(image_files) > 0, "No image files found in Allure output directory"
+        logging.info(f"Found {len(image_files)} image files in Allure output directory")
+
+        # Also check for attachment references in JSON files
+        json_files = [f for f in allure_files if f.endswith('.json')]
+        found_attachment_reference = False
+        for json_file in json_files:
+            json_path = os.path.join(allure_results_path, json_file)
+            with open(json_path, 'r', encoding='utf-8') as f:
+                json_content = f.read()
+                if 'attachments' in json_content and 'image' in json_content:
+                    found_attachment_reference = True
+                    break
+
+        assert found_attachment_reference, "No image attachment references found in Allure JSON files"
+        logging.info("Image attachment references found in Allure JSON files")
+    else:
+        raise FileNotFoundError(f"Allure results directory not found: {allure_results_path}")
 
 
 def execute_command(context, execution_args, print_output=True):

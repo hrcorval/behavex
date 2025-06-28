@@ -43,6 +43,8 @@ from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
+from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
+                                               FormatterManager)
 from behavex.outputs.report_json import generate_execution_info
 from behavex.outputs.report_utils import (get_overall_status,
                                           match_for_execution,
@@ -1085,8 +1087,25 @@ def _set_env_variables(args):
     if get_param('name'):
         set_env_variable('NAME', args.name)
     if get_param('formatter'):
-        formatter_outdir = get_param('formatter_outdir')
-        set_env_variable('LOGS', os.path.join(get_env('output'), formatter_outdir))
+        formatter_outdir = get_param('formatter_outdir', '')
+        formatter_spec = get_param('formatter')
+
+        # If no formatter output directory is specified, use the default
+        if not formatter_outdir:
+            formatter_outdir = DEFAULT_FORMATTER_DIR
+
+        # Special handling for custom formatters with default settings
+        if formatter_outdir == DEFAULT_FORMATTER_DIR and formatter_spec:
+            # Try to dynamically get the formatter's preferred output directory
+            custom_formatter_dir = FormatterManager.get_formatter_output_dir(formatter_spec)
+            if custom_formatter_dir:
+                # Use the formatter's preferred directory to maintain consistency
+                set_env_variable('LOGS', os.path.join(get_env('output'), custom_formatter_dir))
+            else:
+                # Fallback to default formatter directory
+                set_env_variable('LOGS', os.path.join(get_env('output'), formatter_outdir))
+        else:
+            set_env_variable('LOGS', os.path.join(get_env('output'), formatter_outdir))
     else:
         set_env_variable('LOGS', os.path.join(get_env('output'), 'outputs', 'logs'))
     for arg in BEHAVEX_ARGS[4:]:
