@@ -25,7 +25,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'behavex-images==3.2.1',
+        'behavex-images>=3.2.1',
         'allure-python-commons',
         'jinja2',
         'configobj',
