@@ -79,7 +79,7 @@ def get_logging_level():
         log_level = get_param('logging_level')
     else:
         log_level = LOGGING_CFG['logger_root']['level']
-        log_level = LOGGING_LEVELS.get(log_level.lower(), logging.DEBUG)
+        log_level = LOGGING_LEVELS.get(log_level.lower(), logging.INFO)
     return log_level
 
 

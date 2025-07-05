@@ -31,7 +31,6 @@ import os
 import re
 import sys
 import uuid
-from datetime import datetime
 from pathlib import Path
 
 from allure_commons.model2 import (Attachment, Parameter, TestResult,
@@ -40,12 +39,14 @@ from allure_commons.types import AttachmentType
 from allure_commons.utils import now
 
 from behavex.conf_mgr import get_env, get_param
-from behavex.outputs.formatter_manager import FormatterManager
 from behavex.outputs.report_utils import get_string_hash
 
 
 class AllureBehaveXFormatter:
     """Allure formatter for BehaveX test results."""
+
+    # Default output directory for this formatter
+    DEFAULT_OUTPUT_DIR = 'allure-results'
 
     def _get_step_line_from_image(self, filename):
         """Extract step line number from image filename.
@@ -243,7 +244,11 @@ class AllureBehaveXFormatter:
             TestResult: The updated test case with evidence attachments
         """
 
-        evidence_dir = os.path.join(get_env('logs', 'output/allure-results'), str(scenario_hash), 'evidence')
+        logs_dir = get_env('logs')
+        if logs_dir is None:
+            # Handle standalone script execution case
+            logs_dir = os.path.join(os.path.dirname(output_dir), 'outputs', 'logs')
+        evidence_dir = os.path.join(logs_dir, str(scenario_hash), 'evidence')
 
         if not os.path.exists(evidence_dir):
             return test_case
@@ -297,19 +302,20 @@ class AllureBehaveXFormatter:
 
         return test_case
 
-    def parse_json_to_allure(self, json_data):
+    def launch_json_formatter(self, json_data):
         """
-        Parses the JSON report data and converts it into Allure-compatible results.
+        Generic method to launch the formatter and process JSON test results.
 
         Args:
             json_data (dict): Dictionary containing the test results data.
         """
-        # Get the formatter output directory from FormatterManager
-        formatter_output_dir = FormatterManager.get_formatter_output_dir()
+        # Use the LOGS environment variable which is set consistently by the runner
+        # This ensures evidence, logs, and allure results are all in the same location
+        output_dir = get_env('logs')
 
-        # If a custom output directory is specified, use it.
-        # Otherwise, default to 'output/allure-results'.
-        output_dir = formatter_output_dir or os.path.join(get_env('OUTPUT', 'output'), 'allure-results')
+        # Fallback if LOGS is not set (for standalone script execution)
+        if not output_dir:
+            output_dir = os.path.join(get_env('OUTPUT') or 'output', self.DEFAULT_OUTPUT_DIR)
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -487,7 +493,11 @@ class AllureBehaveXFormatter:
                 # Process scenario logs as attachment
                 if get_param('formatter_attach_logs'):
                     scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
-                    log_path = os.path.join(get_env('logs', 'output/allure-results'), str(scenario_hash), 'scenario.log')
+                    logs_dir_for_log = get_env('logs')
+                    if logs_dir_for_log is None:
+                        # Handle standalone script execution case
+                        logs_dir_for_log = os.path.join(os.path.dirname(output_dir), 'outputs', 'logs')
+                    log_path = os.path.join(logs_dir_for_log, str(scenario_hash), 'scenario.log')
                     if os.path.exists(log_path):
                         # Use relative path for the source if possible to avoid duplication
                         rel_path = os.path.relpath(log_path, output_dir) if output_dir in log_path else log_path
@@ -637,7 +647,6 @@ class AllureBehaveXFormatter:
             with open(os.path.join(output_dir, "environment-categories.json"), "w") as f:
                 json.dump(env_categories, f, indent=2)
 
-
 def main():
     parser = argparse.ArgumentParser(description='Parse BehaveX report.json into Allure format')
     parser.add_argument('--report-path',
@@ -651,7 +660,7 @@ def main():
 
     try:
         with open(args.report_path) as f:
-            formatter.parse_json_to_allure(json.load(f))
+            formatter.launch_json_formatter(json.load(f))
     except FileNotFoundError:
         print(f"Error: Could not find report file at {args.report_path}")
         sys.exit(1)

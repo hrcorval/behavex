@@ -35,7 +35,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python setup.py sdist
-          pip install dist/behavex-4.2.3.tar.gz
+          pip install dist/behavex-4.2.4.tar.gz
+          pip freeze
 
 
       - name: Verify behavex command
