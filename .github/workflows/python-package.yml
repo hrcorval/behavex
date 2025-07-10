@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python setup.py sdist
-          pip install dist/behavex-4.3.0rc1.tar.gz
+          pip install --extra-index-url https://test.pypi.org/simple/ dist/behavex-4.3.0rc1.tar.gz
           pip freeze
 
 
@@ -77,7 +77,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install behave==1.2.6 jinja2 configobj minify-html csscompressor allure-python-commons
-          python -m pip install "behavex-images>=3.2.1"
+          python -m pip install --extra-index-url https://test.pypi.org/simple/ "behavex-images==3.2.2rc1"
           python setup.py sdist
           python -m pip install dist/behavex-4.3.0rc1.tar.gz --no-deps
 
