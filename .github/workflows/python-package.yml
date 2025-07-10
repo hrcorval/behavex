@@ -76,9 +76,10 @@ jobs:
       - name: Install behavex without setuptools
         run: |
           python -m pip install --upgrade pip
+          python -m pip install build
           python -m pip install behave==1.2.6 jinja2 configobj minify-html csscompressor allure-python-commons
           python -m pip install --extra-index-url https://test.pypi.org/simple/ "behavex-images==3.2.2rc1"
-          python setup.py sdist
+          python -m build
           python -m pip install dist/behavex-4.3.0rc1.tar.gz --no-deps
 
       - name: Run behavex tests with image attachments
