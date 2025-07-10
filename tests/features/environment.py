@@ -5,7 +5,7 @@ def before_all(context):
         from behavex_images import image_attachments
         from behavex_images.image_attachments import AttachmentsCondition
         image_attachments.set_attachments_condition(context, AttachmentsCondition.ALWAYS)
-    except ImportError:
+    except (ImportError, ModuleNotFoundError):
         pass  # behavex-images not available
 
 
