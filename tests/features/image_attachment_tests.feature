@@ -3,8 +3,10 @@ Feature: Image Attachment Testing
   @IMAGE_ATTACHMENT @HTML_REPORT @INTEGRATION
   Scenario: Validate image attachments appear in HTML report with gallery icon
     Given I have installed behavex
+    And image attachment functionality is required
     When I run the behavex command with image attachments
-    Then I should see the following behavex console outputs and exit code "0"
+    Then image attachment dependencies should be available
+    And I should see the following behavex console outputs and exit code "0"
     | output_line   |
     | Exit code: 0  |
     And I should not see error messages in the output
@@ -14,8 +16,10 @@ Feature: Image Attachment Testing
   @IMAGE_ATTACHMENT @ALLURE_FORMATTER @INTEGRATION
   Scenario: Validate image attachments appear in Allure formatter output
     Given I have installed behavex
+    And image attachment functionality is required
     When I run the behavex command with allure formatter and image attachments
-    Then I should see the following behavex console outputs and exit code "0"
+    Then image attachment dependencies should be available
+    And I should see the following behavex console outputs and exit code "0"
     | output_line   |
     | Exit code: 0  |
     And I should not see error messages in the output

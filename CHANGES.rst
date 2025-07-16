@@ -1,6 +1,13 @@
 Version History
 ===============================================================================
 
+Version: 4.3.1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Enhanced test suite with dependency validation system to catch missing optional dependencies during testing. Tests now fail clearly when required dependencies (like behavex-images) are missing, rather than silently skipping, helping to identify compatibility issues early in the development cycle.
+
 Version: 4.2.4
 -------------------------------------------------------------------------------
 
