@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.2.4',
+    version='4.3.1',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',
@@ -25,7 +25,7 @@ setup(
     },
     install_requires=[
         'behave==1.2.6',
-        'behavex-images>=3.2.1',
+        'behavex-images>=3.2.2',
         'allure-python-commons',
         'jinja2',
         'configobj',

@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python setup.py sdist
-          pip install dist/behavex-4.2.4.tar.gz
+          pip install --extra-index-url https://test.pypi.org/simple/ dist/behavex-4.3.1.tar.gz
           pip freeze
 
 
@@ -55,3 +55,33 @@ jobs:
         with:
           name: report-${{ matrix.os }}-py${{ matrix.python-version }}
           path: /home/runner/work/behavex/behavex/output/report.json
+
+  # Test behavex without setuptools
+  test-without-setuptools:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.13']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install behavex without setuptools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m pip install behave==1.2.6 jinja2 configobj minify-html csscompressor allure-python-commons
+          python -m pip install behavex-images>=3.2.2
+          python -m build
+          python -m pip install dist/behavex-4.3.1.tar.gz --no-deps
+
+      - name: Run behavex tests with image attachments
+        run: |
+          behavex ./tests/features/image_attachment_tests.feature
