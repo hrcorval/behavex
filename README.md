@@ -8,13 +8,15 @@
 
 # BehaveX Documentation
 
-## 📢 Important News
+## ✨ Latest Features
 
-**🎉 NEW: Allure Reports Integration!** *(Available since BehaveX 4.2.1)*
+Just to mention the most important features delivered in latest BehaveX releases:
 
-BehaveX now provides seamless integration with Allure, the popular test reporting framework! Generate beautiful, comprehensive test reports with detailed evidence.
+🎯 **Test Execution Ordering** *(v4.4.0)* - Control the sequence of scenario and feature execution during parallel runs using order tags (e.g., `@ORDER_001`, `@ORDER_010`).
 
-[Learn more about Allure integration](#allure-reports-integration) 👈
+📊 **Allure Reports Integration** *(v4.2.1)* - Generate beautiful, comprehensive test reports with Allure framework integration.
+
+📈 **Console Progress Bar** *(v3.2.13)* - Real-time progress tracking during parallel test execution.
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -253,6 +255,7 @@ Scenario: This scenario will run last
 - Test execution ordering only works when running tests in parallel (`--parallel-processes > 1`)
 - Lower numbers execute first (e.g., `@ORDER_001` runs before `@ORDER_010`)
 - Scenarios without order tags will run after all ordered scenarios (Default order: 9999)
+- To run scenarios at the end of execution, you can use order numbers greater than 9999 (e.g., `@ORDER_10000`)
 - Use zero-padded numbers (e.g., `001`, `010`, `100`) for better sorting visualization
 - The order tags work with both parallel feature and scenario execution schemes
 
