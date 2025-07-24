@@ -5,6 +5,9 @@ import time
 
 class GlobalVars:
     def __init__(self):
+        # Ensure BEHAVEX_PATH is set if not already
+        if 'BEHAVEX_PATH' not in os.environ:
+            os.environ['BEHAVEX_PATH'] = os.path.dirname(os.path.realpath(__file__))
         self._execution_path = os.environ.get('BEHAVEX_PATH')
         self._report_filenames = {
             'report_json': 'report.json',

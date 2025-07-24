@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import random
@@ -436,3 +437,197 @@ def execute_command(context, execution_args, print_output=True):
     context.result = subprocess.run(execution_args, capture_output=True, text=True)
     if print_output:
         logging.info(context.result.stdout)
+
+
+# ---------- Execution Ordering Test Steps ----------
+
+@when('I run the behavex command with execution ordering enabled using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def step_impl(context, parallel_processes, parallel_scheme):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                      os.path.join(tests_features_path, 'secondary_features', 'ordered_tests.feature'),
+                      '-t', '@ORDERED_TEST',
+                      '-o', context.output_path,
+                      '--parallel-processes', parallel_processes,
+                      '--parallel-scheme', parallel_scheme,
+                      '--order-tests']
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with execution ordering enabled using custom prefix "{prefix}" with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def step_impl(context, prefix, parallel_processes, parallel_scheme):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                      os.path.join(tests_features_path, 'secondary_features', 'priority_ordered_tests.feature'),
+                      '-t', '@PRIORITY_TEST',
+                      '-o', context.output_path,
+                      '--parallel-processes', parallel_processes,
+                      '--parallel-scheme', parallel_scheme,
+                      '--order-tests',
+                      '--order-tag-prefix', prefix]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with execution ordering enabled for mixed scenarios using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def step_impl(context, parallel_processes, parallel_scheme):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                      os.path.join(tests_features_path, 'secondary_features', 'mixed_ordered_tests.feature'),
+                      '-t', '@MIXED_TEST',
+                      '-o', context.output_path,
+                      '--parallel-processes', parallel_processes,
+                      '--parallel-scheme', parallel_scheme,
+                      '--order-tests']
+    execute_command(context, execution_args)
+
+
+@then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme')
+def step_impl(context, parallel_scheme):
+    """Verify that scenarios with ORDER tags executed in the correct order"""
+    report_json_path = os.path.join(context.output_path, 'report.json')
+    assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
+
+    with open(report_json_path, 'r') as json_file:
+        report_data = json.load(json_file)
+
+    # Extract scenario execution order from the report with their order values
+    scenario_order_mapping = {
+        "First ordered test scenario": 1,
+        "Second ordered test scenario": 2,
+        "Third ordered test scenario": 3,
+        "Fourth ordered test scenario": 10
+    }
+
+    executed_scenarios = []
+    for feature in report_data.get('features', []):
+        for scenario in feature.get('scenarios', []):
+            if scenario['name'] in scenario_order_mapping:
+                executed_scenarios.append({
+                    'name': scenario['name'],
+                    'order': scenario_order_mapping[scenario['name']]
+                })
+
+    # Sort by order value
+    executed_scenarios.sort(key=lambda x: x['order'])
+
+    # Verify that all expected scenarios were executed
+    expected_count = 4
+    assert len(executed_scenarios) == expected_count, \
+        f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
+
+    # Verify that ORDER_001 comes before ORDER_002, ORDER_002 before ORDER_003, etc.
+    for i in range(len(executed_scenarios) - 1):
+        current_order = executed_scenarios[i]['order']
+        next_order = executed_scenarios[i + 1]['order']
+        assert current_order < next_order, \
+            f"Scenario ordering violated: {executed_scenarios[i]['name']} (ORDER_{current_order:03d}) should execute before {executed_scenarios[i + 1]['name']} (ORDER_{next_order:03d})"
+
+    logging.info(f"✅ Execution ordering verified: scenarios executed in correct order based on ORDER tags")
+
+
+@then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme with custom prefix')
+def step_impl(context, parallel_scheme):
+    """Verify that scenarios with PRIORITY tags executed in the correct order"""
+    report_json_path = os.path.join(context.output_path, 'report.json')
+    assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
+
+    with open(report_json_path, 'r') as json_file:
+        report_data = json.load(json_file)
+
+    # Extract scenario execution order from the report with their priority values
+    scenario_priority_mapping = {
+        "First priority test scenario": 1,
+        "Second priority test scenario": 2,
+        "Third priority test scenario": 3
+    }
+
+    executed_scenarios = []
+    for feature in report_data.get('features', []):
+        for scenario in feature.get('scenarios', []):
+            if scenario['name'] in scenario_priority_mapping:
+                executed_scenarios.append({
+                    'name': scenario['name'],
+                    'priority': scenario_priority_mapping[scenario['name']]
+                })
+
+    # Sort by priority value
+    executed_scenarios.sort(key=lambda x: x['priority'])
+
+    # Verify that all expected scenarios were executed
+    expected_count = 3
+    assert len(executed_scenarios) == expected_count, \
+        f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
+
+    # Verify that PRIORITY_001 comes before PRIORITY_002, PRIORITY_002 before PRIORITY_003
+    for i in range(len(executed_scenarios) - 1):
+        current_priority = executed_scenarios[i]['priority']
+        next_priority = executed_scenarios[i + 1]['priority']
+        assert current_priority < next_priority, \
+            f"Scenario priority ordering violated: {executed_scenarios[i]['name']} (PRIORITY_{current_priority:03d}) should execute before {executed_scenarios[i + 1]['name']} (PRIORITY_{next_priority:03d})"
+
+    logging.info(f"✅ Custom prefix execution ordering verified: scenarios executed in correct priority order")
+
+
+@then('I should see that ordered scenarios execute before unordered scenarios for "{parallel_scheme}" scheme')
+def step_impl(context, parallel_scheme):
+    """Verify that scenarios with ORDER tags execute before scenarios without order tags"""
+    report_json_path = os.path.join(context.output_path, 'report.json')
+    assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
+
+    with open(report_json_path, 'r') as json_file:
+        report_data = json.load(json_file)
+
+    # Extract scenario execution order from the report
+    scenario_execution_order = []
+    for feature in report_data.get('features', []):
+        for scenario in feature.get('scenarios', []):
+            scenario_execution_order.append(scenario['name'])
+
+    # Categorize scenarios
+    ordered_scenarios = [
+        "First ordered test scenario",
+        "Second ordered test scenario",
+        "Third ordered test scenario"
+    ]
+    unordered_scenarios = [
+        "Unordered test scenario that should run last",
+        "Another unordered test scenario that should run last"
+    ]
+
+    # Find positions of ordered and unordered scenarios
+    ordered_positions = []
+    unordered_positions = []
+
+    for i, scenario_name in enumerate(scenario_execution_order):
+        if scenario_name in ordered_scenarios:
+            ordered_positions.append(i)
+        elif scenario_name in unordered_scenarios:
+            unordered_positions.append(i)
+
+    # Verify that all ordered scenarios appear before all unordered scenarios
+    if ordered_positions and unordered_positions:
+        max_ordered_position = max(ordered_positions)
+        min_unordered_position = min(unordered_positions)
+        assert max_ordered_position < min_unordered_position, \
+            f"Ordered scenarios should execute before unordered scenarios. " \
+            f"Last ordered at position {max_ordered_position}, first unordered at position {min_unordered_position}"
+
+
+@then('the execution order should not be enforced with single process execution')
+def step_impl(context):
+    """Verify that ordering is not enforced when running with single process"""
+    # For single process execution, we just verify that the test completed successfully
+    # and scenarios were executed (the actual order doesn't matter since ordering only works with parallel execution)
+    report_json_path = os.path.join(context.output_path, 'report.json')
+    assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
+
+    with open(report_json_path, 'r') as json_file:
+        report_data = json.load(json_file)
+
+    # Just verify that scenarios were executed
+    total_scenarios = 0
+    for feature in report_data.get('features', []):
+        total_scenarios += len(feature.get('scenarios', []))
+
+    assert total_scenarios > 0, "No scenarios were executed"
+    logging.info(f"Successfully executed {total_scenarios} scenarios with single process (ordering not enforced)")

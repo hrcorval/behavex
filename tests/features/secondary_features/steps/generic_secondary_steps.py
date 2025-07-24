@@ -35,6 +35,15 @@ def step_impl(context):
     context.condition = 'pass'
     logging.info('a passing condition')
 
+@given('a passing condition that records execution order "{order_tag}"')
+def step_impl(context, order_tag):
+    context.condition = 'pass'
+    # Record execution order for testing purposes
+    if not hasattr(context, 'execution_order'):
+        context.execution_order = []
+    context.execution_order.append(order_tag)
+    logging.info(f'a passing condition that records execution order "{order_tag}"')
+
 @given('a condition to skip the scenario')
 def step_impl(context):
     context.condition = 'skip'
