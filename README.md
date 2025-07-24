@@ -256,6 +256,7 @@ Scenario: This scenario will run last
 - Lower numbers execute first (e.g., `@ORDER_001` runs before `@ORDER_010`)
 - Scenarios without order tags will run after all ordered scenarios (Default order: 9999)
 - To run scenarios at the end of execution, you can use order numbers greater than 9999 (e.g., `@ORDER_10000`)
+- When the number of parallel processes equals or exceeds the number of ordered scenarios, ordering has no practical effect since all scenarios can run simultaneously
 - Use zero-padded numbers (e.g., `001`, `010`, `100`) for better sorting visualization
 - The order tags work with both parallel feature and scenario execution schemes
 
