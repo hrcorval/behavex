@@ -252,7 +252,7 @@ Scenario: This scenario will run last
 **Important Notes:**
 - Test execution ordering only works when running tests in parallel (`--parallel-processes > 1`)
 - Lower numbers execute first (e.g., `@ORDER_001` runs before `@ORDER_010`)
-- Scenarios without order tags will run after all ordered scenarios (Default order: 99999)
+- Scenarios without order tags will run after all ordered scenarios (Default order: 9999)
 - Use zero-padded numbers (e.g., `001`, `010`, `100`) for better sorting visualization
 - The order tags work with both parallel feature and scenario execution schemes
 

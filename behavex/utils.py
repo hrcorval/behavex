@@ -671,7 +671,7 @@ def extract_order_from_tags(tags, order_tag_prefix='ORDER'):
         order_tag_prefix (str): Prefix for order tags (default: 'ORDER')
 
     Returns:
-        int: Order value (999999 if no order tag found, for lowest execution priority)
+        int: Order value (9999 if no order tag found, for lowest execution priority)
     """
     import re
 
@@ -683,7 +683,7 @@ def extract_order_from_tags(tags, order_tag_prefix='ORDER'):
             return int(match.group(1))
 
     # Return high number for scenarios without order (lowest execution priority)
-    return 999999
+    return 9999
 
 
 def get_scenario_order(scenario, order_tag_prefix='ORDER'):

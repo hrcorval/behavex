@@ -470,8 +470,8 @@ def launch_by_feature(features,
             parallel_features.append(feature_info)
     # Sort features by execution order if enabled (only the categorized features that will actually run)
     if order_tests_enabled:
-        serial_features.sort(key=lambda f: f.get("feature_order", 999999))
-        parallel_features.sort(key=lambda f: f.get("feature_order", 999999))
+        serial_features.sort(key=lambda f: f.get("feature_order", 9999))
+        parallel_features.sort(key=lambda f: f.get("feature_order", 9999))
 
     if show_progress_bar:
         total_features = len(serial_features) + len(parallel_features)
@@ -609,8 +609,8 @@ def launch_by_scenario(features,
 
     # Sort scenarios by execution order if enabled (only the filtered scenarios that will actually run)
     if order_tests_enabled:
-        serial_scenarios.sort(key=lambda s: s.get("scenario_order", 999999))
-        parallel_scenarios.sort(key=lambda s: s.get("scenario_order", 999999))
+        serial_scenarios.sort(key=lambda s: s.get("scenario_order", 9999))
+        parallel_scenarios.sort(key=lambda s: s.get("scenario_order", 9999))
 
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
