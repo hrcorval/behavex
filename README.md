@@ -25,6 +25,7 @@ BehaveX now provides seamless integration with Allure, the popular test reportin
 - [Supported Behave Arguments](#supported-behave-arguments)
 - [Specific Arguments from BehaveX](#specific-arguments-from-behavex)
 - [Parallel Test Executions](#parallel-test-executions)
+- [Test Execution Ordering](#test-execution-ordering)
 - [Test Execution Reports](#test-execution-reports)
 - [Attaching Images to the HTML Report](#attaching-images-to-the-html-report)
 - [Attaching Additional Execution Evidence to the HTML Report](#attaching-additional-execution-evidence-to-the-html-report)
@@ -128,6 +129,16 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
   behavex -t=@TAG_1 -o=execution_evidence
   ```
 
+- **Run scenarios with execution ordering enabled (requires parallel execution):**
+  ```bash
+  behavex -t=@TAG_1 --order-tests --parallel-processes=2
+  ```
+
+- **Run scenarios with custom order tag prefix and parallel execution:**
+  ```bash
+  behavex --order-tests --order-tag-prefix=PRIORITY --parallel-processes=3
+  ```
+
 ## Constraints
 
 - BehaveX is currently implemented on top of Behave **v1.2.6**, and not all Behave arguments are yet supported.
@@ -167,6 +178,8 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
 - **formatter** (--formatter): Specifies a custom formatter for test reports (e.g., Allure formatter).
 - **formatter-outdir** (--formatter-outdir): Specifies the output directory for formatter results (default: output/allure-results for Allure).
 - **no-formatter-attach-logs** (--no-formatter-attach-logs): Disables automatic attachment of scenario log files to formatter reports.
+- **order-tests** (--order-tests): Enables sorting of scenarios/features by execution order using special order tags (only effective with parallel execution).
+- **order-tag-prefix** (--order-tag-prefix): Specifies the prefix for order tags (default: 'ORDER').
 
 ## Parallel Test Executions
 
@@ -191,6 +204,122 @@ For example, if BehaveX is started with `--parallel-processes 2`, the first inst
 
 This variable can be accessed within the python tests using `context.config.userdata['worker_id']`.
 
+## Test Execution Ordering
+
+BehaveX provides the ability to control the execution order of your test scenarios and features using special order tags when running tests in parallel. This feature ensures that tests run in a predictable sequence during parallel execution, which is particularly useful for setup/teardown scenarios, or when you need specific tests to run before others.
+
+### Purpose and Use Cases
+
+Test execution ordering is valuable in scenarios such as:
+
+- **Setup and Teardown**: Ensure setup scenarios run first and cleanup scenarios run last
+- **Data Dependencies**: Execute data creation tests before tests that consume that data
+- **Performance Testing**: Control the sequence to avoid resource conflicts
+- **Smoke Testing**: Prioritize critical smoke tests to run first
+- **Parallel Execution Optimization**: Run slower test scenarios first to maximize parallel process utilization and minimize overall execution time
+
+### Command Line Arguments
+
+BehaveX provides two new arguments to control test execution ordering during parallel execution:
+
+- **--order-tests** or **--order_tests**: Enables sorting of scenarios/features by execution order using special order tags (only effective with parallel execution)
+- **--order-tag-prefix** or **--order_tag_prefix**: Specifies the prefix for order tags (default: 'ORDER')
+
+### How to Use Order Tags
+
+To control execution order, add tags to your scenarios using the following format:
+
+```gherkin
+@ORDER_001
+Scenario: This scenario will run first
+    Given I perform initial setup
+    When I execute the first test
+    Then the setup should be complete
+
+@ORDER_010
+Scenario: This scenario will run second
+    Given the initial setup is complete
+    When I execute the dependent test
+    Then the test should pass
+
+@ORDER_100
+Scenario: This scenario will run last
+    Given all previous tests have completed
+    When I perform cleanup
+    Then all resources should be cleaned up
+```
+
+**Important Notes:**
+- Test execution ordering only works when running tests in parallel (`--parallel-processes > 1`)
+- Lower numbers execute first (e.g., `@ORDER_001` runs before `@ORDER_010`)
+- Scenarios without order tags will run after all ordered scenarios (Default order: 99999)
+- Use zero-padded numbers (e.g., `001`, `010`, `100`) for better sorting visualization
+- The order tags work with both parallel feature and scenario execution schemes
+
+### Execution Examples
+
+#### Basic Ordering
+```bash
+# Enable test ordering with default ORDER prefix (requires parallel execution)
+behavex --order-tests --parallel-processes=2 -t=@SMOKE
+
+# Enable test ordering with custom prefix
+behavex --order-tests --order-tag-prefix=PRIORITY --parallel-processes=3 -t=@REGRESSION
+```
+
+#### Ordering with Parallel Execution
+```bash
+# Order tests and run with parallel processes by scenario
+behavex --order-tests --parallel-processes=4 --parallel-scheme=scenario
+
+# Order tests and run with parallel processes by feature
+behavex --order-tests --parallel-processes=3 --parallel-scheme=feature
+
+# Custom order prefix with parallel execution
+behavex --order-tests --order-tag-prefix=SEQUENCE --parallel-processes=2
+```
+
+### Using Custom Order Prefixes
+
+You can customize the order tag prefix to match your team's naming conventions:
+
+```bash
+# Using PRIORITY prefix
+behavex --order-tests --order-tag-prefix=PRIORITY
+
+# Now use tags like @PRIORITY_001, @PRIORITY_010, etc.
+```
+
+```gherkin
+@PRIORITY_001
+Scenario: High priority scenario
+    Given I need to run this first
+
+@PRIORITY_050
+Scenario: Medium priority scenario
+    Given this can run after high priority
+
+@PRIORITY_100
+Scenario: Low priority scenario
+    Given this runs last
+```
+
+### Feature-Level Ordering
+
+When using `--parallel-scheme=feature`, the ordering is determined by the lowest order tag found in any scenario within that feature:
+
+```gherkin
+Feature: Database Setup Feature
+    @ORDER_001
+    Scenario: Create database schema
+        Given I create the database schema
+
+    @ORDER_002
+    Scenario: Insert initial data
+        Given I insert the initial data
+
+# This entire feature will be ordered as ORDER_001 (lowest tag in the feature)
+```
 
 ## Test Execution Reports
 

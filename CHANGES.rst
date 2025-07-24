@@ -1,6 +1,14 @@
 Version History
 ===============================================================================
 
+Version: 4.4.0
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Added test execution ordering functionality to control the sequence in which scenarios and features are executed when running tests in parallel. Tests can now be tagged with order tags (e.g., @ORDER_001, @ORDER_010) to ensure predictable execution sequences.
+
+
 Version: 4.3.1
 -------------------------------------------------------------------------------
 

@@ -57,10 +57,11 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            create_execution_complete_callback_function,
                            expand_paths, explore_features, generate_reports,
                            get_feature_and_scenario_line, get_json_results,
-                           get_logging_level, get_scenario_tags,
-                           get_scenarios_instances, get_text,
-                           join_feature_reports, join_scenario_reports,
-                           len_scenarios, print_env_variables, print_parallel,
+                           get_logging_level, get_scenario_order,
+                           get_scenario_tags, get_scenarios_instances,
+                           get_text, join_feature_reports,
+                           join_scenario_reports, len_scenarios,
+                           print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -442,18 +443,36 @@ def launch_by_feature(features,
     """
     json_reports = []
     execution_codes = []
+
+    # Cache the order_tests parameter to avoid multiple get_param calls
+    order_tests_enabled = get_param('order_tests')
+    order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
+
     serial_features = []
     parallel_features = []
     for features_path in features:
         feature = features[features_path][0].feature
         pure_feature_path, scenario_line = get_feature_and_scenario_line(features_path)
         feature_filename = feature.filename if not scenario_line else "{}:{}".format(pure_feature_path, scenario_line)
+
+        feature_info = {"feature_filename": feature_filename,
+                       "feature_json_skeleton": _get_feature_json_skeleton(feature)}
+
+        # Only calculate feature order if ordering is enabled
+        if order_tests_enabled:
+            scenarios = features[features_path]
+            if scenarios:
+                feature_info["feature_order"] = min(get_scenario_order(scenario, order_tag_prefix) for scenario in scenarios)
+
         if 'SERIAL' in feature.tags:
-            serial_features.append({"feature_filename": feature_filename,
-                                    "feature_json_skeleton": _get_feature_json_skeleton(feature)})
+            serial_features.append(feature_info)
         else:
-            parallel_features.append({"feature_filename": feature_filename,
-                                      "feature_json_skeleton": _get_feature_json_skeleton(feature)})
+            parallel_features.append(feature_info)
+    # Sort features by execution order if enabled (only the categorized features that will actually run)
+    if order_tests_enabled:
+        serial_features.sort(key=lambda f: f.get("feature_order", 999999))
+        parallel_features.sort(key=lambda f: f.get("feature_order", 999999))
+
     if show_progress_bar:
         total_features = len(serial_features) + len(parallel_features)
         global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="feature",
@@ -535,14 +554,19 @@ def launch_by_scenario(features,
     """
     json_reports = []
     execution_codes = []
-    parallel_scenarios = {}
-    serial_scenarios = {}
+    parallel_scenarios = []
+    serial_scenarios = []
     duplicated_scenarios = {}
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
     parallel_processes = []
+
+    # Cache the order_tests parameter to avoid multiple get_param calls
+    order_tests_enabled = get_param('order_tests')
+    order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
     for features_path, scenarios in features.items():
         scenarios_instances = get_scenarios_instances(scenarios)
+
         for scenario in scenarios_instances:
             if include_path_match(scenario.filename, scenario.line) \
                     and include_name_match(scenario.name):
@@ -552,20 +576,23 @@ def launch_by_scenario(features,
                         features_with_no_scen_desc.append(scenario.filename)
                     feature_json_skeleton = _get_feature_json_skeleton(scenario)
                     feature_filename = scenario.feature.filename
-                    scenario_information = {"feature_filename": feature_filename,
+                    scenario_information = {"features_path": features_path,
+                                            "feature_filename": feature_filename,
                                             "feature_json_skeleton": feature_json_skeleton,
                                             "scenario_line": scenario.line}
+
+                    # Only calculate scenario order if ordering is enabled
+                    if order_tests_enabled:
+                        scenario_information["scenario_order"] = get_scenario_order(scenario, order_tag_prefix)
                     total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
                     if 'SERIAL' in scenario_tags:
-                        for key, list_scenarios in serial_scenarios.items():
-                            if scenario_information in list_scenarios:
-                                duplicated_scenarios.setdefault(key, []).append(scenario.name)
-                        serial_scenarios.setdefault(features_path, []).append(scenario_information)
+                        if scenario_information in serial_scenarios:
+                            duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
+                        serial_scenarios.append(scenario_information)
                     else:
-                        for key, list_scenarios in parallel_scenarios.items():
-                            if scenario_information in list_scenarios:
-                                duplicated_scenarios.setdefault(key, []).append(scenario.name)
-                        parallel_scenarios.setdefault(features_path, []).append(scenario_information)
+                        if scenario_information in parallel_scenarios:
+                            duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
+                        parallel_scenarios.append(scenario_information)
     if show_progress_bar:
         global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
                                                                        total_elements=sum(total_scenarios_to_run.values()))
@@ -579,49 +606,54 @@ def launch_by_scenario(features,
         print_parallel('feature.empty_scenario_descriptions',
                        '\n* '.join(features_with_no_scen_desc))
         exit(1)
+
+    # Sort scenarios by execution order if enabled (only the filtered scenarios that will actually run)
+    if order_tests_enabled:
+        serial_scenarios.sort(key=lambda s: s.get("scenario_order", 999999))
+        parallel_scenarios.sort(key=lambda s: s.get("scenario_order", 999999))
+
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
-        for features_path, scenarios_in_feature in serial_scenarios.items():
-            for scen_info in scenarios_in_feature:
-                scenarios_to_run_in_feature = total_scenarios_to_run[scen_info["feature_filename"]]
-                execution_code, json_report = execute_tests(features_path=features_path,
-                                                            feature_filename=scen_info["feature_filename"],
-                                                            feature_json_skeleton=scen_info["feature_json_skeleton"],
-                                                            scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                                            scenario_line=scen_info["scenario_line"],
-                                                            multiprocess=True,
-                                                            config=ConfigRun(),
-                                                            lock=None,
-                                                            shared_removed_scenarios=shared_removed_scenarios)
-                execution_codes.append(execution_code)
-                json_reports.append(json_report)
-                if global_vars.progress_bar_instance:
-                    global_vars.progress_bar_instance.update()
+        for scen_info in serial_scenarios:
+            scenarios_to_run_in_feature = total_scenarios_to_run[scen_info["feature_filename"]]
+            execution_code, json_report = execute_tests(features_path=scen_info["features_path"],
+                                                        feature_filename=scen_info["feature_filename"],
+                                                        feature_json_skeleton=scen_info["feature_json_skeleton"],
+                                                        scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                                        scenario_line=scen_info["scenario_line"],
+                                                        multiprocess=True,
+                                                        config=ConfigRun(),
+                                                        lock=None,
+                                                        shared_removed_scenarios=shared_removed_scenarios)
+            execution_codes.append(execution_code)
+            json_reports.append(json_report)
+            if global_vars.progress_bar_instance:
+                global_vars.progress_bar_instance.update()
     if parallel_scenarios:
         print_parallel('scenario.running_parallels')
-        for features_path in parallel_scenarios.keys():
-            for scenario_information in parallel_scenarios[features_path]:
-                scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
-                feature_filename = scenario_information["feature_filename"]
-                feature_json_skeleton = scenario_information["feature_json_skeleton"]
-                scenario_line = scenario_information["scenario_line"]
-                future = process_pool.submit(execute_tests,
-                                             features_path=features_path,
-                                             feature_filename=feature_filename,
-                                             feature_json_skeleton=feature_json_skeleton,
-                                             scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                             scenario_line=scenario_line,
-                                             multiprocess=True,
-                                             config=ConfigRun(),
-                                             lock=lock,
-                                             shared_removed_scenarios=shared_removed_scenarios
-                                             )
-                parallel_processes.append(future)
-                future.add_done_callback(create_execution_complete_callback_function(
-                    execution_codes,
-                    json_reports,
-                    global_vars.progress_bar_instance
-                ))
+        for scenario_information in parallel_scenarios:
+            scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+            features_path = scenario_information["features_path"]
+            feature_filename = scenario_information["feature_filename"]
+            feature_json_skeleton = scenario_information["feature_json_skeleton"]
+            scenario_line = scenario_information["scenario_line"]
+            future = process_pool.submit(execute_tests,
+                                            features_path=features_path,
+                                            feature_filename=feature_filename,
+                                            feature_json_skeleton=feature_json_skeleton,
+                                            scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                            scenario_line=scenario_line,
+                                            multiprocess=True,
+                                            config=ConfigRun(),
+                                            lock=lock,
+                                            shared_removed_scenarios=shared_removed_scenarios
+                                            )
+            parallel_processes.append(future)
+            future.add_done_callback(create_execution_complete_callback_function(
+                execution_codes,
+                json_reports,
+                global_vars.progress_bar_instance
+            ))
         for parallel_process in parallel_processes:
             try:
                 parallel_process.result()
