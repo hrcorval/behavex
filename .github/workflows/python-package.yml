@@ -36,7 +36,7 @@ jobs:
           python -m pip install --upgrade pip
           python setup.py sdist
           python -m pip install beautifulsoup4
-          python -m pip install dist/behavex-4.4.0rc1.tar.gz --no-deps
+          python -m pip install dist/behavex-4.4.0rc1.tar.gz
           pip freeze
 
 
