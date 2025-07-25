@@ -481,6 +481,19 @@ def step_impl(context, parallel_processes, parallel_scheme):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with strict execution ordering enabled using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def step_impl(context, parallel_processes, parallel_scheme):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                      os.path.join(tests_features_path, 'secondary_features', 'ordered_tests.feature'),
+                      '-t', '@ORDERED_TEST',
+                      '-o', context.output_path,
+                      '--parallel-processes', parallel_processes,
+                      '--parallel-scheme', parallel_scheme,
+                      '--order-tests-strict']
+    execute_command(context, execution_args)
+
+
 @then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme')
 def step_impl(context, parallel_scheme):
     """Verify that scenarios with ORDER tags executed in the correct order"""
@@ -624,16 +637,47 @@ def step_impl(context):
     """Verify that ordering is not enforced when running with single process"""
     # For single process execution, we just verify that the test completed successfully
     # and scenarios were executed (the actual order doesn't matter since ordering only works with parallel execution)
+
+
+@then('I should see the scenarios executed in strict order for "{parallel_scheme}" scheme')
+def step_impl(context, parallel_scheme):
+    """Verify that scenarios with ORDER tags executed in strict order when using --order-tests-strict"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
 
     with open(report_json_path, 'r') as json_file:
         report_data = json.load(json_file)
 
-    # Just verify that scenarios were executed
-    total_scenarios = 0
-    for feature in report_data.get('features', []):
-        total_scenarios += len(feature.get('scenarios', []))
+    # Extract scenario execution order from the report with their order values
+    scenario_order_mapping = {
+        "First ordered test scenario": 1,
+        "Second ordered test scenario": 2,
+        "Third ordered test scenario": 3,
+        "Fourth ordered test scenario": 10
+    }
 
-    assert total_scenarios > 0, "No scenarios were executed"
-    logging.info(f"Successfully executed {total_scenarios} scenarios with single process (ordering not enforced)")
+    executed_scenarios = []
+    for feature in report_data.get('features', []):
+        for scenario in feature.get('scenarios', []):
+            if scenario['name'] in scenario_order_mapping:
+                executed_scenarios.append({
+                    'name': scenario['name'],
+                    'order': scenario_order_mapping[scenario['name']]
+                })
+
+    # Sort by order value
+    executed_scenarios.sort(key=lambda x: x['order'])
+
+    # Verify that all expected scenarios were executed
+    expected_count = 4
+    assert len(executed_scenarios) == expected_count, \
+        f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
+
+    # Verify that ORDER_001 comes before ORDER_002, ORDER_002 before ORDER_003, etc.
+    for i in range(len(executed_scenarios) - 1):
+        current_order = executed_scenarios[i]['order']
+        next_order = executed_scenarios[i + 1]['order']
+        assert current_order < next_order, \
+            f"Strict ordering violated: {executed_scenarios[i]['name']} (ORDER_{current_order:03d}) should execute and complete before {executed_scenarios[i + 1]['name']} (ORDER_{next_order:03d})"
+
+    logging.info(f"✅ Strict execution ordering verified: scenarios executed in correct order with --order-tests-strict")
