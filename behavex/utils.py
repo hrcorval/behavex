@@ -660,3 +660,42 @@ def get_feature_and_scenario_line(path):
         return [':'.join(parts[:-1]), parts[-1]]
     else:
         return [path, None]
+
+
+def extract_order_from_tags(tags, order_tag_prefix='ORDER'):
+    """
+    Extract execution order value from scenario tags.
+
+    Args:
+        tags (list): List of scenario tags
+        order_tag_prefix (str): Prefix for order tags (default: 'ORDER')
+
+    Returns:
+        int: Order value (9999 if no order tag found, for lowest execution priority)
+    """
+    import re
+
+    order_pattern = rf'^@?{order_tag_prefix}_(\d+)$'
+
+    for tag in tags:
+        match = re.match(order_pattern, tag.upper())
+        if match:
+            return int(match.group(1))
+
+    # Return high number for scenarios without order (lowest execution priority)
+    return 9999
+
+
+def get_scenario_order(scenario, order_tag_prefix='ORDER'):
+    """
+    Get execution order value for a scenario.
+
+    Args:
+        scenario: Scenario object or dict
+        order_tag_prefix (str): Prefix for order tags (default: 'ORDER')
+
+    Returns:
+        int: Order value (lower numbers execute first)
+    """
+    scenario_tags = get_scenario_tags(scenario)
+    return extract_order_from_tags(scenario_tags, order_tag_prefix)

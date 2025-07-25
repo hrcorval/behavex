@@ -72,6 +72,8 @@ BEHAVEX_ARGS = [
     'formatter',
     'formatter_outdir',
     'formatter_attach_logs',
+    'order_tests',
+    'order_tag_prefix',
 ]
 
 
@@ -357,4 +359,22 @@ def parse_arguments(args):
     #                          "standard logging handlers.",
     #                     required=False)
     #
+
+    parser.add_argument(
+        '--order-tests',
+        '--order_tests',
+        help="Sort scenarios/features by execution order using tags like @ORDER_001, @ORDER_010, etc. Lower numbers execute first.",
+        default=False,
+        action='store_true',
+        required=False,
+    )
+
+    parser.add_argument(
+        '--order-tag-prefix',
+        '--order_tag_prefix',
+        help="Specify the prefix for order tags (default: ORDER). Example: ORDER for @ORDER_001 tags.",
+        default='ORDER',
+        required=False,
+    )
+
     return parser.parse_args(args)
