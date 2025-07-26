@@ -73,6 +73,7 @@ BEHAVEX_ARGS = [
     'formatter_outdir',
     'formatter_attach_logs',
     'order_tests',
+    'order_tests_strict',
     'order_tag_prefix',
 ]
 
@@ -364,6 +365,16 @@ def parse_arguments(args):
         '--order-tests',
         '--order_tests',
         help="Sort scenarios/features by execution order using tags like @ORDER_001, @ORDER_010, etc. Lower numbers execute first.",
+        default=False,
+        action='store_true',
+        required=False,
+    )
+
+    parser.add_argument(
+        '--order-tests-strict',
+        '--order_tests_strict',
+        help="Enables strict test ordering where tests with higher order numbers wait for all lower-order tests to complete first "
+             "(automatically enables --order-tests). Note: This may reduce parallel execution performance as processes must wait for lower-order tests to complete.",
         default=False,
         action='store_true',
         required=False,
