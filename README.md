@@ -367,19 +367,31 @@ Scenario: Low priority scenario
 
 ### Feature-Level Ordering
 
-When using `--parallel-scheme=feature`, the ordering is determined by the lowest order tag found in any scenario within that feature:
+When using `--parallel-scheme=feature`, the ordering is determined by ORDER tags placed directly on the feature itself:
 
 ```gherkin
+@ORDER_001
 Feature: Database Setup Feature
-    @ORDER_001
     Scenario: Create database schema
         Given I create the database schema
 
-    @ORDER_002
     Scenario: Insert initial data
         Given I insert the initial data
 
-# This entire feature will be ordered as ORDER_001 (lowest tag in the feature)
+# This entire feature will be ordered as ORDER_001 (tag on the feature)
+
+@ORDER_002
+Feature: Application Tests Feature
+    Scenario: Test user login
+        Given I test user login
+
+# This entire feature will be ordered as ORDER_002 (tag on the feature)
+
+Feature: Unordered Feature
+    Scenario: Some test
+        Given I perform some test
+
+# This feature has no ORDER tag, so it gets the default order 9999
 ```
 
 ## Test Execution Reports

@@ -56,12 +56,12 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
                            expand_paths, explore_features, generate_reports,
-                           get_feature_and_scenario_line, get_json_results,
-                           get_logging_level, get_scenario_order,
-                           get_scenario_tags, get_scenarios_instances,
-                           get_text, join_feature_reports,
-                           join_scenario_reports, len_scenarios,
-                           print_env_variables, print_parallel,
+                           get_feature_and_scenario_line, get_feature_order,
+                           get_json_results, get_logging_level,
+                           get_scenario_order, get_scenario_tags,
+                           get_scenarios_instances, get_text,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -465,6 +465,9 @@ def launch_by_feature(features,
 
     # Cache the order_tests parameter to avoid multiple get_param calls
     order_tests_enabled = get_param('order_tests')
+    order_tests_strict = get_param('order_tests_strict')
+    # If order_tests_strict is enabled, automatically enable order_tests
+    order_tests_enabled = order_tests_enabled or order_tests_strict
     order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
 
     serial_features = []
@@ -479,9 +482,8 @@ def launch_by_feature(features,
 
         # Only calculate feature order if ordering is enabled
         if order_tests_enabled:
-            scenarios = features[features_path]
-            if scenarios:
-                feature_info["feature_order"] = min(get_scenario_order(scenario, order_tag_prefix) for scenario in scenarios)
+            # For feature-level execution, use ORDER tags from the feature itself
+            feature_info["feature_order"] = get_feature_order(feature, order_tag_prefix)
 
         if 'SERIAL' in feature.tags:
             serial_features.append(feature_info)
@@ -519,10 +521,6 @@ def launch_by_feature(features,
 
 
     # Prepare features grouped by order
-    order_tests_strict = get_param('order_tests_strict')
-    # If order_tests_strict is enabled, automatically enable order_tests
-    order_tests_enabled = order_tests_enabled or order_tests_strict
-
     if order_tests_strict:
         # Each feature gets its own group for strict sequential ordering
         features_by_order = {}
@@ -600,6 +598,9 @@ def launch_by_scenario(features,
 
     # Cache the order_tests parameter to avoid multiple get_param calls
     order_tests_enabled = get_param('order_tests')
+    order_tests_strict = get_param('order_tests_strict')
+    # If order_tests_strict is enabled, automatically enable order_tests
+    order_tests_enabled = order_tests_enabled or order_tests_strict
     order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
     for features_path, scenarios in features.items():
         scenarios_instances = get_scenarios_instances(scenarios)
@@ -671,10 +672,6 @@ def launch_by_scenario(features,
 
 
         # Prepare scenarios grouped by order
-        order_tests_strict = get_param('order_tests_strict')
-        # If order_tests_strict is enabled, automatically enable order_tests
-        order_tests_enabled = order_tests_enabled or order_tests_strict
-
         if order_tests_strict:
             # Each scenario gets its own group for strict sequential ordering
             scenarios_by_order = {}

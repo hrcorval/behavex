@@ -739,31 +739,40 @@ def step_impl(context, parallel_scheme):
     assert len(executed_scenarios) == expected_count, \
         f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
 
-    # Sort by start time to check execution order
+    # For --order-tests-strict: Verify strict sequential execution
+    # Each scenario must complete before the next scenario starts
     executed_scenarios.sort(key=lambda x: x['start_time'])
 
-    # Verify strict sequential execution: each scenario must start AND complete before the next starts
+    if parallel_scheme == 'scenario':
+        # For scenario-level execution: scenarios should execute in ORDER tag order
+        logging.info("📊 Scenario-level strict execution order verification:")
+        expected_order = sorted(executed_scenarios, key=lambda x: x['order'])
+        for i, scenario in enumerate(expected_order):
+            actual_scenario = executed_scenarios[i]
+            assert scenario['order'] == actual_scenario['order'], \
+                f"Scenario execution order mismatch: expected ORDER_{scenario['order']:03d} ({scenario['name']}) " \
+                f"but got ORDER_{actual_scenario['order']:03d} ({actual_scenario['name']}) at position {i+1}"
+    else:
+        # For feature-level execution: scenarios execute in file order (behave's natural behavior)
+        # but still in strict sequential order (each must complete before next starts)
+        logging.info("📊 Feature-level strict execution order verification:")
+        logging.info("    Note: With feature-level execution, scenarios execute in file order, not ORDER tag order")
+
+    # Log the execution order for debugging
+    for i, scenario in enumerate(executed_scenarios, 1):
+        duration = scenario['stop_time'] - scenario['start_time']
+        logging.info(f"  {i}. ORDER_{scenario['order']:03d}: {scenario['name']}")
+        logging.info(f"    Start: {scenario['start_time']}, Stop: {scenario['stop_time']}, Duration: {duration:.3f}s")
+
+    # Verify strict sequential execution for both schemes
     for i in range(len(executed_scenarios) - 1):
         current_scenario = executed_scenarios[i]
         next_scenario = executed_scenarios[i + 1]
 
-        # Check start time ordering
-        assert current_scenario['order'] <= next_scenario['order'], \
-            f"Start time ordering violated: {current_scenario['name']} (ORDER_{current_scenario['order']:03d}) " \
-            f"started at {current_scenario['start_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
-            f"started at {next_scenario['start_time']}. Lower order scenarios must start first!"
-
-        # Check strict sequential execution: current scenario must complete before next starts
+        # The critical requirement for strict ordering: previous scenario must complete before next starts
         assert current_scenario['stop_time'] <= next_scenario['start_time'], \
             f"Strict sequential execution violated: {current_scenario['name']} (ORDER_{current_scenario['order']:03d}) " \
             f"stopped at {current_scenario['stop_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
             f"started at {next_scenario['start_time']}. With --order-tests-strict, scenarios must complete before the next starts!"
 
-    # Log the actual execution order with start/stop times for debugging
-    logging.info("📊 Strict scenario execution times (ordered by actual start time):")
-    for scenario in executed_scenarios:
-        duration = scenario['stop_time'] - scenario['start_time']
-        logging.info(f"  ORDER_{scenario['order']:03d}: {scenario['name']}")
-        logging.info(f"    Start: {scenario['start_time']}, Stop: {scenario['stop_time']}, Duration: {duration:.3f}s")
-
-    logging.info(f"✅ Strict sequential execution verified: scenarios executed in complete sequential order with --order-tests-strict")
+    logging.info(f"✅ Strict sequential execution verified for {parallel_scheme} scheme with --order-tests-strict")
