@@ -524,13 +524,16 @@ def launch_by_feature(features,
     order_tests_enabled = order_tests_enabled or order_tests_strict
 
     if order_tests_strict:
-        # Group features by order for strict ordering
+        # Each feature gets its own group for strict sequential ordering
         features_by_order = {}
-        for parallel_feature in parallel_features:
-            order = parallel_feature.get("feature_order", 9999)
-            if order not in features_by_order:
-                features_by_order[order] = []
-            features_by_order[order].append(parallel_feature)
+        # Sort features by order first
+        sorted_features = sorted(parallel_features, key=lambda f: f.get("feature_order", 9999))
+        for index, parallel_feature in enumerate(sorted_features):
+            features_by_order[index] = [parallel_feature]
+    elif order_tests_enabled:
+        # Sort features by order but allow parallel execution
+        parallel_features.sort(key=lambda f: f.get("feature_order", 9999))
+        features_by_order = {9999: parallel_features}
     else:
         # Put all features in a single group for original behavior
         features_by_order = {9999: parallel_features}
@@ -673,13 +676,16 @@ def launch_by_scenario(features,
         order_tests_enabled = order_tests_enabled or order_tests_strict
 
         if order_tests_strict:
-            # Group scenarios by order for strict ordering
+            # Each scenario gets its own group for strict sequential ordering
             scenarios_by_order = {}
-            for scenario_info in parallel_scenarios:
-                order = scenario_info.get("scenario_order", 9999)
-                if order not in scenarios_by_order:
-                    scenarios_by_order[order] = []
-                scenarios_by_order[order].append(scenario_info)
+            # Sort scenarios by order first
+            sorted_scenarios = sorted(parallel_scenarios, key=lambda s: s.get("scenario_order", 9999))
+            for index, scenario_info in enumerate(sorted_scenarios):
+                scenarios_by_order[index] = [scenario_info]
+        elif order_tests_enabled:
+            # Sort scenarios by order but allow parallel execution
+            parallel_scenarios.sort(key=lambda s: s.get("scenario_order", 9999))
+            scenarios_by_order = {9999: parallel_scenarios}
         else:
             # Put all scenarios in a single group for original behavior
             scenarios_by_order = {9999: parallel_scenarios}

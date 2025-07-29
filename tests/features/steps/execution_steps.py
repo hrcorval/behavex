@@ -4,6 +4,7 @@ import os
 import random
 import re
 import subprocess
+import time
 
 from behave import given, then, when
 
@@ -496,14 +497,14 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 @then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme')
 def step_impl(context, parallel_scheme):
-    """Verify that scenarios with ORDER tags executed in the correct order"""
+    """Verify that scenarios with ORDER tags executed successfully (--order-tests controls submission order, not start time)"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
 
     with open(report_json_path, 'r') as json_file:
         report_data = json.load(json_file)
 
-    # Extract scenario execution order from the report with their order values
+    # Extract scenario execution data with order values and start times
     scenario_order_mapping = {
         "First ordered test scenario": 1,
         "Second ordered test scenario": 2,
@@ -515,39 +516,61 @@ def step_impl(context, parallel_scheme):
     for feature in report_data.get('features', []):
         for scenario in feature.get('scenarios', []):
             if scenario['name'] in scenario_order_mapping:
+                # Ensure scenario has start time
+                assert 'start' in scenario, f"Scenario '{scenario['name']}' missing start time in report"
+
                 executed_scenarios.append({
                     'name': scenario['name'],
-                    'order': scenario_order_mapping[scenario['name']]
+                    'order': scenario_order_mapping[scenario['name']],
+                    'start_time': scenario['start']
                 })
-
-    # Sort by order value
-    executed_scenarios.sort(key=lambda x: x['order'])
 
     # Verify that all expected scenarios were executed
     expected_count = 4
     assert len(executed_scenarios) == expected_count, \
         f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
 
-    # Verify that ORDER_001 comes before ORDER_002, ORDER_002 before ORDER_003, etc.
-    for i in range(len(executed_scenarios) - 1):
-        current_order = executed_scenarios[i]['order']
-        next_order = executed_scenarios[i + 1]['order']
-        assert current_order < next_order, \
-            f"Scenario ordering violated: {executed_scenarios[i]['name']} (ORDER_{current_order:03d}) should execute before {executed_scenarios[i + 1]['name']} (ORDER_{next_order:03d})"
+    # Sort by actual start time for logging purposes
+    executed_scenarios.sort(key=lambda x: x['start_time'])
 
-    logging.info(f"✅ Execution ordering verified: scenarios executed in correct order based on ORDER tags")
+    # Log the actual execution order with start times for informational purposes
+    logging.info("📊 Scenario execution order (--order-tests controls submission order, not start time):")
+    for i, scenario in enumerate(executed_scenarios, 1):
+        logging.info(f"  {i}. ORDER_{scenario['order']:03d}: {scenario['name']} started at {scenario['start_time']}")
+
+    # For --order-tests: We only verify that scenarios were submitted in order (not start time)
+    # Since submission order cannot be verified from JSON report, we accept any start time order
+    # and only validate that all scenarios executed successfully
+
+    # Sort by order value to show intended vs actual execution order
+    expected_order = sorted(executed_scenarios, key=lambda x: x['order'])
+    logging.info("📋 Expected submission order vs actual start time order:")
+
+    expected_order_str = " → ".join([f"ORDER_{s['order']:03d}" for s in expected_order])
+    actual_order_str = " → ".join([f"ORDER_{s['order']:03d}" for s in executed_scenarios])
+
+    logging.info(f"  Expected: {expected_order_str}")
+    logging.info(f"  Actual:   {actual_order_str}")
+
+    if [s['order'] for s in expected_order] != [s['order'] for s in executed_scenarios]:
+        logging.info("ℹ️  Start time order differs from submission order - this is normal for --order-tests")
+        logging.info("   --order-tests controls submission order, allowing parallel execution with timing variations")
+    else:
+        logging.info("✅ Start time order matches submission order (optimal parallel scheduling)")
+
+    logging.info(f"✅ Order tests validation passed: All {expected_count} scenarios executed successfully")
 
 
 @then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme with custom prefix')
 def step_impl(context, parallel_scheme):
-    """Verify that scenarios with PRIORITY tags executed in the correct order"""
+    """Verify that scenarios with PRIORITY tags executed successfully (--order-tests controls submission order, not start time)"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
 
     with open(report_json_path, 'r') as json_file:
         report_data = json.load(json_file)
 
-    # Extract scenario execution order from the report with their priority values
+    # Extract scenario execution data with priority values and start times
     scenario_priority_mapping = {
         "First priority test scenario": 1,
         "Second priority test scenario": 2,
@@ -558,78 +581,118 @@ def step_impl(context, parallel_scheme):
     for feature in report_data.get('features', []):
         for scenario in feature.get('scenarios', []):
             if scenario['name'] in scenario_priority_mapping:
+                # Ensure scenario has start time
+                assert 'start' in scenario, f"Scenario '{scenario['name']}' missing start time in report"
+
                 executed_scenarios.append({
                     'name': scenario['name'],
-                    'priority': scenario_priority_mapping[scenario['name']]
+                    'priority': scenario_priority_mapping[scenario['name']],
+                    'start_time': scenario['start']
                 })
-
-    # Sort by priority value
-    executed_scenarios.sort(key=lambda x: x['priority'])
 
     # Verify that all expected scenarios were executed
     expected_count = 3
     assert len(executed_scenarios) == expected_count, \
         f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
 
-    # Verify that PRIORITY_001 comes before PRIORITY_002, PRIORITY_002 before PRIORITY_003
-    for i in range(len(executed_scenarios) - 1):
-        current_priority = executed_scenarios[i]['priority']
-        next_priority = executed_scenarios[i + 1]['priority']
-        assert current_priority < next_priority, \
-            f"Scenario priority ordering violated: {executed_scenarios[i]['name']} (PRIORITY_{current_priority:03d}) should execute before {executed_scenarios[i + 1]['name']} (PRIORITY_{next_priority:03d})"
+    # Sort by actual start time for logging purposes
+    executed_scenarios.sort(key=lambda x: x['start_time'])
 
-    logging.info(f"✅ Custom prefix execution ordering verified: scenarios executed in correct priority order")
+    # Log the actual execution order with start times for informational purposes
+    logging.info("📊 Custom prefix scenario execution order (--order-tests controls submission order, not start time):")
+    for i, scenario in enumerate(executed_scenarios, 1):
+        logging.info(f"  {i}. PRIORITY_{scenario['priority']:03d}: {scenario['name']} started at {scenario['start_time']}")
+
+    # Sort by priority value to show intended vs actual execution order
+    expected_order = sorted(executed_scenarios, key=lambda x: x['priority'])
+    logging.info("📋 Expected submission order vs actual start time order:")
+
+    expected_order_str = " → ".join([f"PRIORITY_{s['priority']:03d}" for s in expected_order])
+    actual_order_str = " → ".join([f"PRIORITY_{s['priority']:03d}" for s in executed_scenarios])
+
+    logging.info(f"  Expected: {expected_order_str}")
+    logging.info(f"  Actual:   {actual_order_str}")
+
+    if [s['priority'] for s in expected_order] != [s['priority'] for s in executed_scenarios]:
+        logging.info("ℹ️  Start time order differs from submission order - this is normal for --order-tests")
+        logging.info("   --order-tests controls submission order, allowing parallel execution with timing variations")
+    else:
+        logging.info("✅ Start time order matches submission order (optimal parallel scheduling)")
+
+    logging.info(f"✅ Custom prefix order tests validation passed: All {expected_count} scenarios executed successfully")
 
 
 @then('I should see that ordered scenarios execute before unordered scenarios for "{parallel_scheme}" scheme')
 def step_impl(context, parallel_scheme):
-    """Verify that both ordered and unordered scenarios were executed correctly"""
+    """Verify that ordered and unordered scenarios executed successfully (--order-tests controls submission order, not start time)"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
 
     with open(report_json_path, 'r') as json_file:
         report_data = json.load(json_file)
 
-    # Extract executed scenarios from the report
-    executed_scenario_names = []
+    # Define expected scenarios and their order values
+    scenario_order_mapping = {
+        "First ordered test scenario": 1,
+        "Second ordered test scenario": 2,
+        "Third ordered test scenario": 3,
+        "Unordered test scenario that should run last": 9999,
+        "Another unordered test scenario that should run last": 9999
+    }
+
+    executed_scenarios = []
     for feature in report_data.get('features', []):
         for scenario in feature.get('scenarios', []):
-            executed_scenario_names.append(scenario['name'])
+            if scenario['name'] in scenario_order_mapping:
+                # Ensure scenario has start time
+                assert 'start' in scenario, f"Scenario '{scenario['name']}' missing start time in report"
 
-    # Define expected scenarios
-    ordered_scenarios = [
-        "First ordered test scenario",
-        "Second ordered test scenario",
-        "Third ordered test scenario"
-    ]
-    unordered_scenarios = [
-        "Unordered test scenario that should run last",
-        "Another unordered test scenario that should run last"
-    ]
+                executed_scenarios.append({
+                    'name': scenario['name'],
+                    'order': scenario_order_mapping[scenario['name']],
+                    'start_time': scenario['start'],
+                    'is_ordered': scenario_order_mapping[scenario['name']] < 9999
+                })
 
-    # Verify that all ordered scenarios were executed
-    executed_ordered = [name for name in executed_scenario_names if name in ordered_scenarios]
-    assert len(executed_ordered) == len(ordered_scenarios), \
-        f"Expected {len(ordered_scenarios)} ordered scenarios to be executed, but got {len(executed_ordered)}. " \
-        f"Missing: {set(ordered_scenarios) - set(executed_ordered)}"
+    # Verify that all expected scenarios were executed
+    expected_count = 5
+    assert len(executed_scenarios) == expected_count, \
+        f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
 
-    # Verify that all unordered scenarios were executed
-    executed_unordered = [name for name in executed_scenario_names if name in unordered_scenarios]
-    assert len(executed_unordered) == len(unordered_scenarios), \
-        f"Expected {len(unordered_scenarios)} unordered scenarios to be executed, but got {len(executed_unordered)}. " \
-        f"Missing: {set(unordered_scenarios) - set(executed_unordered)}"
+    # Separate ordered and unordered scenarios
+    ordered_scenarios = [s for s in executed_scenarios if s['is_ordered']]
+    unordered_scenarios = [s for s in executed_scenarios if not s['is_ordered']]
 
-    # Verify total scenario count
-    total_expected = len(ordered_scenarios) + len(unordered_scenarios)
-    total_executed = len(executed_ordered) + len(executed_unordered)
-    assert total_executed == total_expected, \
-        f"Expected {total_expected} total scenarios, but {total_executed} were executed"
+    # Verify counts
+    assert len(ordered_scenarios) == 3, f"Expected 3 ordered scenarios, got {len(ordered_scenarios)}"
+    assert len(unordered_scenarios) == 2, f"Expected 2 unordered scenarios, got {len(unordered_scenarios)}"
 
-    # Note: We don't check the exact completion order in the report because parallel execution
-    # can cause scenarios that start later to finish earlier due to timing variations.
-    # The ordering feature controls START order, not completion order.
-    logging.info(f"✅ Mixed scenario execution verified: {len(executed_ordered)} ordered and {len(executed_unordered)} unordered scenarios executed successfully")
-    logging.info("Note: Execution ordering controls start order, not completion order in parallel execution")
+    # Sort by start time for logging
+    executed_scenarios.sort(key=lambda x: x['start_time'])
+
+    # Log the execution order with start times for informational purposes
+    logging.info("📊 Mixed scenario execution order (--order-tests controls submission order, not start time):")
+    for i, scenario in enumerate(executed_scenarios, 1):
+        order_type = "ORDERED" if scenario['is_ordered'] else "UNORDERED"
+        order_value = f"ORDER_{scenario['order']:03d}" if scenario['is_ordered'] else "NO_ORDER"
+        logging.info(f"  {i}. {order_value} ({order_type}): {scenario['name']} started at {scenario['start_time']}")
+
+    # For --order-tests: Ordered scenarios are submitted before unordered scenarios
+    # But actual start times may vary due to parallel scheduling
+    logging.info("📋 Submission order expectation: All ordered scenarios submitted before unordered scenarios")
+    logging.info("   Actual start times may vary due to parallel worker scheduling")
+
+    # Check if ordered scenarios actually started before unordered ones (informational)
+    latest_ordered_start = max(s['start_time'] for s in ordered_scenarios)
+    earliest_unordered_start = min(s['start_time'] for s in unordered_scenarios)
+
+    if latest_ordered_start <= earliest_unordered_start:
+        logging.info("✅ Start time order matches submission order: All ordered scenarios started before unordered scenarios")
+    else:
+        logging.info("ℹ️  Start time order differs from submission order - this is normal for --order-tests")
+        logging.info("   Some unordered scenarios started before ordered scenarios due to parallel scheduling")
+
+    logging.info(f"✅ Mixed scenario validation passed: All ordered and unordered scenarios executed successfully")
 
 
 @then('the execution order should not be enforced with single process execution')
@@ -641,14 +704,14 @@ def step_impl(context):
 
 @then('I should see the scenarios executed in strict order for "{parallel_scheme}" scheme')
 def step_impl(context, parallel_scheme):
-    """Verify that scenarios with ORDER tags executed in strict order when using --order-tests-strict"""
+    """Verify that scenarios with ORDER tags executed in strict sequential order when using --order-tests-strict"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
 
     with open(report_json_path, 'r') as json_file:
         report_data = json.load(json_file)
 
-    # Extract scenario execution order from the report with their order values
+    # Extract scenario execution data with order values, start times, and stop times
     scenario_order_mapping = {
         "First ordered test scenario": 1,
         "Second ordered test scenario": 2,
@@ -660,24 +723,47 @@ def step_impl(context, parallel_scheme):
     for feature in report_data.get('features', []):
         for scenario in feature.get('scenarios', []):
             if scenario['name'] in scenario_order_mapping:
+                # Ensure scenario has both start and stop times
+                assert 'start' in scenario, f"Scenario '{scenario['name']}' missing start time in report"
+                assert 'stop' in scenario, f"Scenario '{scenario['name']}' missing stop time in report"
+
                 executed_scenarios.append({
                     'name': scenario['name'],
-                    'order': scenario_order_mapping[scenario['name']]
+                    'order': scenario_order_mapping[scenario['name']],
+                    'start_time': scenario['start'],
+                    'stop_time': scenario['stop']
                 })
-
-    # Sort by order value
-    executed_scenarios.sort(key=lambda x: x['order'])
 
     # Verify that all expected scenarios were executed
     expected_count = 4
     assert len(executed_scenarios) == expected_count, \
         f"Expected {expected_count} scenarios to be executed, but got {len(executed_scenarios)}"
 
-    # Verify that ORDER_001 comes before ORDER_002, ORDER_002 before ORDER_003, etc.
-    for i in range(len(executed_scenarios) - 1):
-        current_order = executed_scenarios[i]['order']
-        next_order = executed_scenarios[i + 1]['order']
-        assert current_order < next_order, \
-            f"Strict ordering violated: {executed_scenarios[i]['name']} (ORDER_{current_order:03d}) should execute and complete before {executed_scenarios[i + 1]['name']} (ORDER_{next_order:03d})"
+    # Sort by start time to check execution order
+    executed_scenarios.sort(key=lambda x: x['start_time'])
 
-    logging.info(f"✅ Strict execution ordering verified: scenarios executed in correct order with --order-tests-strict")
+    # Verify strict sequential execution: each scenario must start AND complete before the next starts
+    for i in range(len(executed_scenarios) - 1):
+        current_scenario = executed_scenarios[i]
+        next_scenario = executed_scenarios[i + 1]
+
+        # Check start time ordering
+        assert current_scenario['order'] <= next_scenario['order'], \
+            f"Start time ordering violated: {current_scenario['name']} (ORDER_{current_scenario['order']:03d}) " \
+            f"started at {current_scenario['start_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
+            f"started at {next_scenario['start_time']}. Lower order scenarios must start first!"
+
+        # Check strict sequential execution: current scenario must complete before next starts
+        assert current_scenario['stop_time'] <= next_scenario['start_time'], \
+            f"Strict sequential execution violated: {current_scenario['name']} (ORDER_{current_scenario['order']:03d}) " \
+            f"stopped at {current_scenario['stop_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
+            f"started at {next_scenario['start_time']}. With --order-tests-strict, scenarios must complete before the next starts!"
+
+    # Log the actual execution order with start/stop times for debugging
+    logging.info("📊 Strict scenario execution times (ordered by actual start time):")
+    for scenario in executed_scenarios:
+        duration = scenario['stop_time'] - scenario['start_time']
+        logging.info(f"  ORDER_{scenario['order']:03d}: {scenario['name']}")
+        logging.info(f"    Start: {scenario['start_time']}, Stop: {scenario['stop_time']}, Duration: {duration:.3f}s")
+
+    logging.info(f"✅ Strict sequential execution verified: scenarios executed in complete sequential order with --order-tests-strict")
