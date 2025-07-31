@@ -36,7 +36,7 @@ jobs:
           python -m pip install --upgrade pip
           python setup.py sdist
           python -m pip install beautifulsoup4
-          python -m pip install dist/behavex-4.4.1rc2.tar.gz
+          python -m pip install dist/behavex-4.4.1.tar.gz
           pip freeze
 
 
@@ -82,7 +82,7 @@ jobs:
           python -m pip install behave==1.2.6 jinja2 configobj minify-html csscompressor allure-python-commons
           python -m pip install behavex-images>=3.2.2
           python -m build
-          python -m pip install dist/behavex-4.4.1rc2.tar.gz --no-deps
+          python -m pip install dist/behavex-4.4.1.tar.gz --no-deps
 
       - name: Run behavex tests with image attachments
         run: |
