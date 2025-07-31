@@ -59,3 +59,19 @@ Feature: Test Execution Ordering
     | Exit code: 0                                |
     And I should not see error messages in the output
     And the execution order should not be enforced with single process execution
+
+  @ORDER_TESTS @ORDER_TESTS_STRICT
+  Scenario Outline: Validate strict execution ordering with --order-tests-strict using <parallel_scheme> and <parallel_processes> parallel processes
+    Given I have installed behavex
+    When I run the behavex command with strict execution ordering enabled using "<parallel_processes>" parallel processes and parallel scheme set as "<parallel_scheme>"
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line                                 |
+    | PARALLEL_PROCESSES  \| <parallel_processes> |
+    | PARALLEL_SCHEME     \| <parallel_scheme>    |
+    | Exit code: 0                                |
+    And I should not see error messages in the output
+    And I should see the scenarios executed in strict order for "<parallel_scheme>" scheme
+    Examples:
+      | parallel_scheme | parallel_processes |
+      | scenario        | 3                  |
+      | feature         | 3                  |

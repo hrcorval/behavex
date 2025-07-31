@@ -56,12 +56,12 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            copy_bootstrap_html_generator,
                            create_execution_complete_callback_function,
                            expand_paths, explore_features, generate_reports,
-                           get_feature_and_scenario_line, get_json_results,
-                           get_logging_level, get_scenario_order,
-                           get_scenario_tags, get_scenarios_instances,
-                           get_text, join_feature_reports,
-                           join_scenario_reports, len_scenarios,
-                           print_env_variables, print_parallel,
+                           get_feature_and_scenario_line, get_feature_order,
+                           get_json_results, get_logging_level,
+                           get_scenario_order, get_scenario_tags,
+                           get_scenarios_instances, get_text,
+                           join_feature_reports, join_scenario_reports,
+                           len_scenarios, print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
 
@@ -404,7 +404,7 @@ def create_scenario_line_references(features):
                     for scenario_outline_instance in scenario.scenarios:
                         outline_scenario_line = get_feature_and_scenario_line(scenario_outline_instance.name)[1]
                         if outline_scenario_line and scenario_outline_instance.line == int(outline_scenario_line):
-                            if scenario_outline_instance not in updated_features[pure_feature_path]:
+                            if scenario_outline_instance not in updated_features[feature_path]:
                                 updated_features[feature_path].append(scenario_outline_instance)
                             break
                 else:
@@ -424,6 +424,25 @@ def create_scenario_line_references(features):
                     if scenario not in updated_features[updated_features_path]:
                         updated_features[updated_features_path].append(scenario)
     return updated_features
+
+
+def _wait_for_futures(futures, execution_codes, json_reports):
+    """Helper function to wait for futures and handle exceptions"""
+    for future in futures:
+        try:
+            future.result()
+        except (KeyboardInterrupt, SystemExit):
+            # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
+            raise
+        except:
+            e = sys.exc_info()[1]
+            if isinstance(e, BrokenProcessPool):
+                print_parallel('process.pool.broken.main', str(e))
+                # Mark as failed execution but continue processing remaining futures
+                execution_codes.append(1)
+            else:
+                print_parallel('parallel.process.error', str(e))
+                execution_codes.append(1)
 
 
 def launch_by_feature(features,
@@ -446,6 +465,9 @@ def launch_by_feature(features,
 
     # Cache the order_tests parameter to avoid multiple get_param calls
     order_tests_enabled = get_param('order_tests')
+    order_tests_strict = get_param('order_tests_strict')
+    # If order_tests_strict is enabled, automatically enable order_tests
+    order_tests_enabled = order_tests_enabled or order_tests_strict
     order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
 
     serial_features = []
@@ -460,9 +482,8 @@ def launch_by_feature(features,
 
         # Only calculate feature order if ordering is enabled
         if order_tests_enabled:
-            scenarios = features[features_path]
-            if scenarios:
-                feature_info["feature_order"] = min(get_scenario_order(scenario, order_tag_prefix) for scenario in scenarios)
+            # For feature-level execution, use ORDER tags from the feature itself
+            feature_info["feature_order"] = get_feature_order(feature, order_tag_prefix)
 
         if 'SERIAL' in feature.tags:
             serial_features.append(feature_info)
@@ -497,40 +518,54 @@ def launch_by_feature(features,
                 global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
     parallel_processes = []
-    for parallel_feature in parallel_features:
-        feature_filename = parallel_feature["feature_filename"]
-        feature_json_skeleton = parallel_feature["feature_json_skeleton"]
-        future = process_pool.submit(execute_tests,
-                                     features_path=None,
-                                     feature_filename=feature_filename,
-                                     feature_json_skeleton=feature_json_skeleton,
-                                     scenarios_to_run_in_feature=None,
-                                     scenario_line=None,
-                                     multiprocess=True,
-                                     config=ConfigRun(),
-                                     lock=lock,
-                                     shared_removed_scenarios=None)
-        parallel_processes.append(future)
-        future.add_done_callback(create_execution_complete_callback_function(
-            execution_codes,
-            json_reports,
-            global_vars.progress_bar_instance,
-        ))
-    for parallel_process in parallel_processes:
-        try:
-            parallel_process.result()
-        except (KeyboardInterrupt, SystemExit):
-            # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
-            raise
-        except:
-            e = sys.exc_info()[1]
-            if isinstance(e, BrokenProcessPool):
-                print_parallel('process.pool.broken.main', str(e))
-                # Mark as failed execution but continue processing remaining futures
-                execution_codes.append(1)
-            else:
-                print_parallel('parallel.process.error', str(e))
-                execution_codes.append(1)
+
+
+    # Prepare features grouped by order
+    if order_tests_strict:
+        # Each feature gets its own group for strict sequential ordering
+        features_by_order = {}
+        # Sort features by order first
+        sorted_features = sorted(parallel_features, key=lambda f: f.get("feature_order", 9999))
+        for index, parallel_feature in enumerate(sorted_features):
+            features_by_order[index] = [parallel_feature]
+    elif order_tests_enabled:
+        # Sort features by order but allow parallel execution
+        parallel_features.sort(key=lambda f: f.get("feature_order", 9999))
+        features_by_order = {9999: parallel_features}
+    else:
+        # Put all features in a single group for original behavior
+        features_by_order = {9999: parallel_features}
+
+    # Execute features by order groups
+    for order in sorted(features_by_order.keys()):
+        feature_group = features_by_order[order]
+        group_futures = []
+
+        # Submit all features of the current order
+        for parallel_feature in feature_group:
+            feature_filename = parallel_feature["feature_filename"]
+            feature_json_skeleton = parallel_feature["feature_json_skeleton"]
+            future = process_pool.submit(execute_tests,
+                                         features_path=None,
+                                         feature_filename=feature_filename,
+                                         feature_json_skeleton=feature_json_skeleton,
+                                         scenarios_to_run_in_feature=None,
+                                         scenario_line=None,
+                                         multiprocess=True,
+                                         config=ConfigRun(),
+                                         lock=lock,
+                                         shared_removed_scenarios=None)
+            parallel_processes.append(future)
+            future.add_done_callback(create_execution_complete_callback_function(
+                execution_codes,
+                json_reports,
+                global_vars.progress_bar_instance,
+            ))
+            group_futures.append(future)
+
+        # Wait for completion of this order group before proceeding to the next
+        _wait_for_futures(group_futures, execution_codes, json_reports)
+
     parallel_processes.clear()
     return execution_codes, json_reports
 
@@ -563,6 +598,9 @@ def launch_by_scenario(features,
 
     # Cache the order_tests parameter to avoid multiple get_param calls
     order_tests_enabled = get_param('order_tests')
+    order_tests_strict = get_param('order_tests_strict')
+    # If order_tests_strict is enabled, automatically enable order_tests
+    order_tests_enabled = order_tests_enabled or order_tests_strict
     order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
     for features_path, scenarios in features.items():
         scenarios_instances = get_scenarios_instances(scenarios)
@@ -631,13 +669,37 @@ def launch_by_scenario(features,
                 global_vars.progress_bar_instance.update()
     if parallel_scenarios:
         print_parallel('scenario.running_parallels')
-        for scenario_information in parallel_scenarios:
-            scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
-            features_path = scenario_information["features_path"]
-            feature_filename = scenario_information["feature_filename"]
-            feature_json_skeleton = scenario_information["feature_json_skeleton"]
-            scenario_line = scenario_information["scenario_line"]
-            future = process_pool.submit(execute_tests,
+
+
+        # Prepare scenarios grouped by order
+        if order_tests_strict:
+            # Each scenario gets its own group for strict sequential ordering
+            scenarios_by_order = {}
+            # Sort scenarios by order first
+            sorted_scenarios = sorted(parallel_scenarios, key=lambda s: s.get("scenario_order", 9999))
+            for index, scenario_info in enumerate(sorted_scenarios):
+                scenarios_by_order[index] = [scenario_info]
+        elif order_tests_enabled:
+            # Sort scenarios by order but allow parallel execution
+            parallel_scenarios.sort(key=lambda s: s.get("scenario_order", 9999))
+            scenarios_by_order = {9999: parallel_scenarios}
+        else:
+            # Put all scenarios in a single group for original behavior
+            scenarios_by_order = {9999: parallel_scenarios}
+
+        # Execute scenarios by order groups
+        for order in sorted(scenarios_by_order.keys()):
+            scenario_group = scenarios_by_order[order]
+            group_futures = []
+
+            # Submit all scenarios of the current order
+            for scenario_information in scenario_group:
+                scenarios_to_run_in_feature = total_scenarios_to_run[scenario_information["feature_filename"]]
+                features_path = scenario_information["features_path"]
+                feature_filename = scenario_information["feature_filename"]
+                feature_json_skeleton = scenario_information["feature_json_skeleton"]
+                scenario_line = scenario_information["scenario_line"]
+                future = process_pool.submit(execute_tests,
                                             features_path=features_path,
                                             feature_filename=feature_filename,
                                             feature_json_skeleton=feature_json_skeleton,
@@ -648,27 +710,17 @@ def launch_by_scenario(features,
                                             lock=lock,
                                             shared_removed_scenarios=shared_removed_scenarios
                                             )
-            parallel_processes.append(future)
-            future.add_done_callback(create_execution_complete_callback_function(
-                execution_codes,
-                json_reports,
-                global_vars.progress_bar_instance
-            ))
-        for parallel_process in parallel_processes:
-            try:
-                parallel_process.result()
-            except (KeyboardInterrupt, SystemExit):
-                # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
-                raise
-            except:
-                e = sys.exc_info()[1]
-                if isinstance(e, BrokenProcessPool):
-                    print_parallel('process.pool.broken.main', str(e))
-                    # Mark as failed execution but continue processing remaining futures
-                    execution_codes.append(1)
-                else:
-                    print_parallel('parallel.process.error', str(e))
-                    execution_codes.append(1)
+                parallel_processes.append(future)
+                future.add_done_callback(create_execution_complete_callback_function(
+                    execution_codes,
+                    json_reports,
+                    global_vars.progress_bar_instance
+                ))
+                group_futures.append(future)
+
+            # Wait for completion of this order group before proceeding to the next
+            _wait_for_futures(group_futures, execution_codes, json_reports)
+
         parallel_processes.clear()
     return execution_codes, json_reports
 
@@ -1182,8 +1234,9 @@ def _store_tags_to_env_variable(tags):
     tags = tags + ['~@{0}'.format(tag) for tag in tags_skip] if tags else []
     if tags:
         for tag in tags:
-            if get_env('TAGS'):
-                set_env_variable('TAGS', get_env('tags') + ';' + tag)
+            existing_tags = get_env('TAGS')
+            if existing_tags:
+                set_env_variable('TAGS', existing_tags + ';' + tag)
             else:
                 set_env_variable('TAGS', tag)
     else:
@@ -1206,7 +1259,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         list: List of arguments to be used when executing Behave.
     """
     arguments = []
-    output_folder = config.get_env('OUTPUT')
+    output_folder = config.get_env('OUTPUT') if config else get_env('OUTPUT')
     if multiprocess:
         updated_features_path = features_path if not feature else feature
         updated_features_path = updated_features_path if not scenario_line else "{}:{}".format(updated_features_path, scenario_line)
@@ -1239,8 +1292,9 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
     arguments.append('--no-skipped')
     arguments.append('--no-junit')
     run_wip_tests = False
-    if get_env('tags'):
-        tags = get_env('tags').split(';')
+    env_tags = get_env('tags')
+    if env_tags:
+        tags = env_tags.split(';')
         for tag in tags:
             arguments.append('--tags')
             arguments.append(tag)
@@ -1251,9 +1305,9 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append('~@WIP')
     arguments.append('--tags')
     arguments.append('~@MANUAL')
-    args_sys = config.args
+    args_sys = config.args if config else None
     set_args_captures(arguments, args_sys)
-    if args_sys.no_snippets:
+    if args_sys and args_sys.no_snippets:
         arguments.append('--no-snippets')
     for arg in BEHAVE_ARGS:
         value_arg = getattr(args_sys, arg) if hasattr(args_sys, arg) else False

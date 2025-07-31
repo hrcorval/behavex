@@ -12,7 +12,7 @@
 
 Just to mention the most important features delivered in latest BehaveX releases:
 
-🎯 **Test Execution Ordering** *(v4.4.0)* - Control the sequence of scenario and feature execution during parallel runs using order tags (e.g., `@ORDER_001`, `@ORDER_010`).
+🎯 **Test Execution Ordering** *(v4.4.1)* - Control the sequence of scenario and feature execution during parallel runs using order tags (e.g., `@ORDER_001`, `@ORDER_010`). Now includes strict ordering mode (`--order-tests-strict`) for scenarios that must wait for lower-order tests to complete.
 
 📊 **Allure Reports Integration** *(v4.2.1)* - Generate beautiful, comprehensive test reports with Allure framework integration.
 
@@ -136,10 +136,17 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
   behavex -t=@TAG_1 --order-tests --parallel-processes=2
   ```
 
+- **Run scenarios with strict execution ordering (tests wait for lower order tests to complete):**
+  ```bash
+  behavex -t=@TAG_1 --order-tests-strict --parallel-processes=2
+  ```
+
 - **Run scenarios with custom order tag prefix and parallel execution:**
   ```bash
   behavex --order-tests --order-tag-prefix=PRIORITY --parallel-processes=3
   ```
+
+
 
 ## Constraints
 
@@ -181,6 +188,7 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
 - **formatter-outdir** (--formatter-outdir): Specifies the output directory for formatter results (default: output/allure-results for Allure).
 - **no-formatter-attach-logs** (--no-formatter-attach-logs): Disables automatic attachment of scenario log files to formatter reports.
 - **order-tests** (--order-tests): Enables sorting of scenarios/features by execution order using special order tags (only effective with parallel execution).
+- **order-tests-strict** (--order-tests-strict): Ensures tests run in strict order in parallel mode, with tests waiting for lower-order tests to complete (automatically enables --order-tests). May reduce parallel execution performance.
 - **order-tag-prefix** (--order-tag-prefix): Specifies the prefix for order tags (default: 'ORDER').
 
 ## Parallel Test Executions
@@ -222,9 +230,10 @@ Test execution ordering is valuable in scenarios such as:
 
 ### Command Line Arguments
 
-BehaveX provides two new arguments to control test execution ordering during parallel execution:
+BehaveX provides three arguments to control test execution ordering during parallel execution:
 
 - **--order-tests** or **--order_tests**: Enables sorting of scenarios/features by execution order using special order tags (only effective with parallel execution)
+- **--order-tests-strict** or **--order_tests_strict**: Ensures tests run in strict order in parallel mode (automatically enables --order-tests). Tests with higher order numbers will wait for all tests with lower order numbers to complete first. Note: This may reduce parallel execution performance as processes must wait for lower-order tests to complete.
 - **--order-tag-prefix** or **--order_tag_prefix**: Specifies the prefix for order tags (default: 'ORDER')
 
 ### How to Use Order Tags
@@ -256,9 +265,11 @@ Scenario: This scenario will run last
 - Lower numbers execute first (e.g., `@ORDER_001` runs before `@ORDER_010`)
 - Scenarios without order tags will run after all ordered scenarios (Default order: 9999)
 - To run scenarios at the end of execution, you can use order numbers greater than 9999 (e.g., `@ORDER_10000`)
-- When the number of parallel processes equals or exceeds the number of ordered scenarios, ordering has no practical effect since all scenarios can run simultaneously
+- **Regular ordering** (`--order-tests`): When the number of parallel processes equals or exceeds the number of ordered scenarios, ordering has no practical effect since all scenarios can run simultaneously
+- **Strict ordering** (`--order-tests-strict`): Tests will always wait for lower-order tests to complete, regardless of available processes, which may reduce overall execution performance
 - Use zero-padded numbers (e.g., `001`, `010`, `100`) for better sorting visualization
 - The order tags work with both parallel feature and scenario execution schemes
+- `--order-tests-strict` automatically enables `--order-tests`, so you don't need to specify both arguments
 
 ### Execution Examples
 
@@ -271,6 +282,17 @@ behavex --order-tests --parallel-processes=2 -t=@SMOKE
 behavex --order-tests --order-tag-prefix=PRIORITY --parallel-processes=3 -t=@REGRESSION
 ```
 
+#### Strict Ordering (Wait for Lower Order Tests)
+```bash
+# Enable strict test ordering - tests wait for lower order tests to complete
+behavex --order-tests-strict --parallel-processes=3 -t=@INTEGRATION
+
+# Strict ordering with custom prefix
+behavex --order-tests-strict --order-tag-prefix=SEQUENCE --parallel-processes=2
+
+# Note: --order-tests-strict automatically enables --order-tests, so you don't need both
+```
+
 #### Ordering with Parallel Execution
 ```bash
 # Order tests and run with parallel processes by scenario
@@ -281,6 +303,41 @@ behavex --order-tests --parallel-processes=3 --parallel-scheme=feature
 
 # Custom order prefix with parallel execution
 behavex --order-tests --order-tag-prefix=SEQUENCE --parallel-processes=2
+
+# Strict ordering by scenario (tests wait for completion of lower order tests)
+behavex --order-tests-strict --parallel-processes=4 --parallel-scheme=scenario
+
+# Strict ordering by feature
+behavex --order-tests-strict --parallel-processes=3 --parallel-scheme=feature
+```
+
+### Understanding Regular vs Strict Ordering
+
+#### Regular Ordering (`--order-tests`)
+- Tests are **sorted** by order tags but can run **simultaneously** if parallel processes are available
+- Example: With 5 parallel processes and tests `@ORDER_001`, `@ORDER_002`, `@ORDER_003`, all three tests start at the same time
+- **Faster execution** but **less predictable** completion order
+- Best for: Performance optimization, general prioritization
+
+#### Strict Ordering (`--order-tests-strict`)
+- Tests **wait** for all lower-order tests to **complete** before starting
+- Example: `@ORDER_002` tests won't start until all `@ORDER_001` tests are finished
+- **Slower execution** but **guaranteed** sequential completion
+- Best for: Setup/teardown sequences, data dependencies, strict test dependencies
+
+**Performance Comparison:**
+```bash
+# Scenario: 6 tests with ORDER_001, ORDER_002, ORDER_003 tags and 3 parallel processes
+
+# Regular ordering (--order-tests):
+# Time 0: ORDER_001, ORDER_002, ORDER_003 all start simultaneously
+# Total time: ~1 minute (all tests run in parallel)
+
+# Strict ordering (--order-tests-strict):
+# Time 0: Only ORDER_001 tests start
+# Time 1: ORDER_001 finishes → ORDER_002 tests start
+# Time 2: ORDER_002 finishes → ORDER_003 tests start
+# Total time: ~3 minutes (sequential execution)
 ```
 
 ### Using Custom Order Prefixes
@@ -310,19 +367,31 @@ Scenario: Low priority scenario
 
 ### Feature-Level Ordering
 
-When using `--parallel-scheme=feature`, the ordering is determined by the lowest order tag found in any scenario within that feature:
+When using `--parallel-scheme=feature`, the ordering is determined by ORDER tags placed directly on the feature itself:
 
 ```gherkin
+@ORDER_001
 Feature: Database Setup Feature
-    @ORDER_001
     Scenario: Create database schema
         Given I create the database schema
 
-    @ORDER_002
     Scenario: Insert initial data
         Given I insert the initial data
 
-# This entire feature will be ordered as ORDER_001 (lowest tag in the feature)
+# This entire feature will be ordered as ORDER_001 (tag on the feature)
+
+@ORDER_002
+Feature: Application Tests Feature
+    Scenario: Test user login
+        Given I test user login
+
+# This entire feature will be ordered as ORDER_002 (tag on the feature)
+
+Feature: Unordered Feature
+    Scenario: Some test
+        Given I perform some test
+
+# This feature has no ORDER tag, so it gets the default order 9999
 ```
 
 ## Test Execution Reports
