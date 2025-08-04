@@ -1,6 +1,13 @@
 Version History
 ===============================================================================
 
+Version: 4.4.1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Added strict test execution ordering feature (--order-tests-strict) to ensure tests run in sequential order during parallel execution. Tests with higher order numbers now wait for all lower-order tests to complete first, providing guaranteed execution sequence for scenarios that require strict dependencies. This complements the existing --order-tests feature by offering more rigorous ordering control when needed.
+
 Version: 4.4.0
 -------------------------------------------------------------------------------
 

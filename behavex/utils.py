@@ -699,3 +699,18 @@ def get_scenario_order(scenario, order_tag_prefix='ORDER'):
     """
     scenario_tags = get_scenario_tags(scenario)
     return extract_order_from_tags(scenario_tags, order_tag_prefix)
+
+
+def get_feature_order(feature, order_tag_prefix='ORDER'):
+    """
+    Get execution order value for a feature.
+
+    Args:
+        feature: Feature object
+        order_tag_prefix (str): Prefix for order tags (default: 'ORDER')
+
+    Returns:
+        int: Order value (lower numbers execute first)
+    """
+    feature_tags = list(feature.tags) if hasattr(feature, 'tags') else []
+    return extract_order_from_tags(feature_tags, order_tag_prefix)
