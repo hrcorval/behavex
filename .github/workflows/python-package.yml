@@ -34,7 +34,8 @@ jobs:
       - name: Install behavex
         run: |
           python -m pip install --upgrade pip
-          python setup.py sdist
+          python -m pip install build
+          python -m build
           python -m pip install beautifulsoup4
           python -m pip install dist/behavex-4.4.2rc1.tar.gz
           pip freeze

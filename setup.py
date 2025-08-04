@@ -23,15 +23,7 @@ setup(
             'behavex = behavex.runner:main',
         ],
     },
-    install_requires=[
-        'behave==1.2.6',
-        'behavex-images>=3.2.2',
-        'allure-python-commons',
-        'jinja2',
-        'configobj',
-        'minify-html',
-        'csscompressor'
-    ],
+
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
