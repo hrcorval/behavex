@@ -1,6 +1,21 @@
 Version History
 ===============================================================================
 
+Version: 4.4.2
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fixed issue with the Allure formatter, where the @allure.link and @allure.testcase tags were not being properly parsed.
+
+ENHANCEMENTS:
+
+* Enhanced error handling and tracing capabilities by implementing full traceback reporting with clean separation of exception messages.
+
+CONTRIBUTIONS:
+
+* Thanks to `BackstageBones <https://github.com/BackstageBones>`__ for contributing the enhanced error parsing and Allure tag support functionality.
+
 Version: 4.4.1
 -------------------------------------------------------------------------------
 
