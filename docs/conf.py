@@ -13,7 +13,8 @@ author = 'hrcorval'
 # -- General configuration ---------------------------------------------------
 extensions = [
     'myst_parser',
-    'sphinx.ext.autodoc',
+    'autoapi.extension',
+    'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
 ]
 
@@ -37,21 +38,21 @@ templates_path = ['_templates']
 # -- MyST Parser configuration -----------------------------------------------
 myst_enable_extensions = [
     "colon_fence",
+    "deflist",
+    "tasklist",
+    "substitution",
+    "linkify",
 ]
 
-# -- Setup for markdown files ------------------------------------------------
-import commonmark
+# -- AutoAPI configuration ---------------------------------------------------
+autoapi_dirs = ['../behavex']
+autoapi_type = 'python'
+autoapi_template_dir = '_autoapi_templates'
+autoapi_generate_api_docs = True
+autoapi_add_toctree_entry = False  # We'll add it manually to control placement
 
-
-def setup(app):
-    app.connect('html-page-context', add_readme_html)
-
-def add_readme_html(app, pagename, templatename, context, doctree):
-    if pagename == 'index':
-        with open('../README.md', 'r') as f:
-            markdown_content = f.read()
-        parser = commonmark.Parser()
-        ast = parser.parse(markdown_content)
-        renderer = commonmark.HtmlRenderer()
-        html = renderer.render(ast)
-        context['readme_html'] = html
+# -- HTML output options ----------------------------------------------------
+html_static_path = []
+html_show_sourcelink = True
+html_show_sphinx = True
+html_show_copyright = True
