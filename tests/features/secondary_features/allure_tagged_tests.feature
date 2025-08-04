@@ -2,7 +2,7 @@
 Feature: Allure Tagged Test Scenarios
   This feature contains scenarios with various Allure-specific tags for testing tag processing
 
-  @allure.tms:JIRA-456 @allure.issue:BUG-789 @package=integration.auth
+  @allure.tms:JIRA-456 @allure.issue:BUG-789 @allure.testcase:TC-123 @allure.link.custom:https://example.com/link @package=integration.auth
   Scenario: Test scenario with comprehensive Allure tags
     Given a test condition with allure tags
     When I execute an action with epic and story tags

@@ -67,7 +67,7 @@ def step_impl(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'secondary_features', 'allure_tagged_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -281,7 +281,7 @@ def step_impl(context):
         assert 'Product Defects' in category_names, f"Product Defects category not found. Found: {category_names}"
 
 
-@then('I should see that categories.json contains both Product Defects and Broken Tests categories')
+@then('I should see that categories.json contains both Product Defects and Test Defects categories')
 def step_impl(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     categories_file = os.path.join(allure_results_path, 'categories.json')
@@ -290,7 +290,7 @@ def step_impl(context):
         categories_data = json.load(f)
         category_names = [cat.get('name') for cat in categories_data]
         assert 'Product Defects' in category_names, f"Product Defects category not found. Found: {category_names}"
-        assert 'Broken Tests' in category_names, f"Broken Tests category not found. Found: {category_names}"
+        assert 'Test Defects' in category_names, f"Test Defects category not found. Found: {category_names}"
 
 
 @then('I should see that environment-categories.json file was created')
@@ -327,6 +327,16 @@ def step_impl(context):
             labels = {label['name']: label['value'] for label in result_data['labels']}
             assert 'framework' in labels, "Framework label missing"
             assert labels['framework'] == 'BehaveX', f"Expected framework=BehaveX, got {labels.get('framework')}"
+
+            # Validate testcase and custom links if present
+            if 'links' in result_data:
+                links = {link['type']: link for link in result_data['links']}
+                # Check for testcase link
+                if 'testcase' in links:
+                    assert links['testcase']['name'] == 'TC-123', f"Expected testcase name TC-123, got {links['testcase']['name']}"
+                # Check for custom link
+                if 'custom' in links:
+                    assert links['custom']['url'] == 'https://example.com/link', f"Expected custom link URL https://example.com/link, got {links['custom']['url']}"
 
 
 @then('I should see that epic and story labels are correctly processed')

@@ -49,7 +49,7 @@ Feature: Allure Formatter Complete Test Suite
     And I should not see exception messages in the output
     And I should see that allure-results directory was created
     And I should see that allure result files were generated for mixed scenarios
-    And I should see that categories.json contains both Product Defects and Broken Tests categories
+    And I should see that categories.json contains both Product Defects and Test Defects categories
 
   @ALLURE_FORMATTER @INTEGRATION
   Scenario: Validate Allure formatter processes scenario tags correctly
