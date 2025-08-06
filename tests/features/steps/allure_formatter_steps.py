@@ -775,3 +775,22 @@ def step_impl(context):
             for link in links:
                 assert link.get('type'), f"Found link without type in {result_file}: {link}"
                 assert isinstance(link['type'], str) and link['type'].strip(), f"Invalid link type: {link['type']}"
+
+
+# Simple step definitions for test subject feature files
+@given('a simple test condition')
+def step_simple_test_condition(context):
+    """Simple step for testing tag validation scenarios."""
+    logging.info("Setting up simple test condition")
+
+
+@when('I perform a simple action')
+def step_perform_simple_action(context):
+    """Simple step for testing tag validation scenarios."""
+    logging.info("Performing simple action")
+
+
+@then('I should see a simple result')
+def step_see_simple_result(context):
+    """Simple step for testing tag validation scenarios."""
+    logging.info("Verifying simple result")
