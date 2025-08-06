@@ -13,7 +13,7 @@ tests_features_path = os.path.join(root_project_path, 'tests', 'features')
 
 
 @when('I run the behavex command with allure formatter and passing tests')
-def step_impl(context):
+def when_run_allure_passing_tests(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -25,7 +25,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter and failing tests')
-def step_impl(context):
+def when_run_allure_failing_tests(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -37,7 +37,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter using custom output directory "{custom_dir}"')
-def step_impl(context, custom_dir):
+def when_run_allure_custom_dir(context, custom_dir):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     context.custom_allure_dir = custom_dir
     execution_args = [
@@ -51,7 +51,7 @@ def step_impl(context, custom_dir):
 
 
 @when('I run the behavex command with allure formatter and mixed test results')
-def step_impl(context):
+def when_run_allure_mixed_results(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -63,7 +63,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter and tagged scenarios')
-def step_impl(context):
+def when_run_allure_tagged_scenarios(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -75,7 +75,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter and scenario with table data')
-def step_impl(context):
+def when_run_allure_table_data(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -87,7 +87,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter and scenario with multiline text')
-def step_impl(context):
+def when_run_allure_multiline_text(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -99,7 +99,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter and no log attachments')
-def step_impl(context):
+def when_run_allure_no_logs(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -112,7 +112,7 @@ def step_impl(context):
 
 
 @given('I have a valid BehaveX report.json file')
-def step_impl(context):
+def given_valid_report_json(context):
     # Create a temporary valid report.json for testing
     context.temp_dir = tempfile.mkdtemp()
     context.report_json_path = os.path.join(context.temp_dir, 'report.json')
@@ -151,7 +151,7 @@ def step_impl(context):
 
 
 @given('I have an invalid JSON report file')
-def step_impl(context):
+def given_invalid_json_report(context):
     # Create a temporary invalid JSON file
     context.temp_dir = tempfile.mkdtemp()
     context.invalid_json_path = os.path.join(context.temp_dir, 'invalid_report.json')
@@ -161,21 +161,21 @@ def step_impl(context):
 
 
 @when('I run the allure formatter script directly with the report file')
-def step_impl(context):
+def when_run_allure_script_direct(context):
     allure_script_path = os.path.join(root_project_path, 'behavex', 'outputs', 'formatters', 'allure_behavex_formatter.py')
     execution_args = ['python3', allure_script_path, '--report-path', context.report_json_path]
     execute_command(context, execution_args)
 
 
 @when('I run the allure formatter script with the invalid JSON file')
-def step_impl(context):
+def when_run_allure_script_invalid_json(context):
     allure_script_path = os.path.join(root_project_path, 'behavex', 'outputs', 'formatters', 'allure_behavex_formatter.py')
     execution_args = ['python3', allure_script_path, '--report-path', context.invalid_json_path]
     execute_command(context, execution_args)
 
 
 @when('I run the allure formatter script with a non-existent report file')
-def step_impl(context):
+def when_run_allure_script_nonexistent(context):
     allure_script_path = os.path.join(root_project_path, 'behavex', 'outputs', 'formatters', 'allure_behavex_formatter.py')
     non_existent_path = '/path/to/non/existent/report.json'
     execution_args = ['python3', allure_script_path, '--report-path', non_existent_path]
@@ -183,7 +183,7 @@ def step_impl(context):
 
 
 @then('I should see that allure-results directory was created')
-def step_impl(context):
+def then_see_allure_results_dir(context):
     # Check for allure-results directory in the output path
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     assert os.path.exists(allure_results_path), f"Allure results directory not found at {allure_results_path}"
@@ -191,14 +191,14 @@ def step_impl(context):
 
 
 @then('I should see that custom allure-results directory "{custom_dir}" was created')
-def step_impl(context, custom_dir):
+def then_see_custom_allure_dir(context, custom_dir):
     allure_results_path = os.path.join(context.output_path, custom_dir)
     assert os.path.exists(allure_results_path), f"Custom allure results directory not found at {allure_results_path}"
     assert os.path.isdir(allure_results_path), f"Expected directory but found file at {allure_results_path}"
 
 
 @then('I should see that allure result files were generated for passing scenarios')
-def step_impl(context):
+def then_see_passing_result_files(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -218,7 +218,7 @@ def step_impl(context):
 
 
 @then('I should see that allure result files were generated for failing scenarios')
-def step_impl(context):
+def then_see_failing_result_files(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -237,7 +237,7 @@ def step_impl(context):
 
 
 @then('I should see that allure result files were generated for mixed scenarios')
-def step_impl(context):
+def then_see_mixed_result_files(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -252,14 +252,14 @@ def step_impl(context):
 
 
 @then('I should see that allure result files were generated in custom directory "{custom_dir}"')
-def step_impl(context, custom_dir):
+def then_see_result_files_custom_dir(context, custom_dir):
     allure_results_path = os.path.join(context.output_path, custom_dir)
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, f"No result files found in custom directory {allure_results_path}"
 
 
 @then('I should see that categories.json file was created')
-def step_impl(context):
+def then_see_categories_file(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     categories_file = os.path.join(allure_results_path, 'categories.json')
     assert os.path.exists(categories_file), f"Categories file not found at {categories_file}"
@@ -271,7 +271,7 @@ def step_impl(context):
 
 
 @then('I should see that categories.json contains Product Defects category')
-def step_impl(context):
+def then_see_product_defects_category(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     categories_file = os.path.join(allure_results_path, 'categories.json')
 
@@ -282,7 +282,7 @@ def step_impl(context):
 
 
 @then('I should see that categories.json contains both Product Defects and Test Defects categories')
-def step_impl(context):
+def then_see_both_defect_categories(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     categories_file = os.path.join(allure_results_path, 'categories.json')
 
@@ -294,14 +294,14 @@ def step_impl(context):
 
 
 @then('I should see that environment-categories.json file was created')
-def step_impl(context):
+def then_see_env_categories_file(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     env_categories_file = os.path.join(allure_results_path, 'environment-categories.json')
     assert os.path.exists(env_categories_file), f"Environment categories file not found at {env_categories_file}"
 
 
 @then('I should see that container files were created')
-def step_impl(context):
+def then_see_container_files(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     container_files = [f for f in os.listdir(allure_results_path) if f.endswith('-container.json')]
     assert len(container_files) > 0, "No container files found in allure-results directory"
@@ -315,7 +315,7 @@ def step_impl(context):
 
 
 @then('I should see that allure result files contain correct tags and labels')
-def step_impl(context):
+def then_see_correct_tags_labels(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -340,7 +340,7 @@ def step_impl(context):
 
 
 @then('I should see that epic and story labels are correctly processed')
-def step_impl(context):
+def then_see_epic_story_labels(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -362,7 +362,7 @@ def step_impl(context):
 
 
 @then('I should see that severity labels are correctly processed')
-def step_impl(context):
+def then_see_severity_labels(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -378,7 +378,7 @@ def step_impl(context):
 
 
 @then('I should see that allure result files contain table attachments')
-def step_impl(context):
+def then_see_table_attachments(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -398,7 +398,7 @@ def step_impl(context):
 
 
 @then('I should see that table data is formatted as CSV')
-def step_impl(context):
+def then_see_csv_formatted_data(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -419,7 +419,7 @@ def step_impl(context):
 
 
 @then('I should see that allure result files contain text attachments')
-def step_impl(context):
+def then_see_text_attachments(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -439,7 +439,7 @@ def step_impl(context):
 
 
 @then('I should see that multiline text is properly attached')
-def step_impl(context):
+def then_see_multiline_text_attached(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
 
@@ -459,12 +459,12 @@ def step_impl(context):
 
 
 @then('I should see that the script executes successfully')
-def step_impl(context):
+def then_see_script_success(context):
     assert context.result.returncode == 0, f"Script failed with exit code {context.result.returncode}. Output: {context.result.stdout}"
 
 
 @then('I should see that allure result files were generated by the script')
-def step_impl(context):
+def then_see_script_generated_files(context):
     # The script should generate files in the current directory's output/allure-results
     allure_results_path = os.path.join('output', 'allure-results')
     if os.path.exists(allure_results_path):
@@ -473,7 +473,7 @@ def step_impl(context):
 
 
 @then('I should see that all expected allure files are present')
-def step_impl(context):
+def then_see_all_expected_files(context):
     allure_results_path = os.path.join('output', 'allure-results')
     if os.path.exists(allure_results_path):
         files = os.listdir(allure_results_path)
@@ -486,22 +486,22 @@ def step_impl(context):
 
 
 @then('I should see an error message about invalid JSON format')
-def step_impl(context):
+def then_see_invalid_json_error(context):
     assert "Invalid JSON format" in context.result.stdout or "json.JSONDecodeError" in context.result.stderr or "Invalid JSON" in context.result.stderr, f"Expected JSON error message but got: {context.result.stdout}"
 
 
 @then('I should see an error message about missing report file')
-def step_impl(context):
+def then_see_missing_file_error(context):
     assert "Could not find report file" in context.result.stdout or "FileNotFoundError" in context.result.stderr or "No such file" in context.result.stderr, f"Expected file not found error but got: {context.result.stdout}"
 
 
 @then('the script should exit with non-zero code')
-def step_impl(context):
+def then_script_exits_nonzero(context):
     assert context.result.returncode != 0, f"Expected non-zero exit code, but got {context.result.returncode}"
 
 
 @then('I should see that allure result files do not contain scenario log attachments')
-def step_impl(context):
+def then_no_log_attachments(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -526,7 +526,7 @@ def step_impl(context):
 
 # E2E Tag Validation Steps
 @when('I run the behavex command with allure formatter on malformed tags test file')
-def step_impl(context):
+def when_run_allure_malformed_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -538,7 +538,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter on mixed tags scenarios')
-def step_impl(context):
+def when_run_allure_mixed_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -550,7 +550,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter on valid tags test file')
-def step_impl(context):
+def when_run_allure_valid_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -562,7 +562,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command with allure formatter on edge case malformed tags')
-def step_impl(context):
+def when_run_allure_edge_case_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -574,7 +574,7 @@ def step_impl(context):
 
 
 @then('I should see that allure result files were generated despite malformed tags')
-def step_impl(context):
+def then_files_generated_despite_malformed(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -590,7 +590,7 @@ def step_impl(context):
 
 
 @then('I should see that malformed allure.label tags are not present in the generated reports')
-def step_impl(context):
+def then_no_malformed_label_tags(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -613,7 +613,7 @@ def step_impl(context):
 
 
 @then('I should see that valid tags are still processed correctly in the reports')
-def step_impl(context):
+def then_valid_tags_processed(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -636,7 +636,7 @@ def step_impl(context):
 
 
 @then('I should see that only valid tags appear in the generated allure reports')
-def step_impl(context):
+def then_only_valid_tags_appear(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -660,7 +660,7 @@ def step_impl(context):
 
 
 @then('I should see that invalid tags are silently omitted from reports')
-def step_impl(context):
+def then_invalid_tags_omitted(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -684,7 +684,7 @@ def step_impl(context):
 
 
 @then('I should see that all valid allure tags are present in the generated reports')
-def step_impl(context):
+def then_all_valid_tags_present(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -726,7 +726,7 @@ def step_impl(context):
 
 
 @then('I should see that no malformed tag warnings appear in valid tag scenarios')
-def step_impl(context):
+def then_no_warnings_for_valid_tags(context):
     # For valid tag scenarios, there should be no malformed tag warnings in the output
     # This verifies our validation doesn't generate false positives
     output = getattr(context.result, 'stdout', '') + getattr(context.result, 'stderr', '')
@@ -744,7 +744,7 @@ def step_impl(context):
 
 
 @then('I should see that edge case malformed tags do not crash the formatter')
-def step_impl(context):
+def then_edge_case_tags_no_crash(context):
     # This step is already verified by the successful exit code
     # But we can also check that result files were generated
     allure_results_path = os.path.join(context.output_path, 'allure-results')
@@ -753,7 +753,7 @@ def step_impl(context):
 
 
 @then('I should see that only well-formed tags appear in the final reports')
-def step_impl(context):
+def then_only_wellformed_tags_appear(context):
     allure_results_path = os.path.join(context.output_path, 'allure-results')
     result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
     assert len(result_files) > 0, "No result files found in allure-results directory"
@@ -775,22 +775,3 @@ def step_impl(context):
             for link in links:
                 assert link.get('type'), f"Found link without type in {result_file}: {link}"
                 assert isinstance(link['type'], str) and link['type'].strip(), f"Invalid link type: {link['type']}"
-
-
-# Simple step definitions for test subject feature files
-@given('a simple test condition')
-def step_simple_test_condition(context):
-    """Simple step for testing tag validation scenarios."""
-    logging.info("Setting up simple test condition")
-
-
-@when('I perform a simple action')
-def step_perform_simple_action(context):
-    """Simple step for testing tag validation scenarios."""
-    logging.info("Performing simple action")
-
-
-@then('I should see a simple result')
-def step_see_simple_result(context):
-    """Simple step for testing tag validation scenarios."""
-    logging.info("Verifying simple result")

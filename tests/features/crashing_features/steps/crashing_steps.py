@@ -2,27 +2,27 @@ from behave import given, then, when
 
 
 @given('a failing condition')
-def step_impl(context):
+def given_failing_condition(context):
     context.condition = 'fail'
 
 @given('a passing condition')
-def step_impl(context):
+def given_passing_condition(context):
     context.condition = 'pass'
 
 @given('a condition to skip the scenario')
-def step_impl(context):
+def given_skip_condition(context):
     context.condition = 'skip'
 
 @given('a condition to exit the scenario')
-def step_impl(context):
+def given_exit_condition(context):
     context.condition = 'exit'
 
 @given('a condition to leave the scenario untested')
-def step_impl(context):
+def given_untested_condition(context):
     context.condition = 'untested'
 
 @then('I perform the condition')
-def step_impl(context):
+def then_perform_condition(context):
     if context.condition == 'fail':
         # This step will cause the test to fail
         assert False, "This step is designed to fail"
