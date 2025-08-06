@@ -65,7 +65,9 @@ class AllureBehaveXFormatter:
         if not tag.startswith("allure.label."):
             return None
 
-        label_part = tag.removeprefix("allure.label.")
+        # Python 3.8 compatible alternative to removeprefix()
+        prefix = "allure.label."
+        label_part = tag[len(prefix):]
         if ':' not in label_part:
             logging.warning(f"Malformed allure.label tag (missing ':'): {tag}")
             return None
