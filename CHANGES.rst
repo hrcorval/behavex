@@ -11,6 +11,7 @@ FIXES:
 ENHANCEMENTS:
 
 * Enhanced error handling and tracing capabilities by implementing full traceback reporting with clean separation of exception messages.
+* Improved Allure formatter robustness by adding comprehensive tag validation that gracefully handles malformed @allure.* tags without crashes, while providing detailed warning messages for debugging purposes.
 
 CONTRIBUTIONS:
 

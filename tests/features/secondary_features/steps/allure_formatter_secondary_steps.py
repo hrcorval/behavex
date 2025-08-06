@@ -1,4 +1,9 @@
+import json
 import logging
+import os
+import subprocess
+import tempfile
+from io import StringIO
 
 from behave import given, then, when
 
@@ -88,3 +93,22 @@ def step_test_condition_multiline_text(context):
 @then('I should see the text processed correctly')
 def step_see_text_processed_correctly(context):
     logging.info("Verifying text processing")
+
+
+# Simple step definitions for test subject feature files
+@given('a simple test condition')
+def step_simple_test_condition(context):
+    """Simple step for testing tag validation scenarios."""
+    logging.info("Setting up simple test condition")
+
+
+@when('I perform a simple action')
+def step_perform_simple_action(context):
+    """Simple step for testing tag validation scenarios."""
+    logging.info("Performing simple action")
+
+
+@then('I should see a simple result')
+def step_see_simple_result(context):
+    """Simple step for testing tag validation scenarios."""
+    logging.info("Verifying simple result")

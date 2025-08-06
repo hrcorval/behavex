@@ -27,17 +27,18 @@ import argparse
 import csv
 import io
 import json
+import logging
 import os
 import re
 import sys
 import traceback
 import uuid
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Tuple
 from urllib.parse import urlparse
 
-from allure_commons.model2 import (Attachment, Parameter, TestResult,
-                                   TestStepResult, StatusDetails)
+from allure_commons.model2 import (Attachment, Parameter, StatusDetails,
+                                   TestResult, TestStepResult)
 from allure_commons.utils import now
 
 from behavex.conf_mgr import get_env, get_param
@@ -49,6 +50,88 @@ class AllureBehaveXFormatter:
 
     # Default output directory for this formatter
     DEFAULT_OUTPUT_DIR = 'allure-results'
+
+    @staticmethod
+    def _validate_allure_label_tag(tag: str) -> Optional[Tuple[str, str]]:
+        """
+        Validate and parse allure.label.* tags.
+
+        Args:
+            tag: The tag to validate (e.g., "allure.label.severity:critical")
+
+        Returns:
+            Tuple of (label_key, label_value) if valid, None otherwise
+        """
+        if not tag.startswith("allure.label."):
+            return None
+
+        label_part = tag.removeprefix("allure.label.")
+        if ':' not in label_part:
+            logging.warning(f"Malformed allure.label tag (missing ':'): {tag}")
+            return None
+
+        parts = label_part.split(':', 1)
+        if len(parts) != 2 or not parts[0] or not parts[1]:
+            logging.warning(f"Malformed allure.label tag (empty key/value): {tag}")
+            return None
+
+        return parts[0], parts[1]
+
+    @staticmethod
+    def _validate_allure_link_tag(tag: str) -> Optional[Tuple[str, str]]:
+        """
+        Validate and parse allure.link.* tags.
+
+        Args:
+            tag: The tag to validate (e.g., "allure.link.custom:https://example.com")
+
+        Returns:
+            Tuple of (link_type, url) if valid, None otherwise
+        """
+        if not tag.startswith("allure.link."):
+            return None
+
+        if ':' not in tag:
+            logging.warning(f"Malformed allure.link tag (missing ':'): {tag}")
+            return None
+
+        # Extract link type (everything between "allure.link." and first ":")
+        prefix = "allure.link."
+        type_and_url = tag[len(prefix):]
+
+        if ':' not in type_and_url:
+            logging.warning(f"Malformed allure.link tag (no URL separator): {tag}")
+            return None
+
+        link_type, url = type_and_url.split(':', 1)
+
+        if not link_type or not url:
+            logging.warning(f"Malformed allure.link tag (empty type/URL): {tag}")
+            return None
+
+        return link_type, url
+
+    @staticmethod
+    def _validate_simple_allure_tag(tag: str, prefix: str) -> Optional[str]:
+        """
+        Validate and extract value from simple allure tags.
+
+        Args:
+            tag: The tag to validate
+            prefix: Expected prefix (e.g., "allure.issue:")
+
+        Returns:
+            The extracted value if valid, None otherwise
+        """
+        if not tag.startswith(prefix):
+            return None
+
+        value = tag[len(prefix):]
+        if not value:
+            logging.warning(f"Malformed {prefix} tag (empty value): {tag}")
+            return None
+
+        return value
 
     def _get_step_line_from_image(self, filename):
         """Extract step line number from image filename.
@@ -480,8 +563,9 @@ class AllureBehaveXFormatter:
                 # Process tags
                 package_from_tag = None
                 test_thread_already_set = False
-                value = None
                 for tag in scenario['tags']:
+                    value = None
+                    link_type = None
                     if tag.startswith("epic="):
                         test_case.labels.append({"name": "epic", "value": tag.split("=")[-1]})
                     elif tag.startswith("RC-"):
@@ -502,25 +586,31 @@ class AllureBehaveXFormatter:
                         # Add the package from tag
                         test_case.labels.append({"name": "package", "value": package_from_tag})
                     elif tag.startswith("allure.label."):
-                        label_key, label_value = tag.removeprefix("allure.label.").split(":")
-                        if label_key == "thread":
-                            test_thread_already_set = True
-                        test_case.labels.append({
-                            "name": label_key,
-                            "value": label_value
-                        })
+                        label_result = self._validate_allure_label_tag(tag)
+                        if label_result:
+                            label_key, label_value = label_result
+                            if label_key == "thread":
+                                test_thread_already_set = True
+                            test_case.labels.append({
+                                "name": label_key,
+                                "value": label_value
+                            })
                     elif tag.startswith("allure.issue:"):
-                        value = tag.split("issue:")[-1]
-                        link_type = "issue"
+                        value = self._validate_simple_allure_tag(tag, "allure.issue:")
+                        if value:
+                            link_type = "issue"
                     elif tag.startswith("allure.tms:"):
-                        value = tag.split("tms:")[-1]
-                        link_type = "tms"
+                        value = self._validate_simple_allure_tag(tag, "allure.tms:")
+                        if value:
+                            link_type = "tms"
                     elif tag.startswith("allure.testcase:"):
-                        value = tag.split("testcase:")[-1]
-                        link_type = "testcase"
+                        value = self._validate_simple_allure_tag(tag, "allure.testcase:")
+                        if value:
+                            link_type = "testcase"
                     elif tag.startswith("allure.link."):
-                        link_type = tag.split(':')[0].rsplit('.', 1)[-1]
-                        value = tag.split(":", 1)[-1]
+                        link_result = self._validate_allure_link_tag(tag)
+                        if link_result:
+                            link_type, value = link_result
 
                     if value:
                         for prefix in ["https:", "http:"]:

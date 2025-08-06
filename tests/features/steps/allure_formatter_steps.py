@@ -522,3 +522,256 @@ def step_impl(context):
                 step_attachments = step.get('attachments', [])
                 step_scenario_log_attachments = [att for att in step_attachments if att.get('name') == 'scenario.log']
                 assert len(step_scenario_log_attachments) == 0, f"Found scenario.log attachment in step of {result_file} when --no-formatter-attach-logs was used"
+
+
+# E2E Tag Validation Steps
+@when('I run the behavex command with allure formatter on malformed tags test file')
+def step_impl(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with allure formatter on mixed tags scenarios')
+def step_impl(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with allure formatter on valid tags test file')
+def step_impl(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'allure_valid_tags_test.feature'),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with allure formatter on edge case malformed tags')
+def step_impl(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
+    ]
+    execute_command(context, execution_args)
+
+
+@then('I should see that allure result files were generated despite malformed tags')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    # Verify that files contain valid data structure despite malformed tags
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+            assert 'uuid' in result_data, "Result file missing uuid"
+            assert 'name' in result_data, "Result file missing name"
+            assert 'labels' in result_data, "Result file missing labels"
+            # File should be valid JSON with proper structure
+
+
+@then('I should see that malformed allure.label tags are not present in the generated reports')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Check labels - should not contain malformed label data
+            labels = result_data.get('labels', [])
+
+            # Should not find any empty or malformed label entries
+            for label in labels:
+                assert label.get('name'), f"Found label with empty name in {result_file}"
+                assert label.get('value'), f"Found label with empty value in {result_file}"
+
+                # Specific checks for labels that were malformed in test scenarios
+                if label.get('name') == 'severity':
+                    assert label.get('value') != '', "Found empty severity label value"
+
+
+@then('I should see that valid tags are still processed correctly in the reports')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    # Look for expected valid tags that should have been processed
+    valid_tags_found = False
+
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Check for valid epic/story tags that should be present
+            labels = {label['name']: label['value'] for label in result_data.get('labels', [])}
+
+            if labels.get('epic') == 'RC-999' or labels.get('story') in ['VPD-888', 'VPD-777']:
+                valid_tags_found = True
+                break
+
+    assert valid_tags_found, "Expected to find valid tags (epic=RC-999, story=VPD-888/777) in generated reports"
+
+
+@then('I should see that only valid tags appear in the generated allure reports')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Check labels - all should be well-formed
+            labels = result_data.get('labels', [])
+            for label in labels:
+                assert label.get('name'), f"Found empty label name in {result_file}"
+                assert label.get('value'), f"Found empty label value in {result_file}"
+
+            # Check links - all should be well-formed
+            links = result_data.get('links', [])
+            for link in links:
+                assert link.get('type'), f"Found empty link type in {result_file}"
+                # Should have either url or name
+                assert link.get('url') or link.get('name'), f"Found link with no URL or name in {result_file}"
+
+
+@then('I should see that invalid tags are silently omitted from reports')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    # Verify that malformed tags are not present in any form
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Should not contain any empty/invalid entries
+            labels = result_data.get('labels', [])
+            links = result_data.get('links', [])
+
+            # No empty labels
+            for label in labels:
+                assert label.get('name') and label.get('value'), f"Found incomplete label in {result_file}: {label}"
+
+            # No empty links
+            for link in links:
+                assert link.get('type'), f"Found incomplete link in {result_file}: {link}"
+
+
+@then('I should see that all valid allure tags are present in the generated reports')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    # Track which expected valid tags we find
+    expected_tags = {
+        'epic': ['RC-555'],
+        'story': ['VPD-444'],
+        'severity': ['critical']
+    }
+
+    found_tags = {'epic': [], 'story': [], 'severity': []}
+    found_links = []
+
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Collect labels
+            labels = result_data.get('labels', [])
+            for label in labels:
+                label_name = label.get('name')
+                label_value = label.get('value')
+                if label_name in found_tags:
+                    found_tags[label_name].append(label_value)
+
+            # Collect links
+            links = result_data.get('links', [])
+            for link in links:
+                found_links.append(link.get('type'))
+
+    # Verify expected tags are present
+    for tag_type, expected_values in expected_tags.items():
+        for expected_value in expected_values:
+            assert expected_value in found_tags[tag_type], f"Expected {tag_type}={expected_value} not found in reports"
+
+    # Should have some links from valid link tags
+    assert 'issue' in found_links or 'tms' in found_links or 'custom' in found_links, "Expected to find valid link types in reports"
+
+
+@then('I should see that no malformed tag warnings appear in valid tag scenarios')
+def step_impl(context):
+    # For valid tag scenarios, there should be no malformed tag warnings in the output
+    # This verifies our validation doesn't generate false positives
+    output = getattr(context.result, 'stdout', '') + getattr(context.result, 'stderr', '')
+
+    malformed_warnings = [
+        'Malformed allure.label tag',
+        'Malformed allure.link tag',
+        'Malformed allure.issue:',
+        'Malformed allure.tms:',
+        'Malformed allure.testcase:'
+    ]
+
+    for warning in malformed_warnings:
+        assert warning not in output, f"Found unexpected malformed tag warning in valid tag scenario: {warning}"
+
+
+@then('I should see that edge case malformed tags do not crash the formatter')
+def step_impl(context):
+    # This step is already verified by the successful exit code
+    # But we can also check that result files were generated
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found - formatter may have crashed on edge case tags"
+
+
+@then('I should see that only well-formed tags appear in the final reports')
+def step_impl(context):
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert len(result_files) > 0, "No result files found in allure-results directory"
+
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            result_data = json.load(f)
+
+            # Every label must be complete
+            labels = result_data.get('labels', [])
+            for label in labels:
+                assert label.get('name') and label.get('value'), f"Found malformed label in {result_file}: {label}"
+                # Name and value must be non-empty strings
+                assert isinstance(label['name'], str) and label['name'].strip(), f"Invalid label name: {label['name']}"
+                assert isinstance(label['value'], str) and label['value'].strip(), f"Invalid label value: {label['value']}"
+
+            # Every link must be complete
+            links = result_data.get('links', [])
+            for link in links:
+                assert link.get('type'), f"Found link without type in {result_file}: {link}"
+                assert isinstance(link['type'], str) and link['type'].strip(), f"Invalid link type: {link['type']}"
