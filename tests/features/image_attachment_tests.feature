@@ -1,6 +1,6 @@
 Feature: Image Attachment Testing
 
-  @IMAGE_ATTACHMENT @HTML_REPORT @INTEGRATION
+  @IMAGE_ATTACHMENT @HTML_REPORT
   Scenario: Validate image attachments appear in HTML report with gallery icon
     Given I have installed behavex
     And image attachment functionality is required
@@ -13,7 +13,7 @@ Feature: Image Attachment Testing
     And I should see the HTML report was generated and contains scenarios
     And I should see the generated HTML report contains the "glyphicon-picture" string
 
-  @IMAGE_ATTACHMENT @ALLURE_FORMATTER @INTEGRATION
+  @IMAGE_ATTACHMENT @ALLURE_FORMATTER
   Scenario: Validate image attachments appear in Allure formatter output
     Given I have installed behavex
     And image attachment functionality is required

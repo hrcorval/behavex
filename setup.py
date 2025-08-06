@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='behavex',
-    version='4.4.1',
+    version='4.4.2',
     license="MIT",
     platforms=['any'],
     python_requires='>=3.5',
@@ -23,15 +23,7 @@ setup(
             'behavex = behavex.runner:main',
         ],
     },
-    install_requires=[
-        'behave==1.2.6',
-        'behavex-images>=3.2.2',
-        'allure-python-commons',
-        'jinja2',
-        'configobj',
-        'minify-html',
-        'csscompressor'
-    ],
+
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

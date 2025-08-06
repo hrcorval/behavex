@@ -27,15 +27,18 @@ import argparse
 import csv
 import io
 import json
+import logging
 import os
 import re
 import sys
+import traceback
 import uuid
 from pathlib import Path
+from typing import Dict, Optional, Tuple
+from urllib.parse import urlparse
 
-from allure_commons.model2 import (Attachment, Parameter, TestResult,
-                                   TestStepResult)
-from allure_commons.types import AttachmentType
+from allure_commons.model2 import (Attachment, Parameter, StatusDetails,
+                                   TestResult, TestStepResult)
 from allure_commons.utils import now
 
 from behavex.conf_mgr import get_env, get_param
@@ -47,6 +50,90 @@ class AllureBehaveXFormatter:
 
     # Default output directory for this formatter
     DEFAULT_OUTPUT_DIR = 'allure-results'
+
+    @staticmethod
+    def _validate_allure_label_tag(tag: str) -> Optional[Tuple[str, str]]:
+        """
+        Validate and parse allure.label.* tags.
+
+        Args:
+            tag: The tag to validate (e.g., "allure.label.severity:critical")
+
+        Returns:
+            Tuple of (label_key, label_value) if valid, None otherwise
+        """
+        if not tag.startswith("allure.label."):
+            return None
+
+        # Python 3.8 compatible alternative to removeprefix()
+        prefix = "allure.label."
+        label_part = tag[len(prefix):]
+        if ':' not in label_part:
+            logging.warning(f"Malformed allure.label tag (missing ':'): {tag}")
+            return None
+
+        parts = label_part.split(':', 1)
+        if len(parts) != 2 or not parts[0] or not parts[1]:
+            logging.warning(f"Malformed allure.label tag (empty key/value): {tag}")
+            return None
+
+        return parts[0], parts[1]
+
+    @staticmethod
+    def _validate_allure_link_tag(tag: str) -> Optional[Tuple[str, str]]:
+        """
+        Validate and parse allure.link.* tags.
+
+        Args:
+            tag: The tag to validate (e.g., "allure.link.custom:https://example.com")
+
+        Returns:
+            Tuple of (link_type, url) if valid, None otherwise
+        """
+        if not tag.startswith("allure.link."):
+            return None
+
+        if ':' not in tag:
+            logging.warning(f"Malformed allure.link tag (missing ':'): {tag}")
+            return None
+
+        # Extract link type (everything between "allure.link." and first ":")
+        prefix = "allure.link."
+        type_and_url = tag[len(prefix):]
+
+        if ':' not in type_and_url:
+            logging.warning(f"Malformed allure.link tag (no URL separator): {tag}")
+            return None
+
+        link_type, url = type_and_url.split(':', 1)
+
+        if not link_type or not url:
+            logging.warning(f"Malformed allure.link tag (empty type/URL): {tag}")
+            return None
+
+        return link_type, url
+
+    @staticmethod
+    def _validate_simple_allure_tag(tag: str, prefix: str) -> Optional[str]:
+        """
+        Validate and extract value from simple allure tags.
+
+        Args:
+            tag: The tag to validate
+            prefix: Expected prefix (e.g., "allure.issue:")
+
+        Returns:
+            The extracted value if valid, None otherwise
+        """
+        if not tag.startswith(prefix):
+            return None
+
+        value = tag[len(prefix):]
+        if not value:
+            logging.warning(f"Malformed {prefix} tag (empty value): {tag}")
+            return None
+
+        return value
 
     def _get_step_line_from_image(self, filename):
         """Extract step line number from image filename.
@@ -189,7 +276,7 @@ class AllureBehaveXFormatter:
                 idx = parts.index(key_dir)
                 if idx + 1 < len(parts):
                     # Get subdirectories after the key directory but before the filename
-                    package_parts = parts[idx+1:-1]
+                    package_parts = parts[idx + 1:-1]
                     if package_parts:
                         return '.'.join(package_parts)
 
@@ -302,6 +389,44 @@ class AllureBehaveXFormatter:
 
         return test_case
 
+    def extract_status_details(self, step: Dict) -> StatusDetails:
+        """
+        Retrieve last recent traceback call and attach it to a test result.
+        Args:
+            step dict(): scenario step
+
+        Returns:
+            StatusDetails (obj): allure status details object
+
+        """
+        exception = step.get("exception")
+        error_message = step.get("error_message")
+        error_lines = step.get("error_lines") or []
+
+        if exception:
+            try:
+                trace_lines = traceback.format_exception(
+                    type(exception),
+                    exception,
+                    getattr(exception, "__traceback__", None)
+                )
+                trace = "".join(trace_lines)
+
+            except Exception as fallback_err:
+                trace = f"[traceback format failed: {fallback_err}]\n{str(exception)}"
+            msg = error_message or str(exception)
+            return StatusDetails(message=msg, trace=trace)
+
+        if error_lines:
+            trace = "\n".join(error_lines)
+            msg = error_message or error_lines[-1]
+            return StatusDetails(message=msg, trace=trace)
+
+        return StatusDetails(
+            message="Unknown error: no exception or error_lines found.",
+            trace=""
+        )
+
     def launch_json_formatter(self, json_data):
         """
         Generic method to launch the formatter and process JSON test results.
@@ -340,7 +465,8 @@ class AllureBehaveXFormatter:
             package_name = self._get_package_from_path(feature_file_path)
 
             for scenario in feature['scenarios']:
-                scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+                scenario_hash = scenario.get('identifier_hash',
+                                             get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
                 container_data["children"].append(scenario_hash)
 
                 test_case = TestResult(uuid=scenario_hash)
@@ -392,8 +518,8 @@ class AllureBehaveXFormatter:
                         # Add the text as an attachment to the step
                         allure_step.attachments.append(
                             Attachment(source=attachment_source,
-                                     name="Step Text",
-                                     type="text/plain")
+                                       name="Step Text",
+                                       type="text/plain")
                         )
 
                     # Add table data as parameters if present
@@ -408,39 +534,40 @@ class AllureBehaveXFormatter:
                         # Add the table as an attachment to the step, following allure-behave's approach
                         allure_step.attachments.append(
                             Attachment(source=attachment_source,
-                                     name=".table",
-                                     type="text/csv")
+                                       name=".table",
+                                       type="text/csv")
                         )
 
-                    if step["status"] in ("failed", "broken"):
-                        error_msg = step.get('error_msg', '')
-                        if error_msg and not test_error_msg:  # Save first error
-                            test_error_msg = error_msg
-                            # Add to our collection of unique errors
-                            error_messages.add(error_msg)
-
+                    if step.get("status") in ("failed", "broken"):
+                        details = self.extract_status_details(step)
                         allure_step.statusDetails = {
-                            "message": error_msg,
-                            "trace": step.get('error_lines', [''])[0]
+                            "message": details.message or "No details available for this error.",
+                            "trace": details.trace
                         }
+                        last_details = details
 
+                        if details.message and not test_error_msg:
+                            test_error_msg = details.message
+                            error_messages.add(details.message)
                     test_case.steps.append(allure_step)
 
                 # If test failed, add its error as a direct category
                 if test_error_msg:
-                    # Explicitly mark this test case as a Product Defect
-                    test_case.labels.append({"name": "category", "value": "Product Defects"})
-
+                    # Categorize test failure reason
+                    test_case.labels.append({"name": "category", "value":
+                        "Product Defects" if step.get("status") == 'failed' else "Test Defects"})
                     # Add error details to the test case
                     test_case.statusDetails = {
                         "message": test_error_msg,
-                        "flaky": False
+                        "trace": last_details.trace,
                     }
 
                 # Process tags
                 package_from_tag = None
                 test_thread_already_set = False
                 for tag in scenario['tags']:
+                    value = None
+                    link_type = None
                     if tag.startswith("epic="):
                         test_case.labels.append({"name": "epic", "value": tag.split("=")[-1]})
                     elif tag.startswith("RC-"):
@@ -453,18 +580,6 @@ class AllureBehaveXFormatter:
                         test_case.labels.append({"name": "severity", "value": tag.split("=")[-1]})
                     elif tag.startswith("author:"):
                         test_case.labels.append({"name": "author", "value": tag.split(":")[-1]})
-                    elif tag.startswith("allure.tms:"):
-                        test_case.links.append({
-                            "type": "tms",
-                            "url": tag.split("tms:")[-1],
-                            "name": tag.split("tms:")[-1]
-                        })
-                    elif tag.startswith("allure.issue:"):
-                        test_case.links.append({
-                            "type": "issue",
-                            "url": tag.split("issue:")[-1],
-                            "name": tag.split("issue:")[-1]
-                        })
                     elif tag.startswith("package="):
                         # Override package from file path with the one from tag
                         package_from_tag = tag.split("=")[-1]
@@ -473,15 +588,52 @@ class AllureBehaveXFormatter:
                         # Add the package from tag
                         test_case.labels.append({"name": "package", "value": package_from_tag})
                     elif tag.startswith("allure.label."):
-                        label_key, label_value = tag.removeprefix("allure.label.").split(":")
-                        if label_key == "thread":
-                            test_thread_already_set = True
-                        test_case.labels.append({
-                            "name": label_key,
-                            "value": label_value
-                        })
+                        label_result = self._validate_allure_label_tag(tag)
+                        if label_result:
+                            label_key, label_value = label_result
+                            if label_key == "thread":
+                                test_thread_already_set = True
+                            test_case.labels.append({
+                                "name": label_key,
+                                "value": label_value
+                            })
+                    elif tag.startswith("allure.issue:"):
+                        value = self._validate_simple_allure_tag(tag, "allure.issue:")
+                        if value:
+                            link_type = "issue"
+                    elif tag.startswith("allure.tms:"):
+                        value = self._validate_simple_allure_tag(tag, "allure.tms:")
+                        if value:
+                            link_type = "tms"
+                    elif tag.startswith("allure.testcase:"):
+                        value = self._validate_simple_allure_tag(tag, "allure.testcase:")
+                        if value:
+                            link_type = "testcase"
+                    elif tag.startswith("allure.link."):
+                        link_result = self._validate_allure_link_tag(tag)
+                        if link_result:
+                            link_type, value = link_result
+
+                    if value:
+                        for prefix in ["https:", "http:"]:
+                            if value.startswith(prefix) and not value.startswith(prefix + "//"):
+                                value = prefix + "//" + value[len(prefix):]
+
+                        parsed = urlparse(value)
+                        if parsed.scheme and parsed.netloc:
+                            test_case.links.append({
+                                "type": link_type,
+                                "url": value,
+                                "name": value
+                            })
+                        else:
+                            test_case.links.append({
+                                "type": link_type,
+                                "name": value
+                            })
                     else:
                         test_case.labels.append({"name": "tag", "value": tag})
+
                 # Add thread label if not already set and process_id is present
                 if "process_id" in scenario.keys() and not test_thread_already_set:
                     test_case.labels.append({"name": "thread", "value": scenario["process_id"]})
@@ -492,7 +644,8 @@ class AllureBehaveXFormatter:
 
                 # Process scenario logs as attachment
                 if get_param('formatter_attach_logs'):
-                    scenario_hash = scenario.get('identifier_hash', get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
+                    scenario_hash = scenario.get('identifier_hash',
+                                                 get_string_hash(f"{str(feature['filename'])}-{str(scenario['line'])}"))
                     logs_dir_for_log = get_env('logs')
                     if logs_dir_for_log is None:
                         # Handle standalone script execution case
@@ -503,8 +656,8 @@ class AllureBehaveXFormatter:
                         rel_path = os.path.relpath(log_path, output_dir) if output_dir in log_path else log_path
                         test_case.attachments.append(
                             Attachment(source=rel_path,
-                                     name="scenario.log",
-                                     type="text/plain")
+                                       name="scenario.log",
+                                       type="text/plain")
                         )
 
                 # Process evidence files
@@ -513,7 +666,8 @@ class AllureBehaveXFormatter:
                 # Process screenshots
                 scenario_images = []
                 for filename in os.listdir(output_dir):
-                    if filename.startswith(str(scenario_hash)) and filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                    if filename.startswith(str(scenario_hash)) and filename.lower().endswith(
+                            ('.png', '.jpg', '.jpeg', '.gif')):
                         scenario_images.append(filename)
 
                 # Sort images by name to ensure consistent numbering
@@ -539,8 +693,8 @@ class AllureBehaveXFormatter:
                                 # Add image as attachment to the step
                                 step.attachments.append(
                                     Attachment(source=filename,
-                                             name=friendly_name,
-                                             type=self._get_mime_type(filename))
+                                               name=friendly_name,
+                                               type=self._get_mime_type(filename))
                                 )
                                 break
 
@@ -572,7 +726,8 @@ class AllureBehaveXFormatter:
                         "source": attachment.source,
                         "type": attachment.type
                     } for attachment in test_case.attachments],
-                    "parameters": [{"name": p.name, "value": p.value} for p in test_case.parameters] if hasattr(test_case, 'parameters') else [],
+                    "parameters": [{"name": p.name, "value": p.value} for p in test_case.parameters] if hasattr(
+                        test_case, 'parameters') else [],
                     "start": test_case.start,
                     "stop": test_case.stop
                 }
@@ -588,11 +743,12 @@ class AllureBehaveXFormatter:
 
                     # Remove existing package and suite labels to avoid duplication
                     test_case_dict["labels"] = [label for label in test_case_dict["labels"]
-                                               if label.get("name") != "package" and label.get("name") != "suite"]
+                                                if label.get("name") != "package" and label.get("name") != "suite"]
 
                     # Add new hierarchical labels, skipping the feature filename level
                     test_case_dict["labels"].append({"name": "package", "value": hierarchical_package})
-                    test_case_dict["labels"].append({"name": "parentSuite", "value": os.path.dirname(feature_file_path)})
+                    test_case_dict["labels"].append(
+                        {"name": "parentSuite", "value": os.path.dirname(feature_file_path)})
                     test_case_dict["labels"].append({"name": "suite", "value": feature['name']})
 
                 with open(test_case_path, "w") as f:
@@ -612,7 +768,7 @@ class AllureBehaveXFormatter:
             },
             # Add a separate category for broken tests
             {
-                "name": "Broken Tests",
+                "name": "Test Defects",
                 "matchedStatuses": ["broken"]
             }
         ]
@@ -647,12 +803,13 @@ class AllureBehaveXFormatter:
             with open(os.path.join(output_dir, "environment-categories.json"), "w") as f:
                 json.dump(env_categories, f, indent=2)
 
+
 def main():
     parser = argparse.ArgumentParser(description='Parse BehaveX report.json into Allure format')
     parser.add_argument('--report-path',
-                       type=str,
-                       default=os.path.join(Path(__file__).resolve().parent, "output", "report.json"),
-                       help='Path to the report.json file (default: ./output/report.json)')
+                        type=str,
+                        default=os.path.join(Path(__file__).resolve().parent, "output", "report.json"),
+                        help='Path to the report.json file (default: ./output/report.json)')
 
     args = parser.parse_args()
 
@@ -667,7 +824,6 @@ def main():
     except json.JSONDecodeError:
         print(f"Error: Invalid JSON format in report file at {args.report_path}")
         sys.exit(1)
-
 
 
 if __name__ == "__main__":

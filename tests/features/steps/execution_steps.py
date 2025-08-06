@@ -31,41 +31,41 @@ except (ImportError, ModuleNotFoundError) as e:
 
 
 @given('The progress bar is enabled')
-def step_impl(context):
+def given_progress_bar_enabled(context):
     context.progress_bar = True
 
 
 @when('I run the behavex command with a passing test')
 @when('I run the behavex command with passing tests')
-def step_impl(context):
+def when_run_passing_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with a file of failing tests')
-def step_impl(context):
+def when_run_failing_tests_file(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', '-rf', os.path.join(tests_features_path, 'failing_scenarios.txt'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command that renames scenarios and features')
-def step_impl(context):
+def when_run_renaming_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'rename_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with a failing test')
-def step_impl(context):
+def when_run_failing_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'failing_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with a crashing test')
-def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
+def when_run_crashing_test(context, parallel_processes="1", parallel_scheme='scenario'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                 os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_tests.feature')),
@@ -74,7 +74,7 @@ def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
 
 
 @when('I run the behavex command with no tests')
-def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
+def when_run_no_tests(context, parallel_processes="1", parallel_scheme='scenario'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                 os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_tests.feature')),
@@ -85,7 +85,7 @@ def step_impl(context, parallel_processes="1", parallel_scheme='scenario'):
 
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook')
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
-def step_impl(context, behave_hook, parallel_processes="1", parallel_scheme='scenario'):
+def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                 os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_environment_tests.feature')),
@@ -97,28 +97,28 @@ def step_impl(context, behave_hook, parallel_processes="1", parallel_scheme='sce
 
 
 @when('I run the behavex command with a skipped test')
-def step_impl(context):
+def when_run_skipped_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'skipped_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with an untested test')
-def step_impl(context):
+def when_run_untested_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'untested_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_schema}"')
-def step_impl(context, parallel_processes, parallel_schema):
+def when_run_with_parallel_config(context, parallel_processes, parallel_schema):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_schema]
     execute_command(context, execution_args)
 
 
 @when('I setup the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, parallel_processes, parallel_scheme):
+def when_setup_parallel_config(context, parallel_processes, parallel_scheme):
     context.parallel_processes = parallel_processes
     context.parallel_scheme = parallel_scheme
 
@@ -161,7 +161,7 @@ def run_command_with_scheme_processes_and_tags(context, scenario_name=None, argu
 
 
 @when('I run the behavex command with the following tags')
-def step_impl(context):
+def when_run_with_tags(context):
     tags = context.table[0]['tags']
     tags_to_folder_name = get_tags_string(tags)
     tags_array = get_tags_arguments(tags)
@@ -171,7 +171,7 @@ def step_impl(context):
 
 
 @when('I run the behavex command by performing a dry run')
-def step_impl(context):
+def when_run_dry_run(context):
     # generate a random number between 1 and 1000000 completing with zeroes to 6 digits
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--dry-run']
@@ -180,7 +180,7 @@ def step_impl(context):
 
 @then('I should see the following behavex console outputs')
 @then('I should see the following behavex console outputs and exit code "{expected_exit_code}"')
-def step_impl(context, expected_exit_code=None):
+def then_see_console_outputs(context, expected_exit_code=None):
     if expected_exit_code is not None:
         assert int(context.result.returncode) == int(expected_exit_code), "Behavex exit code is not expected"
     for row in context.table:
@@ -188,14 +188,14 @@ def step_impl(context, expected_exit_code=None):
 
 
 @then('I should not see error messages in the output')
-def step_impl(context):
+def then_no_error_messages(context):
     error_messages = ["error", "exception", "traceback"]
     for message in error_messages:
         assert message not in context.result.stdout.lower(), f"Unexpected output when checking error messages in the console output: {context.result.stdout}\n"
 
 
 @then('I should not see exception messages in the output')
-def step_impl(context):
+def then_no_exception_messages(context):
     exception_messages = ["exception", "traceback"]
     for message in exception_messages:
         assert message not in context.result.stdout.lower(), f"Unexpected output when checking exception messages in the console output: {context.result.stdout}\n"
@@ -205,7 +205,7 @@ def step_impl(context):
 
 
 @then('I should see the same number of scenarios in the reports and the console output')
-def step_impl(context):
+def then_same_scenarios_count_all(context):
     total_scenarios_in_html_report = get_total_scenarios_in_html_report(context)
     logging.info(f"Total scenarios in the HTML report: {total_scenarios_in_html_report}")
     total_scenarios_in_junit_reports = get_total_scenarios_in_junit_reports(context)
@@ -225,7 +225,7 @@ def verify_total_scenarios_in_reports(context, consider_skipped_scenarios=True):
 
 
 @then('I should see the same number of scenarios in the reports not considering the skipped scenarios')
-def step_impl(context):
+def then_same_scenarios_count_excluding_skipped(context):
     verify_total_scenarios_in_reports(context, consider_skipped_scenarios=False)
 
 
@@ -443,7 +443,7 @@ def execute_command(context, execution_args, print_output=True):
 # ---------- Execution Ordering Test Steps ----------
 
 @when('I run the behavex command with execution ordering enabled using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, parallel_processes, parallel_scheme):
+def when_run_with_execution_ordering(context, parallel_processes, parallel_scheme):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                       os.path.join(tests_features_path, 'secondary_features', 'ordered_tests.feature'),
@@ -456,7 +456,7 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 
 @when('I run the behavex command with execution ordering enabled using custom prefix "{prefix}" with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, prefix, parallel_processes, parallel_scheme):
+def when_run_with_custom_prefix_ordering(context, prefix, parallel_processes, parallel_scheme):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                       os.path.join(tests_features_path, 'secondary_features', 'priority_ordered_tests.feature'),
@@ -470,7 +470,7 @@ def step_impl(context, prefix, parallel_processes, parallel_scheme):
 
 
 @when('I run the behavex command with execution ordering enabled for mixed scenarios using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, parallel_processes, parallel_scheme):
+def when_run_mixed_ordering(context, parallel_processes, parallel_scheme):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                       os.path.join(tests_features_path, 'secondary_features', 'mixed_ordered_tests.feature'),
@@ -483,7 +483,7 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 
 @when('I run the behavex command with strict execution ordering enabled using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, parallel_processes, parallel_scheme):
+def when_run_strict_ordering(context, parallel_processes, parallel_scheme):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                       os.path.join(tests_features_path, 'secondary_features', 'ordered_tests.feature'),
@@ -496,7 +496,7 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 
 @then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme')
-def step_impl(context, parallel_scheme):
+def then_see_correct_execution_order(context, parallel_scheme):
     """Verify that scenarios with ORDER tags executed successfully (--order-tests controls submission order, not start time)"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
@@ -562,7 +562,7 @@ def step_impl(context, parallel_scheme):
 
 
 @then('I should see the scenarios executed in the correct order for "{parallel_scheme}" scheme with custom prefix')
-def step_impl(context, parallel_scheme):
+def then_see_correct_order_custom_prefix(context, parallel_scheme):
     """Verify that scenarios with PRIORITY tags executed successfully (--order-tests controls submission order, not start time)"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
@@ -623,7 +623,7 @@ def step_impl(context, parallel_scheme):
 
 
 @then('I should see that ordered scenarios execute before unordered scenarios for "{parallel_scheme}" scheme')
-def step_impl(context, parallel_scheme):
+def then_see_ordered_before_unordered(context, parallel_scheme):
     """Verify that ordered and unordered scenarios executed successfully (--order-tests controls submission order, not start time)"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"
@@ -696,14 +696,14 @@ def step_impl(context, parallel_scheme):
 
 
 @then('the execution order should not be enforced with single process execution')
-def step_impl(context):
+def then_no_order_enforcement_single_process(context):
     """Verify that ordering is not enforced when running with single process"""
     # For single process execution, we just verify that the test completed successfully
     # and scenarios were executed (the actual order doesn't matter since ordering only works with parallel execution)
 
 
 @then('I should see the scenarios executed in strict order for "{parallel_scheme}" scheme')
-def step_impl(context, parallel_scheme):
+def then_see_strict_execution_order(context, parallel_scheme):
     """Verify that scenarios with ORDER tags executed in strict sequential order when using --order-tests-strict"""
     report_json_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_json_path), f"Report JSON file not found at {report_json_path}"

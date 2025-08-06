@@ -14,12 +14,12 @@ from behavex.outputs.formatters.allure_behavex_formatter import \
 
 
 @given('I have an AllureBehaveXFormatter instance')
-def step_impl(context):
+def given_allure_formatter_instance(context):
     context.formatter = AllureBehaveXFormatter()
 
 
 @when('I test the MIME type detection for various file extensions')
-def step_impl(context):
+def when_test_mime_type_detection(context):
     test_cases = [
         ('test.png', 'image/png'),
         ('test.jpg', 'image/jpeg'),
@@ -47,7 +47,7 @@ def step_impl(context):
 
 
 @then('I should see correct MIME types returned for all supported formats')
-def step_impl(context):
+def then_see_correct_mime_types(context):
     failures = []
     for result in context.mime_results:
         if not result['matches']:
@@ -57,7 +57,7 @@ def step_impl(context):
 
 
 @when('I test error message sanitization with various inputs')
-def step_impl(context):
+def when_test_error_sanitization(context):
     test_cases = [
         ('Simple error message', 'Simple error message'),
         ('A very long error message that exceeds fifty characters and should be truncated', 'A very long error message that exceeds fifty ch...'),
@@ -79,7 +79,7 @@ def step_impl(context):
 
 
 @then('I should see properly sanitized error messages')
-def step_impl(context):
+def then_see_sanitized_messages(context):
     failures = []
     for result in context.sanitization_results:
         if not result['matches']:
@@ -89,7 +89,7 @@ def step_impl(context):
 
 
 @when('I test package name extraction from various file paths')
-def step_impl(context):
+def when_test_package_extraction(context):
     test_cases = [
         ('features/automated/user/login.feature', 'automated.user'),
         ('tests/features/manual/admin/users.feature', 'manual.admin'),
@@ -112,7 +112,7 @@ def step_impl(context):
 
 
 @then('I should see correct package names extracted')
-def step_impl(context):
+def then_see_correct_packages(context):
     failures = []
     for result in context.package_results:
         if not result['matches']:
@@ -122,7 +122,7 @@ def step_impl(context):
 
 
 @when('I test table formatting with sample table data')
-def step_impl(context):
+def when_test_table_formatting(context):
     test_cases = [
         # Test case 1: Simple table
         (
@@ -156,7 +156,7 @@ def step_impl(context):
 
 
 @then('I should see properly formatted CSV output')
-def step_impl(context):
+def then_see_formatted_csv(context):
     failures = []
     for result in context.table_results:
         if not result['matches']:
@@ -166,7 +166,7 @@ def step_impl(context):
 
 
 @when('I test step line extraction from various image filenames')
-def step_impl(context):
+def when_test_step_line_extraction(context):
     test_cases = [
         ('scenario_hash_123_0001500001.png', 15),
         ('another_hash_456_0007800002.jpg', 78),
@@ -188,7 +188,7 @@ def step_impl(context):
 
 
 @then('I should see correct step line numbers extracted')
-def step_impl(context):
+def then_see_correct_step_lines(context):
     failures = []
     for result in context.step_line_results:
         if not result['matches']:
