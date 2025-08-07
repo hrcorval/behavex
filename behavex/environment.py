@@ -97,67 +97,89 @@ def extend_behave_hooks():
                     # For before_all/after_all in 1.2.6, there might not be additional args
                     hook_target = None
 
+                # Additional validation for Behave 1.2.6
+                if actual_context is None and args:
+                    # Sometimes context might be None, try to find it in args
+                    for arg in args:
+                        if hasattr(arg, 'config') or hasattr(arg, 'feature'):
+                            actual_context = arg
+                            break
+
             # Call the original behave hook first (except for after hooks)
             if name.startswith('before_') or name in ['before_tag', 'after_tag']:
                 # noinspection PyUnresolvedReferences
                 if not is_dry_run:
-                    behave_run_hook(self, name, context, *args)
+                    try:
+                        behave_run_hook(self, name, context, *args)
+                    except Exception as hook_error:
+                        # Log but don't fail - some hooks might not be implemented in all versions
+                        _log_exception_and_continue(f'behave_run_hook({name}) - before/tag', hook_error)
 
             # Call BehavEx hooks with proper arguments based on hook type
-            if name == 'before_all':
-                if actual_context:
+            # Only proceed if we have a valid context
+            if actual_context is not None:
+                if name == 'before_all':
                     behavex_env.before_all(actual_context)
-            elif name == 'before_feature':
-                feature = hook_target
-                if feature and actual_context:
-                    # Allow before_feature to run for initialization
-                    behavex_env.before_feature(actual_context, feature)
-            elif name == 'before_scenario':
-                scenario = hook_target
-                if scenario and actual_context and hasattr(scenario, 'name'):
-                    behavex_env.before_scenario(actual_context, scenario)
-            elif name == 'before_step':
-                step = hook_target
-                if step and actual_context:
-                    behavex_env.before_step(actual_context, step)
-            elif name == 'before_tag':
-                tag_name = args[0] if args else None
-                if tag_name and actual_context:
-                    behavex_env.before_tag(actual_context, tag_name)
-            elif name == 'after_tag':
-                tag_name = args[0] if args else None
-                if tag_name and actual_context:
-                    behavex_env.after_tag(actual_context, tag_name)
-            elif name == 'after_step':
-                step = hook_target
-                if step and actual_context:
-                    behavex_env.after_step(actual_context, step)
-            elif name == 'after_scenario':
-                scenario = hook_target
-                if scenario and actual_context and hasattr(scenario, 'status'):
-                    behavex_env.after_scenario(actual_context, scenario)
-            elif name == 'after_feature':
-                feature = hook_target
-                if feature and actual_context and hasattr(feature, 'scenarios'):
-                    behavex_env.after_feature(actual_context, feature)
-            elif name == 'after_all':
-                if actual_context:
+                elif name == 'before_feature':
+                    feature = hook_target
+                    # Validate feature object has expected attributes
+                    if feature and (hasattr(feature, 'name') or hasattr(feature, 'filename')):
+                        behavex_env.before_feature(actual_context, feature)
+                elif name == 'before_scenario':
+                    scenario = hook_target
+                    # Validate scenario object has expected attributes
+                    if scenario and hasattr(scenario, 'name'):
+                        behavex_env.before_scenario(actual_context, scenario)
+                elif name == 'before_step':
+                    step = hook_target
+                    # Validate step object has expected attributes
+                    if step and (hasattr(step, 'name') or hasattr(step, 'step_type')):
+                        behavex_env.before_step(actual_context, step)
+                elif name == 'before_tag':
+                    tag_name = args[0] if args else None
+                    if tag_name and isinstance(tag_name, str):
+                        behavex_env.before_tag(actual_context, tag_name)
+                elif name == 'after_tag':
+                    tag_name = args[0] if args else None
+                    if tag_name and isinstance(tag_name, str):
+                        behavex_env.after_tag(actual_context, tag_name)
+                elif name == 'after_step':
+                    step = hook_target
+                    # Validate step object has expected attributes
+                    if step and (hasattr(step, 'name') or hasattr(step, 'step_type')):
+                        behavex_env.after_step(actual_context, step)
+                elif name == 'after_scenario':
+                    scenario = hook_target
+                    # Validate scenario object has expected attributes
+                    if scenario and hasattr(scenario, 'name') and hasattr(scenario, 'status'):
+                        behavex_env.after_scenario(actual_context, scenario)
+                elif name == 'after_feature':
+                    feature = hook_target
+                    # More lenient validation for after_feature
+                    if feature and (hasattr(feature, 'name') or hasattr(feature, 'filename')):
+                        behavex_env.after_feature(actual_context, feature)
+                elif name == 'after_all':
                     behavex_env.after_all(actual_context)
 
             # Call the original behave hook after for after hooks
             if name.startswith('after_') and name not in ['after_tag']:
                 # noinspection PyUnresolvedReferences
                 if not is_dry_run:
-                    behave_run_hook(self, name, context, *args)
+                    try:
+                        behave_run_hook(self, name, context, *args)
+                    except Exception as hook_error:
+                        # Log but don't fail - some hooks might not be implemented in all versions
+                        _log_exception_and_continue(f'behave_run_hook({name}) - after', hook_error)
 
         except Exception as exception:
             # Log hook errors but don't break execution
             _log_exception_and_continue(f'run_hook({name})', exception)
-            # Still call the original behave hook as fallback
-            try:
-                behave_run_hook(self, name, context, *args)
-            except Exception:
-                pass  # Avoid infinite recursion
+            # Still call the original behave hook as fallback, but only if not in dry run
+            if not is_dry_run:
+                try:
+                    behave_run_hook(self, name, context, *args)
+                except Exception:
+                    pass  # Avoid infinite recursion
 
     if not hooks_already_set:
         hooks_already_set = True
@@ -168,11 +190,11 @@ def before_all(context):
     """Setup up initial tests configuration."""
     try:
         # Initialize critical state variables to ensure consistent state
-        # Use setattr to avoid context masking warnings in newer Behave versions
-        setattr(context, 'bhx_log_handler', None)
-        setattr(context, 'bhx_inside_scenario', False)
+        # Use object.__setattr__ to bypass context masking warnings
+        object.__setattr__(context, 'bhx_log_handler', None)
+        object.__setattr__(context, 'bhx_inside_scenario', False)
         # Store framework settings to make them accessible from steps
-        setattr(context, 'bhx_config_framework', conf_mgr.get_config())
+        object.__setattr__(context, 'bhx_config_framework', conf_mgr.get_config())
     except Exception as exception:
         _log_exception_and_continue('before_all (behavex)', exception)
 
@@ -181,8 +203,8 @@ def before_all(context):
 def before_feature(context, feature):
     try:
         # Initialize critical context attributes first
-        # Use setattr to avoid context masking warnings in newer Behave versions
-        setattr(context, 'bhx_execution_attempts', {})
+        # Use object.__setattr__ to bypass context masking warnings
+        object.__setattr__(context, 'bhx_execution_attempts', {})
 
         # Behave 1.3.0 compatibility: feature.scenarios may not be accessible
         if hasattr(feature, 'scenarios') and feature.scenarios:
@@ -207,15 +229,15 @@ def before_feature(context, feature):
 def before_scenario(context, scenario):
     """Initialize logs for current scenario."""
     # Initialize critical variables first to ensure they're always set
-    # Use setattr to avoid context masking warnings in newer Behave versions
-    setattr(context, 'bhx_inside_scenario', True)
+    # Use object.__setattr__ to bypass context masking warnings
+    object.__setattr__(context, 'bhx_inside_scenario', True)
     # Initialize log handler to None to ensure it's always defined
-    setattr(context, 'bhx_log_handler', None)
+    object.__setattr__(context, 'bhx_log_handler', None)
 
     try:
         # Handle execution attempts tracking - ensure bhx_execution_attempts exists
         if not hasattr(context, 'bhx_execution_attempts'):
-            setattr(context, 'bhx_execution_attempts', {})
+            object.__setattr__(context, 'bhx_execution_attempts', {})
         if scenario.name not in context.bhx_execution_attempts:
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
@@ -298,7 +320,7 @@ def after_scenario(context, scenario):
         log_handler = getattr(context, 'bhx_log_handler', None)
         if log_handler:
             _close_log_handler(log_handler)
-        setattr(context, 'bhx_inside_scenario', False)
+        object.__setattr__(context, 'bhx_inside_scenario', False)
 
 
 # noinspection PyUnusedLocal
