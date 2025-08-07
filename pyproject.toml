@@ -61,8 +61,3 @@ exclude = ["tests"]
 [project.scripts]
 behavex = "behavex.runner:main"
 behavex-allure = "behavex.outputs.formatters.allure_behavex_formatter:main"
-
-[tool.poetry.source]
-name = "testpypi"
-url = "https://test.pypi.org/simple/"
-priority = "explicit"
