@@ -35,13 +35,7 @@ except (ImportError, AttributeError, ValueError):
     # Fallback to assume newer version if detection fails
     BEHAVE_VERSION = (1, 3)
 
-# Optional behave imports with fallbacks
-try:
-    from behave.log_capture import capture
-except ImportError:
-    def capture(func):
-        """Fallback decorator for capture functionality."""
-        return func
+from behave.log_capture import capture
 
 Context.__getattribute__ = create_custom_log_when_called
 

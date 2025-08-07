@@ -93,33 +93,55 @@ def step_impl(context):
     # Don't set any failure flags - this should pass
 
 
-@when('I execute an action that is flaky')
-@when('I execute an action that is very flaky')
-@when('I execute an action that is extremely flaky')
+@when('I execute an action that fails initially')
 def step_impl(context):
-    """Executes a flaky action that might fail initially"""
-    if getattr(context, 'should_fail_initially', False):
+    """Simulates an action that fails on first attempt and passes on subsequent attempts."""
+    scenario_name = context.scenario.name
+    attempt = increment_attempt_counter(scenario_name)
+
+    if attempt == 1:
         logging.warning("Executing flaky action - this attempt will fail")
-        assert False, "Flaky action failed (expected on initial attempts)"
+        raise AssertionError("Flaky action failed (expected on initial attempts)")
     else:
+        logging.info(f"Retry attempt {attempt} for scenario: {scenario_name}")
         logging.info("Executing flaky action - this attempt will succeed")
 
 
-@when('I execute an action that never succeeds')
-@when('I execute an action that is permanently broken')
+@when('I execute an action that fails twice')
+def step_impl(context):
+    """Simulates an action that fails twice and passes on third attempt."""
+    scenario_name = context.scenario.name
+    attempt = increment_attempt_counter(scenario_name)
+
+    if attempt <= 2:
+        logging.warning("Executing flaky action - this attempt will fail")
+        raise AssertionError("Flaky action failed (expected on initial attempts)")
+    else:
+        logging.info(f"Retry attempt {attempt} for scenario: {scenario_name}")
+        logging.info("Executing flaky action - this attempt will succeed")
+
+
+@when('I execute an action that fails multiple times')
+def step_impl(context):
+    """Simulates an action that fails multiple times and passes on 5th attempt."""
+    scenario_name = context.scenario.name
+    attempt = increment_attempt_counter(scenario_name)
+
+    if attempt <= 4:
+        logging.warning("Executing flaky action - this attempt will fail")
+        raise AssertionError("Flaky action failed (expected on initial attempts)")
+    else:
+        logging.info(f"Retry attempt {attempt} for scenario: {scenario_name}")
+        logging.info("Executing flaky action - this attempt will succeed")
+
+
+@when('I execute a permanently broken action')
+@when('I execute a permanently broken action with 3 attempts')
+@when('I execute a permanently broken action with 5 attempts')
 def step_impl(context):
     """Executes an action that always fails"""
-    if getattr(context, 'should_fail_permanently', False):
-        logging.error("Executing permanently broken action - will always fail")
-        assert False, "Permanently broken action failed (expected)"
-
-
-@when('I execute an action without autoretry')
-def step_impl(context):
-    """Executes an action without autoretry mechanism"""
-    if getattr(context, 'should_fail_without_retry', False):
-        logging.warning("Executing action without autoretry - will fail")
-        assert False, "Action failed without retry (expected for non-autoretry scenarios)"
+    logging.error("Executing permanently broken action - will always fail")
+    raise AssertionError("Permanently broken action failed (expected)")
 
 
 @when('I execute an action that succeeds immediately')
@@ -131,8 +153,6 @@ def step_impl(context):
 
 
 @then('I should see the result processed correctly after retry')
-@then('I should see the result processed correctly after multiple retries')
-@then('I should see the result processed correctly after many retries')
 @then('I should see the result processed correctly without retry')
 @then('I should see the result processed correctly without any retries')
 def step_impl(context):
@@ -141,9 +161,7 @@ def step_impl(context):
     # If we reach this step, the scenario passed (possibly after retries)
 
 
-@then('I should see the action consistently fail')
-@then('I should see the action fail after all retry attempts')
-@then('I should see the action fail immediately without retry')
+@then('I should see the result processed correctly after all retries')
 def step_impl(context):
     """This step should not be reached for failing scenarios"""
     # This step should not be reached for scenarios that are supposed to fail
