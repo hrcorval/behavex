@@ -75,6 +75,25 @@ To install BehaveX, execute the following command:
 pip install behavex
 ```
 
+### Behave Version Compatibility
+
+BehaveX is compatible with the following Behave versions:
+
+- **Behave 1.2.6** (stable, widely tested)
+- **Behave 1.3.0** (latest, with full compatibility)
+
+BehaveX automatically installs a compatible version of Behave. If you need to use a specific version of Behave, you can install it explicitly:
+
+```bash
+# For Behave 1.2.6 (stable)
+pip install behavex behave==1.2.6
+
+# For Behave 1.3.0 (latest)
+pip install behavex behave==1.3.0
+```
+
+**Note**: BehaveX includes compatibility fixes to ensure all features work correctly with both Behave versions.
+
 
 
 ## Execution Instructions
