@@ -7,7 +7,7 @@ name = "behavex"
 version = "4.5.0rc1"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
-license = "MIT"
+license = {file = "LICENSE"}
 authors = [
     { name = "Hernan Rey", email = "behavex_users@googlegroups.com" }
 ]
