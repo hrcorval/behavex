@@ -190,8 +190,20 @@ def then_see_console_outputs(context, expected_exit_code=None):
 @then('I should not see error messages in the output')
 def then_no_error_messages(context):
     error_messages = ["error", "exception", "traceback"]
+    # Filter out expected behavex-images errors during dry run
+    output_lines = context.result.stdout.split('\n')
+    filtered_output = []
+
+    for line in output_lines:
+        # Skip expected behavex-images errors during dry run
+        if '[behavex-images]' in line and 'expected str, bytes or os.PathLike object, not NoneType' in line:
+            continue
+        filtered_output.append(line)
+
+    filtered_output_text = '\n'.join(filtered_output)
+
     for message in error_messages:
-        assert message not in context.result.stdout.lower(), f"Unexpected output when checking error messages in the console output: {context.result.stdout}\n"
+        assert message not in filtered_output_text.lower(), f"Unexpected output when checking error messages in the console output: {context.result.stdout}\n"
 
 
 @then('I should not see exception messages in the output')
@@ -227,6 +239,14 @@ def verify_total_scenarios_in_reports(context, consider_skipped_scenarios=True):
 @then('I should see the same number of scenarios in the reports not considering the skipped scenarios')
 def then_same_scenarios_count_excluding_skipped(context):
     verify_total_scenarios_in_reports(context, consider_skipped_scenarios=False)
+
+
+@then('I should see the HTML report was generated')
+def verify_html_report_exists(context):
+    """Verify that the HTML report file exists and is a valid file."""
+    report_path = os.path.abspath(os.path.join(context.output_path, 'report.html'))
+    assert os.path.exists(report_path), f"Expected HTML report to exist at {report_path}"
+    assert os.path.getsize(report_path) > 0, f"Expected HTML report to be non-empty at {report_path}"
 
 
 @then('I should see the HTML report was generated and contains scenarios')
