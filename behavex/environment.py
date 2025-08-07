@@ -1,37 +1,23 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=W0703# pylint: disable=W0703
+# pylint: disable=W0703
 """
 BehaveX - Agile test wrapper on top of Behave (BDD)
 """
+
+# Standard library imports
+import functools
 import logging
 import os
 import shutil
 import sys
 from datetime import datetime
 
-# Behave version detection for compatibility
-try:
-    import behave
-    BEHAVE_VERSION = tuple(map(int, behave.__version__.split('.')[:2]))
-except (ImportError, AttributeError, ValueError):
-    # Fallback to assume newer version if detection fails
-    BEHAVE_VERSION = (1, 3)
-
-try:
-    from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
-except ImportError:
-    def patch_scenario_with_autoretry(*args, **kwargs):
-        pass
-
-try:
-    from behave.log_capture import capture
-except ImportError:
-    def capture(*args, **kwargs):
-        pass
-
+# Third-party imports
+import behave
 from behave.model import ScenarioOutline
 from behave.runner import Context, ModelRunner
 
+# Local imports
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
@@ -41,6 +27,21 @@ from behavex.outputs.report_utils import (create_log_path, get_string_hash,
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_autoretry_attempts, get_logging_level,
                            get_scenario_tags, get_scenarios_instances)
+
+# Behave version detection for compatibility
+try:
+    BEHAVE_VERSION = tuple(map(int, behave.__version__.split('.')[:2]))
+except (ImportError, AttributeError, ValueError):
+    # Fallback to assume newer version if detection fails
+    BEHAVE_VERSION = (1, 3)
+
+# Optional behave imports with fallbacks
+try:
+    from behave.log_capture import capture
+except ImportError:
+    def capture(func):
+        """Fallback decorator for capture functionality."""
+        return func
 
 Context.__getattribute__ = create_custom_log_when_called
 
@@ -305,6 +306,10 @@ def after_scenario(context, scenario):
     try:
         scenario_tags = get_scenario_tags(scenario)
         configured_attempts = get_autoretry_attempts(scenario_tags)
+
+        # Track retried scenarios for reporting purposes
+        # Note: The actual retry logic is handled by patch_scenario_with_autoretry
+        # which monkey-patches scenario.run() method
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
             feature_name = scenario.feature.name
             if feature_name not in global_vars.retried_scenarios:
@@ -312,6 +317,7 @@ def after_scenario(context, scenario):
             else:
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
+
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
@@ -392,3 +398,47 @@ def _log_exception_and_continue(module, exception):
     error_message = "Unexpected error in '%s' function:" % module
     logging.error(error_message)
     logging.error(exception)
+
+
+def patch_scenario_with_autoretry(scenario, max_attempts=3):
+    """
+    Unified BehaveX autoretry implementation for all behave versions.
+
+    This provides consistent autoretry behavior across behave 1.2.6 and 1.3.0+,
+    with enhanced logging and better integration with BehaveX reporting.
+
+    Monkey-patches the scenario.run() method to auto-retry a scenario that fails.
+    The scenario is retried a number of times before its failure is accepted.
+
+    Args:
+        scenario: Scenario or ScenarioOutline to patch
+        max_attempts: How many times the scenario can be run (default: 3)
+    """
+    def scenario_run_with_retries(scenario_run, *args, **kwargs):
+        for attempt in range(1, max_attempts + 1):
+            if not scenario_run(*args, **kwargs):
+                if attempt > 1:
+                    message = f"BehaveX AUTO-RETRY: Scenario '{scenario.name}' PASSED after {attempt} attempts"
+                    print(message)
+                    logging.info(message)
+                return False    # -- NOT-FAILED = PASSED
+            # -- SCENARIO FAILED:
+            if attempt < max_attempts:
+                message = f"BehaveX AUTO-RETRY: Scenario '{scenario.name}' failed, attempt {attempt}/{max_attempts}"
+                print(message)
+                logging.warning(message)
+
+        # All attempts exhausted
+        message = f"BehaveX AUTO-RETRY: Scenario '{scenario.name}' FAILED after {max_attempts} attempts"
+        print(message)
+        logging.error(message)
+        return True
+
+    if isinstance(scenario, ScenarioOutline):
+        scenario_outline = scenario
+        for individual_scenario in scenario_outline.scenarios:
+            scenario_run = individual_scenario.run
+            individual_scenario.run = functools.partial(scenario_run_with_retries, scenario_run)
+    else:
+        scenario_run = scenario.run
+        scenario.run = functools.partial(scenario_run_with_retries, scenario_run)
