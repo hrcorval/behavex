@@ -20,7 +20,12 @@ import traceback
 from tempfile import gettempdir
 
 from behave.model import ScenarioOutline
-from behave.step_registry import registry
+
+try:
+    from behave.step_registry import registry
+except ImportError:
+    from behave import step_registry
+    registry = step_registry.registry
 
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
@@ -178,7 +183,9 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
                 scenario_info['start'] = getattr(scenario, 'start')
             if hasattr(scenario, 'stop'):
                 scenario_info['stop'] = getattr(scenario, 'stop')
-            scenario_info['tags'] = getattr(scenario, 'effective_tags')
+            # Convert tags to list for JSON serialization (behave 1.3.0 returns set)
+            tags = getattr(scenario, 'effective_tags')
+            scenario_info['tags'] = list(tags) if isinstance(tags, set) else tags
             scenario_info['filename'] = text(scenario.filename)
             scenario_info['feature'] = scenario.feature.name
             scenario_info['id_feature'] = id_feature

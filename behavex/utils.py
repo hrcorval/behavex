@@ -458,6 +458,9 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
         scenario_tags_set = set(scenario['tags'])
     else:
         scenario_tags = scenario.effective_tags
+        # Convert to list if it's a set (behave 1.3.0 compatibility)
+        if isinstance(scenario_tags, set):
+            scenario_tags = list(scenario_tags)
         if include_outline_example_tags and isinstance(scenario, ScenarioOutline):
             for example in scenario.examples:
                 scenario_tags.extend(example.tags)

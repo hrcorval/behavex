@@ -26,7 +26,12 @@ import traceback
 import unicodedata
 from operator import getitem
 
-from behave.model_core import Status
+try:
+    from behave.model_core import Status
+except ImportError:
+    from behave.model import Status
+
+
 
 from behavex.conf_mgr import get_env, get_param, set_env
 from behavex.global_vars import global_vars

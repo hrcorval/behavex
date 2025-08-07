@@ -9,9 +9,19 @@ import shutil
 import sys
 from datetime import datetime
 
-from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
-from behave.log_capture import capture
-from behave.model import ScenarioOutline  # pyright: ignore[reportUnusedImport]
+try:
+    from behave.contrib.scenario_autoretry import patch_scenario_with_autoretry
+except ImportError:
+    def patch_scenario_with_autoretry(*args, **kwargs):
+        pass
+
+try:
+    from behave.log_capture import capture
+except ImportError:
+    def capture(*args, **kwargs):
+        pass
+
+from behave.model import ScenarioOutline
 from behave.runner import Context, ModelRunner
 
 from behavex import conf_mgr
@@ -43,59 +53,79 @@ def extend_behave_hooks():
     behavex_env = sys.modules[__name__]
     is_dry_run = get_param('dry_run')
 
-    def run_hook(self, name, context, *args):
+    def run_hook(self, name, context=None, *args):
+        # In behave 1.3.0, the run_hook signature changed significantly
+        # Instead of (name, context, *args), it now uses (name, hook_target, *args)
+        # where hook_target can be Scenario, Step, Feature, etc.
 
-        if name == 'before_all':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.before_all(context)
-        elif name == 'before_feature':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.before_feature(context, *args)
-        elif name == 'before_scenario':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.before_scenario(context, *args)
-        elif name == 'before_step':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.before_step(context, *args)
-        elif name == 'before_tag':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.before_tag(context, *args)
-        elif name == 'after_tag':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.after_tag(context, *args)
-        elif name == 'after_step':
-            # noinspection PyUnresolvedReferences
-            behavex_env.after_step(context, *args)
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-        elif name == 'after_scenario':
-            # noinspection PyUnresolvedReferences
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-            behavex_env.after_scenario(context, *args)
-        elif name == 'after_feature':
-            # noinspection PyUnresolvedReferences
-            behavex_env.after_feature(context, *args)
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
-        elif name == 'after_all':
-            # noinspection PyUnresolvedReferences
-            behavex_env.after_all(context, *args)
-            if not is_dry_run:
-                behave_run_hook(self, name, context, *args)
+        # For before_all/after_all: context=None, we need to get context from self
+        # For other hooks: context is actually the hook target (Scenario, Step, etc.)
+        actual_context = None
+        hook_target = None
+
+        if name in ('before_all', 'after_all'):
+            # For before_all/after_all, context is None and we need to get it from the runner
+            actual_context = getattr(self, 'context', None)
+            if actual_context is None:
+                # If context is not available on self, we might need to get it differently
+                # In this case, we'll pass None and let the hook handle it gracefully
+                actual_context = context
         else:
+            # For other hooks, the 'context' parameter is actually the hook target
+            hook_target = context
+            # Get the actual context from the hook target or the runner
+            if hasattr(hook_target, 'context'):
+                actual_context = hook_target.context
+            elif hasattr(self, 'context'):
+                actual_context = self.context
+            else:
+                # Fallback: try to find context in args or assume context parameter is correct
+                actual_context = args[0] if args and hasattr(args[0], 'config') else None
+
+        # Call the behave hook first (except for after hooks)
+        if name.startswith('before_') or name in ['before_tag', 'after_tag']:
+            # noinspection PyUnresolvedReferences
+            if not is_dry_run:
+                behave_run_hook(self, name, context, *args)
+
+        # Call BehavEx hooks with proper arguments based on hook type
+        if name == 'before_all':
+            behavex_env.before_all(actual_context)
+        elif name == 'before_feature':
+            feature = hook_target  # In behave 1.3.0, hook_target is the feature
+            if feature and actual_context:
+                behavex_env.before_feature(actual_context, feature)
+        elif name == 'before_scenario':
+            scenario = hook_target  # In behave 1.3.0, hook_target is the scenario
+            if scenario and actual_context:
+                behavex_env.before_scenario(actual_context, scenario)
+        elif name == 'before_step':
+            step = hook_target  # In behave 1.3.0, hook_target is the step
+            if step and actual_context:
+                behavex_env.before_step(actual_context, step)
+        elif name == 'before_tag':
+            if args:  # Tag name is passed as an argument
+                behavex_env.before_tag(actual_context, args[0])
+        elif name == 'after_tag':
+            if args:  # Tag name is passed as an argument
+                behavex_env.after_tag(actual_context, args[0])
+        elif name == 'after_step':
+            step = hook_target  # In behave 1.3.0, hook_target is the step
+            if step and actual_context:
+                behavex_env.after_step(actual_context, step)
+        elif name == 'after_scenario':
+            scenario = hook_target  # In behave 1.3.0, hook_target is the scenario
+            if scenario and actual_context:
+                behavex_env.after_scenario(actual_context, scenario)
+        elif name == 'after_feature':
+            feature = hook_target  # In behave 1.3.0, hook_target is the feature
+            if feature and actual_context:
+                behavex_env.after_feature(actual_context, feature)
+        elif name == 'after_all':
+            behavex_env.after_all(actual_context)
+
+        # Call the behave hook after for after hooks
+        if name.startswith('after_') and name not in ['after_tag']:
             # noinspection PyUnresolvedReferences
             if not is_dry_run:
                 behave_run_hook(self, name, context, *args)
@@ -225,7 +255,10 @@ def after_scenario(context, scenario):
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
         # Always reset the scenario state flag, regardless of success or failure
-        _close_log_handler(context.bhx_log_handler)
+        # Safe access to bhx_log_handler for behave 1.3.0 compatibility
+        log_handler = getattr(context, 'bhx_log_handler', None)
+        if log_handler:
+            _close_log_handler(log_handler)
         context.bhx_inside_scenario = False
 
 
