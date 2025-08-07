@@ -20,12 +20,7 @@ import traceback
 from tempfile import gettempdir
 
 from behave.model import ScenarioOutline
-
-try:
-    from behave.step_registry import registry
-except ImportError:
-    from behave import step_registry
-    registry = step_registry.registry
+from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
