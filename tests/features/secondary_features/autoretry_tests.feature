@@ -41,7 +41,7 @@ Feature: Autoretry Test Scenarios
   @NO_AUTORETRY_FAILURE
   Scenario: Regular scenario that fails first but passes on second run (no autoretry)
     Given a condition that fails on first attempt but recovers on retry
-    When I execute an action that fails initially
+    When I execute an action that fails without autoretry
     Then I should see the result processed correctly without retry
 
   @AUTORETRY @AUTORETRY_IMMEDIATE_SUCCESS

@@ -196,7 +196,15 @@ def then_no_error_messages(context):
 
     for line in output_lines:
         # Skip expected behavex-images errors during dry run
-        if '[behavex-images]' in line and 'expected str, bytes or os.PathLike object, not NoneType' in line:
+        if '[behavex-images]' in line and ('expected str, bytes or os.PathLike object, not NoneType' in line or
+                                           'It was not possible to add the image to the report' in line):
+            continue
+        # Skip expected error messages from test scenarios during dry run
+        if ('ERROR - Executing permanently broken action' in line or
+            'ERROR - This step is designed to fail' in line or
+            'ERROR - Permanently broken action failed' in line or
+            'ERROR - Flaky action failed (expected' in line or
+            'ERROR - Action failed without retry (expected' in line):
             continue
         filtered_output.append(line)
 

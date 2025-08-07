@@ -20,7 +20,7 @@ def increment_attempt_counter(scenario_name):
 
 
 @given('a condition that fails on first attempt but recovers on retry')
-def step_impl(context):
+def given_condition_fails_first_recovers_on_retry(context):
     """Simulates a condition that fails initially but works on retry"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -34,7 +34,7 @@ def step_impl(context):
 
 
 @given('a condition that fails on first two attempts but recovers on third')
-def step_impl(context):
+def given_condition_fails_twice_recovers_on_third(context):
     """Simulates a condition that fails twice but works on third attempt"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -48,7 +48,7 @@ def step_impl(context):
 
 
 @given('a condition that fails on first four attempts but recovers on fifth')
-def step_impl(context):
+def given_condition_fails_four_times_recovers_on_fifth(context):
     """Simulates a condition that fails four times but works on fifth attempt"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -63,7 +63,7 @@ def step_impl(context):
 
 @given('a condition that always fails')
 @given('a condition that always fails regardless of attempts')
-def step_impl(context):
+def given_condition_always_fails(context):
     """Simulates a condition that permanently fails"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -72,9 +72,12 @@ def step_impl(context):
 
 
 @given('a condition that fails on first attempt but recovers on second')
-def step_impl(context):
+def given_condition_fails_first_recovers_on_second(context):
     """Simulates a condition that would recover on second try (for non-autoretry scenarios)"""
     scenario_name = context.scenario.name
+
+    # Reset counter for this scenario to ensure it starts fresh
+    ATTEMPT_COUNTERS[scenario_name] = 0
     attempt = increment_attempt_counter(scenario_name)
 
     # This will fail on first attempt and would pass on second, but without autoretry it won't get a second chance
@@ -85,7 +88,7 @@ def step_impl(context):
 
 @given('a condition that always passes')
 @given('a condition that consistently passes')
-def step_impl(context):
+def given_condition_always_passes(context):
     """Simulates a condition that always succeeds"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -94,7 +97,7 @@ def step_impl(context):
 
 
 @when('I execute an action that fails initially')
-def step_impl(context):
+def when_execute_action_that_fails_initially(context):
     """Simulates an action that fails on first attempt and passes on subsequent attempts."""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -108,7 +111,7 @@ def step_impl(context):
 
 
 @when('I execute an action that fails twice')
-def step_impl(context):
+def when_execute_action_that_fails_twice(context):
     """Simulates an action that fails twice and passes on third attempt."""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -122,7 +125,7 @@ def step_impl(context):
 
 
 @when('I execute an action that fails multiple times')
-def step_impl(context):
+def when_execute_action_that_fails_multiple_times(context):
     """Simulates an action that fails multiple times and passes on 5th attempt."""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -138,15 +141,25 @@ def step_impl(context):
 @when('I execute a permanently broken action')
 @when('I execute a permanently broken action with 3 attempts')
 @when('I execute a permanently broken action with 5 attempts')
-def step_impl(context):
+def when_execute_permanently_broken_action(context):
     """Executes an action that always fails"""
     logging.error("Executing permanently broken action - will always fail")
     raise AssertionError("Permanently broken action failed (expected)")
 
 
+@when('I execute an action that fails without autoretry')
+def when_execute_action_that_fails_without_autoretry(context):
+    """Executes an action that fails without autoretry mechanism"""
+    if getattr(context, 'should_fail_without_retry', True):
+        logging.warning("Executing action without autoretry - will fail")
+        raise AssertionError("Action failed without retry (expected for non-autoretry scenarios)")
+    else:
+        logging.info("Action succeeded (unexpected for non-autoretry scenario)")
+
+
 @when('I execute an action that succeeds immediately')
 @when('I execute an action that works on first try')
-def step_impl(context):
+def when_execute_action_that_succeeds_immediately(context):
     """Executes an action that succeeds immediately"""
     logging.info("Executing action that succeeds immediately")
     # This should pass without any assertion errors
@@ -155,14 +168,14 @@ def step_impl(context):
 @then('I should see the result processed correctly after retry')
 @then('I should see the result processed correctly without retry')
 @then('I should see the result processed correctly without any retries')
-def step_impl(context):
+def then_result_processed_correctly(context):
     """Validates that the result was processed correctly"""
     logging.info("Result processed correctly")
     # If we reach this step, the scenario passed (possibly after retries)
 
 
 @then('I should see the result processed correctly after all retries')
-def step_impl(context):
+def then_result_should_not_be_processed_for_failing_scenarios(context):
     """This step should not be reached for failing scenarios"""
     # This step should not be reached for scenarios that are supposed to fail
     assert False, "This step should not be reached for failing scenarios"

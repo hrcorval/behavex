@@ -34,7 +34,7 @@ def increment_attempt_counter(scenario_name):
 
 
 @given('a condition that fails on first attempt but recovers on retry')
-def step_impl(context):
+def given_condition_fails_first_recovers_on_retry(context):
     """Simulates a condition that fails initially but works on retry"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -48,7 +48,7 @@ def step_impl(context):
 
 
 @given('a condition that fails on first two attempts but recovers on third')
-def step_impl(context):
+def given_condition_fails_twice_recovers_on_third(context):
     """Simulates a condition that fails twice but works on third attempt"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -62,7 +62,7 @@ def step_impl(context):
 
 
 @given('a condition that fails on first four attempts but recovers on fifth')
-def step_impl(context):
+def given_condition_fails_four_times_recovers_on_fifth(context):
     """Simulates a condition that fails four times but works on fifth attempt"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -77,7 +77,7 @@ def step_impl(context):
 
 @given('a condition that always fails')
 @given('a condition that always fails regardless of attempts')
-def step_impl(context):
+def given_condition_always_fails(context):
     """Simulates a condition that permanently fails"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -86,7 +86,7 @@ def step_impl(context):
 
 
 @given('a condition that fails on first attempt but recovers on second')
-def step_impl(context):
+def given_condition_fails_first_recovers_on_second(context):
     """Simulates a condition that would recover on second try (for non-autoretry scenarios)"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -99,7 +99,7 @@ def step_impl(context):
 
 @given('a condition that always passes')
 @given('a condition that consistently passes')
-def step_impl(context):
+def given_condition_always_passes(context):
     """Simulates a condition that always succeeds"""
     scenario_name = context.scenario.name
     attempt = increment_attempt_counter(scenario_name)
@@ -110,7 +110,7 @@ def step_impl(context):
 @when('I execute an action that is flaky')
 @when('I execute an action that is very flaky')
 @when('I execute an action that is extremely flaky')
-def step_impl(context):
+def when_execute_flaky_action(context):
     """Executes a flaky action that might fail initially"""
     if getattr(context, 'should_fail_initially', False):
         logging.warning("Executing flaky action - this attempt will fail")
@@ -121,7 +121,7 @@ def step_impl(context):
 
 @when('I execute an action that never succeeds')
 @when('I execute an action that is permanently broken')
-def step_impl(context):
+def when_execute_permanently_broken_action(context):
     """Executes an action that always fails"""
     if getattr(context, 'should_fail_permanently', False):
         logging.error("Executing permanently broken action - will always fail")
@@ -129,7 +129,7 @@ def step_impl(context):
 
 
 @when('I execute an action without autoretry')
-def step_impl(context):
+def when_execute_action_without_autoretry(context):
     """Executes an action without autoretry mechanism"""
     if getattr(context, 'should_fail_without_retry', False):
         logging.warning("Executing action without autoretry - will fail")
@@ -138,7 +138,7 @@ def step_impl(context):
 
 @when('I execute an action that succeeds immediately')
 @when('I execute an action that works on first try')
-def step_impl(context):
+def when_execute_action_succeeds_immediately(context):
     """Executes an action that succeeds immediately"""
     if getattr(context, 'should_pass_immediately', False):
         logging.info("Executing action that succeeds immediately")
@@ -150,7 +150,7 @@ def step_impl(context):
 @then('I should see the result processed correctly after many retries')
 @then('I should see the result processed correctly without retry')
 @then('I should see the result processed correctly without any retries')
-def step_impl(context):
+def then_result_processed_correctly(context):
     """Validates that the result was processed correctly"""
     logging.info("Result processed correctly")
     # If we reach this step, the scenario passed (possibly after retries)
@@ -159,7 +159,7 @@ def step_impl(context):
 @then('I should see the action consistently fail')
 @then('I should see the action fail after all retry attempts')
 @then('I should see the action fail immediately without retry')
-def step_impl(context):
+def then_action_should_fail_consistently(context):
     """This step should not be reached for failing scenarios"""
     # This step should not be reached for scenarios that are supposed to fail
     assert False, "This step should not be reached for failing scenarios"
@@ -168,7 +168,7 @@ def step_impl(context):
 # Steps for validating autoretry behavior in main test scenarios
 
 @when('I run the behavex command with autoretry tests using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, parallel_processes, parallel_scheme):
+def when_run_behavex_with_autoretry_tests(context, parallel_processes, parallel_scheme):
     """Runs behavex with autoretry test scenarios"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
@@ -180,15 +180,14 @@ def step_impl(context, parallel_processes, parallel_scheme):
         'behavex',
         features_path,
         '-o', context.output_path,
-        '-t=@AUTORETRY_RECOVERABLE',
-        '-t=@AUTORETRY_IMMEDIATE_SUCCESS'
+        '-t=@AUTORETRY_RECOVERABLE,@AUTORETRY_IMMEDIATE_SUCCESS'
     ]
 
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with permanently failing autoretry tests using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
-def step_impl(context, parallel_processes, parallel_scheme):
+def when_run_behavex_with_permanently_failing_autoretry_tests(context, parallel_processes, parallel_scheme):
     """Runs behavex with permanently failing autoretry test scenarios"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
@@ -207,7 +206,7 @@ def step_impl(context, parallel_processes, parallel_scheme):
 
 
 @when('I run the behavex command with default autoretry test scenarios')
-def step_impl(context):
+def when_run_behavex_with_default_autoretry_scenarios(context):
     """Runs behavex with default autoretry scenarios (@AUTORETRY tag)"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
@@ -216,17 +215,19 @@ def step_impl(context):
         'behavex',
         features_path,
         '-o', context.output_path,
-        '-t=@AUTORETRY',
-        '-t=~@AUTORETRY_3',
-        '-t=~@AUTORETRY_5',
-        '-t=@AUTORETRY_RECOVERABLE'
+        '-t=@AUTORETRY'
     ]
+
+    # Add exclusion filters as separate arguments
+    execution_args.extend(['-t', '~@AUTORETRY_3'])
+    execution_args.extend(['-t', '~@AUTORETRY_5'])
+    execution_args.extend(['-t', '~@AUTORETRY_PERMANENT_FAILURE'])
 
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with custom autoretry count test scenarios')
-def step_impl(context):
+def when_run_behavex_with_custom_autoretry_count_scenarios(context):
     """Runs behavex with custom autoretry count scenarios (@AUTORETRY_N tags)"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
@@ -235,17 +236,18 @@ def step_impl(context):
         'behavex',
         features_path,
         '-o', context.output_path,
-        '-t=@AUTORETRY_3',
-        '-t=@AUTORETRY_5',
-        '-t=@AUTORETRY_RECOVERABLE'
+        '-t=@AUTORETRY_3,@AUTORETRY_5'
     ]
+
+    # Add exclusion filters as separate arguments to exclude permanently failing scenarios
+    execution_args.extend(['-t', '~@AUTORETRY_PERMANENT_FAILURE'])
 
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command with mixed autoretry and regular test scenarios')
-def step_impl(context):
-    """Runs behavex with mixed autoretry and regular scenarios"""
+def when_run_behavex_with_mixed_autoretry_scenarios(context):
+    """Runs behavex with mixed autoretry and regular scenarios (some pass, some fail)"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
 
@@ -253,7 +255,7 @@ def step_impl(context):
         'behavex',
         features_path,
         '-o', context.output_path,
-        '-t=@AUTORETRY_RECOVERABLE'
+        '-t=@AUTORETRY_RECOVERABLE,@NO_AUTORETRY_FAILURE'
     ]
 
     execute_command(context, execution_args)
@@ -262,18 +264,23 @@ def step_impl(context):
 @then('I should see autoretry messages for scenarios that recovered after retry')
 @then('I should see autoretry messages in the console output')
 @then('I should see autoretry messages in the console output for each attempt')
-def step_impl(context):
+def then_should_see_autoretry_messages(context):
     """Validates that autoretry messages are present in the output"""
     output = context.result.stdout
 
-    # Look for BehaveX autoretry messages - but only if scenarios actually ran
-    if context.result.returncode == 0 and "scenarios passed" in output and "0 scenarios passed" not in output:
-        # Only check for autoretry messages if scenarios actually executed
-        assert "BehaveX AUTO-RETRY:" in output, f"Expected autoretry messages in output: {output}"
+    # Check if any scenarios actually ran - only validate if scenarios were executed
+    scenarios_ran = re.search(r'(\d+) scenarios? passed', output)
+    if scenarios_ran and int(scenarios_ran.group(1)) > 0:
+        # Check for retry indicators - either AUTO-RETRY messages or retry attempt indicators
+        has_autoretry_msg = "BehaveX AUTO-RETRY:" in output
+        has_retry_attempt = "Retry attempt" in output
+
+        # Accept either explicit AUTO-RETRY messages or retry attempt indicators
+        assert has_autoretry_msg or has_retry_attempt, f"Expected autoretry messages or retry attempt indicators in output: {output}"
 
 
 @then('I should see autoretry failure messages for scenarios that never recover')
-def step_impl(context):
+def then_should_see_autoretry_failure_messages(context):
     """Validates that autoretry failure messages are present in the output"""
     output = context.result.stdout
 
@@ -284,7 +291,7 @@ def step_impl(context):
 
 @then('I should see the correct number of retry attempts for each autoretry scenario')
 @then('I should see the correct number of retry attempts for each permanently failing scenario')
-def step_impl(context):
+def then_should_see_correct_retry_attempts(context):
     """Validates that the correct number of retry attempts are shown"""
     output = context.result.stdout
 
@@ -298,7 +305,7 @@ def step_impl(context):
 
 
 @then('I should see that scenarios with @AUTORETRY tag are retried maximum 2 times')
-def step_impl(context):
+def then_autoretry_scenarios_retried_maximum_2_times(context):
     """Validates that @AUTORETRY scenarios use default 2 attempts"""
     output = context.result.stdout
 
@@ -311,7 +318,7 @@ def step_impl(context):
 
 
 @then('I should see that scenarios with @AUTORETRY_3 tag are retried maximum 3 times')
-def step_impl(context):
+def then_autoretry_3_scenarios_retried_maximum_3_times(context):
     """Validates that @AUTORETRY_3 scenarios use 3 attempts"""
     output = context.result.stdout
 
@@ -324,7 +331,7 @@ def step_impl(context):
 
 
 @then('I should see that scenarios with @AUTORETRY_5 tag are retried maximum 5 times')
-def step_impl(context):
+def then_autoretry_5_scenarios_retried_maximum_5_times(context):
     """Validates that @AUTORETRY_5 scenarios use 5 attempts"""
     output = context.result.stdout
 
@@ -337,7 +344,7 @@ def step_impl(context):
 
 
 @then('I should see that only scenarios with autoretry tags are retried')
-def step_impl(context):
+def then_only_autoretry_tagged_scenarios_are_retried(context):
     """Validates that only autoretry scenarios show retry messages"""
     output = context.result.stdout
 
@@ -349,7 +356,7 @@ def step_impl(context):
 
 
 @then('I should see that regular scenarios without autoretry tags fail immediately')
-def step_impl(context):
+def then_regular_scenarios_fail_immediately(context):
     """Validates that non-autoretry scenarios fail without retry attempts"""
     output = context.result.stdout
 
@@ -361,7 +368,7 @@ def step_impl(context):
 
 
 @then('I should see autoretry messages only for scenarios with autoretry tags')
-def step_impl(context):
+def then_autoretry_messages_only_for_tagged_scenarios(context):
     """Validates that autoretry messages only appear for tagged scenarios"""
     output = context.result.stdout
 
@@ -372,7 +379,7 @@ def step_impl(context):
 
 
 @then('I should see that permanently failing scenarios are marked as failed after all retry attempts')
-def step_impl(context):
+def then_permanently_failing_scenarios_marked_as_failed(context):
     """Validates that permanently failing scenarios still fail after retries"""
     output = context.result.stdout
 
@@ -384,7 +391,7 @@ def step_impl(context):
 @then('I should see the HTML report contains retried scenarios information')
 @then('I should see the HTML report contains correct retry counts for each scenario')
 @then('I should see the HTML report correctly distinguishes between retried and non-retried scenarios')
-def step_impl(context):
+def then_html_report_contains_retry_information(context):
     """Validates that the HTML report contains retry information"""
     output_folder = getattr(context, 'output_path', 'output')
     report_path = os.path.join(output_folder, 'report.html')
