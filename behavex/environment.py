@@ -97,7 +97,9 @@ def extend_behave_hooks():
                 behavex_env.before_all(actual_context)
         elif name == 'before_feature':
             feature = hook_target  # In behave 1.3.0, hook_target is the feature
-            if feature and actual_context and hasattr(feature, 'scenarios'):
+            if feature and actual_context:
+                # Allow before_feature to run even if scenarios attribute check fails
+                # since context initialization (bhx_execution_attempts) is critical
                 behavex_env.before_feature(actual_context, feature)
         elif name == 'before_scenario':
             scenario = hook_target  # In behave 1.3.0, hook_target is the scenario
@@ -155,20 +157,24 @@ def before_all(context):
 # noinspection PyUnusedLocal
 def before_feature(context, feature):
     try:
+        # Initialize critical context attributes first
         context.bhx_execution_attempts = {}
-        scenarios_instances = get_scenarios_instances(feature.scenarios)
 
-        for scenario in scenarios_instances:
-            scenario_tags = get_scenario_tags(scenario)
+        # Behave 1.3.0 compatibility: feature.scenarios may not be accessible
+        if hasattr(feature, 'scenarios') and feature.scenarios:
+            scenarios_instances = get_scenarios_instances(feature.scenarios)
 
-            # Handle dry run scenario tagging
-            if get_param('dry_run') and 'MANUAL' not in scenario_tags:
-                scenario.tags.extend(['BHX_MANUAL_DRY_RUN', 'MANUAL'])
+            for scenario in scenarios_instances:
+                scenario_tags = get_scenario_tags(scenario)
 
-            # Configure scenario auto-retry
-            configured_attempts = get_autoretry_attempts(scenario_tags)
-            if configured_attempts > 0:
-                patch_scenario_with_autoretry(scenario, configured_attempts)
+                # Handle dry run scenario tagging
+                if get_param('dry_run') and 'MANUAL' not in scenario_tags:
+                    scenario.tags.extend(['BHX_MANUAL_DRY_RUN', 'MANUAL'])
+
+                # Configure scenario auto-retry
+                configured_attempts = get_autoretry_attempts(scenario_tags)
+                if configured_attempts > 0:
+                    patch_scenario_with_autoretry(scenario, configured_attempts)
     except Exception as exception:
         # Keep generic exception as fallback for truly unexpected errors
         _log_exception_and_continue('before_feature (behavex)', exception)
@@ -182,7 +188,9 @@ def before_scenario(context, scenario):
     context.bhx_log_handler = None
 
     try:
-        # Handle execution attempts tracking
+        # Handle execution attempts tracking - ensure bhx_execution_attempts exists
+        if not hasattr(context, 'bhx_execution_attempts'):
+            context.bhx_execution_attempts = {}
         if scenario.name not in context.bhx_execution_attempts:
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
