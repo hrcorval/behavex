@@ -457,7 +457,12 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
     if type(scenario) is dict:
         scenario_tags_set = set(scenario['tags'])
     else:
-        scenario_tags = scenario.effective_tags
+        # Behave 1.3.0 compatibility: effective_tags may not exist, fallback to tags
+        if hasattr(scenario, 'effective_tags'):
+            scenario_tags = scenario.effective_tags
+        else:
+            scenario_tags = scenario.tags if hasattr(scenario, 'tags') else []
+
         # Convert to list if it's a set (behave 1.3.0 compatibility)
         if isinstance(scenario_tags, set):
             scenario_tags = list(scenario_tags)

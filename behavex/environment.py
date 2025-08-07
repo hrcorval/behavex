@@ -73,14 +73,16 @@ def extend_behave_hooks():
         else:
             # For other hooks, the 'context' parameter is actually the hook target
             hook_target = context
-            # Get the actual context from the hook target or the runner
-            if hasattr(hook_target, 'context'):
-                actual_context = hook_target.context
-            elif hasattr(self, 'context'):
-                actual_context = self.context
-            else:
-                # Fallback: try to find context in args or assume context parameter is correct
-                actual_context = args[0] if args and hasattr(args[0], 'config') else None
+            # Get the actual context from the runner since hook_target doesn't have context
+            actual_context = getattr(self, 'context', None)
+
+            # If we can't get context from self, try to find it in args or other ways
+            if actual_context is None:
+                if args and hasattr(args[0], 'config'):
+                    actual_context = args[0]
+                else:
+                    # Fallback: use context parameter (might be None)
+                    actual_context = context
 
         # Call the behave hook first (except for after hooks)
         if name.startswith('before_') or name in ['before_tag', 'after_tag']:
@@ -89,25 +91,27 @@ def extend_behave_hooks():
                 behave_run_hook(self, name, context, *args)
 
         # Call BehavEx hooks with proper arguments based on hook type
+        # Note: In behave 1.3.0+, hook_target might be None in some cases
         if name == 'before_all':
-            behavex_env.before_all(actual_context)
+            if actual_context:
+                behavex_env.before_all(actual_context)
         elif name == 'before_feature':
             feature = hook_target  # In behave 1.3.0, hook_target is the feature
-            if feature and actual_context:
+            if feature and actual_context and hasattr(feature, 'scenarios'):
                 behavex_env.before_feature(actual_context, feature)
         elif name == 'before_scenario':
             scenario = hook_target  # In behave 1.3.0, hook_target is the scenario
-            if scenario and actual_context:
+            if scenario and actual_context and hasattr(scenario, 'name'):
                 behavex_env.before_scenario(actual_context, scenario)
         elif name == 'before_step':
             step = hook_target  # In behave 1.3.0, hook_target is the step
             if step and actual_context:
                 behavex_env.before_step(actual_context, step)
         elif name == 'before_tag':
-            if args:  # Tag name is passed as an argument
+            if args and actual_context:  # Tag name is passed as an argument
                 behavex_env.before_tag(actual_context, args[0])
         elif name == 'after_tag':
-            if args:  # Tag name is passed as an argument
+            if args and actual_context:  # Tag name is passed as an argument
                 behavex_env.after_tag(actual_context, args[0])
         elif name == 'after_step':
             step = hook_target  # In behave 1.3.0, hook_target is the step
@@ -115,14 +119,15 @@ def extend_behave_hooks():
                 behavex_env.after_step(actual_context, step)
         elif name == 'after_scenario':
             scenario = hook_target  # In behave 1.3.0, hook_target is the scenario
-            if scenario and actual_context:
+            if scenario and actual_context and hasattr(scenario, 'status'):
                 behavex_env.after_scenario(actual_context, scenario)
         elif name == 'after_feature':
             feature = hook_target  # In behave 1.3.0, hook_target is the feature
-            if feature and actual_context:
+            if feature and actual_context and hasattr(feature, 'scenarios'):
                 behavex_env.after_feature(actual_context, feature)
         elif name == 'after_all':
-            behavex_env.after_all(actual_context)
+            if actual_context:
+                behavex_env.after_all(actual_context)
 
         # Call the behave hook after for after hooks
         if name.startswith('after_') and name not in ['after_tag']:
@@ -231,7 +236,8 @@ def after_tag(context, tag):  # pyright: ignore[reportUnusedParameter]
 def after_step(context, step):  # pyright: ignore[reportUnusedParameter]
     step.stop = _get_current_timestamp_ms()
     try:
-        if step.exception:
+        # Behave 1.3.0 compatibility: step.exception may not exist
+        if hasattr(step, 'exception') and step.exception:
             step.error_message = step.error_message
             logging.error(step.exception)
     except Exception as exception:

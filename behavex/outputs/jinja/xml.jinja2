@@ -39,7 +39,7 @@
                 </failure>
             {%- elif steps_with_exception and not is_muted -%}
                 {%- for step in steps_with_exception -%}
-                    <failure type={{ step.exception.__class__.__name__ |normalize|CIXC|quoteattr|safe}} message={{ step.exception|string|get_error_message|CIXC|quoteattr|safe}}>
+                    <failure type={{ step|get_exception_class_name|normalize|CIXC|quoteattr|safe}} message={{ step|get_exception_message|get_error_message|CIXC|quoteattr|safe}}>
                         <![CDATA[ Failing step: {{step|print_step|safe}} Location:{{step.filename|normalize|safe}}
                          {{step|get_lines_exception|safe}}
                         ]]>

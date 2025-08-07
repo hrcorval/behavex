@@ -229,7 +229,7 @@ def _get_error_scenario(scenario):
     error_background = False
     b_steps = scenario._background_steps if scenario._background_steps else []
     for index, step in enumerate(b_steps):
-        if step.status == 'undefined' or step.exception:
+        if step.status == 'undefined' or (hasattr(step, 'exception') and step.exception):
             failing_step = _step_to_dict(index, step)
             failing_step['background'] = 'True'
             # failing_step.keys() is forced to be a list in order to maintain compatibility
@@ -243,7 +243,7 @@ def _get_error_scenario(scenario):
             error_background = True
             break
     for index, step in enumerate(scenario.steps):
-        if step.exception:
+        if hasattr(step, 'exception') and step.exception:
             failing_step = _step_to_dict(index, step)
             # failing_step.keys() is forced to be a list in order to maintain compatibility
             if 'error_msg' in list(failing_step.keys()):
@@ -273,7 +273,7 @@ def _step_to_dict(index, step):
         step_info['start'] = getattr(step, 'start')
     if hasattr(step, 'stop'):
         step_info['stop'] = getattr(step, 'stop')
-    if step.exception:
+    if hasattr(step, 'exception') and step.exception:
         # step.exception is forced to be a str type variable
         step_info['error_msg'] = get_error_message(str(step.exception))
         # Handle traceback formatting safely
