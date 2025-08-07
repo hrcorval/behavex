@@ -7,7 +7,7 @@ name = "behavex"
 version = "4.5.0rc1"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "Hernan Rey", email = "behavex_users@googlegroups.com" }
 ]
@@ -29,7 +29,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",

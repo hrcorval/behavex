@@ -37,6 +37,7 @@ jobs:
           python -m pip install build
           python -m build
           python -m pip install beautifulsoup4
+          python -m pip install --index-url https://test.pypi.org/simple/ behavex-images==3.3.0rc1
           python -m pip install dist/behavex-4.5.0rc1.tar.gz
           pip freeze
 
