@@ -341,6 +341,8 @@ def get_total_scenarios_in_junit_reports(context, consider_skipped_scenarios=Tru
                 xml_content = file.read()
                 total_scenarios_in_junit_reports += xml_content.count('status="passed"')
                 total_scenarios_in_junit_reports += xml_content.count('status="failed"')
+                # Keep status="error" counting for robustness, but shouldn't be needed now
+                total_scenarios_in_junit_reports += xml_content.count('status="error"')
                 if consider_skipped_scenarios:
                     total_scenarios_in_junit_reports += xml_content.count('status="skipped"')
     return total_scenarios_in_junit_reports

@@ -335,6 +335,8 @@ def after_scenario(context, scenario):
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
 
+
+
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
@@ -363,6 +365,7 @@ def after_all(context):
         report_json.generate_json_report(feature_list)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
+
 
 
 def _add_log_handler(log_path):

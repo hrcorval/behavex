@@ -147,6 +147,56 @@ def step_simple_result(context):
     logging.info("Simple result verified")
 
 
+# Step definitions for allure_text_tests.feature
+@given('a test condition with multiline text')
+def step_test_condition_with_multiline_text(context):
+    """Test condition with multiline text"""
+    context.multiline_text_condition = True
+    logging.info("Test condition with multiline text established")
+
+
+@when('I process the following text:')
+def step_process_multiline_text(context):
+    """Process multiline text"""
+    context.processed_text = context.text
+    context.text_processing_action = True
+    logging.info("Multiline text processed")
+
+
+@then('I should see the text processed correctly')
+def step_see_text_processed_correctly(context):
+    """Verify text processed correctly"""
+    assert context.multiline_text_condition, "Multiline text condition was not established"
+    assert context.text_processing_action, "Text processing action was not executed"
+    assert context.processed_text, "Text was not processed"
+    logging.info("Text processing verified")
+
+
+# Step definitions for allure_table_tests.feature
+@given('a test condition with table data')
+def step_test_condition_with_table_data(context):
+    """Test condition with table data"""
+    context.table_data_condition = True
+    logging.info("Test condition with table data established")
+
+
+@when('I process the following table:')
+def step_process_table_data(context):
+    """Process table data"""
+    context.processed_table = context.table
+    context.table_processing_action = True
+    logging.info("Table data processed")
+
+
+@then('I should see the table processed correctly')
+def step_see_table_processed_correctly(context):
+    """Verify table processed correctly"""
+    assert context.table_data_condition, "Table data condition was not established"
+    assert context.table_processing_action, "Table processing action was not executed"
+    assert context.processed_table, "Table was not processed"
+    logging.info("Table processing verified")
+
+
 # Step definitions for allure_tagged_tests.feature
 @given('a test condition with allure tags')
 def step_test_condition_with_allure_tags(context):
