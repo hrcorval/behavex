@@ -1,6 +1,14 @@
 Version History
 ===============================================================================
 
+Version: 4.5.0
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Enhanced BehaveX compatibility with newer behave versions, specifically adding support for behave 1.3.0. The implementation uses normal imports with small if/else statements to handle import compatibility issues between different behave versions, ensuring smooth operation across the supported version range.
+* Cleaned up setup.py by removing redundant metadata that is now properly defined in pyproject.toml, maintaining backward compatibility.
+
 Version: 4.4.2
 -------------------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.5.0rc1"
+version = "4.5.0rc2"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -23,8 +23,7 @@ dependencies = [
     "csscompressor",
     "packaging"
 ]
-# Add dynamic field to handle entry points
-dynamic = ["entry-points"]
+# Entry points are statically defined below
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",
