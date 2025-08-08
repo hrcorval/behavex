@@ -180,6 +180,31 @@ def extend_behave_hooks():
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
 
+        # Behave 1.3.0+: before_all/after_all are not dispatched via ModelRunner.run_hook
+        # Ensure BehaveX after_all is invoked once at end of testrun lifecycle.
+        # Keep 1.2.6 behavior unchanged.
+        if BEHAVE_VERSION >= (1, 3):
+            try:
+                # Lazy import to avoid tight coupling at module import time
+                from behave.runner import Runner  # type: ignore
+
+                original_runner_run = Runner.run
+
+                def runner_run_with_behavex(self, *args, **kwargs):  # noqa: ANN001
+                    result = original_runner_run(self, *args, **kwargs)
+                    try:
+                        # Call BehaveX after_all with real behave context
+                        behavex_env.after_all(self.context)
+                    except Exception as exception:  # noqa: BLE001
+                        _log_exception_and_continue('Runner.run (after_all)', exception)
+                    return result
+
+                # Only patch once per process
+                if getattr(Runner.run, '__name__', '') != 'runner_run_with_behavex':
+                    Runner.run = runner_run_with_behavex  # type: ignore[assignment]
+            except Exception as exception:  # noqa: BLE001
+                _log_exception_and_continue('extend_behave_hooks (Runner.run wrap)', exception)
+
 
 def before_all(context):
     """Setup up initial tests configuration."""
