@@ -51,12 +51,14 @@ def extend_behave_hooks():
     """
     Extend Behave hooks with BehaveX hooks code.
     """
+
     global hooks_already_set
     behave_run_hook = ModelRunner.run_hook
     behavex_env = sys.modules[__name__]
     is_dry_run = get_param('dry_run')
 
     def run_hook(self, name, context=None, *args):
+
         # Behave version compatibility: handle different hook signatures
         # Behave 1.2.6: run_hook(name, context, *args) where context is the actual context
         # Behave 1.3.0: run_hook(name, hook_target, *args) where hook_target is Scenario/Step/Feature/etc.
@@ -180,7 +182,7 @@ def extend_behave_hooks():
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
 
-                # BEHAVE 1.3.0 COMPATIBILITY: Also override run_hook_with_capture
+        # BEHAVE 1.3.0 COMPATIBILITY: Also override run_hook_with_capture
         # since all hooks are called via run_hook_with_capture in 1.3.0
         if BEHAVE_VERSION >= (1, 3):
             def run_hook_with_capture(self, hook_name, *args, **kwargs):
@@ -188,7 +190,16 @@ def extend_behave_hooks():
                 # In behave 1.3.0, all hooks go through run_hook_with_capture first,
                 # but we need them to go through BehaveX's run_hook for proper error handling
                 # and consistent behavior across all hook types
-                return run_hook(self, hook_name, None, *args)
+
+                # For before_all/after_all: no hook target, context should be None
+                # For other hooks: first arg is the hook target (feature, scenario, step)
+                if hook_name in ('before_all', 'after_all'):
+                    return run_hook(self, hook_name, None, *args)
+                else:
+                    # Pass the first argument as the hook target
+                    hook_target = args[0] if args else None
+                    remaining_args = args[1:] if len(args) > 1 else ()
+                    return run_hook(self, hook_name, hook_target, *remaining_args)
 
             ModelRunner.run_hook_with_capture = run_hook_with_capture
 
