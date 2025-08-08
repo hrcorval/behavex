@@ -40,7 +40,7 @@ jobs:
           python -m pip install beautifulsoup4
           python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
           python -m pip install dist/behavex-4.5.0rc1.tar.gz --no-deps
-          python -m pip install behavex-images==3.3.0rc1
+          python -m pip install behavex-images==3.3.0rc2
           pip freeze
 
 
@@ -51,7 +51,8 @@ jobs:
             dir
             behavex .\\tests\\features\\*.feature
           else
-            behavex ./tests/features/*.feature
+            ls -la tests/features/
+            behavex tests/features/*.feature
           fi
 
       # Set report.json to be available as an artifact for debugging
@@ -85,7 +86,7 @@ jobs:
           python -m pip install build
           python -m pip install beautifulsoup4
           python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
-          python -m pip install behavex-images==3.3.0rc1
+          python -m pip install behavex-images==3.3.0rc2
           python -m build
           python -m pip install dist/behavex-4.5.0rc1.tar.gz --no-deps
 
