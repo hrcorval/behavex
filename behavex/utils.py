@@ -531,10 +531,18 @@ def get_json_results():
 class MatchInclude(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
         self.features_path = os.path.abspath(os.environ.get('FEATURES_PATH'))
+        self.original_expr = expr  # Store original expression to check if filter was actually specified
         if not expr:
-            expr = get_param('include').replace("'", '"')
+            expr = get_param('include')
+            self.original_expr = expr  # Store the original parameter value
+            if expr:
+                expr = expr.replace("'", '"')
+            else:
+                expr = ''  # Handle None case
         else:
             expr = expr.replace(self.features_path, 'features')
+        # Ensure expr is always a string to avoid None.split() errors
+        expr = expr or ''
         expr = ('/'.join(expr.split('\\')))
         expr = '.*{}'.format(expr)
         self.reg = re.compile(expr)
@@ -543,7 +551,8 @@ class MatchInclude(metaclass=ExecutionSingleton):
         return self.match(*args)
 
     def bool(self):
-        return self.reg.pattern
+        # Return True only if an actual include filter was specified
+        return bool(self.original_expr)
 
     def match(self, filename):
         filename = os.path.abspath(filename)
@@ -592,15 +601,22 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
 
 class IncludeNameMatch(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
+        self.original_expr = expr  # Store original expression to check if filter was actually specified
         if not expr:
-            expr = get_param('name').replace("'", '"')
+            expr = get_param('name')
+            self.original_expr = expr  # Store the original parameter value
+            if expr:
+                expr = expr.replace("'", '"')
+            else:
+                expr = ''  # Handle None case
         self.reg = re.compile(expr)
 
     def __call__(self, *args, **kwargs):
         return self.match(*args)
 
     def bool(self):
-        return self.reg.pattern
+        # Return True only if an actual name filter was specified
+        return bool(self.original_expr)
 
     def match(self, scenario):
         return not self.reg.match(scenario) is None

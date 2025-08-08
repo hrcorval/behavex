@@ -26,6 +26,8 @@ def generate_report(output, joined=None, report=None):
     environment_details = get_environment_details()
     features = output['features']
     steps_definition = output['steps_definition']
+
+
     all_scenarios = sum((feature['scenarios'] for feature in features), [])
     features.sort(key=lambda feature: feature['name'])
     metrics_variables = get_metrics_variables(all_scenarios)
@@ -73,32 +75,11 @@ def _create_files_report(content_to_file):
             path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
         try:
-            content = minify_html.minify(
-                content,
-                allow_noncompliant_unquoted_attribute_values=True,
-                allow_optimal_entities=True,
-                allow_removing_spaces_between_attributes=True,
-
-                # Keep structure intact
-                keep_closing_tags=False,
-                keep_comments=False,
-                keep_html_and_head_opening_tags=False,
-                keep_input_type_text_attr=False,
-                keep_ssi_comments=False,
-
-                # Don't minify any code
-                minify_css=True,
-                minify_doctype=True,
-                # minify_js=True,
-
-                # Preserve template syntax
-                preserve_brace_template_syntax=False,
-                preserve_chevron_percent_template_syntax=False,
-
-                # Don't remove any important structural elements
-                remove_bangs=True,
-                remove_processing_instructions=True
-            )
+            # DISABLED: HTML minification to prevent content corruption
+            # The aggressive minification was corrupting the HTML structure and removing scenarios
+            # TODO: Investigate safer minification options in the future
+            # content = minify_html.minify(content, ...)
+            pass  # Skip minification entirely to ensure content integrity
         # pylint: disable= W0703
         except Exception as ex:
             print(ex)
