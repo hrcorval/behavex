@@ -180,30 +180,22 @@ def extend_behave_hooks():
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
 
-        # Behave 1.3.0+: before_all/after_all are not dispatched via ModelRunner.run_hook
-        # Ensure BehaveX after_all is invoked once at end of testrun lifecycle.
-        # Keep 1.2.6 behavior unchanged.
+        # BEHAVE 1.3.0 COMPATIBILITY: Also override run_hook_with_capture
+        # since after_all is called via run_hook_with_capture in 1.3.0
         if BEHAVE_VERSION >= (1, 3):
-            try:
-                # Lazy import to avoid tight coupling at module import time
-                from behave.runner import Runner  # type: ignore
+            original_run_hook_with_capture = ModelRunner.run_hook_with_capture
 
-                original_runner_run = Runner.run
+            def run_hook_with_capture(self, hook_name, *args, **kwargs):
+                # Call BehaveX run_hook instead of the original one
+                # This ensures BehaveX hooks are properly called for all hook types
+                if hook_name in ['after_all', 'before_all']:
+                    # For after_all/before_all, call our BehaveX run_hook directly
+                    return run_hook(self, hook_name, None, *args)
+                else:
+                    # For other hooks, use the original run_hook_with_capture
+                    return original_run_hook_with_capture(self, hook_name, *args, **kwargs)
 
-                def runner_run_with_behavex(self, *args, **kwargs):  # noqa: ANN001
-                    result = original_runner_run(self, *args, **kwargs)
-                    try:
-                        # Call BehaveX after_all with real behave context
-                        behavex_env.after_all(self.context)
-                    except Exception as exception:  # noqa: BLE001
-                        _log_exception_and_continue('Runner.run (after_all)', exception)
-                    return result
-
-                # Only patch once per process
-                if getattr(Runner.run, '__name__', '') != 'runner_run_with_behavex':
-                    Runner.run = runner_run_with_behavex  # type: ignore[assignment]
-            except Exception as exception:  # noqa: BLE001
-                _log_exception_and_continue('extend_behave_hooks (Runner.run wrap)', exception)
+            ModelRunner.run_hook_with_capture = run_hook_with_capture
 
 
 def before_all(context):
