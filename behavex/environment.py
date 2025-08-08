@@ -180,20 +180,15 @@ def extend_behave_hooks():
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
 
-        # BEHAVE 1.3.0 COMPATIBILITY: Also override run_hook_with_capture
-        # since after_all is called via run_hook_with_capture in 1.3.0
+                # BEHAVE 1.3.0 COMPATIBILITY: Also override run_hook_with_capture
+        # since all hooks are called via run_hook_with_capture in 1.3.0
         if BEHAVE_VERSION >= (1, 3):
-            original_run_hook_with_capture = ModelRunner.run_hook_with_capture
-
             def run_hook_with_capture(self, hook_name, *args, **kwargs):
-                # Call BehaveX run_hook instead of the original one
-                # This ensures BehaveX hooks are properly called for all hook types
-                if hook_name in ['after_all', 'before_all']:
-                    # For after_all/before_all, call our BehaveX run_hook directly
-                    return run_hook(self, hook_name, None, *args)
-                else:
-                    # For other hooks, use the original run_hook_with_capture
-                    return original_run_hook_with_capture(self, hook_name, *args, **kwargs)
+                # BEHAVE 1.3.0 COMPATIBILITY: Route ALL hooks through BehaveX run_hook
+                # In behave 1.3.0, all hooks go through run_hook_with_capture first,
+                # but we need them to go through BehaveX's run_hook for proper error handling
+                # and consistent behavior across all hook types
+                return run_hook(self, hook_name, None, *args)
 
             ModelRunner.run_hook_with_capture = run_hook_with_capture
 

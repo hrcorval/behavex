@@ -927,10 +927,19 @@ def _launch_behave(behave_args):
         execution_completed = True
 
         # Check if HOOK_ERROR is present in the captured output
-        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in ["HOOK-ERROR in before_all",
-                                                                                                  "HOOK-ERROR in before_feature",
-                                                                                                  "HOOK-ERROR in after_feature",
-                                                                                                  "HOOK-ERROR in after_all"]):
+        hook_error_patterns = [
+            "HOOK-ERROR in before_all",
+            "HOOK-ERROR in before_feature",
+            "HOOK-ERROR in before_scenario",
+            "HOOK-ERROR in before_step",
+            "HOOK-ERROR in before_tag",
+            "HOOK-ERROR in after_all",
+            "HOOK-ERROR in after_feature",
+            "HOOK-ERROR in after_scenario",
+            "HOOK-ERROR in after_step",
+            "HOOK-ERROR in after_tag"
+        ]
+        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in hook_error_patterns):
             execution_code = 2  # Indicate an error occurred
             generate_report = True
         elif not os.path.exists(stdout_file):
