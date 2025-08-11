@@ -14,6 +14,7 @@ from datetime import datetime
 
 # Third-party imports
 import behave
+from behave.log_capture import capture
 from behave.model import ScenarioOutline
 from behave.runner import Context, ModelRunner
 
@@ -27,15 +28,6 @@ from behavex.outputs.report_utils import (create_log_path, get_string_hash,
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_autoretry_attempts, get_logging_level,
                            get_scenario_tags, get_scenarios_instances)
-
-# Behave version detection for compatibility
-try:
-    BEHAVE_VERSION = tuple(map(int, behave.__version__.split('.')[:2]))
-except (ImportError, AttributeError, ValueError):
-    # Fallback to assume newer version if detection fails
-    BEHAVE_VERSION = (1, 3)
-
-from behave.log_capture import capture
 
 Context.__getattribute__ = create_custom_log_when_called
 
@@ -51,6 +43,13 @@ def extend_behave_hooks():
     """
     Extend Behave hooks with BehaveX hooks code.
     """
+
+    # Behave version detection for compatibility
+    try:
+        BEHAVE_VERSION = tuple(map(int, behave.__version__.split('.')[:2]))
+    except (ImportError, AttributeError, ValueError):
+        # Fallback to assume newer version if detection fails
+        BEHAVE_VERSION = (1, 3)
 
     global hooks_already_set
     behave_run_hook = ModelRunner.run_hook
