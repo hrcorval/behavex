@@ -6,6 +6,7 @@ Version: 4.5.0
 
 ENHANCEMENTS:
 
+* Optimized BehaveX execution performance by replacing behave_script.main() with direct Runner class usage. This change provides better programmatic control, eliminates redundant stdout capture/redirection, and improves status detection efficiency by using runner.context.failed and runner.hook_failures instead of text parsing and feature iteration.
 * Enhanced BehaveX compatibility with newer behave versions, specifically adding support for behave 1.3.0. The implementation uses normal imports with small if/else statements to handle import compatibility issues between different behave versions, ensuring smooth operation across the supported version range.
 * Cleaned up setup.py by removing redundant metadata that is now properly defined in pyproject.toml, maintaining backward compatibility.
 

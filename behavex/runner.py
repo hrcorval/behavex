@@ -14,7 +14,6 @@ from __future__ import absolute_import, print_function
 import codecs
 import concurrent  # pyright: ignore[reportUnusedImport]
 import copy
-import io
 import json
 import logging.config  # pyright: ignore[reportUnusedImport]
 import multiprocessing
@@ -32,8 +31,9 @@ from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 from typing import Any, Dict
 
-from behave import __main__ as behave_script
+from behave.configuration import Configuration
 from behave.model import Feature, Scenario, ScenarioOutline
+from behave.runner import Runner
 
 # noinspection PyUnresolvedReferences
 from behavex import conf_mgr
@@ -839,6 +839,45 @@ def filter_feature_executed(json_output, filename, scenario_line):
     return []
 
 
+def _calculate_execution_code_from_runner(runner):
+    """
+    Calculate execution code based on Runner properties.
+
+    This uses the efficient runner.context.failed boolean and runner.hook_failures
+    instead of iterating through features/scenarios or parsing output text.
+
+    Args:
+        runner: The Runner instance after execution
+
+    Returns:
+        int: Execution code (0=success, 1=test failures, 2=errors)
+    """
+    try:
+        # Check if runner was aborted first
+        if hasattr(runner, 'aborted') and runner.aborted:
+            return 2  # Aborted execution
+
+        # Check for hook failures using runner.hook_failures (more reliable than text parsing)
+        if hasattr(runner, 'hook_failures') and runner.hook_failures > 0:
+            return 2  # Hook failures
+
+        # Use context.failed boolean to determine if any tests failed
+        if hasattr(runner, 'context') and runner.context:
+            if hasattr(runner.context, 'failed'):
+                if runner.context.failed:
+                    return 1  # Test failures
+                else:
+                    return 0  # Success - all tests passed
+
+        # Fallback if context or failed attribute not available
+        return 0  # Assume success
+
+    except Exception as ex:
+        import logging
+        logging.warning(f"Error calculating execution code from runner: {ex}")
+        return 1  # Default to failure on error
+
+
 def _launch_behave(behave_args):
     """
     Launch Behave with the given arguments.
@@ -852,98 +891,47 @@ def _launch_behave(behave_args):
     generate_report = True
     execution_code = 0
     stdout_file = None
-    execution_completed = False
     try:
         stdout_file = behave_args[behave_args.index('--outfile') + 1]
 
-        # Use a custom output capture class that mirrors to console and captures
-        class TeePrint:
-            """A complete wrapper for stdout that captures output while maintaining all stdout functionality."""
+        # Run behave using Runner class instead of behave_script.main()
+        try:
+            # Create configuration from command-line arguments
+            config = Configuration(command_args=behave_args)
 
-            def __init__(self, original_stdout):
-                # Use object.__setattr__ to avoid recursion with __setattr__
-                object.__setattr__(self, 'original_stdout', original_stdout)
-                object.__setattr__(self, 'captured', io.StringIO())
+            # Ensure format is set (required by behave)
+            if not config.format:
+                config.format = ['pretty']  # Default format
 
-            def write(self, data):
-                """Override write to capture output while maintaining original behavior."""
-                self.original_stdout.write(data)
-                self.captured.write(data)
-                return len(data) if hasattr(data, '__len__') else None
+            # Create runner instance
+            runner = Runner(config)
 
-            def flush(self):
-                """Override flush to flush both original and captured streams."""
-                self.original_stdout.flush()
-                self.captured.flush()
+            # Run the tests
+            runner.run()
 
-            def getvalue(self):
-                """Custom method to get captured output."""
-                return self.captured.getvalue()
+            # Calculate execution code using runner internal state
+            execution_code = _calculate_execution_code_from_runner(runner)
 
-            def __getattr__(self, name):
-                """Delegate all other attributes/methods to the original stdout."""
-                try:
-                    return getattr(self.original_stdout, name)
-                except AttributeError:
-                    raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-
-            def __setattr__(self, name, value):
-                """Delegate attribute setting to original stdout (except for our internal attributes)."""
-                if name in ('original_stdout', 'captured'):
-                    object.__setattr__(self, name, value)
-                else:
-                    setattr(self.original_stdout, name, value)
-
-            def __getattribute__(self, name):
-                """Handle attribute access with proper delegation."""
-                # Handle our own methods and attributes first
-                if name in ('original_stdout', 'captured', 'write', 'flush', 'getvalue',
-                           '__class__', '__dict__', '__getattr__', '__setattr__'):
-                    return object.__getattribute__(self, name)
-
-                # For common stdout properties, delegate to original_stdout
-                try:
-                    original_stdout = object.__getattribute__(self, 'original_stdout')
-                    return getattr(original_stdout, name)
-                except (AttributeError, KeyError):
-                    # Fallback to our own implementation
-                    return object.__getattribute__(self, name)
-
-        # Create the tee capture object
-        tee = TeePrint(sys.__stdout__)
-
-        # Redirect stdout to our tee object
-        old_stdout = sys.stdout
-        sys.stdout = tee
-
-        # Run behave
-        execution_code = behave_script.main(behave_args)
-
-        # Reset stdout to its original value
-        sys.stdout = old_stdout
-
-        # Get the captured output
-        captured_output_value = tee.getvalue()
-        execution_completed = True
-
-        # Check if HOOK_ERROR is present in the captured output
-        hook_error_patterns = [
-            "HOOK-ERROR in before_all",
-            "HOOK-ERROR in before_feature",
-            "HOOK-ERROR in before_scenario",
-            "HOOK-ERROR in before_step",
-            "HOOK-ERROR in before_tag",
-            "HOOK-ERROR in after_all",
-            "HOOK-ERROR in after_feature",
-            "HOOK-ERROR in after_scenario",
-            "HOOK-ERROR in after_step",
-            "HOOK-ERROR in after_tag"
-        ]
-        if "HOOK-ERROR" in captured_output_value and any(hook in captured_output_value for hook in hook_error_patterns):
-            execution_code = 2  # Indicate an error occurred
-            generate_report = True
-        elif not os.path.exists(stdout_file):
+            # Check if stdout file was created (for compatibility with existing logic)
+            if not os.path.exists(stdout_file):
+                execution_code = 2
+                generate_report = True
+        except SystemExit as system_exit:
+            # Handle SystemExit from crashing tests (e.g., exit() calls)
+            # SystemExit from crashing tests should be treated as crash/interruption (code 2)
+            # This ensures execution_interrupted_or_crashed = True in final exit code calculation
             execution_code = 2
+            generate_report = True
+
+            logging.info(f'SystemExit caught from crashing test (original code: {system_exit.code}), treating as crash (code 2)')
+        except Exception as runner_ex:
+            # Handle runner exception
+            # Log the runner exception
+            logging.exception('Error using Runner class, details: ')
+            logging.exception(runner_ex)
+
+            # Set appropriate execution code
+            execution_code = 1
             generate_report = True
     except KeyboardInterrupt:
         execution_code = 1
@@ -958,8 +946,8 @@ def _launch_behave(behave_args):
         execution_code = 2
         generate_report = True
     finally:
-        if not execution_completed:
-            sys.stdout = sys.__stdout__  # Reset stdout to its original value
+        # Cleanup is handled in the try/except blocks above
+        pass
 
     if stdout_file and os.path.exists(stdout_file):
         def _merge_and_remove():
