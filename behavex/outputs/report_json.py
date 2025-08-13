@@ -172,6 +172,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['line'] = getattr(scenario, 'line')
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
+            # Use the original status from behave
             scenario_info['status'] = getattr(scenario, 'status').name
             # Add start and stop times if they exist
             if hasattr(scenario, 'start'):
@@ -194,8 +195,12 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
                 add_step_info(step, steps)
             scenario_info['steps'] = steps
             scenario_info['outline_index'] = scenario_outline_index
-            if scenario_info['status'] == 'failed':
-                overall_status = 'failed'
+            if scenario_info['status'] in ['failed', 'error']:
+                # Prioritize error status over failed status for features
+                if scenario_info['status'] == 'error':
+                    overall_status = 'error'
+                elif overall_status not in ['error']:  # Only set to failed if not already error
+                    overall_status = 'failed'
             scenario_outline_index += 1
             scenario_info['background'] = _processing_background(scenario)
             scenario_info['error_msg'] = error_msg

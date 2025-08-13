@@ -253,8 +253,8 @@ def launch_behavex():
                                        initializer=init_multiprocessing,
                                        initargs=(idQueue, parallel_delay))
     global_vars.execution_start_time = time.time()
-    totals = {"features": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0},
-            "scenarios": {"passed": 0, "failed": 0, "skipped": 0, "untested": 0}}
+    totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
+              "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -309,6 +309,8 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
+                elif feature['status'] == 'error' or feature['status'] == 'undefined':
+                    totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
                 elif feature['status'] == 'untested':
@@ -319,6 +321,11 @@ def launch_behavex():
                     continue
                 for scenario in feature['scenarios']:
                     if scenario['status'] == 'failed':
+                        totals['scenarios']['failed'] += 1
+                        failures.append('{}:{}'.format(filename, scenario['line']))
+                        if 'MUTE' not in scenario['tags']:
+                            failing_non_muted_tests = True
+                    elif scenario['status'] == 'error' or scenario['status'] == 'undefined':
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -355,20 +362,50 @@ def launch_behavex():
     if multiprocess:
         untested_features = totals['features']['untested']
         untested_scenarios = totals['scenarios']['untested']
+        error_features = totals['features']['error']
+        error_scenarios = totals['scenarios']['error']
+
         untested_features_msg = ', {} untested'.format(untested_features) if untested_features > 0 else ''
         untested_scenarios_msg = ', {} untested'.format(untested_scenarios) if untested_scenarios > 0 else ''
+        error_features_msg = ', {} error'.format(error_features) if error_features > 0 else ''
+        error_scenarios_msg = ''  # Scenarios: combine error with failed counts
+
         def plural_char(n): return 's' if n != 1 else ''
-        print('\n{} feature{} passed, {} failed, {} skipped{}'.format(totals['features']['passed'],
-                                                                        plural_char(totals['features']['passed']),
-                                                                        totals['features']['failed'],
-                                                                        totals['features']['skipped'],
-                                                                        untested_features_msg))
-        print('{} scenario{} passed, {} failed, {} skipped{}'.format(totals['scenarios']['passed'],
-                                                                       plural_char(totals['scenarios']['passed']),
-                                                                       totals['scenarios']['failed'],
-                                                                       totals['scenarios']['skipped'],
-                                                                       untested_scenarios_msg))
-        # TODO: print steps execution summary ('{} steps passed, {} failed, {} skipped{}, {} untested')
+        print('\n{} feature{} passed, {} failed{}, {} skipped{}'.format(totals['features']['passed'],
+                                                                          plural_char(totals['features']['passed']),
+                                                                          totals['features']['failed'],
+                                                                          error_features_msg,
+                                                                          totals['features']['skipped'],
+                                                                          untested_features_msg))
+        print('{} scenario{} passed, {} failed{}, {} skipped{}'.format(totals['scenarios']['passed'],
+                                                                        plural_char(totals['scenarios']['passed']),
+                                                                        totals['scenarios']['failed'],
+                                                                        error_scenarios_msg,
+                                                                        totals['scenarios']['skipped'],
+                                                                        untested_scenarios_msg))
+        # Calculate steps summary
+        steps_totals = {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0, "undefined": 0}
+        if results and results['features']:
+            for feature in results['features']:
+                for scenario in feature['scenarios']:
+                    for step in scenario.get('steps', []):
+                        step_status = step.get('status', 'skipped')
+                        if step_status == 'undefined':
+                            steps_totals['undefined'] += 1
+                        elif step_status in steps_totals:
+                            steps_totals[step_status] += 1
+                        else:
+                            steps_totals['skipped'] += 1
+
+        untested_steps_msg = ', {} untested'.format(steps_totals['untested']) if steps_totals['untested'] > 0 else ''
+        undefined_steps_msg = ', {} undefined'.format(steps_totals['undefined']) if steps_totals['undefined'] > 0 else ''
+        error_steps_msg = ', {} error'.format(steps_totals['error']) if steps_totals['error'] > 0 else ''
+        print('{} steps passed, {} failed{}, {} skipped{}{}'.format(steps_totals['passed'],
+                                                                    steps_totals['failed'],
+                                                                    error_steps_msg,
+                                                                    steps_totals['skipped'],
+                                                                    untested_steps_msg,
+                                                                    undefined_steps_msg))
         print('Took: {}'.format(pretty_print_time(global_vars.execution_end_time - global_vars.execution_start_time)))
     if results and results['features'] and not get_param('formatter'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
