@@ -866,6 +866,13 @@ def _calculate_execution_code_from_runner(runner):
         int: Execution code (0=success, 1=test failures, 2=errors)
     """
     try:
+        # Special handling for dry runs - they should always return 0 unless aborted
+        if get_param('dry_run'):
+            # Only return error if explicitly aborted, otherwise dry runs are always successful
+            if hasattr(runner, 'aborted') and runner.aborted:
+                return 2  # Aborted execution
+            return 0  # Dry runs are successful by definition (they don't actually run tests)
+
         # Check if runner was aborted first
         if hasattr(runner, 'aborted') and runner.aborted:
             return 2  # Aborted execution
