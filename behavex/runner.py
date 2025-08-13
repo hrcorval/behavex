@@ -11,10 +11,12 @@ including setup, execution, and reporting.
 # __future__ has been added to maintain compatibility
 from __future__ import absolute_import, print_function
 
+# Standard library imports
 import codecs
 import concurrent  # pyright: ignore[reportUnusedImport]
 import copy
 import json
+import logging
 import logging.config  # pyright: ignore[reportUnusedImport]
 import multiprocessing
 import os
@@ -31,10 +33,12 @@ from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 from typing import Any, Dict
 
+# Third-party imports
 from behave.configuration import Configuration
 from behave.model import Feature, Scenario, ScenarioOutline
 from behave.runner import Runner
 
+# Local imports
 # noinspection PyUnresolvedReferences
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
@@ -45,7 +49,8 @@ from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
 from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
                                                FormatterManager)
-from behavex.outputs.report_json import generate_execution_info
+from behavex.outputs.report_json import (generate_execution_info,
+                                         get_environment_details)
 from behavex.outputs.report_utils import (get_overall_status,
                                           match_for_execution,
                                           pretty_print_time,
@@ -752,7 +757,6 @@ def execute_tests(
     Returns:
         tuple: Execution code and JSON report.
     """
-    import json
     try:
         behave_args = None
         if multiprocess:
@@ -797,7 +801,13 @@ def execute_tests(
                     json_output = {'environment': [], 'features': [], 'steps_definition': []}
             else:
                 # Parse JSON string from _launch_behave (disk-free approach)
-                json_output = json.loads(json_results_str)
+                try:
+                    json_output = json.loads(json_results_str)
+                except (json.JSONDecodeError, ValueError) as e:
+                    logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
+                    logging.error(f"Raw JSON string: {json_results_str}")
+                    # Fallback to empty structure
+                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),
@@ -876,7 +886,7 @@ def _calculate_execution_code_from_runner(runner):
         return 0  # Assume success
 
     except Exception as ex:
-        import logging
+
         logging.warning(f"Error calculating execution code from runner: {ex}")
         return 1  # Default to failure on error
 
@@ -910,27 +920,41 @@ def _launch_behave(behave_args):
             # Create configuration from command-line arguments
             config = Configuration(command_args=behave_args)
 
-            # Ensure format is set (required by behave)
+            # Ensure format is set (fallback to pretty if not specified via arguments)
             if not config.format:
-                config.format = ['pretty']  # Default format
+                config.format = ['pretty']
 
             # Create runner instance
             runner = Runner(config)
 
-            # Run the tests
+            # Run the tests (Behave output suppressed via format configuration)
             runner.run()
 
             # Calculate execution code using runner internal state
             execution_code = _calculate_execution_code_from_runner(runner)
 
             # Extract results directly from runner and serialize to JSON string
-            if runner and hasattr(runner, 'features'):
-                import json
+
+            # Check if runner has features and they contain data
+            if runner and hasattr(runner, 'features') and runner.features:
                 feature_list = generate_execution_info(runner.features)
-                from behavex.outputs.report_json import get_environment_details
                 json_results = {
                     'environment': get_environment_details(),
                     'features': feature_list,
+                    'steps_definition': global_vars.steps_definitions,
+                }
+                json_results_str = json.dumps(json_results)
+            else:
+                # Fallback for cases where runner doesn't have features or features is empty
+                # This is common in behave 1.2.6 during dry runs
+                if get_param('dry_run'):
+                    logging.info("Dry run mode: runner.features empty, this is expected in behave 1.2.6")
+                else:
+                    logging.warning("Runner doesn't have features attribute or features is empty, using empty results")
+
+                json_results = {
+                    'environment': get_environment_details(),
+                    'features': [],
                     'steps_definition': global_vars.steps_definitions,
                 }
                 json_results_str = json.dumps(json_results)
@@ -1289,6 +1313,24 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append('~@WIP')
     arguments.append('--tags')
     arguments.append('~@MANUAL')
+
+    # Handle output suppression based on execution mode
+    if multiprocess:
+        # In multiprocess: use null format to suppress verbose step output
+        arguments.append('--format')
+        arguments.append('null')
+    else:
+        # In single process: redirect output to behave.log to keep console clean
+        output_folder = get_env('OUTPUT')
+        if output_folder:
+            behave_log_path = os.path.join(output_folder, 'behave', 'behave.log')
+            # Ensure behave directory exists
+            behave_dir = os.path.dirname(behave_log_path)
+            if not os.path.exists(behave_dir):
+                os.makedirs(behave_dir)
+            arguments.append('--outfile')
+            arguments.append(behave_log_path)
+
     args_sys = config.args if config else None
     set_args_captures(arguments, args_sys)
     if args_sys and args_sys.no_snippets:
