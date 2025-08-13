@@ -24,7 +24,7 @@
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
 {%- set scenario_tags = scenario|get_scenario_tags-%}
-{%- set is_muted = ('MUTE' in scenario_tags and scenario.status == 'failed')-%}
+{%- set is_muted = ('MUTE' in scenario_tags and (scenario.status == 'failed' or scenario.status == 'error'))-%}
 {%- set errors_step = 0-%}
         {%- for step in scenario.steps -%}
             {%- set errors_step = errors_step + (0 if step.error_message else 1) -%}
@@ -32,7 +32,7 @@
         <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ scenario.status if not is_muted else 'skipped'}}"
          classname={{scenario.feature.name|normalize|CIXC|quoteattr|safe }}>
             {%- set steps_with_exception = scenario.steps|get_list_exception_steps(scenario._background_steps) -%}
-            {%- set scenario_crashed = True if (scenario.status == 'failed' and steps_with_exception|length == 0) else False -%}
+            {%- set scenario_crashed = True if ((scenario.status == 'failed' or scenario.status == 'error') and steps_with_exception|length == 0) else False -%}
             {%- if scenario_crashed and not is_muted -%}
                 <failure type=Exception message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
                     <![CDATA[ {{ scenario.error_msg }} ]]>

@@ -69,7 +69,7 @@
                         </td>
                         <td title="Status">
                             <table><tr>
-                                <td style="width:40px" class="green-behavex">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
+                                <td style="width:40px" class="{{ [summary[feature.name]['Failed'] > 0 and 'failed' or 'passed']|calculate_color }}-behavex">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
                                 <td style="width:140px">
                                     <div class="progress  progress-expand-steps">
                                         {%- set fe_total = summary[feature.name]['Total'] -%}
@@ -96,7 +96,7 @@
                     <td><b>{{fields_total['Executed']}} ({{fields_total['Execution Status']|int}}%)</b></td>
                     <td>
                         <table><tr>
-                            <td style="width:40px" class="green-behavex"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
+                            <td style="width:40px" class="{{ [fields_total['Failed'] > 0 and 'failed' or 'passed']|calculate_color }}-behavex"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
                             <td style="width:140px">
                                 <div class="progress progress-expand-steps">
                                     {%- set fe_total = fields_total['Total'] -%}
@@ -286,8 +286,8 @@
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
                         {%- set scenario_tags = scenario|get_scenario_tags -%}
-                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested')) else False -%}
-                        {%- set scenario_crashed = True if (scenario.status == 'failed' and not scenario.error_background and not scenario.error_step) else False -%}
+                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'error' or scenario.status == 'untested')) else False -%}
+                        {%- set scenario_crashed = True if ((scenario.status == 'failed' or scenario.status == 'error') and not scenario.error_background and not scenario.error_step) else False -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario_tags|to_string_list }}">
                             <td class="text-left grey-behavex">
@@ -459,7 +459,7 @@
             </div>
 
             {% endif%}
-            {%- if step.status == 'failed' or step.status == 'undefined' -%}
+            {%- if step.status == 'failed' or step.status == 'error' or step.status == 'undefined' -%}
                 <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
                  {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
                  {%- if error_msg or error_lines -%}

@@ -88,10 +88,10 @@ def _create_files_report(content_to_file):
 
 def get_metrics_variables(scenarios):
     skipped = sum(
-        scenario['status'] not in ['passed', 'failed'] for scenario in scenarios
+        scenario['status'] not in ['passed', 'failed', 'error'] for scenario in scenarios
     )
     passed = sum(scenario['status'] == 'passed' for scenario in scenarios)
-    failed = sum(scenario['status'] == 'failed' for scenario in scenarios)
+    failed = sum(scenario['status'] == 'failed' or scenario['status'] == 'error' for scenario in scenarios)
     scenario_auto = [
         scenario
         for scenario in scenarios
@@ -192,7 +192,7 @@ def export_to_html_table_summary(features):
             if scenario['status'] == 'passed':
                 fields['Executed'] += 1
                 fields['Passed'] += 1
-            elif scenario['status'] == 'failed':
+            elif scenario['status'] == 'failed' or scenario['status'] == 'error':
                 fields['Executed'] += 1
                 fields['Failed'] += 1
             else:

@@ -112,6 +112,10 @@ def calculate_status(list_status):
     if 'undefined' in set_status:
         set_status.remove('undefined')
         set_status.add('skipped')
+    # Handle 'error' status as 'failed' for color calculation
+    if 'error' in set_status:
+        set_status.remove('error')
+        set_status.add('failed')
     if 'failed' in set_status:
         return 'failed'
     elif {'skipped'} == set_status:
