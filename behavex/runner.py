@@ -934,30 +934,38 @@ def _launch_behave(behave_args):
             execution_code = _calculate_execution_code_from_runner(runner)
 
             # Extract results directly from runner and serialize to JSON string
-
-            # Check if runner has features and they contain data
-            if runner and hasattr(runner, 'features') and runner.features:
-                feature_list = generate_execution_info(runner.features)
-                json_results = {
-                    'environment': get_environment_details(),
-                    'features': feature_list,
-                    'steps_definition': global_vars.steps_definitions,
-                }
-                json_results_str = json.dumps(json_results)
-            else:
-                # Fallback for cases where runner doesn't have features or features is empty
-                # This is common in behave 1.2.6 during dry runs
-                if get_param('dry_run'):
-                    logging.info("Dry run mode: runner.features empty, this is expected in behave 1.2.6")
+            try:
+                # Check if runner has features and they contain data
+                if runner and hasattr(runner, 'features') and runner.features:
+                    feature_list = generate_execution_info(runner.features)
+                    json_results = {
+                        'environment': get_environment_details(),
+                        'features': feature_list,
+                        'steps_definition': global_vars.steps_definitions,
+                    }
+                    json_results_str = json.dumps(json_results)
                 else:
-                    logging.warning("Runner doesn't have features attribute or features is empty, using empty results")
+                    # Fallback for cases where runner doesn't have features or features is empty
+                    # This is common in behave 1.2.6 during dry runs
+                    if get_param('dry_run'):
+                        logging.info("Dry run mode: runner.features empty, this is expected in behave 1.2.6")
+                    else:
+                        logging.warning("Runner doesn't have features attribute or features is empty, using empty results")
 
-                json_results = {
-                    'environment': get_environment_details(),
+                    json_results = {
+                        'environment': get_environment_details(),
+                        'features': [],
+                        'steps_definition': global_vars.steps_definitions,
+                    }
+                    json_results_str = json.dumps(json_results)
+            except Exception as json_ex:
+                # Robust fallback for any JSON serialization issues
+                logging.error(f"Error processing runner results: {json_ex}")
+                json_results_str = json.dumps({
+                    'environment': [],
                     'features': [],
-                    'steps_definition': global_vars.steps_definitions,
-                }
-                json_results_str = json.dumps(json_results)
+                    'steps_definition': {}
+                })
 
             # Note: stdout file existence check removed since we get execution status directly from runner
         except SystemExit as system_exit:
