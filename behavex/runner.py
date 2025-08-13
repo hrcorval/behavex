@@ -752,6 +752,7 @@ def execute_tests(
     Returns:
         tuple: Execution code and JSON report.
     """
+    import json
     try:
         behave_args = None
         if multiprocess:
@@ -770,11 +771,12 @@ def execute_tests(
         except Exception as exception:
             traceback.print_exc()
             print(exception)
-        execution_code, generate_report = _launch_behave(behave_args)
+        execution_code, generate_report, json_results_str = _launch_behave(behave_args)
         # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
         if generate_report:
             # print execution code
             if execution_code == 2:
+                # For crashed executions, override with skeleton data if available
                 if feature_json_skeleton:
                     json_output = {'environment': [],
                                    'features': [json.loads(feature_json_skeleton)],
@@ -794,7 +796,8 @@ def execute_tests(
                 else:
                     json_output = {'environment': [], 'features': [], 'steps_definition': []}
             else:
-                json_output = dump_json_results()
+                # Parse JSON string from _launch_behave (disk-free approach)
+                json_output = json.loads(json_results_str)
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),
@@ -886,13 +889,21 @@ def _launch_behave(behave_args):
         behave_args (list): List of arguments for Behave.
 
     Returns:
-        tuple: Execution code and whether to generate a report.
+        tuple: Execution code, whether to generate a report, and JSON string of execution results.
     """
     generate_report = True
     execution_code = 0
-    stdout_file = None
+    json_results_str = '{"environment": [], "features": [], "steps_definition": {}}'
+
     try:
-        stdout_file = behave_args[behave_args.index('--outfile') + 1]
+        if behave_args is None:
+            # Handle case where behave_args is None (e.g., argument parsing failed)
+            logging.error("behave_args is None - argument parsing may have failed")
+            execution_code = 2
+            generate_report = True
+            return execution_code, generate_report, json_results_str
+
+        # Note: stdout_file logic removed since we get execution results directly from runner
 
         # Run behave using Runner class instead of behave_script.main()
         try:
@@ -912,10 +923,19 @@ def _launch_behave(behave_args):
             # Calculate execution code using runner internal state
             execution_code = _calculate_execution_code_from_runner(runner)
 
-            # Check if stdout file was created (for compatibility with existing logic)
-            if not os.path.exists(stdout_file):
-                execution_code = 2
-                generate_report = True
+            # Extract results directly from runner and serialize to JSON string
+            if runner and hasattr(runner, 'features'):
+                import json
+                feature_list = generate_execution_info(runner.features)
+                from behavex.outputs.report_json import get_environment_details
+                json_results = {
+                    'environment': get_environment_details(),
+                    'features': feature_list,
+                    'steps_definition': global_vars.steps_definitions,
+                }
+                json_results_str = json.dumps(json_results)
+
+            # Note: stdout file existence check removed since we get execution status directly from runner
         except SystemExit as system_exit:
             # Handle SystemExit from crashing tests (e.g., exit() calls)
             # SystemExit from crashing tests should be treated as crash/interruption (code 2)
@@ -949,26 +969,8 @@ def _launch_behave(behave_args):
         # Cleanup is handled in the try/except blocks above
         pass
 
-    if stdout_file and os.path.exists(stdout_file):
-        def _merge_and_remove():
-            with open(os.path.join(get_env('OUTPUT'), 'merged_behave_outputs.log'), 'a+') as behave_log_file:
-                with open(stdout_file, 'r') as source_file:
-                    behave_log_file.write(source_file.read())
-            # nosec B110
-            try:
-                if not source_file.closed:
-                    os.close(source_file.fileno())
-                if os.path.exists(stdout_file):
-                    os.remove(stdout_file)
-            except:
-                pass
-        try:
-            retry_file_operation(stdout_file, _merge_and_remove)
-        except Exception as remove_ex:
-            logging.warning(f"Could not remove stdout file {stdout_file}: {remove_ex}")
-            # Don't fail the execution if we can't remove the file
-            pass
-    return execution_code, generate_report
+    # Note: stdout file merging removed since we get execution results directly from runner
+    return execution_code, generate_report, json_results_str
 
 
 def wrap_up_process_pools(process_pool,
@@ -1032,17 +1034,9 @@ def remove_temporary_files(parallel_processes, json_reports):
                 os.remove(result_temp)
             except Exception as remove_ex:
                 print(remove_ex)
-        # Appending the process ID to the stdout file as a prefix, to avoid conflicts with other BehaveX processes
-        path_stdout = os.path.join(gettempdir(), '{}_stdout{}.txt'.format(os.getpid(), i + 1))
-        if os.path.exists(path_stdout):
-            try:
-                os.chmod(path_stdout, 511)  # nosec
-                os.remove(path_stdout)
-            except Exception as remove_ex:
-                print(remove_ex)
+        # Note: stdout file cleanup removed since we no longer generate these files
 
-    name = multiprocessing.current_process().name.split('-')[-1]
-    stdout_file = os.path.join(gettempdir(), 'std{}2.txt'.format(name))
+    # Note: stdout file cleanup removed since we no longer generate these files
     logger = logging.getLogger()
     logger.propagate = False
     for handler in logging.root.handlers:
@@ -1053,10 +1047,6 @@ def remove_temporary_files(parallel_processes, json_reports):
     console_log = logging.StreamHandler(sys.stdout)
     console_log.setLevel(get_logging_level())
     logger.addHandler(console_log)
-    if os.path.exists(stdout_file):
-        os.chmod(stdout_file, 511)  # nosec
-        if not os.access(stdout_file, os.W_OK):
-            os.remove(stdout_file)
     # removing any pending temporary files
     if type(json_reports) is not list:
         json_reports = [json_reports]
@@ -1264,9 +1254,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append('--no-summary')
         worker_id = multiprocessing.current_process().name.split('-')[-1]
 
-        arguments.append('--outfile')
-        # Appending the process ID to the stdout file as a prefix, to avoid conflicts with other BehaveX processes
-        arguments.append(os.path.join(gettempdir(), '{}_stdout{}.txt'.format(os.getpid(), worker_id)))
+        # Note: --outfile removed since we get execution results directly from runner
 
         arguments.append('-D')
         arguments.append(f'worker_id={worker_id}')
@@ -1282,8 +1270,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
             arguments.append('--summary')
         arguments.append('--junit-directory')
         arguments.append(output_folder)
-        arguments.append('--outfile')
-        arguments.append(os.path.join(output_folder, 'behave', 'behave.log'))
+        # Note: --outfile removed since we get execution results directly from runner
         arguments.append('-D')
         arguments.append(f'worker_id=0')
     arguments.append('--no-skipped')
@@ -1388,35 +1375,6 @@ def set_args_captures(args, args_sys):
         if not getattr(args_sys, 'no_{}'.format(default_arg)):
             args.append('--no-{}'.format(default_arg.replace('_', '-')))
 
-
-def dump_json_results():
-    """
-    Dump the JSON results of the test execution.
-
-    Returns:
-        dict: JSON output of the test execution.
-    """
-    if multiprocessing.current_process().name == 'MainProcess':
-        path_info = os.path.join(
-            os.path.abspath(get_env('OUTPUT')),
-            global_vars.report_filenames['report_json'],
-        )
-    else:
-        process_name = multiprocessing.current_process().name.split('-')[-1]
-        path_info = os.path.join(gettempdir(), 'result{}.tmp'.format(process_name))
-
-    def _load_json() -> Dict[str, Any]:
-        """this function load from file"""
-        json_output_converted = {}
-        with open(path_info, 'r') as info_file:
-            json_output_file = info_file.read()
-            json_output_converted = json.loads(json_output_file)
-        return json_output_converted
-
-    json_output = {'environment': [], 'features': [], 'steps_definition': []}
-    if os.path.exists(path_info):
-        json_output = retry_file_operation(path_info, _load_json, return_value=True)
-    return json_output
 
 
 if __name__ == '__main__':

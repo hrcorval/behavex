@@ -47,9 +47,8 @@ Feature: Crashing Tests
       | before_scenario | 1                  | scenario        |
       | before_step     | 1                  | scenario        |
       | before_tag      | 1                  | scenario        |
-      # TODO: Uncomment when it is possible to detect the errors in after_feature and after_all hooks
-      # | after_all       | 1                  | scenario        |
-      # | after_feature   | 1                  | scenario        |
+      | after_all       | 1                  | scenario        |
+      | after_feature   | 1                  | scenario        |
       | after_scenario  | 1                  | scenario        |
       | after_step      | 1                  | scenario        |
       | after_tag       | 1                  | scenario        |
@@ -58,9 +57,8 @@ Feature: Crashing Tests
       | before_scenario | 2                  | scenario        |
       | before_step     | 2                  | scenario        |
       | before_tag      | 2                  | scenario        |
-      # TODO: Uncomment when it is possible to detect the errors in after_feature and after_all hooks
-      # | after_all       | 2                  | scenario        |
-      # | after_feature   | 2                  | scenario        |
+      | after_all       | 2                  | scenario        |
+      | after_feature   | 2                  | scenario        |
       | after_scenario  | 2                  | scenario        |
       | after_step      | 2                  | scenario        |
       | after_tag       | 2                  | scenario        |
