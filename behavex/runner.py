@@ -1037,8 +1037,6 @@ def wrap_up_process_pools(process_pool,
     path_info = os.path.join(output, global_vars.report_filenames['report_json'])
     with open(path_info, 'w') as file_info:
         file_info.write(json.dumps(merged_json))
-    if get_param('dry_run'):
-        print('Generating outputs...')
     generate_reports(merged_json)
 
 
