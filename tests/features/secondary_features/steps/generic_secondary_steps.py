@@ -50,7 +50,7 @@ def given_image_attachments_only_on_failure(context):
 def then_failing_condition_performed(context):
     """Perform a failing assertion to create failed status"""
     logging.info('Performing failing condition - this will cause failed status')
-    assert False, "This step is designed to fail and create failed status"
+    assert False, "This step is designed to fail"
 
 
 
