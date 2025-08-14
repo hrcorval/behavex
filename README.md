@@ -594,6 +594,30 @@ By default, `scenario.log` files are attached to each scenario in the Allure rep
 behavex --formatter behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --no-formatter-attach-logs
 ```
 
+## Utilities
+
+BehaveX includes additional utility scripts in the `scripts/` folder to help with common tasks:
+
+### HTML Report Generator
+
+Generate HTML reports from existing `report.json` files without re-running tests:
+
+```bash
+# Generate HTML in the same directory as the JSON file
+python scripts/generate_html_from_json.py output/report.json
+
+# Generate HTML in a specific directory
+python scripts/generate_html_from_json.py output/report.json my_reports/
+
+# Works with any BehaveX JSON report
+python scripts/generate_html_from_json.py /path/to/old_execution/report.json
+```
+
+This utility is helpful when you want to:
+- Regenerate HTML reports after code changes
+- Create reports from archived test results
+- Generate reports in different locations without re-running tests
+
 ## Show Your Support
 
 **If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.

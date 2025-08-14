@@ -704,19 +704,34 @@
             show_all()
             if (status == 'failed'){
                 $('tr[feature_failed] span').click();
+                $('tr[feature_error] span').click();  // Also expand features with error status
                 $('tr[feature_passed]').hide();
                 $('tr[feature_skipped]').hide();
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-success').hide();
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
+                $($('tr[feature_error] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
+                $($('tr[feature_error] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
             } else if (status == 'passed'){
                 $('tr[feature_failed]').hide();
+                $('tr[feature_error]').hide();  // Also hide features with error status
                 $('tr[feature_skipped]').hide();
                 $('tr[feature_skipped] + tr[data-feature-id] td');
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
                 $('tr[feature_failed]').each(function(){
+                    var clickear = false;
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
+                        div.find('span').click();
+                        div.show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
+                    }
+                });
+                $('tr[feature_error]').each(function(){
                     var clickear = false;
                     var div = $(this);
                     if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
@@ -743,6 +758,16 @@
                 $('div.alert-danger').parents('tr.feature-scenario').hide();
                 $('div.alert-success').parents('tr.feature-scenario').hide();
                 $('tr[feature_failed]').each(function(){
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
+                        div.find('span').click();
+                        div.show();
+                    } else {
+                        div.hide();
+                        div.next().hide();
+                    }
+                });
+                $('tr[feature_error]').each(function(){
                     var div = $(this);
                     if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
                         div.find('span').click();
@@ -789,6 +814,7 @@
         function show_all(){
             $('tr.feature_passed').show();
             $('tr.feature_failed').show();
+            $('tr.feature_error').show();  // Also show features with error status
             $('tr.feature_skipped').show();
             $('tr[data-feature-tags]').show();
             $('tr[data-feature-id]').hide();
