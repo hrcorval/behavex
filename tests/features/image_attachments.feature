@@ -1,4 +1,4 @@
-Feature: Image Attachment Testing
+Feature: Image Attachments
 
   @IMAGE_ATTACHMENT @HTML_REPORT
   Scenario: Validate image attachments appear in HTML report with gallery icon

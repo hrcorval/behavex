@@ -1,7 +1,7 @@
-Feature: Failed Scenario Image Attachment Tests
+Feature: Image Attachments Failing Step
 
   @IMAGE_ATTACHMENT @FAILED_SCENARIO @NON_PRODUCTION
-  Scenario: Test scenario that ends in failed status with image attachment
+  Scenario: Test scenario with failing step and image attachment
     Given image attachments are set to ONLY_ON_FAILURE condition
     And I take a screenshot using test image 1
     And I take a screenshot using test image 2

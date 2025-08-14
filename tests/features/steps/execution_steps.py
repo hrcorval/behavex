@@ -206,7 +206,7 @@ def then_no_error_messages(context):
             'ERROR - Flaky action failed (expected' in line or
             'ERROR - Action failed without retry (expected' in line or
             'BehaveX AUTO-RETRY: Scenario' in line or
-            'undefined_step_image_tests.feature:' in line):
+            'image_attachments_undefined_step.feature:' in line):
             continue
         filtered_output.append(line)
 
@@ -398,7 +398,7 @@ def step_run_behavex_with_failed_scenario_and_image_attachments(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'failed_image_tests.feature'),
+        os.path.join(tests_features_path, 'secondary_features', 'image_attachments_failing_step.feature'),
         '-o', context.output_path,
         '-t', '@IMAGE_ATTACHMENT',
         '-t', '@FAILED_SCENARIO'
@@ -413,7 +413,7 @@ def step_run_behavex_with_error_scenario_and_image_attachments(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'undefined_step_image_tests.feature'),
+        os.path.join(tests_features_path, 'secondary_features', 'image_attachments_undefined_step.feature'),
         '-o', context.output_path,
         '-t', '@IMAGE_ATTACHMENT',
         '-t', '@ERROR_SCENARIO'
