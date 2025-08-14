@@ -27,6 +27,60 @@
                 </div>
             </div>
         {%- endblock -%}
+
+        {%- block link_css -%}
+        <style>
+        .timeline-container {
+            display: flex;
+            height: 50px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: #f8f8f8;
+            margin-bottom: 10px;
+        }
+
+        .scenario-segment {
+            height: 100%;
+            cursor: pointer;
+            border-right: 1px solid rgba(255,255,255,0.3);
+            transition: opacity 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+        }
+
+        .scenario-segment:hover {
+            opacity: 0.8;
+            transform: scale(1.02);
+            z-index: 10;
+            position: relative;
+        }
+
+        .scenario-passed {
+            background-color: #71C176;
+        }
+
+        .scenario-failed {
+            background-color: #F7819F;
+        }
+
+        .scenario-skipped {
+            background-color: #999;
+        }
+
+        .timeline-summary {
+            text-align: center;
+            color: #666;
+            margin-top: 5px;
+        }
+        </style>
+        {%- endblock -%}
+
         {%- block body -%}
             <table class="table table-bordered behavex_letter" id="summary">
                 <thead>
@@ -155,6 +209,65 @@
                                     <h5 id="h5-status"><b>Steps: {{ total_steps }}</b><b class="span-behavex" id="reusability"></b></h5>
                                     <canvas id="chart-steps"></canvas>
                                 </div>
+                            </div>
+                            <div class="col-xs-12" style="margin-top: 20px;">
+                                <div class="col-xs-12">
+                                    <h5><b>Execution Timeline</b></h5>
+                                    <div class="timeline-container">
+                                        {%- set all_scenarios = [] -%}
+                                        {%- for feature in features -%}
+                                            {%- for scenario in feature.scenarios -%}
+                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.status in ['passed', 'failed', 'error'] -%}
+                                                    {%- set _ = all_scenarios.append({
+                                                        'name': scenario.name,
+                                                        'feature': feature.name,
+                                                        'start': scenario.start,
+                                                        'duration': scenario.duration,
+                                                        'status': scenario.status
+                                                    }) -%}
+                                                {%- endif -%}
+                                            {%- endfor -%}
+                                        {%- endfor -%}
+                                        {%- set sorted_scenarios = all_scenarios|sort(attribute='start') -%}
+                                        {%- if sorted_scenarios|length > 0 -%}
+                                            {%- set total_duration = sorted_scenarios|sum(attribute='duration') -%}
+                                            {%- if total_duration > 0 -%}
+                                                {%- for scenario in sorted_scenarios -%}
+                                                    {%- set width_percent = (scenario.duration / total_duration * 100)|round(2) -%}
+                                                    {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in ['failed', 'error'] else 'skipped') -%}
+                                                    <div class="scenario-segment scenario-{{ status_class }}"
+                                                         style="width: {{ width_percent }}%;"
+                                                         data-scenario-name="{{ scenario.name|e }}"
+                                                         data-feature-name="{{ scenario.feature|e }}"
+                                                         data-status="{{ scenario.status }}"
+                                                         data-start="{{ scenario.start }}"
+                                                         data-duration="{{ scenario.duration }}">
+                                                    </div>
+                                                {%- endfor -%}
+                                            {%- else -%}
+                                                <div style="padding: 20px; text-align: center; color: #666; font-style: italic;">
+                                                    No scenario duration data available
+                                                </div>
+                                            {%- endif -%}
+                                        {%- else -%}
+                                            <div style="padding: 20px; text-align: center; color: #666; font-style: italic;">
+                                                No executed scenarios found (passed/failed/error scenarios only)
+                                            </div>
+                                        {%- endif -%}
+                                    </div>
+                                    <div class="timeline-summary">
+                                        {%- if sorted_scenarios|length > 0 -%}
+                                            <small>{{ sorted_scenarios|length }} scenarios (passed/failed/error only) |
+                                            {{ sorted_scenarios|selectattr("status", "equalto", "passed")|list|length }} passed |
+                                            {{ sorted_scenarios|selectattr("status", "in", ["failed", "error"])|list|length }} failed</small>
+                                        {%- else -%}
+                                            <small>0 scenarios executed (dry run or all scenarios skipped/untested)</small>
+                                        {%- endif -%}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xs-12" style="margin-bottom: 30px;">
+                                <!-- Extra space after timeline -->
                             </div>
                         </div>
                     </div>
@@ -501,6 +614,122 @@
 
         $(document).ready(function(){
             iframe = false;
+
+            // Enhanced tooltips for timeline segments with proper error handling
+            $('.scenario-segment').hover(
+                function() {
+                    try {
+                        var $this = $(this);
+                        var scenarioName = $this.data('scenario-name') || 'Unknown Scenario';
+                        var featureName = $this.data('feature-name') || 'Unknown Feature';
+                        var status = $this.data('status') || 'unknown';
+                        var start = $this.data('start');
+                        var duration = $this.data('duration');
+
+                        // Ensure we have valid numeric values
+                        start = (start !== undefined && start !== null && !isNaN(start)) ? parseFloat(start) : 0;
+                        duration = (duration !== undefined && duration !== null && !isNaN(duration)) ? parseFloat(duration) : 0;
+
+                        // Format duration like "1m 0.4s" or "11h 18m 12.3s"
+                        function formatDuration(seconds) {
+                            if (isNaN(seconds) || seconds < 0) return '0s';
+
+                            var hours = Math.floor(seconds / 3600);
+                            var minutes = Math.floor((seconds % 3600) / 60);
+                            var secs = (seconds % 60);
+
+                            var result = '';
+                            if (hours > 0) result += hours + 'h ';
+                            if (minutes > 0) result += minutes + 'm ';
+                            if (secs > 0 || result === '') {
+                                if (secs % 1 === 0) {
+                                    result += secs + 's';
+                                } else {
+                                    result += secs.toFixed(1) + 's';
+                                }
+                            }
+                            return result.trim();
+                        }
+
+
+
+                        // Format start time safely
+                        function formatStartTime(timestamp) {
+                            if (isNaN(timestamp) || timestamp <= 0) return 'N/A';
+
+                            try {
+                                var date;
+                                // Handle milliseconds timestamp (like 1755135608226)
+                                if (timestamp > 1000000000000) {
+                                    date = new Date(timestamp);
+                                }
+                                // Handle seconds timestamp
+                                else if (timestamp > 1600000000) {
+                                    date = new Date(timestamp * 1000);
+                                }
+                                // Small numbers are relative time
+                                else {
+                                    return formatDuration(timestamp) + ' from start';
+                                }
+
+                                // Validate date is reasonable
+                                var year = date.getFullYear();
+                                if (isNaN(date.getTime()) || year < 2020 || year > 2030) {
+                                    return formatDuration(timestamp / 1000) + ' from start';
+                                }
+
+                                // Format as YYYY-MM-DD HH:MM:SS
+                                return date.getFullYear() + '-' +
+                                       String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                                       String(date.getDate()).padStart(2, '0') + ' ' +
+                                       String(date.getHours()).padStart(2, '0') + ':' +
+                                       String(date.getMinutes()).padStart(2, '0') + ':' +
+                                       String(date.getSeconds()).padStart(2, '0');
+                            } catch (e) {
+                                return 'N/A';
+                            }
+                        }
+
+                        var formattedDuration = formatDuration(duration);
+                        var formattedStartTime = formatStartTime(start);
+
+                        // Format status safely
+                        var formattedStatus = 'Unknown';
+                        if (status && typeof status === 'string') {
+                            formattedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+                        }
+
+                        var tooltipContent = [
+                            '<div style="background: rgba(0,0,0,0.9); color: white; padding: 15px; border-radius: 6px; font-size: 13px; max-width: 600px; min-width: 300px; line-height: 1.5; white-space: normal; word-wrap: break-word;">',
+                            '<strong>' + featureName + '</strong><br/>',
+                            '<strong>Scenario:</strong> ' + scenarioName + '<br/>',
+                            '<strong>Status:</strong> ' + formattedStatus + '<br/>',
+                            '<strong>Start time:</strong> ' + formattedStartTime + '<br/>',
+                            '<strong>Duration:</strong> ' + formattedDuration,
+                            '</div>'
+                        ].join('');
+
+                        $this.attr('data-original-title', '').tooltip('destroy');
+                        $this.tooltip({
+                            title: tooltipContent,
+                            html: true,
+                            placement: 'top',
+                            trigger: 'manual',
+                            template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="background: transparent; border: none; padding: 0; max-width: none;"></div></div>'
+                        }).tooltip('show');
+                    } catch (error) {
+                        console.warn('Tooltip formatting error:', error);
+                        // Fallback to simple tooltip
+                        var fallbackTitle = ($(this).data('scenario-name') || 'Scenario') + ' - ' +
+                                          ($(this).data('status') || 'unknown').toUpperCase() + ' - ' +
+                                          'Duration: ' + ($(this).data('duration') || '0') + 's';
+                        $(this).attr('title', fallbackTitle);
+                    }
+                },
+                function() {
+                    $(this).tooltip('destroy');
+                }
+            );
 
             // Event handler for copy buttons
             $(document).on('click', '[data-copy-text]', function(e){

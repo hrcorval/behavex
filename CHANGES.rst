@@ -13,6 +13,7 @@ ENHANCEMENTS:
 * Cleaned up setup.py by removing redundant metadata that is now properly defined in pyproject.toml, maintaining backward compatibility.
 * Improved execution summary reporting with enhanced data collection and more accurate status tracking throughout the test execution lifecycle.
 * Improved handling of "error" execution status for feature/scenario/step management.
+* Added execution timeline chart to HTML reports displaying scenario execution order, duration, and status with interactive tooltips. The timeline shows only executed scenarios (passed/failed/error) with proper error handling for edge cases like dry runs or empty test suites.
 
 Version: 4.4.2
 -------------------------------------------------------------------------------
