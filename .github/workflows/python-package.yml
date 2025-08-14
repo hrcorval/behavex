@@ -92,4 +92,4 @@ jobs:
 
       - name: Run behavex tests with image attachments and behave ${{ matrix.behave-version }}
         run: |
-          behavex ./tests/features/image_attachment_tests.feature
+          behavex ./tests/features/image_attachment.feature
