@@ -712,12 +712,30 @@
             // Remove any existing title attributes to prevent dual tooltips
             $('.scenario-segment').removeAttr('title');
 
-            // Enhanced tooltips for timeline segments with proper error handling (BACKUP)
-            $('.scenario-segment').hover(
-                function() {
-                    console.log('Tooltip hover triggered for scenario segment');
+            // Enhanced tooltips for timeline segments with debouncing for fast mouse movement
+            var tooltipTimeout;
+            var currentTooltipElement = null;
+
+            $('.scenario-segment').on('mouseenter', function() {
+                var $this = $(this);
+
+                // Clear any existing timeout
+                if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                }
+
+                // Destroy any existing tooltip immediately
+                if (currentTooltipElement && currentTooltipElement.get(0) !== $this.get(0)) {
                     try {
-                        var $this = $(this);
+                        currentTooltipElement.tooltip('hide').tooltip('destroy');
+                    } catch (e) { /* ignore */ }
+                }
+
+                currentTooltipElement = $this;
+
+                // Debounce tooltip creation to prevent rapid fire events
+                tooltipTimeout = setTimeout(function() {
+                    try {
                         var scenarioName = $this.data('scenario-name') || 'Unknown Scenario';
                         var featureName = $this.data('feature-name') || 'Unknown Feature';
                         var status = $this.data('status') || 'unknown';
@@ -770,11 +788,7 @@
                                     return formatDuration(timestamp) + ' from start';
                                 }
 
-                                // Validate date is reasonable
-                                var year = date.getFullYear();
-                                if (isNaN(date.getTime()) || year < 2020 || year > 2030) {
-                                    return formatDuration(timestamp / 1000) + ' from start';
-                                }
+
 
                                 // Format as HH:MM:SS only (no date)
                                 return String(date.getHours()).padStart(2, '0') + ':' +
@@ -808,7 +822,15 @@
                             '</div>'
                         ].join('');
 
-                        $this.attr('data-original-title', '').tooltip('destroy');
+                        // Safely destroy any existing tooltip first
+                        try {
+                            $this.tooltip('hide').tooltip('destroy');
+                        } catch (e) { /* ignore */ }
+
+                        // Clear any existing title attributes
+                        $this.removeAttr('title').removeAttr('data-original-title');
+
+                        // Create and show new tooltip
                         $this.tooltip({
                             title: tooltipContent,
                             html: true,
@@ -817,19 +839,36 @@
                             container: 'body',
                             template: '<div class="tooltip" role="tooltip" style="z-index: 10000;"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="background: transparent; border: none; padding: 0; max-width: none; min-width: 300px;"></div></div>'
                         }).tooltip('show');
+
                     } catch (error) {
-                        console.warn('Tooltip formatting error:', error);
-                        // Fallback to simple tooltip
-                        var fallbackTitle = ($(this).data('scenario-name') || 'Scenario') + ' - ' +
-                                          ($(this).data('status') || 'unknown').toUpperCase() + ' - ' +
-                                          'Duration: ' + ($(this).data('duration') || '0') + 's';
-                        $(this).attr('title', fallbackTitle);
+                        console.warn('Tooltip error:', error);
+                        // Fallback to simple title attribute
+                        var fallbackTitle = scenarioName + ' (' + formattedStatus + ') - ' + formattedDuration;
+                        $this.attr('title', fallbackTitle);
                     }
-                },
-                function() {
-                    $(this).tooltip('destroy');
+                }, 150); // 150ms delay to prevent rapid fire events
+            }).on('mouseleave', function() {
+                var $this = $(this);
+
+                // Clear the timeout to prevent tooltip creation if mouse left quickly
+                if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                    tooltipTimeout = null;
                 }
-            );
+
+                // Hide and destroy tooltip with delay to allow mouse to reach tooltip
+                setTimeout(function() {
+                    try {
+                        $this.tooltip('hide').tooltip('destroy');
+                        $this.removeAttr('title').removeAttr('data-original-title');
+                    } catch (e) { /* ignore */ }
+                }, 100);
+
+                // Clear current element reference
+                if (currentTooltipElement && currentTooltipElement.get(0) === $this.get(0)) {
+                    currentTooltipElement = null;
+                }
+            });
 
             // Event handler for copy buttons
             $(document).on('click', '[data-copy-text]', function(e){
