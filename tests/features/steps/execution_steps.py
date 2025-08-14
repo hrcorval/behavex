@@ -110,10 +110,10 @@ def when_run_untested_test(context):
     execute_command(context, execution_args)
 
 
-@when('I run the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_schema}"')
-def when_run_with_parallel_config(context, parallel_processes, parallel_schema):
+@when('I run the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def when_run_with_parallel_config(context, parallel_processes, parallel_scheme):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_schema]
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features'), '-o', context.output_path, '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_scheme]
     execute_command(context, execution_args)
 
 
@@ -205,8 +205,14 @@ def then_no_error_messages(context):
             'ERROR - Permanently broken action failed' in line or
             'ERROR - Flaky action failed (expected' in line or
             'ERROR - Action failed without retry (expected' in line or
+            'ERROR - Unexpected output when checking error messages in the console output:' in line or
             'BehaveX AUTO-RETRY: Scenario' in line or
-            'image_attachments_undefined_step.feature:' in line):
+            'image_attachments_undefined_step.feature:' in line or
+            'Errored scenarios:' in line or
+            'Failing scenarios:' in line or
+            ('features passed' in line and 'failed' in line and 'error' in line) or  # Summary lines like "X features passed, Y failed, Z error"
+            ('scenarios passed' in line and 'failed' in line) or  # Summary lines like "X scenarios passed, Y failed"
+            ('steps passed' in line and 'failed' in line)):  # Summary lines like "X steps passed, Y failed"
             continue
         filtered_output.append(line)
 
