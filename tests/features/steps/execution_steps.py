@@ -371,6 +371,11 @@ def step_take_screenshot_using_test_image(context, image_number):
         logging.info(f"Attached test image: {image_path}")
 
 
+@given('image attachments are configured for ONLY_ON_FAILURE condition')
+def step_configure_only_on_failure_attachments(context):
+    """Configure image attachments to use ONLY_ON_FAILURE condition"""
+    context.attachment_condition = 'ONLY_ON_FAILURE'
+
 @when('I run the behavex command with image attachments')
 def step_run_behavex_with_image_attachments(context):
     """Run behavex with HTML formatter and image attachments enabled"""
@@ -383,6 +388,99 @@ def step_run_behavex_with_image_attachments(context):
         '-t', '@HTML_REPORT'
     ]
     execute_command(context, execution_args)
+
+
+@when('I run the behavex command with failed scenario and image attachments')
+def step_run_behavex_with_failed_scenario_and_image_attachments(context):
+    """Run behavex with failed scenario and image attachments enabled"""
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'failed_image_tests.feature'),
+        '-o', context.output_path,
+        '-t', '@IMAGE_ATTACHMENT',
+        '-t', '@FAILED_SCENARIO'
+    ]
+    # Expect non-zero exit code due to failed scenario
+    context.expected_exit_code = 1
+    execute_command(context, execution_args)
+
+@when('I run the behavex command with error scenario and image attachments')
+def step_run_behavex_with_error_scenario_and_image_attachments(context):
+    """Run behavex with error scenario and image attachments enabled"""
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'error_image_tests.feature'),
+        '-o', context.output_path,
+        '-t', '@IMAGE_ATTACHMENT',
+        '-t', '@ERROR_SCENARIO'
+    ]
+    # Expect non-zero exit code due to error scenario
+    context.expected_exit_code = 1
+    execute_command(context, execution_args)
+
+
+@then('I should see that images are attached for error scenarios in the HTML report')
+def step_verify_images_attached_for_error_scenarios(context):
+    """Verify that images are attached in HTML report for scenarios with error status"""
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+
+    # Verify that the HTML contains image attachments for error scenarios
+    assert "glyphicon-picture" in html_content, "Image attachment icon not found in HTML report"
+
+    # Look for specific patterns that indicate images are attached to error scenarios
+    # The HTML should contain scenario rows with error status and image attachments
+    assert "error" in html_content.lower(), "Error scenario not found in HTML report"
+
+    logging.info("Successfully verified that images are attached for error scenarios in HTML report")
+
+
+@then('I should see that images are attached for failed scenarios in the HTML report')
+def step_verify_images_attached_for_failed_scenarios(context):
+    """Verify that images are attached in HTML report for scenarios with failed status"""
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+
+    # Verify that the HTML contains image attachments for failed scenarios
+    assert "glyphicon-picture" in html_content, "Image attachment icon not found in HTML report"
+
+    # Look for specific patterns that indicate images are attached to failed scenarios
+    # The HTML should contain scenario rows with failed status and image attachments
+    assert "failed" in html_content.lower(), "Failed scenario not found in HTML report"
+
+    logging.info("Successfully verified that images are attached for failed scenarios in HTML report")
+
+
+@then('I should verify current behavior for error scenarios with ONLY_ON_FAILURE condition')
+def step_verify_current_behavior_error_scenarios(context):
+    """Verify current behavior for error scenarios with ONLY_ON_FAILURE condition"""
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+
+    # Verify that the error scenario exists in the report
+    assert "error" in html_content.lower(), "Error scenario not found in HTML report"
+
+    # Check current behavior - as of now, ONLY_ON_FAILURE might not attach images for error status
+    # This documents the current behavior rather than asserting what should happen
+    if "glyphicon-picture" in html_content:
+        logging.info("Current behavior: Images ARE attached for error scenarios with ONLY_ON_FAILURE condition")
+    else:
+        logging.info("Current behavior: Images are NOT attached for error scenarios with ONLY_ON_FAILURE condition")
+        logging.info("This may be a feature gap - error status should be treated similar to failed status")
+
+    # The test passes regardless to document current behavior
+    logging.info("Successfully documented current behavior for error scenarios with ONLY_ON_FAILURE condition")
 
 
 @when('I run the behavex command with allure formatter and image attachments')

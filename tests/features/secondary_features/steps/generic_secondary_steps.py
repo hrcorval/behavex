@@ -35,6 +35,25 @@ def given_passing_condition(context):
     context.condition = 'pass'
     logging.info('a passing condition')
 
+@given('image attachments are set to ONLY_ON_FAILURE condition')
+def given_image_attachments_only_on_failure(context):
+    """Set image attachments to ONLY_ON_FAILURE condition"""
+    try:
+        from behavex_images import image_attachments
+        from behavex_images.image_attachments import AttachmentsCondition
+        image_attachments.set_attachments_condition(context, AttachmentsCondition.ONLY_ON_FAILURE)
+        logging.info('Image attachments set to ONLY_ON_FAILURE condition')
+    except (ImportError, ModuleNotFoundError):
+        logging.warning('behavex-images not available, skipping attachment condition setup')
+
+@then('a failing condition is performed')
+def then_failing_condition_performed(context):
+    """Perform a failing assertion to create failed status"""
+    logging.info('Performing failing condition - this will cause failed status')
+    assert False, "This step is designed to fail and create failed status"
+
+
+
 @given('a passing condition that records execution order "{order_tag}"')
 def given_passing_condition_with_order(context, order_tag):
     context.condition = 'pass'
