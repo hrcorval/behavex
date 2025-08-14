@@ -204,7 +204,9 @@ def then_no_error_messages(context):
             'ERROR - This step is designed to fail' in line or
             'ERROR - Permanently broken action failed' in line or
             'ERROR - Flaky action failed (expected' in line or
-            'ERROR - Action failed without retry (expected' in line):
+            'ERROR - Action failed without retry (expected' in line or
+            'BehaveX AUTO-RETRY: Scenario' in line or
+            'error_image_tests.feature:' in line):
             continue
         filtered_output.append(line)
 
