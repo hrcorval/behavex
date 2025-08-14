@@ -11,6 +11,8 @@ ENHANCEMENTS:
 * Improved code organization by consolidating all imports at the top of modules following Python best practices (PEP 8).
 * Enhanced BehaveX compatibility with newer behave versions, specifically adding support for behave 1.3.0. The implementation uses normal imports with small if/else statements to handle import compatibility issues between different behave versions, ensuring smooth operation across the supported version range.
 * Cleaned up setup.py by removing redundant metadata that is now properly defined in pyproject.toml, maintaining backward compatibility.
+* Improved execution summary reporting with enhanced data collection and more accurate status tracking throughout the test execution lifecycle.
+* Improved handling of "error" execution status for feature/scenario/step management.
 
 Version: 4.4.2
 -------------------------------------------------------------------------------
