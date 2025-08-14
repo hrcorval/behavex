@@ -956,7 +956,7 @@
                 },{
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
-                            {%- if step_dict["overall_status"] == "failed" -%}
+                            {%- if step_dict["overall_status"] == "failed" or step_dict["overall_status"] == "error" -%}
                                 decodeHtmlEntity('{{step_name}}'),
                             {%- endif -%}
                         {%- endfor -%}
@@ -964,7 +964,7 @@
                     label: 'Failed',
                     data: [
                         {%- for step_name, step_dict in steps.items() -%}
-                            {%- if step_dict["overall_status"] == "failed" -%}
+                            {%- if step_dict["overall_status"] == "failed" or step_dict["overall_status"] == "error" -%}
                                 { x: {{step_dict['executions']}}, y: {{'%.1f' % (step_dict['avg'])}} },
                             {%- endif -%}
                         {%- endfor -%}
