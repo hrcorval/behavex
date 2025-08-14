@@ -31,14 +31,44 @@
         {%- block link_css -%}
         <style>
         .timeline-container {
-            display: flex;
-            height: 50px;
             width: 100%;
             border: 1px solid #ddd;
             border-radius: 4px;
-            overflow: hidden;
             background-color: #f8f8f8;
             margin-bottom: 10px;
+            padding: 10px;
+            overflow: visible; /* Allow tooltips to show outside */
+        }
+
+        .worker-timeline-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            height: 40px;
+        }
+
+        .worker-timeline-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .worker-label {
+            width: 80px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            text-align: right;
+            padding-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .worker-timeline {
+            flex: 1;
+            height: 30px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            position: relative;
+            overflow: visible; /* Allow tooltips to show outside */
         }
 
         .scenario-segment {
@@ -52,13 +82,13 @@
             color: white;
             font-size: 10px;
             text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+            box-sizing: border-box;
+            z-index: 1;
         }
 
         .scenario-segment:hover {
             opacity: 0.8;
-            transform: scale(1.02);
-            z-index: 10;
-            position: relative;
+            z-index: 1000;
         }
 
         .scenario-passed {
@@ -71,6 +101,19 @@
 
         .scenario-skipped {
             background-color: #999;
+        }
+
+        .scenario-untested {
+            background-color: #ccc;
+        }
+
+        /* Ensure tooltips appear above everything */
+        .tooltip {
+            z-index: 10000 !important;
+        }
+
+        .tooltip-inner {
+            max-width: 600px !important;
         }
 
         .timeline-summary {
@@ -212,54 +255,99 @@
                             </div>
                             <div class="col-xs-12" style="margin-top: 20px;">
                                 <div class="col-xs-12">
-                                    <h5><b>Execution Timeline</b></h5>
+                                                                        <h5><b>Execution Timeline</b></h5>
                                     <div class="timeline-container">
+                                        {%- set worker_scenarios = {} -%}
                                         {%- set all_scenarios = [] -%}
+
+                                        {# Collect scenarios by worker #}
                                         {%- for feature in features -%}
                                             {%- for scenario in feature.scenarios -%}
-                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.status in ['passed', 'failed', 'error'] -%}
-                                                    {%- set _ = all_scenarios.append({
+                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.duration > 0 -%}
+                                                    {%- set worker_id = scenario.worker_id|default('0') -%}
+                                                    {%- set scenario_data = {
                                                         'name': scenario.name,
                                                         'feature': feature.name,
                                                         'start': scenario.start,
+                                                        'stop': scenario.start + (scenario.duration * 1000),
                                                         'duration': scenario.duration,
-                                                        'status': scenario.status
-                                                    }) -%}
+                                                        'status': scenario.status,
+                                                        'worker_id': worker_id
+                                                    } -%}
+                                                    {%- set _ = all_scenarios.append(scenario_data) -%}
+
+                                                    {%- if worker_id not in worker_scenarios -%}
+                                                        {%- set _ = worker_scenarios.update({worker_id: []}) -%}
+                                                    {%- endif -%}
+                                                    {%- set _ = worker_scenarios[worker_id].append(scenario_data) -%}
                                                 {%- endif -%}
                                             {%- endfor -%}
                                         {%- endfor -%}
-                                        {%- set sorted_scenarios = all_scenarios|sort(attribute='start') -%}
-                                        {%- if sorted_scenarios|length > 0 -%}
-                                            {%- set total_duration = sorted_scenarios|sum(attribute='duration') -%}
-                                            {%- if total_duration > 0 -%}
-                                                {%- for scenario in sorted_scenarios -%}
-                                                    {%- set width_percent = (scenario.duration / total_duration * 100)|round(2) -%}
-                                                    {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in ['failed', 'error'] else 'skipped') -%}
-                                                    <div class="scenario-segment scenario-{{ status_class }}"
-                                                         style="width: {{ width_percent }}%;"
-                                                         data-scenario-name="{{ scenario.name|e }}"
-                                                         data-feature-name="{{ scenario.feature|e }}"
-                                                         data-status="{{ scenario.status }}"
-                                                         data-start="{{ scenario.start }}"
-                                                         data-duration="{{ scenario.duration }}">
+
+                                        {%- if all_scenarios|length > 0 -%}
+                                            {# Calculate real execution timeline from first start to last end #}
+                                            {%- set timeline_start = all_scenarios|map(attribute='start')|min -%}
+                                            {%- set timeline_end = all_scenarios|map(attribute='stop')|max -%}
+                                            {%- set timeline_duration_ms = timeline_end - timeline_start -%}
+                                            {%- set timeline_duration = timeline_duration_ms / 1000 -%}
+
+                                            {# Sort workers numerically by converting to int #}
+                                            {%- set worker_list = [] -%}
+                                            {%- for worker_id in worker_scenarios.keys() -%}
+                                                {%- set _ = worker_list.append(worker_id|int) -%}
+                                            {%- endfor -%}
+                                            {%- set sorted_worker_ids = worker_list|sort -%}
+                                            {%- set sorted_workers = [] -%}
+                                            {%- for worker_id in sorted_worker_ids -%}
+                                                {%- set _ = sorted_workers.append(worker_id|string) -%}
+                                            {%- endfor -%}
+
+                                            {%- for worker_id in sorted_workers -%}
+                                                <div class="worker-timeline-row">
+                                                    <div class="worker-label">Worker {{ worker_id }}</div>
+                                                    <div class="worker-timeline">
+                                                        {%- set worker_scenarios_sorted = worker_scenarios[worker_id]|sort(attribute='start') -%}
+
+                                                        {# Position scenarios based on real start times within the execution timeline #}
+                                                        {%- for scenario in worker_scenarios_sorted -%}
+                                                            {%- set scenario_start_offset_ms = scenario.start - timeline_start -%}
+                                                            {%- set scenario_start_offset = scenario_start_offset_ms / 1000 -%}
+                                                            {%- set left_percent = (scenario_start_offset / timeline_duration * 100)|round(2) -%}
+                                                            {%- set scenario_width_percent = (scenario.duration / timeline_duration * 100)|round(2) -%}
+                                                            {%- set scenario_width_percent = [scenario_width_percent, 1.0]|max -%}
+                                                            {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in ['failed', 'error'] else ('skipped' if scenario.status == 'skipped' else ('untested' if scenario.status == 'untested' else 'skipped'))) -%}
+                                                            <div class="scenario-segment scenario-{{ status_class }}"
+                                                                 style="position: absolute; left: {{ left_percent }}%; width: {{ scenario_width_percent }}%;"
+                                                                 data-scenario-name="{{ scenario.name|e }}"
+                                                                 data-feature-name="{{ scenario.feature|e }}"
+                                                                 data-status="{{ scenario.status }}"
+                                                                 data-start="{{ scenario.start }}"
+                                                                 data-duration="{{ scenario.duration }}"
+                                                                 data-worker-id="{{ worker_id }}">
+                                                            </div>
+                                                        {%- endfor -%}
+
+                                                        {# Scenarios positioned based on real timeline #}
                                                     </div>
-                                                {%- endfor -%}
-                                            {%- else -%}
-                                                <div style="padding: 20px; text-align: center; color: #666; font-style: italic;">
-                                                    No scenario duration data available
                                                 </div>
-                                            {%- endif -%}
+                                            {%- endfor -%}
                                         {%- else -%}
                                             <div style="padding: 20px; text-align: center; color: #666; font-style: italic;">
-                                                No executed scenarios found (passed/failed/error scenarios only)
+                                                No scenarios found with timing data (start time, duration > 0)
                                             </div>
                                         {%- endif -%}
                                     </div>
-                                    <div class="timeline-summary">
-                                        {%- if sorted_scenarios|length > 0 -%}
-                                            <small>{{ sorted_scenarios|length }} scenarios (passed/failed/error only) |
-                                            {{ sorted_scenarios|selectattr("status", "equalto", "passed")|list|length }} passed |
-                                            {{ sorted_scenarios|selectattr("status", "in", ["failed", "error"])|list|length }} failed</small>
+                                                                        <div class="timeline-summary">
+                                        {%- if all_scenarios|length > 0 -%}
+                                                                                        <small>{{ all_scenarios|length }} scenarios across {{ sorted_workers|length }} workers |
+                                            {%- set passed_count = all_scenarios|selectattr("status", "equalto", "passed")|list|length -%}
+                                            {%- set failed_count = all_scenarios|selectattr("status", "in", ["failed", "error"])|list|length -%}
+                                            {%- set skipped_count = all_scenarios|selectattr("status", "equalto", "skipped")|list|length -%}
+                                            {%- set untested_count = all_scenarios|selectattr("status", "equalto", "untested")|list|length -%}
+                                            {%- if passed_count > 0 -%} {{ passed_count }} passed |{%- endif -%}
+                                            {%- if failed_count > 0 -%} {{ failed_count }} failed |{%- endif -%}
+                                            {%- if skipped_count > 0 -%} {{ skipped_count }} skipped |{%- endif -%}
+                                            {%- if untested_count > 0 -%} {{ untested_count }} untested{%- endif -%}</small>
                                         {%- else -%}
                                             <small>0 scenarios executed (dry run or all scenarios skipped/untested)</small>
                                         {%- endif -%}
@@ -615,9 +703,19 @@
         $(document).ready(function(){
             iframe = false;
 
-            // Enhanced tooltips for timeline segments with proper error handling
+            // Debug: Check if scenario segments exist
+            console.log('Found', $('.scenario-segment').length, 'scenario segments');
+            $('.scenario-segment').each(function(i) {
+                console.log('Segment', i, ':', $(this).data('scenario-name'));
+            });
+
+            // Remove any existing title attributes to prevent dual tooltips
+            $('.scenario-segment').removeAttr('title');
+
+            // Enhanced tooltips for timeline segments with proper error handling (BACKUP)
             $('.scenario-segment').hover(
                 function() {
+                    console.log('Tooltip hover triggered for scenario segment');
                     try {
                         var $this = $(this);
                         var scenarioName = $this.data('scenario-name') || 'Unknown Scenario';
@@ -653,7 +751,7 @@
 
 
 
-                        // Format start time safely
+                        // Format start time as HH:MM:SS only (no date)
                         function formatStartTime(timestamp) {
                             if (isNaN(timestamp) || timestamp <= 0) return 'N/A';
 
@@ -678,11 +776,8 @@
                                     return formatDuration(timestamp / 1000) + ' from start';
                                 }
 
-                                // Format as YYYY-MM-DD HH:MM:SS
-                                return date.getFullYear() + '-' +
-                                       String(date.getMonth() + 1).padStart(2, '0') + '-' +
-                                       String(date.getDate()).padStart(2, '0') + ' ' +
-                                       String(date.getHours()).padStart(2, '0') + ':' +
+                                // Format as HH:MM:SS only (no date)
+                                return String(date.getHours()).padStart(2, '0') + ':' +
                                        String(date.getMinutes()).padStart(2, '0') + ':' +
                                        String(date.getSeconds()).padStart(2, '0');
                             } catch (e) {
@@ -696,11 +791,15 @@
                         // Format status safely
                         var formattedStatus = 'Unknown';
                         if (status && typeof status === 'string') {
-                            formattedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+                            if (status === 'idle') {
+                                formattedStatus = 'Idle';
+                            } else {
+                                formattedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+                            }
                         }
 
                         var tooltipContent = [
-                            '<div style="background: rgba(0,0,0,0.9); color: white; padding: 15px; border-radius: 6px; font-size: 13px; max-width: 600px; min-width: 300px; line-height: 1.5; white-space: normal; word-wrap: break-word;">',
+                            '<div style="background: rgba(0,0,0,1.0); color: white; padding: 15px; border-radius: 6px; font-size: 13px; max-width: 600px; min-width: 300px; line-height: 1.5; white-space: normal; word-wrap: break-word; border: 1px solid #333; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left;">',
                             '<strong>' + featureName + '</strong><br/>',
                             '<strong>Scenario:</strong> ' + scenarioName + '<br/>',
                             '<strong>Status:</strong> ' + formattedStatus + '<br/>',
@@ -713,9 +812,10 @@
                         $this.tooltip({
                             title: tooltipContent,
                             html: true,
-                            placement: 'top',
+                            placement: 'auto top',
                             trigger: 'manual',
-                            template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="background: transparent; border: none; padding: 0; max-width: none;"></div></div>'
+                            container: 'body',
+                            template: '<div class="tooltip" role="tooltip" style="z-index: 10000;"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="background: transparent; border: none; padding: 0; max-width: none; min-width: 300px;"></div></div>'
                         }).tooltip('show');
                     } catch (error) {
                         console.warn('Tooltip formatting error:', error);
