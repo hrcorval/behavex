@@ -1383,6 +1383,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
             arguments.append(features_path)
         if get_param('dry_run'):
             arguments.append('--no-summary')
+            arguments.append('--dry-run')
         else:
             arguments.append('--summary')
         arguments.append('--junit-directory')

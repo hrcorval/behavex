@@ -77,6 +77,9 @@ def generate_execution_info(features):
             for attrib in ('name', 'status', 'duration'):
                 value = getattr(feature, attrib)
                 value = value.name if attrib == 'status' else value
+                # Override feature status to 'untested' during dry runs
+                if attrib == 'status' and get_param('dry_run'):
+                    value = 'untested'
                 feature_info[attrib] = value
             feature_info['filename'] = text(feature.filename)
             feature_info['scenarios'] = scenario_list
