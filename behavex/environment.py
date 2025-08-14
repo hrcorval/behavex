@@ -285,7 +285,7 @@ def before_scenario(context, scenario):
         if "config" in context and "worker_id" in context.config.userdata:
             scenario.worker_id = context.config.userdata['worker_id']
         else:
-            scenario.worker_id = str(os.getpid())
+            scenario.worker_id = '0'  # Default worker ID for non-parallel execution
     except Exception as exception:
         # Log the exception but ensure execution continues
         _log_exception_and_continue('before_scenario (behavex)', exception)

@@ -15,6 +15,10 @@ ENHANCEMENTS:
 * Improved handling of "error" execution status for feature/scenario/step management.
 * Added execution timeline chart to HTML reports displaying scenario execution order, duration, and status with interactive tooltips. The timeline shows only executed scenarios (passed/failed/error) with proper error handling for edge cases like dry runs or empty test suites.
 
+FIXES:
+
+* Fixed worker_id incorrectly being set sometimes to process_id values in JSON reports. The worker_id field now properly defaults to '0' for non-parallel execution instead of using the OS process ID.
+
 Version: 4.4.2
 -------------------------------------------------------------------------------
 
