@@ -340,10 +340,9 @@ def after_scenario(context, scenario):
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
         # Always reset the scenario state flag, regardless of success or failure
-        # Safe access to bhx_log_handler for behave 1.3.0 compatibility
-        log_handler = getattr(context, 'bhx_log_handler', None)
-        if log_handler:
-            _close_log_handler(log_handler)
+        # Match production behavior but with safety checks
+        if hasattr(context, 'bhx_log_handler') and context.bhx_log_handler:
+            _close_log_handler(context.bhx_log_handler)
         object.__setattr__(context, 'bhx_inside_scenario', False)
 
 
@@ -368,18 +367,46 @@ def after_all(context):
 
 
 def _add_log_handler(log_path):
-    """Adding a new log handler to logger"""
+    """Adding a new log handler to logger with selective cleanup"""
     file_handler = None
     try:
+        # SAFE APPROACH: Only remove FileHandlers that point to our logs directory
+        # This prevents interference with other logging systems while ensuring isolation
+        root_logger = logging.getLogger()
+        logs_base_dir = get_env('logs', '')
+
+        handlers_to_remove = []
+        for handler in root_logger.handlers:
+            # ULTIMATE SAFETY: Only remove handlers that we explicitly marked as ours
+            # This provides 100% certainty we won't interfere with external logging
+            if (isinstance(handler, logging.FileHandler) and
+                hasattr(handler, '_behavex_scenario_handler') and
+                handler._behavex_scenario_handler):
+                handlers_to_remove.append(handler)
+
+        # Safely remove only our own scenario log handlers
+        for handler in handlers_to_remove:
+            try:
+                if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
+                    handler.stream.close()
+                root_logger.removeHandler(handler)
+            except Exception as cleanup_ex:
+                # Log cleanup errors but continue
+                _log_exception_and_continue('_add_log_handler cleanup', cleanup_ex)
+
         log_filename = os.path.join(log_path, 'scenario.log')
         file_handler = logging.FileHandler(
-            log_filename, mode='+a', encoding=LOGGING_CFG['file_handler']['encoding']
+            log_filename, mode='w', encoding=LOGGING_CFG['file_handler']['encoding']
         )
+
+        # Mark this handler as belonging to BehaveX for safe identification
+        file_handler._behavex_scenario_handler = True
+
         log_level = get_logging_level()
-        logging.getLogger().setLevel(log_level)
+        root_logger.setLevel(log_level)
         file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
         file_handler.setFormatter(_get_log_formatter())
-        logging.getLogger().addHandler(file_handler)
+        root_logger.addHandler(file_handler)
     except Exception as exception:
         _log_exception_and_continue('_add_log_handler', exception)
     return file_handler
@@ -389,9 +416,13 @@ def _close_log_handler(handler):
     """Closing current log handlers and removing them from logger."""
     if handler:
         try:
+            # Properly close the file stream first
             if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
                 handler.stream.close()
+
+            # Remove handler from root logger
             logging.getLogger().removeHandler(handler)
+
         except Exception as exception:
             _log_exception_and_continue('_close_log_handler', exception)
 
