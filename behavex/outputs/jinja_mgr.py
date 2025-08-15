@@ -66,6 +66,9 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(normalize_path, 'normalize_path')
         from behavex.utils import get_scenario_tags
         self.add_filter(get_scenario_tags, 'get_scenario_tags')
+        # Behave 1.3.0 compatibility filters for safe exception access
+        self.add_filter(_get_exception_class_name, 'get_exception_class_name')
+        self.add_filter(_get_exception_message, 'get_exception_message')
         self.template_env.globals.update(get_env=get_env)
         # self.template_env.globals.keys() has been forced to be a list
         if 'get_path_log' not in list(self.template_env.globals.keys()):
@@ -167,7 +170,7 @@ def get_lines_exception(step):
         return u'\n'.join(
             [16 * u' ' + line for line in step['error_lines']]
         ).strip()
-    elif step.exception:
+    elif hasattr(step, 'exception') and step.exception:
         return u'\n'.join(
             [16 * u' ' + line for line in traceback.format_tb(step.exc_traceback)]
         ).strip()
@@ -181,10 +184,24 @@ def _path_exist_in_output(path):
 
 def _get_list_exception_steps(steps, backs_steps):
     def is_failing(step):
-        return step.exception or step.status == 'undefined'
+        return (hasattr(step, 'exception') and step.exception) or step.status == 'undefined'
 
     backs_steps = [step for step in backs_steps or [] if is_failing(step)]
     return [step for step in steps if is_failing(step)] + backs_steps
+
+
+def _get_exception_class_name(step):
+    """Safely get exception class name for behave 1.3.0 compatibility."""
+    if hasattr(step, 'exception') and step.exception:
+        return step.exception.__class__.__name__
+    return 'UnknownException'
+
+
+def _get_exception_message(step):
+    """Safely get exception message for behave 1.3.0 compatibility."""
+    if hasattr(step, 'exception') and step.exception:
+        return str(step.exception)
+    return 'Unknown error'
 
 
 def _get_path_log(scenario):

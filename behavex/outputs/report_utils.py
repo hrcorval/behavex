@@ -26,7 +26,12 @@ import traceback
 import unicodedata
 from operator import getitem
 
-from behave.model_core import Status
+try:
+    from behave.model_core import Status
+except ImportError:
+    from behave.model import Status
+
+
 
 from behavex.conf_mgr import get_env, get_param, set_env
 from behavex.global_vars import global_vars
@@ -56,7 +61,7 @@ def get_summary_definition(steps):
     result = {'steps': {}, 'status': []}
     for step in steps:
         result['status'].append(step['status'])
-        execution = 1 if step['status'] in ('failed', 'passed') else 0
+        execution = 1 if step['status'] in ('failed', 'passed', 'error') else 0
         if step['name'] in result['steps']:
             result['steps'][step['name']]['executions'] += execution
             result['steps'][step['name']]['time'] += step['duration']
@@ -80,7 +85,7 @@ def get_summary_definition(steps):
         appearances += step_instanced['appearances']
         if 'passed' in step_instanced['status']:
             any_status_passed = True
-        elif 'failed' in step_instanced['status']:
+        elif 'failed' in step_instanced['status'] or 'error' in step_instanced['status']:
             any_status_failed = True
     if any_status_failed:
         result['overall_status'] = 'failed'
@@ -107,6 +112,10 @@ def calculate_status(list_status):
     if 'undefined' in set_status:
         set_status.remove('undefined')
         set_status.add('skipped')
+    # Handle 'error' status as 'failed' for color calculation
+    if 'error' in set_status:
+        set_status.remove('error')
+        set_status.add('failed')
     if 'failed' in set_status:
         return 'failed'
     elif {'skipped'} == set_status:
@@ -138,7 +147,7 @@ def gather_steps(features):
                     else 1
                 )
                 passed = 1 if step['status'] == 'passed' else 0
-                failed = 1 if step['status'] == 'failed' else 0
+                failed = 1 if step['status'] in ['failed', 'error'] else 0
                 steps[step['name']]['passed'] += passed
                 steps[step['name']]['failed'] += failed
                 steps[step['name']]['quantity'] += add

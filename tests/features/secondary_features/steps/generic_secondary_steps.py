@@ -35,6 +35,25 @@ def given_passing_condition(context):
     context.condition = 'pass'
     logging.info('a passing condition')
 
+@given('image attachments are set to ONLY_ON_FAILURE condition')
+def given_image_attachments_only_on_failure(context):
+    """Set image attachments to ONLY_ON_FAILURE condition"""
+    try:
+        from behavex_images import image_attachments
+        from behavex_images.image_attachments import AttachmentsCondition
+        image_attachments.set_attachments_condition(context, AttachmentsCondition.ONLY_ON_FAILURE)
+        logging.info('Image attachments set to ONLY_ON_FAILURE condition')
+    except (ImportError, ModuleNotFoundError):
+        logging.warning('behavex-images not available, skipping attachment condition setup')
+
+@then('a failing condition is performed')
+def then_failing_condition_performed(context):
+    """Perform a failing assertion to create failed status"""
+    logging.info('Performing failing condition - this will cause failed status')
+    assert False, "This step is designed to fail"
+
+
+
 @given('a passing condition that records execution order "{order_tag}"')
 def given_passing_condition_with_order(context, order_tag):
     context.condition = 'pass'
@@ -145,6 +164,56 @@ def step_simple_result(context):
     assert context.test_condition, "Test condition was not established"
     assert context.action_performed, "Action was not performed"
     logging.info("Simple result verified")
+
+
+# Step definitions for allure_text_tests.feature
+@given('a test condition with multiline text')
+def step_test_condition_with_multiline_text(context):
+    """Test condition with multiline text"""
+    context.multiline_text_condition = True
+    logging.info("Test condition with multiline text established")
+
+
+@when('I process the following text:')
+def step_process_multiline_text(context):
+    """Process multiline text"""
+    context.processed_text = context.text
+    context.text_processing_action = True
+    logging.info("Multiline text processed")
+
+
+@then('I should see the text processed correctly')
+def step_see_text_processed_correctly(context):
+    """Verify text processed correctly"""
+    assert context.multiline_text_condition, "Multiline text condition was not established"
+    assert context.text_processing_action, "Text processing action was not executed"
+    assert context.processed_text, "Text was not processed"
+    logging.info("Text processing verified")
+
+
+# Step definitions for allure_table_tests.feature
+@given('a test condition with table data')
+def step_test_condition_with_table_data(context):
+    """Test condition with table data"""
+    context.table_data_condition = True
+    logging.info("Test condition with table data established")
+
+
+@when('I process the following table:')
+def step_process_table_data(context):
+    """Process table data"""
+    context.processed_table = context.table
+    context.table_processing_action = True
+    logging.info("Table data processed")
+
+
+@then('I should see the table processed correctly')
+def step_see_table_processed_correctly(context):
+    """Verify table processed correctly"""
+    assert context.table_data_condition, "Table data condition was not established"
+    assert context.table_processing_action, "Table processing action was not executed"
+    assert context.processed_table, "Table was not processed"
+    logging.info("Table processing verified")
 
 
 # Step definitions for allure_tagged_tests.feature

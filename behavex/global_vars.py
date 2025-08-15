@@ -32,6 +32,7 @@ class GlobalVars:
         self._execution_start_time = time.time()
         self._execution_end_time = None
 
+
     @property
     def execution_path(self):
         return self._execution_path
@@ -97,5 +98,7 @@ class GlobalVars:
         if not self._execution_end_time:
             self._execution_end_time = time.time()
         return self._execution_end_time
+
+
 
 global_vars = GlobalVars()

@@ -1,4 +1,4 @@
-Feature: Test behavex installation
+Feature: Test Behavex Installation
 
   @INSTALL
   Scenario: Verify behavex is installed
