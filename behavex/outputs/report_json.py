@@ -176,7 +176,12 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
             # Use the original status from behave
-            scenario_info['status'] = getattr(scenario, 'status').name
+            original_status = getattr(scenario, 'status').name
+            # In dry runs, treat failed and error scenarios as skipped since they weren't actually executed
+            if is_dry_run and original_status in ['failed', 'error']:
+                scenario_info['status'] = 'skipped'
+            else:
+                scenario_info['status'] = original_status
             # Add start and stop times if they exist
             if hasattr(scenario, 'start'):
                 scenario_info['start'] = getattr(scenario, 'start')

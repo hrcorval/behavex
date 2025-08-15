@@ -43,8 +43,8 @@
         .worker-timeline-row {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            height: 40px;
+            margin-bottom: 0px;
+            height: 28px;
         }
 
         .worker-timeline-row:last-child {
@@ -63,7 +63,7 @@
 
         .worker-timeline {
             flex: 1;
-            height: 30px;
+            height: 20px;
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 3px;
@@ -74,7 +74,7 @@
         .scenario-segment {
             height: 100%;
             cursor: pointer;
-            border-right: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid #ccc;
             transition: opacity 0.2s ease;
             display: flex;
             align-items: center;
@@ -263,7 +263,7 @@
                                         {# Collect scenarios by worker #}
                                         {%- for feature in features -%}
                                             {%- for scenario in feature.scenarios -%}
-                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.duration > 0 -%}
+                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.duration > 0 and scenario.status in ['passed', 'failed', 'error'] -%}
                                                     {%- set worker_id = scenario.worker_id|default('0') -%}
                                                     {%- set scenario_data = {
                                                         'name': scenario.name,
@@ -339,18 +339,24 @@
                                     </div>
                                                                         <div class="timeline-summary">
                                         {%- if all_scenarios|length > 0 -%}
-                                                                                        <small>{{ all_scenarios|length }} scenarios across {{ sorted_workers|length }} workers |
                                             {%- set passed_count = all_scenarios|selectattr("status", "equalto", "passed")|list|length -%}
                                             {%- set failed_count = all_scenarios|selectattr("status", "in", ["failed", "error"])|list|length -%}
                                             {%- set skipped_count = all_scenarios|selectattr("status", "equalto", "skipped")|list|length -%}
                                             {%- set untested_count = all_scenarios|selectattr("status", "equalto", "untested")|list|length -%}
-                                            {%- if passed_count > 0 -%} {{ passed_count }} passed |{%- endif -%}
-                                            {%- if failed_count > 0 -%} {{ failed_count }} failed |{%- endif -%}
-                                            {%- if skipped_count > 0 -%} {{ skipped_count }} skipped |{%- endif -%}
-                                            {%- if untested_count > 0 -%} {{ untested_count }} untested{%- endif -%}</small>
+                                            {%- set status_parts = [] -%}
+                                            {%- if passed_count > 0 -%}{%- set _ = status_parts.append(passed_count ~ " passed") -%}{%- endif -%}
+                                            {%- if failed_count > 0 -%}{%- set _ = status_parts.append(failed_count ~ " failed") -%}{%- endif -%}
+                                            {%- if skipped_count > 0 -%}{%- set _ = status_parts.append(skipped_count ~ " skipped") -%}{%- endif -%}
+                                            {%- if untested_count > 0 -%}{%- set _ = status_parts.append(untested_count ~ " untested") -%}{%- endif -%}
+                                            <small>{{ all_scenarios|length }} scenarios across {{ sorted_workers|length }} workers
+                                            {%- if status_parts|length > 0 -%} | {{ status_parts|join(" | ") }}{%- endif -%}</small>
                                         {%- else -%}
                                             <small>0 scenarios executed (dry run or all scenarios skipped/untested)</small>
                                         {%- endif -%}
+                                        <br>
+                                        <small style="color: #888; font-style: italic;">
+                                            💡 Tip: If execution appears unbalanced across workers, consider using @ORDER tags to control test execution sequence for better load distribution.
+                                        </small>
                                     </div>
                                 </div>
                             </div>

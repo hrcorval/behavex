@@ -83,10 +83,14 @@ def _export_feature_to_xml(feature, isobject=True):
                 return Status.untested
             elif 'failed' in status:
                 return Status.failed
+            elif 'error' in status:
+                return Status.failed  # Treat error scenarios as failed for XML reports
             elif 'skipped' in status:
                 return Status.skipped
             elif 'passed' in status:
                 return Status.passed
+            else:
+                return Status.skipped  # Default fallback for unrecognized statuses
 
     scenarios = [
         scenario
