@@ -13,6 +13,22 @@ from __future__ import absolute_import
 
 import argparse
 
+
+def get_behavex_version():
+    """Get BehaveX version from package metadata."""
+    try:
+        # Try Python 3.8+ approach first
+        from importlib.metadata import version
+        return version('behavex')
+    except ImportError:
+        try:
+            # Fallback to pkg_resources for older Python versions
+            import pkg_resources
+            return pkg_resources.get_distribution('behavex').version
+        except Exception:
+            # Fallback if neither approach works
+            return 'unknown'
+
 BEHAVE_ARGS = [
     'no_color',
     'color',
@@ -123,6 +139,12 @@ def parse_arguments(args):
         action='store_true',
         help='Invokes formatters without executing the steps.',
         required=False,
+    )
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'BehaveX {get_behavex_version()}',
+        help='Show BehaveX version and exit'
     )
 
     # ------------------- Behave arguments -------------------#

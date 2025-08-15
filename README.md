@@ -28,6 +28,7 @@ Just to mention the most important features delivered in latest BehaveX releases
 - [Introduction](#introduction)
 - [Features](#features)
 - [Installation Instructions](#installation-instructions)
+- [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130)
 - [Execution Instructions](#execution-instructions)
 - [Constraints](#constraints)
 - [Supported Behave Arguments](#supported-behave-arguments)
