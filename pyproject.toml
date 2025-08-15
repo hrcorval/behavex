@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.5.0rc6"
+version = "4.5.0rc7"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = {file = "LICENSE"}
