@@ -12,7 +12,7 @@
 
 Just to mention the most important features delivered in latest BehaveX releases:
 
-🚀 **Enhanced Behave Integration** *(v4.5.0)* - Added support for newer behave versions (>= 1.3.0). Also, major performance overhaul using direct Behave Runner class integration, providing better programmatic control with improved status detection efficiency.
+🚀 **Enhanced Behave Integration** *(v4.5.0)* - Added support for newer behave versions (>= 1.3.0). Also, major performance overhaul using direct Behave Runner class integration, providing better programmatic control with improved status detection efficiency. See [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130) for upgrade considerations.
 
 🛠️ **Enhanced Error Status Handling** *(v4.5.0)* - Comprehensive improvements in "error" status management across all report formats (HTML, XML, JSON).
 
@@ -100,7 +100,26 @@ pip install behavex behave>=1.3.0
 
 **Note**: BehaveX includes compatibility fixes to ensure all features work correctly with multiple Behave versions.
 
+## Migration to BehaveX 4.5.0 + Behave >= 1.3.0
 
+When upgrading to BehaveX 4.5.0 with Behave 1.3.0 or newer, be aware of the following potential challenges:
+
+### Breaking Changes in Behave >= 1.3.0 that we experienced when moving from behave 1.2.6
+
+- **Case-sensitive step definitions**: Step definitions are case-sensitive. If the case doesn't match exactly between your feature files and step definitions, you'll encounter "undefined step" errors.
+
+- **Trailing colons in steps**: Steps with trailing colons (`:`) are no longer automatically cleaned by Behave and may not be detected properly.
+
+- **Relative imports**: Using relative paths in imports may cause issues. Consider updating to absolute import paths for better compatibility.
+
+### BehaveX 4.5.0 Changes
+
+- **Error status preservation**: BehaveX now preserves the original "error" status from Behave instead of converting it to "failed" (except in HTML reports for visualization). This provides more accurate status reporting but may affect tools expecting the previous behavior.
+
+### Resources
+
+For complete details on Behave breaking changes, refer to:
+- [Behave Documentation](https://behave.readthedocs.io/en/latest/new_and_noteworthy/)
 
 ## Execution Instructions
 
