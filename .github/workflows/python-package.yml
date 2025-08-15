@@ -39,7 +39,7 @@ jobs:
           python -m build
           python -m pip install beautifulsoup4
           python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
-          python -m pip install dist/behavex-4.5.0rc8.tar.gz --no-deps
+          python -m pip install dist/behavex-4.5.0rc9.tar.gz --no-deps
           python -m pip install behavex-images==3.3.1
           pip freeze
 
@@ -88,7 +88,7 @@ jobs:
           python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
           python -m pip install behavex-images==3.3.1
           python -m build
-          python -m pip install dist/behavex-4.5.0rc8.tar.gz --no-deps
+          python -m pip install dist/behavex-4.5.0rc9.tar.gz --no-deps
 
       - name: Run behavex tests with image attachments and behave ${{ matrix.behave-version }}
         run: |
