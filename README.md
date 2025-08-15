@@ -12,6 +12,12 @@
 
 Just to mention the most important features delivered in latest BehaveX releases:
 
+🚀 **Enhanced Behave Integration** *(v4.5.0)* - Added support for newer behave versions (>= 1.3.0). Also, major performance overhaul using direct Behave Runner class integration, providing better programmatic control with improved status detection efficiency.
+
+🛠️ **Enhanced Error Status Handling** *(v4.5.0)* - Comprehensive improvements in "error" status management across all report formats (HTML, XML, JSON).
+
+📊 **Interactive Execution Timeline Chart** *(v4.5.0)* - New visual timeline in HTML reports displaying scenario execution order, duration, and status across parallel processes.
+
 🎯 **Test Execution Ordering** *(v4.4.1)* - Control the sequence of scenario and feature execution during parallel runs using order tags (e.g., `@ORDER_001`, `@ORDER_010`). Now includes strict ordering mode (`--order-tests-strict`) for scenarios that must wait for lower-order tests to complete.
 
 📊 **Allure Reports Integration** *(v4.2.1)* - Generate beautiful, comprehensive test reports with Allure framework integration.
@@ -80,7 +86,7 @@ pip install behavex
 BehaveX is compatible with the following Behave versions:
 
 - **Behave 1.2.6** (stable, widely tested)
-- **Behave 1.3.0** (latest, with full compatibility)
+- **Behave >= 1.3.0**
 
 BehaveX automatically installs a compatible version of Behave. If you need to use a specific version of Behave, you can install it explicitly:
 
@@ -88,11 +94,11 @@ BehaveX automatically installs a compatible version of Behave. If you need to us
 # For Behave 1.2.6 (stable)
 pip install behavex behave==1.2.6
 
-# For Behave 1.3.0 (latest)
-pip install behavex behave==1.3.0
+# For Behave 1.3.0 or newer (latest)
+pip install behavex behave>=1.3.0
 ```
 
-**Note**: BehaveX includes compatibility fixes to ensure all features work correctly with both Behave versions.
+**Note**: BehaveX includes compatibility fixes to ensure all features work correctly with multiple Behave versions.
 
 
 
@@ -169,7 +175,7 @@ Execute BehaveX in the same way as Behave from the command line, using the `beha
 
 ## Constraints
 
-- BehaveX is currently implemented on top of Behave **v1.2.6**, and not all Behave arguments are yet supported.
+- Not all Behave arguments are yet supported.
 - Parallel execution is implemented using concurrent Behave processes. This means that any hooks defined in the `environment.py` module will run in each parallel process. This includes the **before_all** and **after_all** hooks, which will execute in every parallel process. The same is true for the **before_feature** and **after_feature** hooks when parallel execution is organized by scenario.
 
 ## Supported Behave Arguments
