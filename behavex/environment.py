@@ -244,29 +244,30 @@ def before_feature(context, feature):
 
 
 def before_scenario(context, scenario):
-    """Initialize logs for current scenario."""
+    """Initialize logs for current scenario - simple approach."""
     # Initialize critical variables first to ensure they're always set
-    # Use object.__setattr__ to bypass context masking warnings
     object.__setattr__(context, 'bhx_inside_scenario', True)
-    # Initialize log handler to None to ensure it's always defined
     object.__setattr__(context, 'bhx_log_handler', None)
 
     try:
-        # Handle execution attempts tracking - ensure bhx_execution_attempts exists
+        # Handle execution attempts tracking
         if not hasattr(context, 'bhx_execution_attempts'):
             object.__setattr__(context, 'bhx_execution_attempts', {})
         if scenario.name not in context.bhx_execution_attempts:
             context.bhx_execution_attempts[scenario.name] = 0
         execution_attempt = context.bhx_execution_attempts[scenario.name]
         retrying_execution = True if execution_attempt > 0 else False
-        # Calculate and store the scenario identifier hash
+
+        # Calculate scenario identifier hash
         scenario_identifier = f"{str(context.feature.filename)}-{str(scenario.line)}"
-        # Calculate the scenario identifier hash
         scenario.identifier_hash = get_string_hash(scenario_identifier)
+
         # Create log path
         context.log_path = create_log_path(scenario.identifier_hash, retrying_execution)
-        # Add log handler
+
+        # Add log handler ONLY for scenario duration (simple scope isolation)
         context.bhx_log_handler = _add_log_handler(context.log_path)
+
         # Handle retry scenario cleanup
         if retrying_execution:
             try:
@@ -275,19 +276,18 @@ def before_scenario(context, scenario):
                     try:
                         shutil.rmtree(context.evidence_path)
                     except FileNotFoundError:
-                        # Directory already removed by another process - this is fine
                         pass
                     except Exception as cleanup_ex:
                         logging.warning(f"Failed to remove evidence directory {context.evidence_path}: {cleanup_ex}")
             except Exception as retry_ex:
                 logging.warning(f"Failed to clean up evidence path during retry: {retry_ex}")
+
         scenario.process_id = os.getpid()
         if "config" in context and "worker_id" in context.config.userdata:
             scenario.worker_id = context.config.userdata['worker_id']
         else:
-            scenario.worker_id = '0'  # Default worker ID for non-parallel execution
+            scenario.worker_id = '0'
     except Exception as exception:
-        # Log the exception but ensure execution continues
         _log_exception_and_continue('before_scenario (behavex)', exception)
     finally:
         scenario.start = _get_current_timestamp_ms()
@@ -339,10 +339,8 @@ def after_scenario(context, scenario):
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
-        # Always reset the scenario state flag, regardless of success or failure
-        # Match production behavior but with safety checks
-        if hasattr(context, 'bhx_log_handler') and context.bhx_log_handler:
-            _close_log_handler(context.bhx_log_handler)
+        # Always remove ALL file handlers when scenario ends (simple cleanup)
+        _close_log_handler()
         object.__setattr__(context, 'bhx_inside_scenario', False)
 
 
@@ -367,64 +365,37 @@ def after_all(context):
 
 
 def _add_log_handler(log_path):
-    """Adding a new log handler to logger with selective cleanup"""
+    """Add log handler only for scenario duration - simple approach"""
     file_handler = None
     try:
-        # SAFE APPROACH: Only remove FileHandlers that point to our logs directory
-        # This prevents interference with other logging systems while ensuring isolation
-        root_logger = logging.getLogger()
-        logs_base_dir = get_env('logs', '')
-
-        handlers_to_remove = []
-        for handler in root_logger.handlers:
-            # ULTIMATE SAFETY: Only remove handlers that we explicitly marked as ours
-            # This provides 100% certainty we won't interfere with external logging
-            if (isinstance(handler, logging.FileHandler) and
-                hasattr(handler, '_behavex_scenario_handler') and
-                handler._behavex_scenario_handler):
-                handlers_to_remove.append(handler)
-
-        # Safely remove only our own scenario log handlers
-        for handler in handlers_to_remove:
-            try:
-                if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
-                    handler.stream.close()
-                root_logger.removeHandler(handler)
-            except Exception as cleanup_ex:
-                # Log cleanup errors but continue
-                _log_exception_and_continue('_add_log_handler cleanup', cleanup_ex)
-
         log_filename = os.path.join(log_path, 'scenario.log')
         file_handler = logging.FileHandler(
             log_filename, mode='w', encoding=LOGGING_CFG['file_handler']['encoding']
         )
 
-        # Mark this handler as belonging to BehaveX for safe identification
-        file_handler._behavex_scenario_handler = True
-
         log_level = get_logging_level()
+        root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
         file_handler.addFilter(lambda record: setattr(record, 'msg', strip_ansi_codes(str(record.msg))) or True)
         file_handler.setFormatter(_get_log_formatter())
         root_logger.addHandler(file_handler)
+
     except Exception as exception:
         _log_exception_and_continue('_add_log_handler', exception)
     return file_handler
 
 
-def _close_log_handler(handler):
-    """Closing current log handlers and removing them from logger."""
-    if handler:
-        try:
-            # Properly close the file stream first
+def _close_log_handler():
+    """Remove all file handlers from root logger - simple cleanup."""
+    try:
+        root_logger = logging.getLogger()
+        file_handlers = [h for h in root_logger.handlers if isinstance(h, logging.FileHandler)]
+        for handler in file_handlers:
             if hasattr(handler, 'stream') and hasattr(handler.stream, 'close'):
                 handler.stream.close()
-
-            # Remove handler from root logger
-            logging.getLogger().removeHandler(handler)
-
-        except Exception as exception:
-            _log_exception_and_continue('_close_log_handler', exception)
+            root_logger.removeHandler(handler)
+    except Exception as exception:
+        _log_exception_and_continue('_close_log_handler', exception)
 
 
 def _get_log_formatter():
