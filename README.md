@@ -14,7 +14,7 @@ Just to mention the most important features delivered in latest BehaveX releases
 
 🚀 **Enhanced Behave Integration** *(v4.5.0)* - Added support for newer behave versions (>= 1.3.0). Also, major performance overhaul using direct Behave Runner class integration, providing better programmatic control with improved status detection efficiency. See [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130) for upgrade considerations.
 
-🛠️ **Enhanced Error Status Handling** *(v4.5.0)* - Comprehensive improvements in "error" status management across all report formats (HTML, XML, JSON).
+🛠️ **Enhanced Error Status Handling** *(v4.5.0)* - Comprehensive improvements in "error" status management, now preserving original "error" status instead of converting to "failed" for more accurate reporting.
 
 📊 **Interactive Execution Timeline Chart** *(v4.5.0)* - New visual timeline in HTML reports displaying scenario execution order, duration, and status across parallel processes.
 
