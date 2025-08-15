@@ -255,6 +255,7 @@ def launch_behavex():
     global_vars.execution_start_time = time.time()
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
+    failures = []  # Initialize before try block to ensure it's always defined
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -302,7 +303,6 @@ def launch_behavex():
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
         results = get_json_results()
         processed_feature_filenames = []
-        failures = []  # Always initialize empty list
         if results:
             for feature in results['features']:
                 processed_feature_filenames.append(feature['filename'])
@@ -383,7 +383,7 @@ def print_execution_summary(totals, failures, results):
     untested_features_msg = ', {} untested'.format(untested_features) if untested_features > 0 else ''
     untested_scenarios_msg = ', {} untested'.format(untested_scenarios) if untested_scenarios > 0 else ''
     error_features_msg = ', {} error'.format(error_features) if error_features > 0 else ''
-    error_scenarios_msg = ''  # Scenarios: combine error with failed counts
+    error_scenarios_msg = ', {} error'.format(error_scenarios) if error_scenarios > 0 else ''
 
     # Print failing scenarios before summary (same format as behave single execution)
     if failures and results:
