@@ -18,6 +18,7 @@ ENHANCEMENTS:
 FIXES:
 
 * Fixed worker_id incorrectly being set sometimes to process_id values in JSON reports. The worker_id field now properly defaults to '0' for non-parallel execution instead of using the OS process ID.
+* Fixed HTML escaping vulnerability in step text content in HTML report.
 
 Version: 4.4.2
 -------------------------------------------------------------------------------
