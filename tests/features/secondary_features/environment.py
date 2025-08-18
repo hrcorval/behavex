@@ -17,7 +17,7 @@ def after_scenario(context, scenario):
 
 
 def after_feature(context, feature):
-    """Ensure after_feature hook is called by behave (required for behave 1.3.0 compatibility)"""
+    """Ensure after_feature hook is called by behave (required for behave 1.2.7+ compatibility)"""
     # Call BehavEx after_feature directly since hook interception doesn't receive the feature object
     try:
         from behavex import environment as behavex_env

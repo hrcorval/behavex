@@ -13,7 +13,7 @@ authors = [
 ]
 requires-python = ">=3.5"
 dependencies = [
-    # Support behave 1.2.6 (stable) and all 1.x versions (with compatibility fixes)
+    # Support behave 1.2.6 (legacy) and 1.2.7+ (modern) with compatibility fixes
     "behave>=1.2.6,<2.0.0",
     "behavex-images>=3.3.0",
     "allure-python-commons",

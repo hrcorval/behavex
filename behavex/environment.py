@@ -46,10 +46,14 @@ def extend_behave_hooks():
 
     # Behave version detection for compatibility
     try:
-        BEHAVE_VERSION = tuple(map(int, behave.__version__.split('.')[:2]))
-    except (ImportError, AttributeError, ValueError):
+        version_parts = behave.__version__.split('.')
+        major = int(version_parts[0])
+        minor = int(version_parts[1])
+        patch = int(version_parts[2]) if len(version_parts) > 2 else 0
+        BEHAVE_VERSION = (major, minor, patch)
+    except (ImportError, AttributeError, ValueError, IndexError):
         # Fallback to assume newer version if detection fails
-        BEHAVE_VERSION = (1, 3)
+        BEHAVE_VERSION = (1, 2, 7)
 
     global hooks_already_set
     behave_run_hook = ModelRunner.run_hook
@@ -60,14 +64,14 @@ def extend_behave_hooks():
 
         # Behave version compatibility: handle different hook signatures
         # Behave 1.2.6: run_hook(name, context, *args) where context is the actual context
-        # Behave 1.3.0: run_hook(name, hook_target, *args) where hook_target is Scenario/Step/Feature/etc.
+        # Behave 1.2.7+: run_hook(name, hook_target, *args) where hook_target is Scenario/Step/Feature/etc.
 
         actual_context = None
         hook_target = None
 
         try:
-            if BEHAVE_VERSION >= (1, 3):
-                # Behave 1.3.0+ behavior: context parameter is actually the hook target
+            if BEHAVE_VERSION >= (1, 2, 7):
+                # Behave 1.2.7+ behavior: context parameter is actually the hook target
                 if name in ('before_all', 'after_all'):
                     # For before_all/after_all: context=None, get context from self
                     actual_context = getattr(self, 'context', None) or context
@@ -181,12 +185,12 @@ def extend_behave_hooks():
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
 
-        # BEHAVE 1.3.0 COMPATIBILITY: Also override run_hook_with_capture
-        # since all hooks are called via run_hook_with_capture in 1.3.0
-        if BEHAVE_VERSION >= (1, 3):
+        # BEHAVE 1.2.7+ COMPATIBILITY: Also override run_hook_with_capture
+        # since all hooks are called via run_hook_with_capture in modern versions
+        if BEHAVE_VERSION >= (1, 2, 7):
             def run_hook_with_capture(self, hook_name, *args, **kwargs):
-                # BEHAVE 1.3.0 COMPATIBILITY: Route ALL hooks through BehaveX run_hook
-                # In behave 1.3.0, all hooks go through run_hook_with_capture first,
+                # BEHAVE 1.2.7+ COMPATIBILITY: Route ALL hooks through BehaveX run_hook
+                # In modern behave versions, all hooks go through run_hook_with_capture first,
                 # but we need them to go through BehaveX's run_hook for proper error handling
                 # and consistent behavior across all hook types
 
@@ -223,7 +227,7 @@ def before_feature(context, feature):
         # Use object.__setattr__ to bypass context masking warnings
         object.__setattr__(context, 'bhx_execution_attempts', {})
 
-        # Behave 1.3.0 compatibility: feature.scenarios may not be accessible
+        # Behave 1.2.7+ compatibility: feature.scenarios may not be accessible
         if hasattr(feature, 'scenarios') and feature.scenarios:
             scenarios_instances = get_scenarios_instances(feature.scenarios)
 
@@ -308,7 +312,7 @@ def after_tag(context, tag):  # pyright: ignore[reportUnusedParameter]
 def after_step(context, step):  # pyright: ignore[reportUnusedParameter]
     step.stop = _get_current_timestamp_ms()
     try:
-        # Behave 1.3.0 compatibility: step.exception may not exist
+        # Behave 1.2.7+ compatibility: step.exception may not exist
         if hasattr(step, 'exception') and step.exception:
             step.error_message = step.error_message
             logging.error(step.exception)
@@ -425,7 +429,7 @@ def patch_scenario_with_autoretry(scenario, max_attempts=3):
     """
     Unified BehaveX autoretry implementation for all behave versions.
 
-    This provides consistent autoretry behavior across behave 1.2.6 and 1.3.0+,
+    This provides consistent autoretry behavior across behave 1.2.6 and 1.2.7+,
     with enhanced logging and better integration with BehaveX reporting.
 
     Monkey-patches the scenario.run() method to auto-retry a scenario that fails.
