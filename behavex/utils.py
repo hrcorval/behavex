@@ -363,8 +363,8 @@ def print_parallel(msg, *args, **kwargs):
         console_log = logging.StreamHandler(sys.stdout)
         console_log.setLevel(get_logging_level())
         logger.addHandler(console_log)
-        # Prevent propagation to root logger to avoid duplicate messages
-        logger.propagate = False
+    # Always prevent propagation to root logger to avoid duplicate messages
+    logger.propagate = False
     if 'no_chain' in kwargs:
         logger.info(msg)
     else:
