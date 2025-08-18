@@ -662,7 +662,7 @@
             {%- endif -%}
             {% if step.text is defined and step.text != "None" %}
             <div>
-                <pre class="small behavex_letter">{{ step.text|safe}}</pre>
+                <pre class="small behavex_letter">{{ step.text|e }}</pre>
             </div>
 
             {% endif%}
