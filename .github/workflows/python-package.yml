@@ -44,7 +44,7 @@ jobs:
           else
             python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
           fi
-          python -m pip install dist/behavex-4.5.0rc10.tar.gz --no-deps
+          python -m pip install dist/behavex-4.5.0.tar.gz --no-deps
           python -m pip install behavex-images==3.3.1
           pip freeze
           echo "Installed behave version:"
@@ -100,7 +100,7 @@ jobs:
           fi
           python -m pip install behavex-images==3.3.1
           python -m build
-          python -m pip install dist/behavex-4.5.0rc10.tar.gz --no-deps
+          python -m pip install dist/behavex-4.5.0.tar.gz --no-deps
           echo "Installed behave version:"
           python -c "import behave; print(f'behave {behave.__version__}')"
 
