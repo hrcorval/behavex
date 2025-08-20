@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.5.0"
+version = "4.5.1"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -15,7 +15,7 @@ requires-python = ">=3.5"
 dependencies = [
     # Support behave 1.2.6 (legacy) and 1.2.7+ (modern) with compatibility fixes
     "behave>=1.2.6,<2.0.0",
-    "behavex-images>=3.3.0",
+    "behavex-images>=3.3.1",
     "allure-python-commons",
     "jinja2",
     "configobj",

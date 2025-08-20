@@ -120,3 +120,49 @@ Feature: Allure Formatter Complete Test Suite
     When I run the allure formatter script with a non-existent report file
     Then I should see an error message about missing report file
     And the script should exit with non-zero code
+
+  @ALLURE_FORMATTER @DEFECT_CATEGORIZATION
+  Scenario: Validate Allure formatter categorizes failed assertions as Product Defects
+    Given I have installed behavex
+    When I run the behavex command with allure formatter and assertion failure tests
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line   |
+    | Exit code: 1  |
+    And I should see that allure-results directory was created
+    And I should see that categories.json contains Product Defects category
+    And I should see that failed assertion scenarios are categorized as Product Defects
+
+  @ALLURE_FORMATTER @DEFECT_CATEGORIZATION
+  Scenario: Validate Allure formatter categorizes undefined steps as Test Defects
+    Given I have installed behavex
+    When I run the behavex command with allure formatter and undefined step tests
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line   |
+    | Exit code: 1  |
+    And I should see that allure-results directory was created
+    And I should see that categories.json contains Test Defects category
+    And I should see that undefined step scenarios are categorized as Test Defects
+
+  @ALLURE_FORMATTER @DEFECT_CATEGORIZATION
+  Scenario: Validate Allure formatter categorizes error scenarios as Product Defects
+    Given I have installed behavex
+    When I run the behavex command with allure formatter and error exception tests
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line   |
+    | Exit code: 1  |
+    And I should see that allure-results directory was created
+    And I should see that categories.json contains Product Defects category
+    And I should see that error scenarios are categorized as Product Defects
+
+  @ALLURE_FORMATTER @DEFECT_CATEGORIZATION
+  Scenario: Validate Allure formatter comprehensive defect categorization
+    Given I have installed behavex
+    When I run the behavex command with allure formatter and comprehensive failure tests
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line   |
+    | Exit code: 1  |
+    And I should see that allure-results directory was created
+    And I should see that categories.json contains both Product Defects and Test Defects categories
+    And I should see that failed scenarios are properly categorized by failure type
+    And I should see that undefined scenarios are categorized as Test Defects
+    And I should see that error scenarios are categorized as Product Defects
