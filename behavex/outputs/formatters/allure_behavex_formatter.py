@@ -496,12 +496,18 @@ class AllureBehaveXFormatter:
 
                 # Process steps and look for failures
                 test_error_msg = None  # Store test's error message
+                last_details = None  # Store last error details
 
                 for step in scenario['steps']:
                     allure_step = TestStepResult(
                         name=f"{step['step_type'].capitalize()} {step['name']}"
                     )
-                    allure_step.status = step["status"]
+                    # Map BehaveX step statuses to Allure statuses
+                    step_status = step["status"]
+                    if step_status in ['error', 'undefined']:
+                        allure_step.status = 'broken'
+                    else:
+                        allure_step.status = step_status
                     allure_step.start = step.get("start", now())
                     allure_step.stop = step.get("stop", now())
                     allure_step.line = step.get("line", 0)
@@ -538,7 +544,7 @@ class AllureBehaveXFormatter:
                                        type="text/csv")
                         )
 
-                    if step.get("status") in ("failed", "broken"):
+                    if step.get("status") in ("failed", "error"):
                         details = self.extract_status_details(step)
                         allure_step.statusDetails = {
                             "message": details.message or "No details available for this error.",
@@ -551,16 +557,37 @@ class AllureBehaveXFormatter:
                             error_messages.add(details.message)
                     test_case.steps.append(allure_step)
 
-                # If test failed, add its error as a direct category
+                # Categorize test failures
+                category = None
                 if test_error_msg:
-                    # Categorize test failure reason
-                    test_case.labels.append({"name": "category", "value":
-                        "Product Defects" if step.get("status") == 'failed' else "Test Defects"})
+                    # Categorize test failure reason based on scenario status
+                    scenario_status = scenario['status']
+                    if scenario_status == 'failed':
+                        # Assertion failures, business logic issues = Product Defects
+                        category = "Product Defects"
+                    elif scenario_status in ['error', 'undefined']:
+                        # Technical exceptions, infrastructure issues, missing steps = Test Defects
+                        category = "Test Defects"
+                    else:
+                        # Fallback for any other status
+                        category = "Test Defects"
+
+                    test_case.labels.append({"name": "category", "value": category})
                     # Add error details to the test case
                     test_case.statusDetails = {
                         "message": test_error_msg,
-                        "trace": last_details.trace,
+                        "trace": last_details.trace if last_details else "",
                     }
+                else:
+                    # Check if scenario contains undefined steps (no error message but still needs categorization)
+                    has_undefined_steps = any(step.get("status") == "undefined" for step in scenario['steps'])
+                    if has_undefined_steps:
+                        category = "Test Defects"
+                        test_case.labels.append({"name": "category", "value": category})
+                        test_case.statusDetails = {
+                            "message": "Undefined step(s) found",
+                            "trace": "",
+                        }
 
                 # Process tags
                 package_from_tag = None
@@ -640,7 +667,15 @@ class AllureBehaveXFormatter:
                 # Add scenario timing
                 test_case.start = scenario.get("start", now())
                 test_case.stop = scenario.get("stop", now())
-                test_case.status = scenario['status']
+
+                # Map BehaveX statuses to Allure statuses
+                behavex_status = scenario['status']
+                if behavex_status in ['error', 'undefined']:
+                    # BehaveX error/undefined → Allure broken
+                    test_case.status = 'broken'
+                else:
+                    # failed, passed, skipped map directly
+                    test_case.status = behavex_status
 
                 # Process scenario logs as attachment
                 if get_param('formatter_attach_logs'):
@@ -766,10 +801,10 @@ class AllureBehaveXFormatter:
                 "name": "Product Defects",
                 "matchedStatuses": ["failed"]
             },
-            # Add a separate category for broken tests
+            # Add a separate category for error and undefined tests
             {
                 "name": "Test Defects",
-                "matchedStatuses": ["broken"]
+                "matchedStatuses": ["broken"]  # Allure uses "broken" for undefined/error scenarios in reporting
             }
         ]
 

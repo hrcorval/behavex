@@ -1,6 +1,13 @@
 Version History
 ===============================================================================
 
+Version: 4.5.1
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fixed Allure formatter defect categorization to properly distinguish between Product Defects and Test Defects. The categorization now correctly maps BehaveX statuses: 'failed' scenarios (assertion failures) are categorized as Product Defects, while 'error' and 'undefined' scenarios (technical issues, missing steps) are categorized as Test Defects. Also fixed BehaveX to Allure status mapping where 'error' and 'undefined' statuses are now properly converted to 'broken' status in Allure reports.
+
 Version: 4.5.0
 -------------------------------------------------------------------------------
 
