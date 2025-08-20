@@ -283,32 +283,170 @@ def get_test_execution_tags():
         return get_env('behave_tags')
 
 
+def detect_tag_expression_format(expression):
+    """
+    Auto-detect whether expression uses cucumber tag expressions or legacy format.
+
+    Based on behave's auto-detection approach from:
+    https://behave.readthedocs.io/en/latest/tag_expressions/
+
+    Args:
+        expression (str): Tag expression to analyze
+
+    Returns:
+        str: 'cucumber' for v2 expressions, 'legacy' for v1 expressions
+    """
+    if not expression or not expression.strip():
+        return 'legacy'
+
+    # Cucumber v2 indicators (boolean operators with spaces)
+    # Legacy BehaveX uses different patterns, so we can distinguish them
+    cucumber_v2_patterns = [
+        ' and ',          # boolean AND with spaces
+        ' or ',           # boolean OR with spaces
+        'not @',          # NOT operator with tag
+        ') and (',        # grouped expressions with boolean operators
+        ') or (',         # grouped expressions with boolean operators
+        'and not @',      # combined operators
+        'or not @',       # combined operators
+    ]
+
+    # Check for cucumber v2 patterns
+    for pattern in cucumber_v2_patterns:
+        if pattern in expression:
+            return 'cucumber'
+
+    # Check for parentheses with boolean operators (cucumber style)
+    if '(' in expression and ')' in expression:
+        # If it has parentheses with 'and'/'or' but not the legacy "and (" pattern
+        if (' and ' in expression or ' or ' in expression) and 'and (' not in expression:
+            return 'cucumber'
+
+    # Default to legacy format for backward compatibility
+    return 'legacy'
+
+
+def evaluate_cucumber_tag_expression(tags, expression):
+    """
+    Evaluate cucumber tag expressions (v2 format).
+
+    This function only handles cucumber expressions and doesn't modify
+    the original tags list or handle dry_run logic - that's done by the caller.
+
+    Args:
+        tags (list): List of scenario tags (already processed for dry_run if needed)
+        expression (str): Cucumber tag expression
+
+    Returns:
+        bool: True if tags match the expression
+
+    Raises:
+        ImportError: If cucumber-tag-expressions library not available
+        Exception: If expression parsing fails
+    """
+    # Import cucumber tag expressions library
+    from cucumber_tag_expressions import parse
+
+    if not expression or not expression.strip():
+        return True
+
+    # Parse the cucumber expression
+    tag_expression = parse(expression)
+
+    # Convert tags to format expected by cucumber parser (without @)
+    # Cucumber parser expects clean tag names without @ prefix
+    normalized_tags = []
+    for tag in tags:
+        clean_tag = tag.lstrip('@') if tag.startswith('@') else tag
+        if clean_tag:  # Skip empty tags
+            normalized_tags.append(clean_tag)
+
+    # Evaluate the expression
+    return tag_expression.evaluate(normalized_tags)
+
+
 def match_for_execution(tags):
+    """
+    Enhanced tag matching with automatic cucumber expressions support.
+
+    This function supports both legacy and cucumber formats seamlessly.
+    Falls back to legacy behavior if cucumber expressions fail or aren't available.
+    Preserves the exact dry_run behavior of the original function.
+
+    Args:
+        tags (list): List of scenario tags
+
+    Returns:
+        bool: True if scenario should be executed based on tag filter
+    """
+    # Get the tag filter expression
+    tags_filter = get_test_execution_tags()
+
+    # Auto-detect expression format
+    expression_format = detect_tag_expression_format(tags_filter)
+
+    # Try cucumber expressions if detected
+    if expression_format == 'cucumber':
+        try:
+            # For cucumber expressions, we need to handle dry_run ourselves
+            # since evaluate_cucumber_tag_expression doesn't do it
+            tags_copy = tags.copy()  # Don't modify original list
+            if get_param('dry_run'):
+                if 'BHX_MANUAL_DRY_RUN' in tags_copy:
+                    tags_copy.remove('BHX_MANUAL_DRY_RUN')
+                if 'MANUAL' in tags_copy:
+                    tags_copy.remove('MANUAL')
+            return evaluate_cucumber_tag_expression(tags_copy, tags_filter)
+        except ImportError:
+            # Cucumber library not available, fall back to legacy
+            logging.debug("cucumber-tag-expressions not available, using legacy tag matching")
+        except Exception as e:
+            # Cucumber parsing failed, fall back to legacy
+            logging.debug(f"Cucumber tag expression evaluation failed: {e}, using legacy tag matching")
+
+    # Fall back to original legacy implementation
+    # Let the legacy function handle dry_run processing itself
+    return match_for_execution_legacy(tags)
+
+
+def match_for_execution_legacy(tags):
+    """
+    Legacy tag matching implementation using eval() (kept for fallback compatibility).
+    This is the original implementation with security risks but exact behavior preservation.
+    """
     # Check filter
     tag_re = re.compile(r'@?[\w\d\-_.]+')
     tags_filter = get_test_execution_tags()
+
+    # Handle None or empty filter
+    if not tags_filter:
+        return True
+
     # Eliminate tags put for param dry-rFun
     if get_param('dry_run'):
         if 'BHX_MANUAL_DRY_RUN' in tags:
             tags.remove('BHX_MANUAL_DRY_RUN')
         if 'MANUAL' in tags:
             tags.remove('MANUAL')
+
     # Set scenario tags in filter
     for tag in tags:
         # Try with and without @
         def replace(arroba, x, y):
             return re.sub(r'^{}{}$'.format(arroba, x), 'True', y)
 
-        tags_filter = ' '.join(
-            [replace('@', tag, tag_) for tag_ in tags_filter.split()]
-        )
-
-        tags_filter = ' '.join([replace('', tag, tag_) for tag_ in tags_filter.split()])
+        if tags_filter:  # Defensive check
+            tags_filter = ' '.join(
+                [replace('@', tag, tag_) for tag_ in tags_filter.split()]
+            )
+            tags_filter = ' '.join([replace('', tag, tag_) for tag_ in tags_filter.split()])
 
     # Set all other tags to False
-    for tag in tag_re.findall(tags_filter):
-        if tag not in ('not', 'and', 'or', 'True', 'False'):
-            tags_filter = tags_filter.replace(tag + ' ', 'False ')
+    if tags_filter:
+        for tag in tag_re.findall(tags_filter):
+            if tag not in ('not', 'and', 'or', 'True', 'False'):
+                tags_filter = tags_filter.replace(tag + ' ', 'False ')
+
     return tags_filter == '' or eval(tags_filter)  # nosec
 
 

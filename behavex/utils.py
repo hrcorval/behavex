@@ -427,12 +427,109 @@ def len_scenarios(feature_file):
     amount_scenarios = 0
     scenarios_instances = get_scenarios_instances(feature.scenarios)
     for scenario in scenarios_instances:
+        # Now using enhanced tag matching with auto-detection and cucumber expressions support
+        # (match_for_execution is now the enhanced version, legacy version is match_for_execution_legacy)
         if match_for_execution(get_scenario_tags(scenario)):
             amount_scenarios += 1
     return amount_scenarios
 
 
+def convert_command_line_tags_to_cucumber(tag_args):
+    """
+    Convert command line tag arguments directly to cucumber expression.
+
+    This converts legacy BehaveX tag syntax to cucumber expressions format.
+
+    Args:
+        tag_args (list): List of tag arguments from command line
+
+    Returns:
+        str: Cucumber tag expression
+
+    Examples:
+        ['-t', '@smoke,@regression', '-t', '@critical'] → "(@smoke or @regression) and @critical"
+        ['-t', '~@slow', '-t', '@smoke'] → "not @slow and @smoke"
+        ['-t', '@ui,@api', '-t', '@smoke', '-t', '~@flaky'] → "(@ui or @api) and @smoke and not @flaky"
+    """
+    if not tag_args:
+        return ""
+
+    # Each tag argument becomes an AND group
+    and_groups = []
+
+    for tag_arg in tag_args:
+        tag_arg = tag_arg.strip()
+        if not tag_arg:
+            continue
+
+        # Handle NOT prefix (~)
+        if tag_arg.startswith('~'):
+            tag_arg = tag_arg.replace('~@', 'not @').replace('~', 'not @')
+
+        # Split by comma for OR conditions
+        if ',' in tag_arg:
+            or_conditions = []
+            for tag in tag_arg.split(','):
+                tag = tag.strip()
+                if tag.startswith('~'):
+                    tag = tag.replace('~@', 'not @').replace('~', 'not @')
+                if tag:
+                    or_conditions.append(tag)
+            if or_conditions:
+                if len(or_conditions) == 1:
+                    and_groups.append(or_conditions[0])
+                else:
+                    or_expression = ' or '.join(or_conditions)
+                    and_groups.append(f"({or_expression})")
+        else:
+            # Single tag
+            if tag_arg:
+                and_groups.append(tag_arg)
+
+    # Join all groups with AND
+    if not and_groups:
+        return ""
+    elif len(and_groups) == 1:
+        return and_groups[0]
+    else:
+        return ' and '.join(and_groups)
+
+
 def set_behave_tags():
+    """
+    Enhanced version that creates cucumber expressions with fallback to legacy processing.
+
+    This function converts legacy command line arguments directly to cucumber expressions,
+    bypassing the complex legacy processing pipeline when possible.
+    """
+    behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
+
+    # Try cucumber expression approach first
+    try:
+        # Get tag arguments and convert to cucumber expression
+        tags_env = get_env('tags')
+        tag_args = tags_env.split(';') if tags_env else []
+        cucumber_expression = convert_command_line_tags_to_cucumber(tag_args)
+
+        # Save the cucumber expression
+        retry_file_operation(
+            behave_tags, execution=get_save_function(behave_tags, cucumber_expression)
+        )
+        return
+    except Exception:
+        # Fall back to legacy processing if cucumber conversion fails
+        logging.debug("Cucumber tag conversion failed, using legacy tag processing")
+        pass
+
+    # Fallback to legacy implementation
+    set_behave_tags_legacy()
+
+
+def set_behave_tags_legacy():
+    """
+    Legacy tag processing implementation.
+    Uses the original complex string manipulation approach.
+    """
     behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
     tags = []
     # Check for tags passed as arguments
@@ -459,6 +556,7 @@ def set_behave_tags():
     retry_file_operation(
         behave_tags, execution=get_save_function(behave_tags, tags_line)
     )
+
 
 
 def get_scenario_tags(scenario, include_outline_example_tags=True):
