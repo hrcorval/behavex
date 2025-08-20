@@ -4,31 +4,31 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.4.2"
+version = "4.5.0"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
-license = { text = "MIT" }
+license = {file = "LICENSE"}
 authors = [
     { name = "Hernan Rey", email = "behavex_users@googlegroups.com" }
 ]
 requires-python = ">=3.5"
 dependencies = [
-    "behave==1.2.6",
-    "behavex-images>=3.2.2",
+    # Support behave 1.2.6 (legacy) and 1.2.7+ (modern) with compatibility fixes
+    "behave>=1.2.6,<2.0.0",
+    "behavex-images>=3.3.0",
     "allure-python-commons",
     "jinja2",
     "configobj",
     "minify-html",
-    "csscompressor"
+    "csscompressor",
+    "packaging"
 ]
-# Add dynamic field to handle entry points
-dynamic = ["entry-points"]
+# Entry points are statically defined below
 
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",

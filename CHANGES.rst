@@ -1,6 +1,25 @@
 Version History
 ===============================================================================
 
+Version: 4.5.0
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Optimized BehaveX execution performance by replacing behave_script.main() with direct Runner class usage. This change provides better programmatic control, eliminates redundant stdout capture/redirection, and improves status detection efficiency by using runner.context.failed and runner.hook_failures instead of text parsing and feature iteration.
+* Implemented disk-free execution status determination by extracting results directly from the Behave runner instance. This optimization eliminates all file I/O operations for execution status detection, removes temporary stdout file generation and merging, and significantly improves performance by avoiding file system dependencies.
+* Improved code organization by consolidating all imports at the top of modules following Python best practices (PEP 8).
+* Enhanced BehaveX compatibility with newer behave versions, specifically adding support for behave 1.3.0. The implementation uses normal imports with small if/else statements to handle import compatibility issues between different behave versions, ensuring smooth operation across the supported version range.
+* Cleaned up setup.py by removing redundant metadata that is now properly defined in pyproject.toml, maintaining backward compatibility.
+* Improved execution summary reporting with enhanced data collection and more accurate status tracking throughout the test execution lifecycle.
+* Improved handling of "error" execution status for feature/scenario/step management.
+* Added execution timeline chart to HTML reports displaying scenario execution order, duration, and status with interactive tooltips. The timeline shows only executed scenarios (passed/failed/error) with proper error handling for edge cases like dry runs or empty test suites.
+
+FIXES:
+
+* Fixed worker_id incorrectly being set sometimes to process_id values in JSON reports. The worker_id field now properly defaults to '0' for non-parallel execution instead of using the OS process ID.
+* Fixed HTML escaping vulnerability in step text content in HTML report.
+
 Version: 4.4.2
 -------------------------------------------------------------------------------
 

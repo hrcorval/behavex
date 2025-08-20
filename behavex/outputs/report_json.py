@@ -77,6 +77,9 @@ def generate_execution_info(features):
             for attrib in ('name', 'status', 'duration'):
                 value = getattr(feature, attrib)
                 value = value.name if attrib == 'status' else value
+                # Override feature status to 'untested' during dry runs
+                if attrib == 'status' and get_param('dry_run'):
+                    value = 'untested'
                 feature_info[attrib] = value
             feature_info['filename'] = text(feature.filename)
             feature_info['scenarios'] = scenario_list
@@ -172,13 +175,21 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['line'] = getattr(scenario, 'line')
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
-            scenario_info['status'] = getattr(scenario, 'status').name
+            # Use the original status from behave
+            original_status = getattr(scenario, 'status').name
+            # In dry runs, treat failed and error scenarios as skipped since they weren't actually executed
+            if is_dry_run and original_status in ['failed', 'error']:
+                scenario_info['status'] = 'skipped'
+            else:
+                scenario_info['status'] = original_status
             # Add start and stop times if they exist
             if hasattr(scenario, 'start'):
                 scenario_info['start'] = getattr(scenario, 'start')
             if hasattr(scenario, 'stop'):
                 scenario_info['stop'] = getattr(scenario, 'stop')
-            scenario_info['tags'] = getattr(scenario, 'effective_tags')
+            # Convert tags to list for JSON serialization (behave 1.3.0 returns set)
+            tags = getattr(scenario, 'effective_tags')
+            scenario_info['tags'] = list(tags) if isinstance(tags, set) else tags
             scenario_info['filename'] = text(scenario.filename)
             scenario_info['feature'] = scenario.feature.name
             scenario_info['id_feature'] = id_feature
@@ -192,8 +203,12 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
                 add_step_info(step, steps)
             scenario_info['steps'] = steps
             scenario_info['outline_index'] = scenario_outline_index
-            if scenario_info['status'] == 'failed':
-                overall_status = 'failed'
+            if scenario_info['status'] in ['failed', 'error']:
+                # Prioritize error status over failed status for features
+                if scenario_info['status'] == 'error':
+                    overall_status = 'error'
+                elif overall_status not in ['error']:  # Only set to failed if not already error
+                    overall_status = 'failed'
             scenario_outline_index += 1
             scenario_info['background'] = _processing_background(scenario)
             scenario_info['error_msg'] = error_msg
@@ -203,7 +218,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['id_hash'] = generate_uuid()
             scenario_info['identifier_hash'] = scenario.identifier_hash if hasattr(scenario, 'identifier_hash') else get_string_hash(f"{str(scenario.feature.filename)}-{str(scenario.line)}")
             scenario_info['process_id'] = str(scenario.process_id) if hasattr(scenario, 'process_id') else str(os.getpid())
-            scenario_info['worker_id'] = str(scenario.worker_id) if hasattr(scenario, 'worker_id') else str(os.getpid())
+            scenario_info['worker_id'] = str(scenario.worker_id) if hasattr(scenario, 'worker_id') else '0'
             if scenario.feature.name in global_vars.retried_scenarios:
                 if (
                     scenario.name
@@ -222,7 +237,7 @@ def _get_error_scenario(scenario):
     error_background = False
     b_steps = scenario._background_steps if scenario._background_steps else []
     for index, step in enumerate(b_steps):
-        if step.status == 'undefined' or step.exception:
+        if step.status == 'undefined' or (hasattr(step, 'exception') and step.exception):
             failing_step = _step_to_dict(index, step)
             failing_step['background'] = 'True'
             # failing_step.keys() is forced to be a list in order to maintain compatibility
@@ -236,7 +251,7 @@ def _get_error_scenario(scenario):
             error_background = True
             break
     for index, step in enumerate(scenario.steps):
-        if step.exception:
+        if hasattr(step, 'exception') and step.exception:
             failing_step = _step_to_dict(index, step)
             # failing_step.keys() is forced to be a list in order to maintain compatibility
             if 'error_msg' in list(failing_step.keys()):
@@ -266,7 +281,7 @@ def _step_to_dict(index, step):
         step_info['start'] = getattr(step, 'start')
     if hasattr(step, 'stop'):
         step_info['stop'] = getattr(step, 'stop')
-    if step.exception:
+    if hasattr(step, 'exception') and step.exception:
         # step.exception is forced to be a str type variable
         step_info['error_msg'] = get_error_message(str(step.exception))
         # Handle traceback formatting safely

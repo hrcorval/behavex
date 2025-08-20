@@ -10,7 +10,12 @@ from __future__ import absolute_import
 import os
 import re
 
-from behave.model_core import Status
+try:
+    from behave.model_core import Status
+except ImportError:
+    from behave.model import Status
+
+
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
@@ -78,10 +83,14 @@ def _export_feature_to_xml(feature, isobject=True):
                 return Status.untested
             elif 'failed' in status:
                 return Status.failed
+            elif 'error' in status:
+                return Status.failed  # Treat error scenarios as failed for XML reports
             elif 'skipped' in status:
                 return Status.skipped
             elif 'passed' in status:
                 return Status.passed
+            else:
+                return Status.skipped  # Default fallback for unrecognized statuses
 
     scenarios = [
         scenario

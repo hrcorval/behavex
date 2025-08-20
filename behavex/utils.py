@@ -170,9 +170,15 @@ def join_scenario_reports(json_reports):
     for feature, status_ in status.items():
         skipped = all(st == 'skipped' for st in status_)
         failed = any(st == 'failed' for st in status_)
-        result[feature]['features'][0]['status'] = (
-            'skipped' if skipped else 'failed' if failed else 'passed'
-        )
+        error = any(st == 'error' or st == 'undefined' for st in status_)
+        if skipped:
+            result[feature]['features'][0]['status'] = 'skipped'
+        elif error:
+            result[feature]['features'][0]['status'] = 'error'
+        elif failed:
+            result[feature]['features'][0]['status'] = 'failed'
+        else:
+            result[feature]['features'][0]['status'] = 'passed'
     return list(result.values())
 
 
@@ -357,6 +363,8 @@ def print_parallel(msg, *args, **kwargs):
         console_log = logging.StreamHandler(sys.stdout)
         console_log.setLevel(get_logging_level())
         logger.addHandler(console_log)
+    # Always prevent propagation to root logger to avoid duplicate messages
+    logger.propagate = False
     if 'no_chain' in kwargs:
         logger.info(msg)
     else:
@@ -457,7 +465,15 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
     if type(scenario) is dict:
         scenario_tags_set = set(scenario['tags'])
     else:
-        scenario_tags = scenario.effective_tags
+        # Behave 1.2.7+ compatibility: effective_tags may not exist, fallback to tags
+        if hasattr(scenario, 'effective_tags'):
+            scenario_tags = scenario.effective_tags
+        else:
+            scenario_tags = scenario.tags if hasattr(scenario, 'tags') else []
+
+        # Convert to list if it's a set (behave 1.2.7+ compatibility)
+        if isinstance(scenario_tags, set):
+            scenario_tags = list(scenario_tags)
         if include_outline_example_tags and isinstance(scenario, ScenarioOutline):
             for example in scenario.examples:
                 scenario_tags.extend(example.tags)
@@ -524,9 +540,13 @@ class MatchInclude(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
         self.features_path = os.path.abspath(os.environ.get('FEATURES_PATH'))
         if not expr:
-            expr = get_param('include').replace("'", '"')
+            expr = get_param('include')
+            if expr:
+                expr = expr.replace("'", '"')
         else:
             expr = expr.replace(self.features_path, 'features')
+        if not expr:
+            expr = ''
         expr = ('/'.join(expr.split('\\')))
         expr = '.*{}'.format(expr)
         self.reg = re.compile(expr)
@@ -585,7 +605,11 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
 class IncludeNameMatch(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
         if not expr:
-            expr = get_param('name').replace("'", '"')
+            expr = get_param('name')
+            if expr:
+                expr = expr.replace("'", '"')
+        if not expr:
+            expr = ''
         self.reg = re.compile(expr)
 
     def __call__(self, *args, **kwargs):

@@ -5,11 +5,11 @@
 .table_row_passed>a{
     color: #3C7641;
 }
-.table_row_failed {
+.table_row_failed, .table_row_error {
     background: #F2DEDE;
     color: #4f4f4f;
 }
-.table_row_failed>a {
+.table_row_failed>a, .table_row_error>a {
     color: #A94442;
 }
 .table_row_skipped, .table_row_untested{

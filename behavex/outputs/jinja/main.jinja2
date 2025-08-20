@@ -27,6 +27,103 @@
                 </div>
             </div>
         {%- endblock -%}
+
+        {%- block link_css -%}
+        <style>
+        .timeline-container {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            margin-bottom: 10px;
+            padding: 10px;
+            overflow: visible; /* Allow tooltips to show outside */
+        }
+
+        .worker-timeline-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0px;
+            height: 28px;
+        }
+
+        .worker-timeline-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .worker-label {
+            width: 80px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            text-align: right;
+            padding-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .worker-timeline {
+            flex: 1;
+            height: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            position: relative;
+            overflow: visible; /* Allow tooltips to show outside */
+        }
+
+        .scenario-segment {
+            height: 100%;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            transition: opacity 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+            box-sizing: border-box;
+            z-index: 1;
+        }
+
+        .scenario-segment:hover {
+            opacity: 0.8;
+            z-index: 1000;
+        }
+
+        .scenario-passed {
+            background-color: #71C176;
+        }
+
+        .scenario-failed {
+            background-color: #F7819F;
+        }
+
+        .scenario-skipped {
+            background-color: #999;
+        }
+
+        .scenario-untested {
+            background-color: #ccc;
+        }
+
+        /* Ensure tooltips appear above everything */
+        .tooltip {
+            z-index: 10000 !important;
+        }
+
+        .tooltip-inner {
+            max-width: 600px !important;
+        }
+
+        .timeline-summary {
+            text-align: center;
+            color: #666;
+            margin-top: 5px;
+        }
+        </style>
+        {%- endblock -%}
+
         {%- block body -%}
             <table class="table table-bordered behavex_letter" id="summary">
                 <thead>
@@ -69,7 +166,7 @@
                         </td>
                         <td title="Status">
                             <table><tr>
-                                <td style="width:40px" class="green-behavex">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
+                                <td style="width:40px" class="{{ [summary[feature.name]['Failed'] > 0 and 'failed' or 'passed']|calculate_color }}-behavex">{{summary[feature.name]['Pass Rate']|int}}%&nbsp;</td>
                                 <td style="width:140px">
                                     <div class="progress  progress-expand-steps">
                                         {%- set fe_total = summary[feature.name]['Total'] -%}
@@ -96,7 +193,7 @@
                     <td><b>{{fields_total['Executed']}} ({{fields_total['Execution Status']|int}}%)</b></td>
                     <td>
                         <table><tr>
-                            <td style="width:40px" class="green-behavex"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
+                            <td style="width:40px" class="{{ [fields_total['Failed'] > 0 and 'failed' or 'passed']|calculate_color }}-behavex"><b>{{fields_total['Pass Rate']|int}}%&nbsp;</b></td>
                             <td style="width:140px">
                                 <div class="progress progress-expand-steps">
                                     {%- set fe_total = fields_total['Total'] -%}
@@ -155,6 +252,116 @@
                                     <h5 id="h5-status"><b>Steps: {{ total_steps }}</b><b class="span-behavex" id="reusability"></b></h5>
                                     <canvas id="chart-steps"></canvas>
                                 </div>
+                            </div>
+                            <div class="col-xs-12" style="margin-top: 20px;">
+                                <div class="col-xs-12">
+                                                                        <h5><b>Execution Timeline</b></h5>
+                                    <div class="timeline-container">
+                                        {%- set worker_scenarios = {} -%}
+                                        {%- set all_scenarios = [] -%}
+
+                                        {# Collect scenarios by worker #}
+                                        {%- for feature in features -%}
+                                            {%- for scenario in feature.scenarios -%}
+                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.duration > 0 and scenario.status in ['passed', 'failed', 'error'] -%}
+                                                    {%- set worker_id = scenario.worker_id|default('0') -%}
+                                                    {%- set scenario_data = {
+                                                        'name': scenario.name,
+                                                        'feature': feature.name,
+                                                        'start': scenario.start,
+                                                        'stop': scenario.start + (scenario.duration * 1000),
+                                                        'duration': scenario.duration,
+                                                        'status': scenario.status,
+                                                        'worker_id': worker_id
+                                                    } -%}
+                                                    {%- set _ = all_scenarios.append(scenario_data) -%}
+
+                                                    {%- if worker_id not in worker_scenarios -%}
+                                                        {%- set _ = worker_scenarios.update({worker_id: []}) -%}
+                                                    {%- endif -%}
+                                                    {%- set _ = worker_scenarios[worker_id].append(scenario_data) -%}
+                                                {%- endif -%}
+                                            {%- endfor -%}
+                                        {%- endfor -%}
+
+                                        {%- if all_scenarios|length > 0 -%}
+                                            {# Calculate real execution timeline from first start to last end #}
+                                            {%- set timeline_start = all_scenarios|map(attribute='start')|min -%}
+                                            {%- set timeline_end = all_scenarios|map(attribute='stop')|max -%}
+                                            {%- set timeline_duration_ms = timeline_end - timeline_start -%}
+                                            {%- set timeline_duration = timeline_duration_ms / 1000 -%}
+
+                                            {# Sort workers numerically by converting to int #}
+                                            {%- set worker_list = [] -%}
+                                            {%- for worker_id in worker_scenarios.keys() -%}
+                                                {%- set _ = worker_list.append(worker_id|int) -%}
+                                            {%- endfor -%}
+                                            {%- set sorted_worker_ids = worker_list|sort -%}
+                                            {%- set sorted_workers = [] -%}
+                                            {%- for worker_id in sorted_worker_ids -%}
+                                                {%- set _ = sorted_workers.append(worker_id|string) -%}
+                                            {%- endfor -%}
+
+                                            {%- for worker_id in sorted_workers -%}
+                                                <div class="worker-timeline-row">
+                                                    <div class="worker-label">Worker {{ worker_id }}</div>
+                                                    <div class="worker-timeline">
+                                                        {%- set worker_scenarios_sorted = worker_scenarios[worker_id]|sort(attribute='start') -%}
+
+                                                        {# Position scenarios based on real start times within the execution timeline #}
+                                                        {%- for scenario in worker_scenarios_sorted -%}
+                                                            {%- set scenario_start_offset_ms = scenario.start - timeline_start -%}
+                                                            {%- set scenario_start_offset = scenario_start_offset_ms / 1000 -%}
+                                                            {%- set left_percent = (scenario_start_offset / timeline_duration * 100)|round(2) -%}
+                                                            {%- set scenario_width_percent = (scenario.duration / timeline_duration * 100)|round(2) -%}
+                                                            {%- set scenario_width_percent = [scenario_width_percent, 1.0]|max -%}
+                                                            {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in ['failed', 'error'] else ('skipped' if scenario.status == 'skipped' else ('untested' if scenario.status == 'untested' else 'skipped'))) -%}
+                                                            <div class="scenario-segment scenario-{{ status_class }}"
+                                                                 style="position: absolute; left: {{ left_percent }}%; width: {{ scenario_width_percent }}%;"
+                                                                 data-scenario-name="{{ scenario.name|e }}"
+                                                                 data-feature-name="{{ scenario.feature|e }}"
+                                                                 data-status="{{ scenario.status }}"
+                                                                 data-start="{{ scenario.start }}"
+                                                                 data-duration="{{ scenario.duration }}"
+                                                                 data-worker-id="{{ worker_id }}">
+                                                            </div>
+                                                        {%- endfor -%}
+
+                                                        {# Scenarios positioned based on real timeline #}
+                                                    </div>
+                                                </div>
+                                            {%- endfor -%}
+                                        {%- else -%}
+                                            <div style="padding: 20px; text-align: center; color: #666; font-style: italic;">
+                                                No scenarios found with timing data (start time, duration > 0)
+                                            </div>
+                                        {%- endif -%}
+                                    </div>
+                                                                        <div class="timeline-summary">
+                                        {%- if all_scenarios|length > 0 -%}
+                                            {%- set passed_count = all_scenarios|selectattr("status", "equalto", "passed")|list|length -%}
+                                            {%- set failed_count = all_scenarios|selectattr("status", "in", ["failed", "error"])|list|length -%}
+                                            {%- set skipped_count = all_scenarios|selectattr("status", "equalto", "skipped")|list|length -%}
+                                            {%- set untested_count = all_scenarios|selectattr("status", "equalto", "untested")|list|length -%}
+                                            {%- set status_parts = [] -%}
+                                            {%- if passed_count > 0 -%}{%- set _ = status_parts.append(passed_count ~ " passed") -%}{%- endif -%}
+                                            {%- if failed_count > 0 -%}{%- set _ = status_parts.append(failed_count ~ " failed") -%}{%- endif -%}
+                                            {%- if skipped_count > 0 -%}{%- set _ = status_parts.append(skipped_count ~ " skipped") -%}{%- endif -%}
+                                            {%- if untested_count > 0 -%}{%- set _ = status_parts.append(untested_count ~ " untested") -%}{%- endif -%}
+                                            <small>{{ all_scenarios|length }} scenarios across {{ sorted_workers|length }} workers
+                                            {%- if status_parts|length > 0 -%} | {{ status_parts|join(" | ") }}{%- endif -%}</small>
+                                        {%- else -%}
+                                            <small>0 scenarios executed (dry run or all scenarios skipped/untested)</small>
+                                        {%- endif -%}
+                                        <br>
+                                        <small style="color: #888; font-style: italic;">
+                                            💡 Tip: If execution appears unbalanced across workers, consider using @ORDER tags to control test execution sequence for better load distribution.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xs-12" style="margin-bottom: 30px;">
+                                <!-- Extra space after timeline -->
                             </div>
                         </div>
                     </div>
@@ -286,8 +493,8 @@
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
                         {%- set scenario_tags = scenario|get_scenario_tags -%}
-                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'untested')) else False -%}
-                        {%- set scenario_crashed = True if (scenario.status == 'failed' and not scenario.error_background and not scenario.error_step) else False -%}
+                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'error' or scenario.status == 'untested')) else False -%}
+                        {%- set scenario_crashed = True if ((scenario.status == 'failed' or scenario.status == 'error') and not scenario.error_background and not scenario.error_step) else False -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario_tags|to_string_list }}">
                             <td class="text-left grey-behavex">
@@ -455,11 +662,11 @@
             {%- endif -%}
             {% if step.text is defined and step.text != "None" %}
             <div>
-                <pre class="small behavex_letter">{{ step.text|safe}}</pre>
+                <pre class="small behavex_letter">{{ step.text|e }}</pre>
             </div>
 
             {% endif%}
-            {%- if step.status == 'failed' or step.status == 'undefined' -%}
+            {%- if step.status == 'failed' or step.status == 'error' or step.status == 'undefined' -%}
                 <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
                  {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
                  {%- if error_msg or error_lines -%}
@@ -501,6 +708,173 @@
 
         $(document).ready(function(){
             iframe = false;
+
+            // Debug: Check if scenario segments exist
+            console.log('Found', $('.scenario-segment').length, 'scenario segments');
+            $('.scenario-segment').each(function(i) {
+                console.log('Segment', i, ':', $(this).data('scenario-name'));
+            });
+
+            // Remove any existing title attributes to prevent dual tooltips
+            $('.scenario-segment').removeAttr('title');
+
+            // Enhanced tooltips for timeline segments with debouncing for fast mouse movement
+            var tooltipTimeout;
+            var currentTooltipElement = null;
+
+            $('.scenario-segment').on('mouseenter', function() {
+                var $this = $(this);
+
+                // Clear any existing timeout
+                if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                }
+
+                // Destroy any existing tooltip immediately
+                if (currentTooltipElement && currentTooltipElement.get(0) !== $this.get(0)) {
+                    try {
+                        currentTooltipElement.tooltip('hide').tooltip('destroy');
+                    } catch (e) { /* ignore */ }
+                }
+
+                currentTooltipElement = $this;
+
+                // Debounce tooltip creation to prevent rapid fire events
+                tooltipTimeout = setTimeout(function() {
+                    try {
+                        var scenarioName = $this.data('scenario-name') || 'Unknown Scenario';
+                        var featureName = $this.data('feature-name') || 'Unknown Feature';
+                        var status = $this.data('status') || 'unknown';
+                        var start = $this.data('start');
+                        var duration = $this.data('duration');
+
+                        // Ensure we have valid numeric values
+                        start = (start !== undefined && start !== null && !isNaN(start)) ? parseFloat(start) : 0;
+                        duration = (duration !== undefined && duration !== null && !isNaN(duration)) ? parseFloat(duration) : 0;
+
+                        // Format duration like "1m 0.4s" or "11h 18m 12.3s"
+                        function formatDuration(seconds) {
+                            if (isNaN(seconds) || seconds < 0) return '0s';
+
+                            var hours = Math.floor(seconds / 3600);
+                            var minutes = Math.floor((seconds % 3600) / 60);
+                            var secs = (seconds % 60);
+
+                            var result = '';
+                            if (hours > 0) result += hours + 'h ';
+                            if (minutes > 0) result += minutes + 'm ';
+                            if (secs > 0 || result === '') {
+                                if (secs % 1 === 0) {
+                                    result += secs + 's';
+                                } else {
+                                    result += secs.toFixed(1) + 's';
+                                }
+                            }
+                            return result.trim();
+                        }
+
+
+
+                        // Format start time as HH:MM:SS only (no date)
+                        function formatStartTime(timestamp) {
+                            if (isNaN(timestamp) || timestamp <= 0) return 'N/A';
+
+                            try {
+                                var date;
+                                // Handle milliseconds timestamp (like 1755135608226)
+                                if (timestamp > 1000000000000) {
+                                    date = new Date(timestamp);
+                                }
+                                // Handle seconds timestamp
+                                else if (timestamp > 1600000000) {
+                                    date = new Date(timestamp * 1000);
+                                }
+                                // Small numbers are relative time
+                                else {
+                                    return formatDuration(timestamp) + ' from start';
+                                }
+
+
+
+                                // Format as HH:MM:SS only (no date)
+                                return String(date.getHours()).padStart(2, '0') + ':' +
+                                       String(date.getMinutes()).padStart(2, '0') + ':' +
+                                       String(date.getSeconds()).padStart(2, '0');
+                            } catch (e) {
+                                return 'N/A';
+                            }
+                        }
+
+                        var formattedDuration = formatDuration(duration);
+                        var formattedStartTime = formatStartTime(start);
+
+                        // Format status safely
+                        var formattedStatus = 'Unknown';
+                        if (status && typeof status === 'string') {
+                            if (status === 'idle') {
+                                formattedStatus = 'Idle';
+                            } else {
+                                formattedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+                            }
+                        }
+
+                        var tooltipContent = [
+                            '<div style="background: rgba(0,0,0,1.0); color: white; padding: 15px; border-radius: 6px; font-size: 13px; max-width: 600px; min-width: 300px; line-height: 1.5; white-space: normal; word-wrap: break-word; border: 1px solid #333; box-shadow: 0 4px 8px rgba(0,0,0,0.3); text-align: left;">',
+                            '<strong>' + featureName + '</strong><br/>',
+                            '<strong>Scenario:</strong> ' + scenarioName + '<br/>',
+                            '<strong>Status:</strong> ' + formattedStatus + '<br/>',
+                            '<strong>Start time:</strong> ' + formattedStartTime + '<br/>',
+                            '<strong>Duration:</strong> ' + formattedDuration,
+                            '</div>'
+                        ].join('');
+
+                        // Safely destroy any existing tooltip first
+                        try {
+                            $this.tooltip('hide').tooltip('destroy');
+                        } catch (e) { /* ignore */ }
+
+                        // Clear any existing title attributes
+                        $this.removeAttr('title').removeAttr('data-original-title');
+
+                        // Create and show new tooltip
+                        $this.tooltip({
+                            title: tooltipContent,
+                            html: true,
+                            placement: 'auto top',
+                            trigger: 'manual',
+                            container: 'body',
+                            template: '<div class="tooltip" role="tooltip" style="z-index: 10000;"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="background: transparent; border: none; padding: 0; max-width: none; min-width: 300px;"></div></div>'
+                        }).tooltip('show');
+
+                    } catch (error) {
+                        console.warn('Tooltip error:', error);
+                        // Fallback to simple title attribute
+                        var fallbackTitle = scenarioName + ' (' + formattedStatus + ') - ' + formattedDuration;
+                        $this.attr('title', fallbackTitle);
+                    }
+                }, 150); // 150ms delay to prevent rapid fire events
+            }).on('mouseleave', function() {
+                var $this = $(this);
+
+                // Clear the timeout to prevent tooltip creation if mouse left quickly
+                if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                    tooltipTimeout = null;
+                }
+
+                // Hide and destroy tooltip with delay to allow mouse to reach tooltip
+                setTimeout(function() {
+                    try {
+                        $this.tooltip('hide').tooltip('destroy');
+                        $this.removeAttr('title').removeAttr('data-original-title');
+                    } catch (e) { /* ignore */ }
+                }, 100);
+
+                // Clear current element reference
+                if (currentTooltipElement && currentTooltipElement.get(0) === $this.get(0)) {
+                    currentTooltipElement = null;
+                }
+            });
 
             // Event handler for copy buttons
             $(document).on('click', '[data-copy-text]', function(e){
@@ -704,19 +1078,34 @@
             show_all()
             if (status == 'failed'){
                 $('tr[feature_failed] span').click();
+                $('tr[feature_error] span').click();  // Also expand features with error status
                 $('tr[feature_passed]').hide();
                 $('tr[feature_skipped]').hide();
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-success').hide();
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
                 $($('tr[feature_failed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
+                $($('tr[feature_error] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success')).parents('tr.feature-scenario').hide();
+                $($('tr[feature_error] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning')).parents('tr.feature-scenario').hide();
             } else if (status == 'passed'){
                 $('tr[feature_failed]').hide();
+                $('tr[feature_error]').hide();  // Also hide features with error status
                 $('tr[feature_skipped]').hide();
                 $('tr[feature_skipped] + tr[data-feature-id] td');
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-warning').hide();
                 $($('tr[feature_passed] + tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons')).has('div.alert-danger').hide();
                 $('tr[feature_failed]').each(function(){
+                    var clickear = false;
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
+                        div.find('span').click();
+                        div.show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').parents('tr.feature-scenario').show();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-danger').parents('tr.feature-scenario').hide();
+                        div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').parents('tr.feature-scenario').hide();
+                    }
+                });
+                $('tr[feature_error]').each(function(){
                     var clickear = false;
                     var div = $(this);
                     if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-success').length > 0) {
@@ -743,6 +1132,16 @@
                 $('div.alert-danger').parents('tr.feature-scenario').hide();
                 $('div.alert-success').parents('tr.feature-scenario').hide();
                 $('tr[feature_failed]').each(function(){
+                    var div = $(this);
+                    if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
+                        div.find('span').click();
+                        div.show();
+                    } else {
+                        div.hide();
+                        div.next().hide();
+                    }
+                });
+                $('tr[feature_error]').each(function(){
                     var div = $(this);
                     if (div.find(' +  tr[data-feature-id] td[colspan=5] div.panel-default div.panel-body table tr.table_row_commons div.alert-warning').length > 0){
                         div.find('span').click();
@@ -789,6 +1188,7 @@
         function show_all(){
             $('tr.feature_passed').show();
             $('tr.feature_failed').show();
+            $('tr.feature_error').show();  // Also show features with error status
             $('tr.feature_skipped').show();
             $('tr[data-feature-tags]').show();
             $('tr[data-feature-id]').hide();
@@ -956,7 +1356,7 @@
                 },{
                     labels: [
                         {%- for step_name, step_dict in steps.items() -%}
-                            {%- if step_dict["overall_status"] == "failed" -%}
+                            {%- if step_dict["overall_status"] == "failed" or step_dict["overall_status"] == "error" -%}
                                 decodeHtmlEntity('{{step_name}}'),
                             {%- endif -%}
                         {%- endfor -%}
@@ -964,7 +1364,7 @@
                     label: 'Failed',
                     data: [
                         {%- for step_name, step_dict in steps.items() -%}
-                            {%- if step_dict["overall_status"] == "failed" -%}
+                            {%- if step_dict["overall_status"] == "failed" or step_dict["overall_status"] == "error" -%}
                                 { x: {{step_dict['executions']}}, y: {{'%.1f' % (step_dict['avg'])}} },
                             {%- endif -%}
                         {%- endfor -%}
