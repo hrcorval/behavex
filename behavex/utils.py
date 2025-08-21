@@ -499,8 +499,8 @@ def set_behave_tags():
     """
     Enhanced version that creates cucumber expressions with fallback to legacy processing.
 
-    This function converts legacy command line arguments directly to cucumber expressions,
-    bypassing the complex legacy processing pipeline when possible.
+    This function uses auto-detection to determine whether to use cucumber expressions
+    or legacy format, ensuring consistency with match_for_execution().
     """
     behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
 
@@ -509,16 +509,38 @@ def set_behave_tags():
         # Get tag arguments and convert to cucumber expression
         tags_env = get_env('tags')
         tag_args = tags_env.split(';') if tags_env else []
-        cucumber_expression = convert_command_line_tags_to_cucumber(tag_args)
 
-        # Save the cucumber expression
+        # Only proceed if we have valid tag arguments
+        if tag_args and any(tag_arg.strip() for tag_arg in tag_args):
+            cucumber_expression = convert_command_line_tags_to_cucumber(tag_args)
+
+            # Use auto-detection to determine the format (same logic as match_for_execution)
+            if cucumber_expression and cucumber_expression.strip():
+                from behavex.outputs.report_utils import \
+                    detect_tag_expression_format
+                expression_format = detect_tag_expression_format(cucumber_expression)
+
+                if expression_format == 'cucumber':
+                    # Save as cucumber expression
+                    retry_file_operation(
+                        behave_tags, execution=get_save_function(behave_tags, cucumber_expression)
+                    )
+                    return
+                else:
+                    # Expression is detected as legacy, use legacy processing
+                    logging.debug("Expression detected as legacy format, using legacy tag processing")
+                    set_behave_tags_legacy()
+                    return
+
+        # If no tags or empty expression, create empty file (like legacy does)
         retry_file_operation(
-            behave_tags, execution=get_save_function(behave_tags, cucumber_expression)
+            behave_tags, execution=get_save_function(behave_tags, '')
         )
         return
-    except Exception:
+
+    except Exception as e:
         # Fall back to legacy processing if cucumber conversion fails
-        logging.debug("Cucumber tag conversion failed, using legacy tag processing")
+        logging.debug(f"Cucumber tag conversion failed: {e}, using legacy tag processing")
         pass
 
     # Fallback to legacy implementation

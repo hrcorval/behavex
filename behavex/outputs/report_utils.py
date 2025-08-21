@@ -353,13 +353,16 @@ def evaluate_cucumber_tag_expression(tags, expression):
     # Parse the cucumber expression
     tag_expression = parse(expression)
 
-    # Convert tags to format expected by cucumber parser (without @)
-    # Cucumber parser expects clean tag names without @ prefix
+    # Convert tags to format expected by cucumber parser (WITH @)
+    # Cucumber parser expects tag names WITH @ prefix
     normalized_tags = []
     for tag in tags:
-        clean_tag = tag.lstrip('@') if tag.startswith('@') else tag
-        if clean_tag:  # Skip empty tags
-            normalized_tags.append(clean_tag)
+        if tag:  # Skip empty tags
+            # Ensure tag starts with @ for cucumber parser
+            if not tag.startswith('@'):
+                normalized_tags.append('@' + tag)
+            else:
+                normalized_tags.append(tag)
 
     # Evaluate the expression
     return tag_expression.evaluate(normalized_tags)
