@@ -40,9 +40,9 @@ jobs:
           python -m build
           python -m pip install beautifulsoup4
           if [ "${{ matrix.behave-version }}" == "latest" ]; then
-            python -m pip install behave jinja2 configobj minify-html csscompressor allure-python-commons
+            python -m pip install behave jinja2 configobj minify-html csscompressor allure-python-commons cucumber-tag-expressions
           else
-            python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
+            python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons cucumber-tag-expressions
           fi
           python -m pip install dist/behavex-4.6.0.tar.gz --no-deps
           python -m pip install behavex-images==3.3.1
@@ -94,9 +94,9 @@ jobs:
           python -m pip install build
           python -m pip install beautifulsoup4
           if [ "${{ matrix.behave-version }}" == "latest" ]; then
-            python -m pip install behave jinja2 configobj minify-html csscompressor allure-python-commons
+            python -m pip install behave jinja2 configobj minify-html csscompressor allure-python-commons cucumber-tag-expressions
           else
-            python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
+            python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons cucumber-tag-expressions
           fi
           python -m pip install behavex-images==3.3.1
           python -m build

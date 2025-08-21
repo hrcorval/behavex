@@ -505,8 +505,16 @@ def set_behave_tags():
     """
     behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
 
-    # Try cucumber expression approach first
+    # Try cucumber expression approach first, but only if library is available
     try:
+        # Import check: only proceed if cucumber-tag-expressions is available
+        from behavex.outputs.report_utils import cucumber_parse
+        if cucumber_parse is None:
+            # Library not available, use legacy processing
+            logging.debug("cucumber-tag-expressions library not available, using legacy tag processing")
+            set_behave_tags_legacy()
+            return
+
         # Get tag arguments and convert to cucumber expression
         tags_env = get_env('tags')
         tag_args = tags_env.split(';') if tags_env else []
@@ -520,7 +528,7 @@ def set_behave_tags():
                 expression_format = detect_tag_expression_format(cucumber_expression)
 
                 if expression_format == 'cucumber':
-                    # Save as cucumber expression
+                    # Save as cucumber expression (only if library is available)
                     retry_file_operation(
                         behave_tags, execution=get_save_function(behave_tags, cucumber_expression)
                     )
