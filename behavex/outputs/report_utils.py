@@ -31,6 +31,10 @@ try:
 except ImportError:
     from behave.model import Status
 
+try:
+    from cucumber_tag_expressions import parse as cucumber_parse
+except ImportError:
+    cucumber_parse = None
 
 
 from behavex.conf_mgr import get_env, get_param, set_env
@@ -344,14 +348,14 @@ def evaluate_cucumber_tag_expression(tags, expression):
         ImportError: If cucumber-tag-expressions library not available
         Exception: If expression parsing fails
     """
-    # Import cucumber tag expressions library
-    from cucumber_tag_expressions import parse
-
     if not expression or not expression.strip():
         return True
 
+    if cucumber_parse is None:
+        raise ImportError("cucumber-tag-expressions library is not available")
+
     # Parse the cucumber expression
-    tag_expression = parse(expression)
+    tag_expression = cucumber_parse(expression)
 
     # Convert tags to format expected by cucumber parser (WITH @)
     # Cucumber parser expects tag names WITH @ prefix

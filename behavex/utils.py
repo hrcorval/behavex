@@ -33,7 +33,8 @@ from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
 from behavex.outputs import report_html
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (get_save_function, get_string_hash,
+from behavex.outputs.report_utils import (detect_tag_expression_format,
+                                          get_save_function, get_string_hash,
                                           match_for_execution,
                                           retry_file_operation)
 
@@ -516,8 +517,6 @@ def set_behave_tags():
 
             # Use auto-detection to determine the format (same logic as match_for_execution)
             if cucumber_expression and cucumber_expression.strip():
-                from behavex.outputs.report_utils import \
-                    detect_tag_expression_format
                 expression_format = detect_tag_expression_format(cucumber_expression)
 
                 if expression_format == 'cucumber':

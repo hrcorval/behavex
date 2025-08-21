@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behavex"
-version = "4.5.1"
+version = "4.6.0"
 description = "Agile testing framework on top of Behave (BDD)."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -21,7 +21,9 @@ dependencies = [
     "configobj",
     "minify-html",
     "csscompressor",
-    "packaging"
+    "packaging",
+    # Cucumber tag expressions support for modern tag filtering
+    "cucumber-tag-expressions>=4.1.0"
 ]
 # Entry points are statically defined below
 
