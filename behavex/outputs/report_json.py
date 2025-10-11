@@ -33,30 +33,14 @@ from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
 
 def add_step_info(step, parent_node):
     index = len(parent_node)
-    parent_node.append(_step_to_dict(index, step))
+    step_info = _step_to_dict(index, step)
+    parent_node.append(step_info)
+    return step_info
 
 
 def add_step_info_background(step, parent_node):
-    step_info = {}
-    for attrib in ('step_type', 'name', 'text', 'status'):
-        step_info[attrib] = text(getattr(step, attrib))
-    step_info['duration'] = step.duration or 0
-    # Add start and stop times if they exist
-    if hasattr(step, 'start'):
-        step_info['start'] = getattr(step, 'start')
-    if hasattr(step, 'stop'):
-        step_info['stop'] = getattr(step, 'stop')
-    if step.table:
-        step_info['table'] = {}
-        for heading in step.table.headings:
-            step_info['table'][heading] = []
-            for row in step.table:
-                step_info['table'][heading].append(row[heading])
-    step_info['index'] = len(parent_node)
-    step_info['background'] = 'True'
-    process_step_definition(step, step_info)
-    parent_node.append(step_info)
-    return step_info
+    step.background = 'True'
+    return add_step_info(step, parent_node)
 
 
 def generate_execution_info(features):
