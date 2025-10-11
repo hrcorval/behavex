@@ -38,7 +38,7 @@ from typing import Dict, Optional, Tuple
 from urllib.parse import urlparse
 
 from allure_commons.model2 import (Attachment, Parameter, StatusDetails,
-                                   TestResult, TestStepResult)
+                                   TestResult, TestStepResult, TestBeforeResult)
 from allure_commons.utils import now
 
 from behavex.conf_mgr import get_env, get_param
@@ -498,8 +498,10 @@ class AllureBehaveXFormatter:
                 test_error_msg = None  # Store test's error message
                 last_details = None  # Store last error details
 
-                for step in scenario['steps']:
-                    allure_step = TestStepResult(
+                all_steps = [*scenario.get("background", {}).get("steps", []), *scenario["steps"]]
+                for step in all_steps:
+                    StepPrototype = TestStepResult if step.get("background", "False") == "True" else TestBeforeResult
+                    allure_step = StepPrototype(
                         name=f"{step['step_type'].capitalize()} {step['name']}"
                     )
                     # Map BehaveX step statuses to Allure statuses
