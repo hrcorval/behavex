@@ -603,6 +603,16 @@
 											{%- set path_log_scenario = path_log_scenario|string -%}
                                             {%- set path_img_scenario = path_join(path_log, scenario_hash, 'images.html')-%}
 											{%- set path_img_scenario = path_img_scenario|string -%}
+
+                                            {%- if scenario.error_lines -%}
+                                                <a href="#" charset="utf-8" class="btn btn-info btn-xs" title="Show trace" data-stack-trace>
+                                                   <span class="glyphicon glyphicon-console"></span>
+                                                </a>
+                                                <div class="stack-trace-content" style="display: none;">
+                                                    <pre>{{ scenario.error_lines | join('') | e }}</pre>
+                                                </div>
+                                            {%- endif -%}
+
                                             {%- if path_log_scenario|path_exist_in_output and not scenario_crashed -%}
                                                 <a href="{{ path_log_scenario|replace(get_env('OUTPUT'), '.')|normalize_path|urlencode }}"
                                                    charset="utf-8" class="btn btn-info btn-xs" title="View Test Logs"
@@ -1031,6 +1041,22 @@
             $(document).on('click', '[data-reset-filter]', function(){
                 reset_filters();
                 show_all();
+            });
+
+            // Event handler for the stack trace button
+            $(document).on('click', '[data-stack-trace]', function(e){
+                e.preventDefault();
+                var div = $(this).next('.stack-trace-content');
+                var modal = $('#modal-logs');
+                var body_modal = modal.find('div.modal-body');
+                var clone_div = div.clone();
+                clone_div.css('display', '');
+
+                var html = clone_div.html().replace(/\\n/g, '\n');
+                clone_div.html(html);
+
+                body_modal.html(clone_div);
+                modal.modal('show');
             });
 
             var ua = navigator.userAgent.toLowerCase();
