@@ -57,7 +57,7 @@ def handle_execution_complete_callback(codes,
         tuple_values = future.result()
     except: # isort:skip
         json_reports += []
-        codes.append(1)
+        codes.append(2)
     if tuple_values:
         execution_code, map_json = tuple_values
         json_reports += [map_json]
