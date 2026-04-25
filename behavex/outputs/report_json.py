@@ -286,6 +286,8 @@ def _step_to_dict(index, step):
             step_info['table'][heading] = []
             for row in step.table:
                 step_info['table'][heading].append(row[heading])
+    if hasattr(step, 'background'):
+        step_info['background'] = step.background
     process_step_definition(step, step_info)
     step_info['index'] = index
     return step_info
