@@ -341,7 +341,7 @@ def launch_behavex():
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
                     failures_file.write(','.join(failures))
-        # Calculates final exit code. execution_codes is 1 only if an execution exception arises
+        # Calculates final exit code. execution_codes is 2 if an execution exception arises
         if isinstance(execution_codes, list):
             execution_failed = True if sum(execution_codes) > 0 else False
             execution_interrupted_or_crashed = True if any([code == 2 for code in execution_codes]) else False
@@ -525,10 +525,10 @@ def _wait_for_futures(futures, execution_codes, json_reports):
             if isinstance(e, BrokenProcessPool):
                 print_parallel('process.pool.broken.main', str(e))
                 # Mark as failed execution but continue processing remaining futures
-                execution_codes.append(1)
+                execution_codes.append(2)
             else:
                 print_parallel('parallel.process.error', str(e))
-                execution_codes.append(1)
+                execution_codes.append(2)
 
 
 def launch_by_feature(features,
