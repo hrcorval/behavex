@@ -525,10 +525,10 @@ def _wait_for_futures(futures, execution_codes, json_reports):
             if isinstance(e, BrokenProcessPool):
                 print_parallel('process.pool.broken.main', str(e))
                 # Mark as failed execution but continue processing remaining futures
-                execution_codes.append(1)
+                execution_codes.append(2)
             else:
                 print_parallel('parallel.process.error', str(e))
-                execution_codes.append(1)
+                execution_codes.append(2)
 
 
 def launch_by_feature(features,
