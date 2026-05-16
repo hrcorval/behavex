@@ -943,10 +943,12 @@ def then_html_report_contains_clickable_stack_trace_markers(context):
     assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
     with open(html_report_path, 'r', encoding='utf-8') as f:
         html_content = f.read()
-    assert 'data-stack-trace' in html_content, \
-        "Expected HTML report to contain 'data-stack-trace' attribute for clickable error messages"
+    # Use ' data-stack-trace' (leading space) to match the HTML attribute, not the JS selector [data-stack-trace]
+    assert ' data-stack-trace' in html_content, \
+        "Expected HTML report to contain 'data-stack-trace' HTML attribute on failed scenario error elements"
+    # clickable-trace only appears inside rendered <pre> class attributes, never in JS or CSS
     assert 'clickable-trace' in html_content, \
-        "Expected HTML report to contain 'clickable-trace' CSS class on failed scenario error messages"
+        "Expected HTML report to contain 'clickable-trace' CSS class on failed scenario error elements"
 
 
 @then('the HTML report should contain hidden stack trace content blocks')
@@ -977,8 +979,9 @@ def then_html_report_has_no_stack_trace_markers(context):
     assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
     with open(html_report_path, 'r', encoding='utf-8') as f:
         html_content = f.read()
-    # The JS handler references data-stack-trace in code, so we look for the HTML *attribute* on pre elements
-    assert '<pre ' not in html_content or 'data-stack-trace' not in html_content.split('<script')[0], \
+    # ' data-stack-trace' (leading space) matches the HTML attribute only, not the JS selector [data-stack-trace]
+    assert ' data-stack-trace' not in html_content, \
         "Expected passing-only HTML report to not render 'data-stack-trace' attribute on any scenario element"
-    assert 'clickable-trace' not in html_content.split('<script')[0], \
+    # clickable-trace only appears inside rendered <pre> class attributes, so a plain search is reliable
+    assert 'clickable-trace' not in html_content, \
         "Expected passing-only HTML report to not render 'clickable-trace' CSS class on any scenario element"
