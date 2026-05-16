@@ -1023,7 +1023,14 @@ def _launch_behave(behave_args):
             # Create runner instance
             runner = Runner(config)
 
-            # Run the tests (Behave output suppressed via format configuration)
+            # Ensure line-buffered stdout so formatter output appears in real time on all
+            # platforms (Linux/Windows block-buffer stdout when not a TTY by default)
+            if 'null' not in (config.format or []):
+                try:
+                    sys.stdout.reconfigure(line_buffering=True)
+                except AttributeError:
+                    pass  # Python < 3.7
+
             runner.run()
 
             # Calculate execution code using runner internal state
@@ -1458,22 +1465,14 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append('--tags')
         arguments.append('~@MANUAL')
 
-    # Handle output suppression based on execution mode
+    # Handle output based on execution mode
     if multiprocess:
-        # In multiprocess: use null format to suppress verbose step output
+        # In multiprocess: suppress output entirely — mixing output from concurrent processes
+        # in the console would produce unreadable interleaved text
         arguments.append('--format')
         arguments.append('null')
-    else:
-        # In single process: redirect output to behave.log to keep console clean
-        output_folder = get_env('OUTPUT')
-        if output_folder:
-            behave_log_path = os.path.join(output_folder, 'behave', 'behave.log')
-            # Ensure behave directory exists
-            behave_dir = os.path.dirname(behave_log_path)
-            if not os.path.exists(behave_dir):
-                os.makedirs(behave_dir)
-            arguments.append('--outfile')
-            arguments.append(behave_log_path)
+    # In single process: no --outfile and no --format override, so behave writes
+    # to stdout directly using the default pretty formatter (or any user-specified formatter)
 
     args_sys = config.args if config else None
     set_args_captures(arguments, args_sys)

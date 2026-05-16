@@ -263,6 +263,18 @@ def then_no_exception_messages(context):
         assert message not in context.result.stdout.lower(), f"Unexpected output when checking exception messages in the console output: {context.result.stdout}\n"
 
 
+@then('I should not see "{text}" in the console output')
+def then_text_not_in_console(context, text):
+    assert text not in context.result.stdout, \
+        f"Expected '{text}' to not appear in console output, but it did.\nOutput:\n{context.result.stdout}"
+
+
+@then('I should see "{text}" in the console output')
+def then_text_in_console(context, text):
+    assert text in context.result.stdout, \
+        f"Expected '{text}' in console output, but it was not found.\nOutput:\n{context.result.stdout}"
+
+
 
 
 
@@ -1022,10 +1034,12 @@ def then_html_report_has_no_stack_trace_markers(context):
 
 
 @when('I run the behavex command targeting the "{feature_path}" feature')
-def when_run_with_feature_path(context, feature_path):
+@when('I run the behavex command targeting the "{feature_path}" feature with "{parallel_processes}" parallel processes')
+def when_run_with_feature_path(context, feature_path, parallel_processes='1'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                       os.path.join(tests_features_path, feature_path),
+                      '--parallel-processes', parallel_processes,
                       '-o', context.output_path]
     execute_command(context, execution_args)
 

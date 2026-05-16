@@ -14,6 +14,7 @@ FIXES:
 * Fixed a parallel-execution edge case where the shallow feature copy used when dispatching a single scenario still referenced the original ``feature.rules``, causing ``get_all_feature_scenarios`` to double-count rule scenarios in JSON reports.
 * Fixed exit code returning 0 when step loading fails with an ``ImportError`` (or any exception). BehaveX now returns exit code 1 when an execution error occurs and no scenarios successfully ran, preventing misleading "green" results when the test suite was never actually executed (`issue #234 <https://github.com/hrcorval/behavex/issues/234>`__).
 * Fixed ``KeyError: 'error_lines'`` in XML report generation when a step has no matching definition. The ``get_lines_exception`` function now safely returns an empty string when ``error_lines`` is absent from the step dictionary (`issue #235 <https://github.com/hrcorval/behavex/issues/235>`__).
+* Fixed scenario output not being visible in the console when running with a single process. BehaveX now routes Behave's formatter output directly to ``stdout`` in single-process mode and applies ``line_buffering`` for real-time output on Linux and Windows where ``stdout`` is block-buffered when not attached to a TTY. In multi-process mode, formatter output is intentionally suppressed to prevent interleaved output from concurrent processes (`issue #236 <https://github.com/hrcorval/behavex/issues/236>`__).
 
 BREAKING CHANGES:
 
