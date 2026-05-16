@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+from packaging.version import Version
 import subprocess
 import time
 
@@ -43,8 +44,19 @@ def when_run_passing_test(context):
     execute_command(context, execution_args)
 
 
+def _require_behave_for_rule(context):
+    """Skip the scenario if the installed behave version does not support Rule sections."""
+    import behave as _behave
+    if Version(_behave.__version__) < Version('1.3.3'):
+        context.scenario.skip(reason=f'Rule sections require behave >= 1.3.3 (installed: {_behave.__version__})')
+        return False
+    return True
+
+
 @when('I run the behavex command with a rule test')
 def when_run_rule_test(context):
+    if not _require_behave_for_rule(context):
+        return
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'rule_tests.feature'), '-o', context.output_path]
     execute_command(context, execution_args)
@@ -52,6 +64,8 @@ def when_run_rule_test(context):
 
 @when('I run the behavex command with a rule test using "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
 def when_run_rule_test_parallel(context, parallel_processes, parallel_scheme):
+    if not _require_behave_for_rule(context):
+        return
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
