@@ -27,8 +27,7 @@ from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message, get_string_hash,
                                           match_for_execution, text)
-from behavex.utils import (generate_hash, generate_uuid,
-                           get_all_feature_scenarios, get_scenario_tags,
+from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
                            retry_file_operation)
 
 
