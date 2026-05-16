@@ -1,6 +1,15 @@
 Version History
 ===============================================================================
 
+Version: 4.6.2rc1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Added visual grouping of scenarios by ``Rule`` in the HTML report. Scenarios belonging to a ``Rule`` block are now rendered under a dedicated header row displaying the Rule name, making it easy to identify which business rule each scenario belongs to. The ``rule`` field is also included in the JSON report for each scenario (``null`` for scenarios not inside any Rule block), enabling programmatic access to Rule membership.
+* Improved Rule header visibility when using HTML report filters. Rule header rows now correctly hide when all their scenarios are filtered out (e.g., when searching for a specific scenario, filtering by tag, or filtering by status), and show again when any of their scenarios becomes visible. This applies to the scenario search, tag filter, and status filter interactions.
+* Extended the Rule processing test suite with scenarios that validate Rule section display in the HTML report (header row presence, correct header count per feature) and Rule metadata in the JSON report (``rule`` field presence and correct values for each scenario).
+
 Version: 4.6.1rc1
 -------------------------------------------------------------------------------
 

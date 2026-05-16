@@ -344,6 +344,38 @@ def verify_string_not_in_html_report(context):
         assert total_string_instances_in_html_report == 0, f"Expected the HTML report to not contain the string '{variable_or_tag}'"
 
 
+@then('I should see the generated HTML report contains "{count}" occurrences of the "{string_to_search}" string')
+def verify_string_count_in_html_report(context, count, string_to_search):
+    total = get_string_instances_from_html_report(context, string_to_search)
+    logging.info(f"Total instances of '{string_to_search}' in the HTML report: {total}")
+    assert total == int(count), f"Expected {count} occurrences of '{string_to_search}' in HTML report, found {total}"
+
+
+@then('I should see all scenarios in the JSON report have a rule field')
+def verify_json_scenarios_have_rule_field(context):
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            assert 'rule' in scenario, f"Scenario '{scenario['name']}' is missing 'rule' field in JSON report"
+
+
+@then('I should see the JSON report contains scenarios with rule "{rule_name}"')
+def verify_json_scenarios_with_rule(context, rule_name):
+    data = _load_json_report(context)
+    matching = [
+        scenario
+        for feature in data['features']
+        for scenario in feature['scenarios']
+        if scenario.get('rule') == rule_name
+    ]
+    assert matching, f"No scenarios found with rule '{rule_name}' in JSON report"
+
+
+def _load_json_report(context):
+    report_path = os.path.abspath(os.path.join(context.output_path, 'report.json'))
+    with open(report_path, 'r') as f:
+        return json.load(f)
+
 
 def get_tags_arguments(tags):
     tags_array = []

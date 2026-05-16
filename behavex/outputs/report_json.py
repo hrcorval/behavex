@@ -50,12 +50,19 @@ def generate_execution_info(features):
     for feature in features:
         scenario_list = []
         id_feature = random.getrandbits(16)
-        for feature_scenario in get_all_feature_scenarios(feature):
+        for feature_scenario in feature.scenarios:
             if isinstance(feature_scenario, ScenarioOutline):
                 scenarios = feature_scenario.scenarios
             else:
                 scenarios = [feature_scenario]
-            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature)[1]
+            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None)[1]
+        for rule in getattr(feature, 'rules', []):
+            for rule_scenario in rule.scenarios:
+                if isinstance(rule_scenario, ScenarioOutline):
+                    scenarios = rule_scenario.scenarios
+                else:
+                    scenarios = [rule_scenario]
+                scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=rule.name)[1]
 
         if scenario_list:
             feature_info = {}
@@ -140,7 +147,7 @@ def _processing_background_feature(feature):
     return feature_background
 
 
-def _processing_scenarios(scenarios, scenario_list, id_feature):
+def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
     scenario_outline_index = 0
     overall_status = 'passed'
     is_dry_run = get_param('dry_run')
@@ -200,6 +207,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_lines'] = error_lines
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
+            scenario_info['rule'] = rule_name
             scenario_info['id_hash'] = generate_uuid()
             scenario_info['identifier_hash'] = scenario.identifier_hash if hasattr(scenario, 'identifier_hash') else get_string_hash(f"{str(scenario.feature.filename)}-{str(scenario.line)}")
             scenario_info['process_id'] = str(scenario.process_id) if hasattr(scenario, 'process_id') else str(os.getpid())
