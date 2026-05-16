@@ -9,5 +9,6 @@ Feature: Chained Exception Tests
   Scenario: Deeply chained exception with three levels
     Given a step that raises a chained exception with three levels
 
+  @PASSING_SCENARIO
   Scenario: Passing scenario
     Given a passing condition

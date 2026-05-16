@@ -911,4 +911,74 @@ def then_see_strict_execution_order(context, parallel_scheme):
             f"stopped at {current_scenario['stop_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
             f"started at {next_scenario['start_time']}. With --order-tests-strict, scenarios must complete before the next starts!"
 
-    logging.info(f"✅ Strict sequential execution verified for {parallel_scheme} scheme with --order-tests-strict")
+
+# ---------- Stack Trace Report Steps ----------
+
+@when('I run the behavex command with chained exception tests')
+def when_run_chained_exception_tests(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'chained_exception_tests.feature'),
+        '-o', context.output_path,
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with only passing chained exception test')
+def when_run_only_passing_chained_exception_test(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'chained_exception_tests.feature'),
+        '-t', '@PASSING_SCENARIO',
+        '-o', context.output_path,
+    ]
+    execute_command(context, execution_args)
+
+
+@then('the HTML report should contain clickable stack trace markers for failed scenarios')
+def then_html_report_contains_clickable_stack_trace_markers(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    assert 'data-stack-trace' in html_content, \
+        "Expected HTML report to contain 'data-stack-trace' attribute for clickable error messages"
+    assert 'clickable-trace' in html_content, \
+        "Expected HTML report to contain 'clickable-trace' CSS class on failed scenario error messages"
+
+
+@then('the HTML report should contain hidden stack trace content blocks')
+def then_html_report_contains_stack_trace_content(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    assert 'stack-trace-content' in html_content, \
+        "Expected HTML report to contain hidden 'stack-trace-content' div blocks with full stack trace"
+    assert 'Traceback (most recent call last)' in html_content, \
+        "Expected stack trace content to include Python traceback header"
+
+
+@then('the HTML report should contain the chained exception cause chain')
+def then_html_report_contains_chained_exception_chain(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    assert 'The above exception was the direct cause of the following exception' in html_content, \
+        "Expected HTML report to contain Python's chained exception cause marker for chained exceptions"
+
+
+@then('the HTML report should not contain stack trace markers')
+def then_html_report_has_no_stack_trace_markers(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    # The JS handler references data-stack-trace in code, so we look for the HTML *attribute* on pre elements
+    assert '<pre ' not in html_content or 'data-stack-trace' not in html_content.split('<script')[0], \
+        "Expected passing-only HTML report to not render 'data-stack-trace' attribute on any scenario element"
+    assert 'clickable-trace' not in html_content.split('<script')[0], \
+        "Expected passing-only HTML report to not render 'clickable-trace' CSS class on any scenario element"
