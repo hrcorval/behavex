@@ -1,6 +1,27 @@
 Version History
 ===============================================================================
 
+Version: 4.6.1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Added full stack trace visibility in the HTML report for failed scenarios. Clicking on the red error message now opens a modal displaying the complete Python traceback, including chained exception cause chains. The error element is rendered with a pointer cursor and tooltip to indicate it is interactive.
+* Added native support for Gherkin ``Rule`` sections. Scenarios inside ``Rule`` blocks were previously silently skipped because behave 1.3.3+ stores them in ``feature.rules`` rather than ``feature.scenarios``. BehaveX now collects and executes all scenarios regardless of whether they are at the feature level or inside a Rule, including correct reporting in HTML, XML, and JSON outputs and proper parallel execution support.
+
+FIXES:
+
+* Fixed a parallel-execution edge case where the shallow feature copy used when dispatching a single scenario still referenced the original ``feature.rules``, causing ``get_all_feature_scenarios`` to double-count rule scenarios in JSON reports.
+
+BREAKING CHANGES:
+
+* Dropped support for Python 3.5, 3.6, and 3.7. These versions reached end-of-life and represent less than 1% of active PyPI downloads combined. The minimum supported Python version is now 3.8.
+
+CONTRIBUTIONS:
+
+* Thanks to `bombsimon <https://github.com/bombsimon>`__ for contributing the full stack trace visibility feature in the HTML report (`PR #238 <https://github.com/hrcorval/behavex/pull/238>`__).
+* Thanks to `chriskite <https://github.com/chriskite>`__ for contributing support for Gherkin Rule sections (`PR #241 <https://github.com/hrcorval/behavex/pull/241>`__).
+
 Version: 4.6.0
 -------------------------------------------------------------------------------
 
