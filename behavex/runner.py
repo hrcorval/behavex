@@ -1513,6 +1513,9 @@ def _get_feature_json_skeleton(behave_element):
     elif type(behave_element) is Scenario:
         feature = copy.copy(behave_element.feature)
         feature.scenarios = [behave_element]
+        # Clear rules so get_all_feature_scenarios returns only the single dispatched scenario
+        if hasattr(feature, 'rules'):
+            feature.rules = []
     else:
         raise Exception("No feature or scenario to process...")
     execution_info = generate_execution_info([feature])

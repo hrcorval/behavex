@@ -27,7 +27,8 @@ from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message, get_string_hash,
                                           match_for_execution, text)
-from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
+from behavex.utils import (generate_hash, generate_uuid,
+                           get_all_feature_scenarios, get_scenario_tags,
                            retry_file_operation)
 
 
@@ -49,7 +50,7 @@ def generate_execution_info(features):
     for feature in features:
         scenario_list = []
         id_feature = random.getrandbits(16)
-        for feature_scenario in feature.scenarios:
+        for feature_scenario in get_all_feature_scenarios(feature):
             if isinstance(feature_scenario, ScenarioOutline):
                 scenarios = feature_scenario.scenarios
             else:

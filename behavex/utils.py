@@ -25,6 +25,11 @@ from functools import reduce
 from tempfile import gettempdir
 
 from behave.model import ScenarioOutline
+
+try:
+    from behave.model import Rule as BehaveRule
+except ImportError:
+    BehaveRule = None  # behave < 1.3.3 does not have Rule support
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
 
@@ -195,7 +200,7 @@ def explore_features(features_path, features_list=None):
             if feature:
                 if scenario_line:
                     # iterate over scenarios and add the scenario that matches the scenario line
-                    for scenario in feature.scenarios:
+                    for scenario in get_all_feature_scenarios(feature):
                         #check if scenario is a ScenarioOutline
                         if isinstance(scenario, ScenarioOutline):
                             for example in scenario.scenarios:
@@ -205,7 +210,7 @@ def explore_features(features_path, features_list=None):
                             if scenario.line == int(scenario_line):
                                 features_list.append(scenario)
                 else:
-                    features_list.extend(feature.scenarios)
+                    features_list.extend(get_all_feature_scenarios(feature))
     else:
         try:
             for node in os.listdir(normalized_features_path):
@@ -216,7 +221,7 @@ def explore_features(features_path, features_list=None):
                     abs_feature_path = os.path.abspath(node_path)
                     feature = should_feature_be_run(abs_feature_path)
                     if feature:
-                        features_list.extend(feature.scenarios)
+                        features_list.extend(get_all_feature_scenarios(feature))
         except OSError as e:
             print(f"Error accessing path {features_path}: {e}")
             return features_list
@@ -231,7 +236,7 @@ def should_feature_be_run(path_feature):
     else:
         tags_list = []
         if hasattr(feature, 'scenarios'):
-            scenarios_instances = get_scenarios_instances(feature.scenarios)
+            scenarios_instances = get_scenarios_instances(get_all_feature_scenarios(feature))
             for scenario in scenarios_instances:
                 scenario_tags = get_scenario_tags(scenario)
                 tags_list.append(scenario_tags)
@@ -245,7 +250,7 @@ def should_feature_be_run(path_feature):
 
 def match_any_paths(feature):
     result = False
-    for scenario in feature.scenarios:
+    for scenario in get_all_feature_scenarios(feature):
         if hasattr(scenario, 'scenarios'):
             for outline in scenario.scenarios:
                 if IncludePathsMatch()(outline.filename, outline.line):
@@ -260,7 +265,7 @@ def match_any_name(feature):
     if not IncludeNameMatch().bool():
         return True
     result = False
-    for scenario in feature.scenarios:
+    for scenario in get_all_feature_scenarios(feature):
         if hasattr(scenario, 'scenarios'):
             for outline in scenario.scenarios:
                 if IncludeNameMatch()(outline.name):
@@ -426,7 +431,7 @@ def len_scenarios(feature_file):
     data = codecs.open(feature_file, encoding='utf8').read()
     feature = parse_feature(data=data)
     amount_scenarios = 0
-    scenarios_instances = get_scenarios_instances(feature.scenarios)
+    scenarios_instances = get_scenarios_instances(get_all_feature_scenarios(feature))
     for scenario in scenarios_instances:
         # Using enhanced tag matching with version-aware v1/v2 tag expression support
         # (match_for_execution includes both v1 and v2 implementations internally)
@@ -501,10 +506,25 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
     return result
 
 
+def get_all_feature_scenarios(feature):
+    """Return all scenarios from a feature, including those inside Rule blocks.
+
+    In behave 1.3.3+, scenarios inside Rule blocks are stored in feature.rules,
+    not in feature.scenarios. This helper combines both so callers need not
+    know which behave version is in use.
+    """
+    all_scenarios = list(feature.scenarios)
+    for rule in getattr(feature, 'rules', []):
+        all_scenarios.extend(rule.scenarios)
+    return all_scenarios
+
+
 def get_scenarios_instances(scenarios):
     scenarios_to_iterate = []
     for scenario in scenarios:
-        if isinstance(scenario, ScenarioOutline):
+        if BehaveRule is not None and isinstance(scenario, BehaveRule):
+            scenarios_to_iterate.extend(get_scenarios_instances(scenario.scenarios))
+        elif isinstance(scenario, ScenarioOutline):
             for scenario_outline_instance in scenario.scenarios:
                 scenarios_to_iterate.append(scenario_outline_instance)
         else:

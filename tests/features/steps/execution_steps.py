@@ -43,6 +43,26 @@ def when_run_passing_test(context):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with a rule test')
+def when_run_rule_test(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'rule_tests.feature'), '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with a rule test using "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_run_rule_test_parallel(context, parallel_processes, parallel_scheme):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'rule_tests.feature'),
+        '-o', context.output_path,
+        '--parallel-processes', parallel_processes,
+        '--parallel-scheme', parallel_scheme,
+    ]
+    execute_command(context, execution_args)
+
+
 @when('I run the behavex command with a file of failing tests')
 def when_run_failing_tests_file(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))

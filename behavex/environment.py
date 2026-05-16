@@ -26,8 +26,9 @@ from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import (create_log_path, get_string_hash,
                                           strip_ansi_codes)
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
-                           get_autoretry_attempts, get_logging_level,
-                           get_scenario_tags, get_scenarios_instances)
+                           get_all_feature_scenarios, get_autoretry_attempts,
+                           get_logging_level, get_scenario_tags,
+                           get_scenarios_instances)
 
 Context.__getattribute__ = create_custom_log_when_called
 
@@ -220,8 +221,8 @@ def before_feature(context, feature):
         object.__setattr__(context, 'bhx_execution_attempts', {})
 
         # Behave 1.2.7+ compatibility: feature.scenarios may not be accessible
-        if hasattr(feature, 'scenarios') and feature.scenarios:
-            scenarios_instances = get_scenarios_instances(feature.scenarios)
+        if hasattr(feature, 'scenarios'):
+            scenarios_instances = get_scenarios_instances(get_all_feature_scenarios(feature))
 
             for scenario in scenarios_instances:
                 scenario_tags = get_scenario_tags(scenario)
