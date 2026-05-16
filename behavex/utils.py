@@ -336,7 +336,7 @@ def print_env_variables(keys):
     if not keys:
         return
     env_data = [(key.upper(), os.environ.get(key, '----')) for key in keys]
-    key_width = max(max(len(k) for k, _ in env_data), len('ENV. VARIABLE'))
+    key_width = max(max(len(k) for k, _ in env_data), len('ENV. VARIABLE')) + 1
     val_width = max(max(len(v) for _, v in env_data), len('VALUE'))
 
     separator = f"|{'-' * (key_width + 2)}|{'-' * (val_width + 2)}|"
