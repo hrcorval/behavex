@@ -1019,3 +1019,20 @@ def then_html_report_has_no_stack_trace_markers(context):
     # clickable-trace only appears inside rendered <pre> class attributes, so a plain search is reliable
     assert 'clickable-trace' not in html_content, \
         "Expected passing-only HTML report to not render 'clickable-trace' CSS class on any scenario element"
+
+
+@when('I run the behavex command targeting the "{feature_path}" feature')
+def when_run_with_feature_path(context, feature_path):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                      os.path.join(tests_features_path, feature_path),
+                      '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
+@then('I should see the JUnit XML report was generated')
+def then_junit_xml_report_generated(context):
+    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
+    assert os.path.exists(junit_folder), f"JUnit XML folder not found: {junit_folder}"
+    xml_files = [f for f in os.listdir(junit_folder) if f.endswith('.xml')]
+    assert len(xml_files) > 0, f"No JUnit XML files found in: {junit_folder}"

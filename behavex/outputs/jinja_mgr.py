@@ -167,6 +167,8 @@ def _print_step_json(step):
 
 def get_lines_exception(step):
     if type(step) is dict:
+        if 'error_lines' not in step:
+            return u''
         return u'\n'.join(
             [16 * u' ' + line for line in step['error_lines']]
         ).strip()

@@ -32,6 +32,14 @@ Feature: Crashing Tests
     And I should not see exception messages in the output
 
 
+  @CRASHING
+  Scenario: XML report should be generated successfully when a step has no matching definition
+    Given I have installed behavex
+    When I run the behavex command targeting the "xml_report_features/undefined_step_tests.feature" feature
+    Then I should not see exception messages in the output
+    And I should see the JUnit XML report was generated
+
+
   @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: Crashing tests in "<behave_hook>" hook should be reported
     Given I have installed behavex
