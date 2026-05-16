@@ -348,7 +348,13 @@ def launch_behavex():
         else:
             execution_failed = True if execution_codes > 0 else False
             execution_interrupted_or_crashed = True if execution_codes == 2 else False
-        exit_code = (EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK)
+        # Treat as error when execution failed but no scenario actually ran (e.g. ImportError during step loading)
+        no_scenarios_ran = (
+            totals['scenarios']['passed'] == 0
+            and totals['scenarios']['failed'] == 0
+            and totals['scenarios']['error'] == 0
+        )
+        exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
     except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
         try:

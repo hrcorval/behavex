@@ -12,6 +12,8 @@ ENHANCEMENTS:
 FIXES:
 
 * Fixed a parallel-execution edge case where the shallow feature copy used when dispatching a single scenario still referenced the original ``feature.rules``, causing ``get_all_feature_scenarios`` to double-count rule scenarios in JSON reports.
+* Fixed exit code returning 0 when step loading fails with an ``ImportError`` (or any exception). BehaveX now returns exit code 1 when an execution error occurs and no scenarios successfully ran, preventing misleading "green" results when the test suite was never actually executed (`issue #234 <https://github.com/hrcorval/behavex/issues/234>`__).
+* Fixed ``KeyError: 'error_lines'`` in XML report generation when a step has no matching definition. The ``get_lines_exception`` function now safely returns an empty string when ``error_lines`` is absent from the step dictionary (`issue #235 <https://github.com/hrcorval/behavex/issues/235>`__).
 
 BREAKING CHANGES:
 
