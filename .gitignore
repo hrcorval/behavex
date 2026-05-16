@@ -20,6 +20,9 @@ eggs/
 .pypirc
 .cursorrules
 .vscode
+CLAUDE.md
+.claude/
+uv.lock
 lib/
 lib64/
 parts/

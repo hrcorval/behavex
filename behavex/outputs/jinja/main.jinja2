@@ -672,7 +672,8 @@
                  {%- if error_msg or error_lines -%}
                     <ul class="list-unstyled">
                         <li>
-                            <pre class="red-behavex behavex_letter">
+                            <pre class="red-behavex behavex_letter{%- if scenario.error_lines %} clickable-trace{%- endif -%}"
+                                {%- if scenario.error_lines %} data-stack-trace style="cursor: pointer;" title="Click to view full stack trace"{% endif %}>
                                 {%- if error_msg -%}
                                     {%- for line in error_msg -%}
                                         {%- if line -%}
@@ -687,6 +688,17 @@
                                     {%- endfor -%}
                                 {%- endif -%}
                             </pre>
+                            {%- if scenario.error_lines -%}
+                            <div class="stack-trace-content" style="display: none;">
+                                <pre style="white-space: pre; word-wrap: normal;">
+                                    {%- if scenario.error_lines is string -%}
+                                        {{ scenario.error_lines | e }}
+                                    {%- else -%}
+                                        {{ scenario.error_lines | join('') | e }}
+                                    {%- endif -%}
+                                </pre>
+                            </div>
+                            {%- endif -%}
                         </li>
                     </ul>
                  {%- endif -%}
@@ -1071,6 +1083,16 @@
             body_modal.html(clone_div);
             modal.modal('show');
         })
+
+        $(document).on('click', '.red-behavex[data-stack-trace]', function(e){
+            var div = $(this).siblings('.stack-trace-content').first();
+            var modal = $('#modal-logs');
+            var body_modal = modal.find('div.modal-body');
+            var clone_div = div.clone();
+            clone_div.css('display', '');
+            body_modal.html(clone_div);
+            modal.modal('show');
+        });
 
         // Old event handlers have been moved to use event delegation in document.ready
 

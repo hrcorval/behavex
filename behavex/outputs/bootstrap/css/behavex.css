@@ -349,16 +349,17 @@ ul.list-unstyled.scenario-step > li {
 
 .modal-style{
     width: 98%;
-    height: 98%;
 }
 .modal-dialog-style{
-    height:98%;
-    width:98%;
+    width: 98%;
     padding-left: 1.5%;
+    margin: 3vh auto;
 }
 .modal-style-body{
-    height: 94%;
+    height: calc(94vh - 60px);
     width: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
 }
 .ui-menu{
     color: #4F4F4F;
