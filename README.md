@@ -1,4 +1,4 @@
-[![Downloads](https://static.pepy.tech/badge/behavex)](https://pepy.tech/project/behavex)
+[![Downloads](https://static.pepy.tech/badge/behavex/month)](https://pepy.tech/project/behavex)
 [![PyPI version](https://badge.fury.io/py/behavex.svg)](https://badge.fury.io/py/behavex)
 [![Python Versions](https://img.shields.io/pypi/pyversions/behavex.svg)](https://pypi.org/project/behavex/)
 [![Dependency Status](https://img.shields.io/librariesio/github/hrcorval/behavex)](https://libraries.io/github/hrcorval/behavex)
@@ -6,7 +6,9 @@
 [![Build Status](https://github.com/hrcorval/behavex/actions/workflows/python-package.yml/badge.svg)](https://github.com/hrcorval/behavex/actions)
 [![GitHub last commit](https://img.shields.io/github/last-commit/hrcorval/behavex.svg)](https://github.com/hrcorval/behavex/commits/main)
 
-# BehaveX Documentation
+# BehaveX
+
+> Production-grade test orchestration for Python BDD.
 
 ## ✨ Latest Features
 
@@ -28,6 +30,7 @@ Just to mention the most important features delivered in latest BehaveX releases
 
 ## Table of Contents
 - [Introduction](#introduction)
+- [Who Uses BehaveX](#who-uses-behavex)
 - [Features](#features)
 - [Installation Instructions](#installation-instructions)
 - [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130)
@@ -59,6 +62,17 @@ Just to mention the most important features delivered in latest BehaveX releases
 - **Improving test visibility**: Provide detailed evidence, such as screenshots and logs, essential for understanding test failures and successes.
 - **Optimizing test automation**: Utilize features like test retries, test muting, and performance metrics for efficient test maintenance and analysis.
 - **Managing complex test suites**: Handle large test suites with advanced features for organization, execution, and comprehensive reporting through multiple formats and custom formatters.
+
+## Who Uses BehaveX
+
+BehaveX is trusted by teams and organizations across the industry:
+
+- **[Apache NiFi MiNiFi C++](https://github.com/apache/nifi-minifi-cpp)** — The Apache Foundation uses BehaveX as the testing framework for their C++ dataflow agent (172★, 101 forks).
+- **[LambdaTest](https://github.com/LambdaTest/Python-Behave-Selenium)** — Featured in LambdaTest's official Python BDD testing documentation and examples.
+- **[SovereignCloudStack](https://github.com/SovereignCloudStack/scs-health-monitor)** — European sovereign cloud initiative (Gaia-X ecosystem) uses BehaveX for real-life IaaS/KaaS health monitoring.
+- **[Qase](https://github.com/rmontemor-qase/behavex-qase-integration)** — Official integration with the Qase enterprise test management platform.
+
+*Using BehaveX in your organization? [Open a PR](https://github.com/hrcorval/behavex/pulls) to be listed here.*
 
 ## Features
 
