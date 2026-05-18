@@ -10,6 +10,8 @@
 
 > Production-grade test orchestration for Python BDD.
 
+![BehaveX HTML Report Demo](https://github.com/hrcorval/behavex/blob/master/img/demo.gif?raw=true)
+
 ## ✨ Latest Features
 
 Just to mention the most important features delivered in latest BehaveX releases:
