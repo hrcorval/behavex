@@ -66,6 +66,26 @@ It's particularly beneficial when you need to:
 - **Operate at scale**: Auto-retry, test muting, execution ordering, dry runs, and CI/CD integration out of the box.
 - **Gain full visibility**: Execution timeline, automation rate, pass rate, and step reusability metrics in every run.
 
+Downloaded **121,000+ times per month** across teams ranging from open-source projects to enterprise QA labs.
+
+## BehaveX vs Behave
+
+BehaveX is a zero-friction upgrade — your existing feature files and step definitions work unchanged.
+
+| Capability | Behave | BehaveX |
+|---|---|---|
+| Parallel execution | ❌ | ✅ By feature or scenario, N processes |
+| HTML report | ❌ | ✅ With screenshots, logs, evidence |
+| Allure integration | ❌ | ✅ Full support with thread labels |
+| Auto-retry on failure | ❌ | ✅ `@AUTORETRY` / `@AUTORETRY_3` |
+| Test muting | ❌ | ✅ `@MUTE` — run but exclude from CI results |
+| Execution ordering | ❌ | ✅ `@ORDER_001` tags for dependency-aware runs |
+| Execution timeline | ❌ | ✅ Visual timeline across parallel workers |
+| Pass rate & automation metrics | ❌ | ✅ Per-run dashboard in HTML report |
+| Dry run with HTML report | Basic | ✅ Shareable spec report with stakeholders |
+| Per-scenario log files | ❌ | ✅ Linked directly in HTML report |
+| Screenshot evidence | ❌ | ✅ Via `behavex-images` |
+
 ## Who Uses BehaveX
 
 BehaveX is trusted by teams and organizations across the industry:
