@@ -102,6 +102,22 @@ BehaveX has been shaped by many contributors over the years. Thank you to everyo
 | [@warshaya](https://github.com/warshaya) | Environment variable handling improvement |
 | [@RemoYukoff](https://github.com/RemoYukoff) | Fixed invalid escape sequences |
 
+### Bug Reporters
+
+These contributors reported issues that led to concrete fixes in BehaveX:
+
+| Contributor | Issue | Fix |
+|---|---|---|
+| [@rsapping3](https://github.com/rsapping3) | `KeyError: 'error_lines'` in XML report generation | Fixed in v4.6.1 |
+| [@jbridger](https://github.com/jbridger) | `ImportError` during step loading produced misleading results | Fixed in v4.6.1 |
+| [@karl0ss](https://github.com/karl0ss) | Scenario output not visible in console | Fixed in v4.6.2 |
+| [@kconkas](https://github.com/kconkas) | `environment.py` hooks executing during dry runs; `NameError: as_completed` | Fixed in v4.1.0 |
+| [@michalkovy](https://github.com/michalkovy) | Exit code 0 when `before_all` hook fails | Fixed in v4.4.x |
+| [@vibin-c](https://github.com/vibin-c) | Python 3.12 `distutils` incompatibility; Snyk vulnerability in Zipp | Fixed in v4.4.2 |
+| [@Kikkomanq](https://github.com/Kikkomanq) | Python 3.13 installation failure | Fixed in v4.1.2 |
+| [@athiradamodaran](https://github.com/athiradamodaran) | Scenario outline names not displayed correctly in reports | Fixed in v4.3.x |
+| [@AppeltansPieter](https://github.com/AppeltansPieter) | Zero exit code when parallel process fails | Fixed in v4.6.2 |
+
 ### Ideas and Inspiration
 
 These contributors proposed features or opened PRs whose ideas directly shaped what was ultimately implemented:
