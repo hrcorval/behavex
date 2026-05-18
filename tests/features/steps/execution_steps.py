@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+import xml.etree.ElementTree as ET
 from packaging.version import Version
 import subprocess
 import time
@@ -1085,3 +1086,161 @@ def then_junit_xml_report_generated(context):
     assert os.path.exists(junit_folder), f"JUnit XML folder not found: {junit_folder}"
     xml_files = [f for f in os.listdir(junit_folder) if f.endswith('.xml')]
     assert len(xml_files) > 0, f"No JUnit XML files found in: {junit_folder}"
+
+
+def _get_all_xml_testcases(context):
+    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
+    testcases = []
+    for fname in sorted(os.listdir(junit_folder)):
+        if fname.endswith('.xml'):
+            root = ET.parse(os.path.join(junit_folder, fname)).getroot()
+            testcases.extend(root.findall('testcase'))
+    return testcases
+
+
+@then('I should see "{count}" scenarios with status "{status}" in the JUnit XML report')
+def then_junit_xml_scenarios_with_status(context, count, status):
+    testcases = _get_all_xml_testcases(context)
+    matching = [tc for tc in testcases if tc.get('status') == status]
+    assert len(matching) == int(count), \
+        f"Expected {count} scenarios with status '{status}' in JUnit XML, found {len(matching)}"
+
+
+@then('I should see the scenario name "{name}" in the JUnit XML report')
+def then_junit_xml_scenario_name(context, name):
+    testcases = _get_all_xml_testcases(context)
+    names = [tc.get('name', '') for tc in testcases]
+    name_lower = name.lower()
+    assert any(name_lower in n.lower() for n in names), \
+        f"Scenario name containing '{name}' not found in JUnit XML. Found: {names}"
+
+
+@then('I should see error messages for failed scenarios in the JUnit XML report')
+def then_junit_xml_failure_messages(context):
+    testcases = _get_all_xml_testcases(context)
+    failed = [tc for tc in testcases if tc.get('status') == 'failed']
+    assert failed, "No failed scenarios found in JUnit XML report"
+    for tc in failed:
+        failure_el = tc.find('failure')
+        assert failure_el is not None, f"Failed testcase '{tc.get('name')}' has no <failure> element"
+        message = failure_el.get('message') or (failure_el.text or '').strip()
+        assert message, f"Failed testcase '{tc.get('name')}' has empty failure message"
+
+
+@then('I should see "{count}" XML files in the JUnit report folder')
+def then_junit_xml_file_count(context, count):
+    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
+    xml_files = [f for f in os.listdir(junit_folder) if f.endswith('.xml')]
+    assert len(xml_files) == int(count), \
+        f"Expected {count} XML files in JUnit folder, found {len(xml_files)}: {xml_files}"
+
+
+@then('I should see "{count}" scenarios in the JSON report')
+def then_json_report_scenario_count(context, count):
+    data = _load_json_report(context)
+    total = sum(len(feature['scenarios']) for feature in data['features'])
+    assert total == int(count), f"Expected {count} scenarios in JSON report, found {total}"
+
+
+@then('I should see scenario outline parameters in the JSON report')
+def then_json_outline_parameters(context):
+    data = _load_json_report(context)
+    outline_scenarios = [
+        scenario
+        for feature in data['features']
+        for scenario in feature['scenarios']
+        if scenario.get('parameters')
+    ]
+    assert outline_scenarios, "No scenarios with parameters found in JSON report"
+    for scenario in outline_scenarios:
+        assert isinstance(scenario['parameters'], dict), \
+            f"Scenario '{scenario['name']}' parameters should be a dict, got: {type(scenario['parameters'])}"
+        assert len(scenario['parameters']) > 0, \
+            f"Scenario '{scenario['name']}' parameters dict is empty"
+
+
+@then('I should see background steps in the JSON report for each scenario')
+def then_json_background_steps(context):
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            bg = scenario.get('background')
+            assert bg is not None, \
+                f"Scenario '{scenario['name']}' has no 'background' field in JSON report"
+            steps = bg.get('steps', [])
+            assert len(steps) > 0, \
+                f"Scenario '{scenario['name']}' background has no steps in JSON report"
+
+
+@then('I should see the JSON report was generated')
+def then_json_report_generated(context):
+    report_path = os.path.abspath(os.path.join(context.output_path, 'report.json'))
+    assert os.path.exists(report_path), f"JSON report not found at {report_path}"
+    assert os.path.getsize(report_path) > 0, f"JSON report is empty at {report_path}"
+    with open(report_path, 'r') as f:
+        data = json.load(f)
+    assert data, "JSON report is empty or null"
+
+
+@then('I should see the JSON report has the correct top-level structure')
+def then_json_top_level_structure(context):
+    data = _load_json_report(context)
+    for key in ('environment', 'features', 'steps_definition'):
+        assert key in data, f"JSON report missing top-level key: '{key}'"
+    assert isinstance(data['features'], list), "JSON report 'features' should be a list"
+    assert isinstance(data['steps_definition'], dict), "JSON report 'steps_definition' should be a dict"
+
+
+@then('I should see all scenario statuses in the JSON report are valid strings')
+def then_json_scenario_statuses_are_strings(context):
+    valid_statuses = {'passed', 'failed', 'skipped', 'error', 'untested', 'undefined'}
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            status = scenario.get('status')
+            assert isinstance(status, str), \
+                f"Scenario '{scenario['name']}' status is not a string: {type(status).__name__} = {status}"
+            assert status in valid_statuses, \
+                f"Scenario '{scenario['name']}' has unrecognized status: '{status}'"
+
+
+@then('I should see the JSON report contains error information for failed scenarios')
+def then_json_failing_scenarios_have_error_info(context):
+    data = _load_json_report(context)
+    failed_scenarios = [
+        scenario
+        for feature in data['features']
+        for scenario in feature['scenarios']
+        if scenario.get('status') in ('failed', 'error')
+    ]
+    assert failed_scenarios, "No failed scenarios found in JSON report"
+    for scenario in failed_scenarios:
+        assert scenario.get('error_msg'), \
+            f"Failed scenario '{scenario['name']}' has no error_msg in JSON report"
+        assert scenario.get('error_step') is not None, \
+            f"Failed scenario '{scenario['name']}' has no error_step in JSON report"
+
+
+@then('I should see the failing scenarios file was generated in the output folder')
+def then_failing_scenarios_file_generated(context):
+    failures_path = os.path.abspath(os.path.join(context.output_path, 'failing_scenarios.txt'))
+    assert os.path.exists(failures_path), \
+        f"failing_scenarios.txt not found at {failures_path}"
+    assert os.path.getsize(failures_path) > 0, \
+        f"failing_scenarios.txt is empty at {failures_path}"
+
+
+@then('I store the JSON report scenario count for later comparison')
+def then_store_json_scenario_count(context):
+    data = _load_json_report(context)
+    context.stored_scenario_count = sum(len(feature['scenarios']) for feature in data['features'])
+
+
+@then('I should see the JSON report scenario count matches the stored count')
+def then_json_count_matches_stored(context):
+    data = _load_json_report(context)
+    current_count = sum(len(feature['scenarios']) for feature in data['features'])
+    stored = getattr(context, 'stored_scenario_count', None)
+    assert stored is not None, "No stored scenario count — call 'I store the JSON report scenario count' first"
+    assert current_count == stored, \
+        f"JSON scenario count mismatch: single process had {stored}, parallel run had {current_count}"

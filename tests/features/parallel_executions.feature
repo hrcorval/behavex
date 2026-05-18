@@ -38,3 +38,16 @@ Feature: Parallel executions
       | scenario        | 2                  | -t=@PASSING_TAG_3 -t=~@PASSING_TAG_3_1 |
       | feature         | 3                  | -t=@PASSING_TAG_3 -t=@PASSING_TAG_3_1  |
       | feature         | 2                  | -t=@PASSING_TAG_3 -t=~@PASSING_TAG_3_1 |
+
+
+  @PARALLEL @PARALLEL_CONSISTENCY
+  Scenario Outline: JSON report scenario count is consistent between single and parallel execution
+    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    Then I store the JSON report scenario count for later comparison
+    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature with "<parallel_processes>" parallel processes
+    Then I should see the JSON report scenario count matches the stored count
+    And I should see the same number of scenarios in the reports
+  Examples:
+    | parallel_processes |
+    | 2                  |
+    | 3                  |

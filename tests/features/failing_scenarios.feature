@@ -11,3 +11,9 @@ Feature: Failing Scenarios
     And I should not see exception messages in the output
     And I should see the same number of scenarios in the reports and the console output
     And I should see the generated HTML report does not contain internal BehaveX variables and tags
+
+  @FAILING
+  Scenario: A failing test run generates the failing_scenarios.txt file for reruns
+    Given I have installed behavex
+    When I run the behavex command with a failing test
+    Then I should see the failing scenarios file was generated in the output folder
