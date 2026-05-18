@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=W0703
 """
-BehaveX - Agile test wrapper on top of Behave (BDD)
+BehaveX - Production-grade test orchestration for Python BDD.
 """
 
 # Standard library imports

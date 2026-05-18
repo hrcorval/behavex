@@ -2,7 +2,7 @@
 """
 
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 Parse all framework arguments, the ones from BehaveX and

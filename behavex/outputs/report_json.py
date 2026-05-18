@@ -2,7 +2,7 @@
 
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 JSON test execution report.

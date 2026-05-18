@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 Test report utility methods for retrieving summarized test execution information

@@ -1,6 +1,6 @@
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 Allure formatter for BehaveX test results.

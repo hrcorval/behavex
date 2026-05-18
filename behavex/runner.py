@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""BehaveX - Agile test wrapper on top of Behave (BDD).
+"""BehaveX - Production-grade test orchestration for Python BDD..
 
 This module provides the main entry point for running BehaveX tests,
 including setup, execution, and reporting.

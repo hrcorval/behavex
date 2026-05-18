@@ -12,7 +12,8 @@ build/
 develop-eggs/
 dist/
 downloads/
-output*/
+output/
+output_*/
 performance_output/
 eggs/
 .eggs/

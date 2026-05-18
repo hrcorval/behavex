@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 This module provides a dictionary with the contents that are displayed in
