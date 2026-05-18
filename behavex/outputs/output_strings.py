@@ -14,7 +14,7 @@ TEXTS = {
         'collapse': 'Collapse the {} information',
         'error_background': 'Error in background',
         'framework_name': 'BehaveX',
-        'framework_description': 'Agile test wrapper on top of Behave (BDD)',
+        'framework_description': 'Production-grade test orchestration for Python BDD.',
         'help': {'title': 'Click here for more details'},
         'text': {'total_time': 'Total execution time'},
         'footer': {'name': 'BehaveX'},

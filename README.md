@@ -14,19 +14,19 @@
 
 ## ✨ Latest Features
 
-Just to mention the most important features delivered in latest BehaveX releases:
+🔍 **Stack Trace on Error** *(v4.6.2)* - Click on any failed step in the HTML report to expand the full stack trace inline — no more hunting through logs.
 
-🏷️ **Tag Expressions v2 Support** *(v4.6.0)* - Native support for Cucumber-style tag expressions with boolean logic (and, or, not), parentheses grouping, wildcard matching (@prefix*, @*suffix, @*substring*), and complex filtering. Supported in Behave 1.3.0+ using zero external dependencies. See [Tag Expressions](#tag-expressions) for comprehensive examples and usage.
+📐 **Gherkin Rule Section Support** *(v4.6.2)* - Full support for `Rule:` blocks in feature files, correctly rendered in HTML and XML reports.
 
-🚀 **Enhanced Behave Integration** *(v4.5.0)* - Added support for newer behave versions (>= 1.3.0). Also, major performance overhaul using direct Behave Runner class integration, providing better programmatic control with improved status detection efficiency. See [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130) for upgrade considerations.
+🏷️ **Tag Expressions v2** *(v4.6.0)* - Native Cucumber-style tag expressions with boolean logic (`and`, `or`, `not`), parentheses grouping, and wildcard matching (`@prefix*`, `@*suffix`). Zero external dependencies. See [Tag Expressions](#tag-expressions).
 
-🛠️ **Enhanced Error Status Handling** *(v4.5.0)* - Comprehensive improvements in "error" status management, now preserving original "error" status instead of converting to "failed" for more accurate reporting.
+🚀 **Enhanced Behave Integration** *(v4.5.0)* - Support for Behave >= 1.3.0 alongside 1.2.6. Major performance overhaul using direct Behave Runner class integration. See [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130).
 
-📊 **Interactive Execution Timeline Chart** *(v4.5.0)* - New visual timeline in HTML reports displaying scenario execution order, duration, and status across parallel processes.
+📊 **Interactive Execution Timeline** *(v4.5.0)* - Visual timeline in HTML reports showing scenario execution order, duration, and status across all parallel workers.
 
-🎯 **Test Execution Ordering** *(v4.4.1)* - Control the sequence of scenario and feature execution during parallel runs using order tags (e.g., `@ORDER_001`, `@ORDER_010`). Now includes strict ordering mode (`--order-tests-strict`) for scenarios that must wait for lower-order tests to complete.
+🎯 **Test Execution Ordering** *(v4.4.1)* - Control scenario and feature execution sequence in parallel runs using `@ORDER_001` tags. Includes strict ordering mode (`--order-tests-strict`) for dependency-aware execution.
 
-📊 **Allure Reports Integration** *(v4.2.1)* - Generate beautiful, comprehensive test reports with Allure framework integration.
+📊 **Allure Reports Integration** *(v4.2.1)* - Generate Allure reports with full BehaveX support including thread labels, background steps, and evidence attachments.
 
 📈 **Console Progress Bar** *(v3.2.13)* - Real-time progress tracking during parallel test execution.
 

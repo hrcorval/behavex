@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.6.2] - 2026-05-18
+
+### Added
+- **Gherkin Rule section support** — BehaveX now correctly handles `Rule:` blocks in feature files, including proper rendering in HTML and XML reports.
+- **Stack trace on error** — Clicking on a failed step in the HTML report now expands the full stack trace inline.
+
+### Fixed
+- **Non-zero exit code on parallel process failure** — Parallel runs now correctly return a non-zero exit code when any worker process fails *(contributed by [@AppeltansPieter](https://github.com/AppeltansPieter))*.
+- **Exit code on ImportError** — Returns exit code 1 when step loading fails due to an `ImportError`, preventing silent failures.
+- **Missing `error_lines` key** — Fixed `KeyError` in XML report generation when `error_lines` was absent from scenario data.
+- **Formatter output in console** — Output from formatters is now shown in single-process runs and suppressed in multiprocess runs, eliminating duplicate console output.
+- **False positive in error detection** — Fixed false positive in `then_no_error_messages` triggered when formatter output contained tag lines.
+- **Allure: background steps missing** — Background steps are now correctly included in Allure report output *(contributed by [@iamkenos](https://github.com/iamkenos))*.
+- **Allure: background step serialization** — Corrected background step type handling and serialization in the Allure formatter *(contributed by [@iamkenos](https://github.com/iamkenos))*.
+- **Allure: exception details on background steps** — Exception and error details are now included in JSON formatter output for background steps.
+- **JSON formatter: exception details** — Exception details now correctly appear in JSON output for background step failures.
+- **Utils: environment variable table alignment** — Fixed column width alignment and empty key handling when printing environment variables *(contributed by [@iamkenos](https://github.com/iamkenos))*.
+
+---
+
 ## [4.6.0] - 2025-09-12
 
 ### Added
