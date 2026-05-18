@@ -3,6 +3,8 @@ import logging
 import os
 import random
 import re
+import xml.etree.ElementTree as ET
+from packaging.version import Version
 import subprocess
 import time
 
@@ -40,6 +42,39 @@ def given_progress_bar_enabled(context):
 def when_run_passing_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'), '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
+def _require_behave_for_rule(context):
+    """Skip the scenario if the installed behave version does not support Rule sections."""
+    import behave as _behave
+    if Version(_behave.__version__) < Version('1.3.3'):
+        context.scenario.skip(reason=f'Rule sections require behave >= 1.3.3 (installed: {_behave.__version__})')
+        return False
+    return True
+
+
+@when('I run the behavex command with a rule test')
+def when_run_rule_test(context):
+    if not _require_behave_for_rule(context):
+        return
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex', os.path.join(tests_features_path, 'rule_features', 'rule_tests.feature'), '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with a rule test using "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_run_rule_test_parallel(context, parallel_processes, parallel_scheme):
+    if not _require_behave_for_rule(context):
+        return
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'rule_features', 'rule_tests.feature'),
+        '-o', context.output_path,
+        '--parallel-processes', parallel_processes,
+        '--parallel-scheme', parallel_scheme,
+    ]
     execute_command(context, execution_args)
 
 
@@ -199,6 +234,9 @@ def then_no_error_messages(context):
         if '[behavex-images]' in line and ('expected str, bytes or os.PathLike object, not NoneType' in line or
                                            'It was not possible to add the image to the report' in line):
             continue
+        # Skip formatter tag lines (e.g. "@ERROR_SCENARIO @IMAGE_ATTACHMENT")
+        if all(part.startswith('@') for part in line.strip().split() if part):
+            continue
         # Skip expected error messages from test scenarios during dry run
         if ('ERROR - Executing permanently broken action' in line or
             'ERROR - This step is designed to fail' in line or
@@ -227,6 +265,18 @@ def then_no_exception_messages(context):
     exception_messages = ["exception", "traceback"]
     for message in exception_messages:
         assert message not in context.result.stdout.lower(), f"Unexpected output when checking exception messages in the console output: {context.result.stdout}\n"
+
+
+@then('I should not see "{text}" in the console output')
+def then_text_not_in_console(context, text):
+    assert text not in context.result.stdout, \
+        f"Expected '{text}' to not appear in console output, but it did.\nOutput:\n{context.result.stdout}"
+
+
+@then('I should see "{text}" in the console output')
+def then_text_in_console(context, text):
+    assert text in context.result.stdout, \
+        f"Expected '{text}' in console output, but it was not found.\nOutput:\n{context.result.stdout}"
 
 
 
@@ -294,6 +344,38 @@ def verify_string_not_in_html_report(context):
         logging.info(f"Total instances of '{variable_or_tag}' in the HTML report: {total_string_instances_in_html_report}")
         assert total_string_instances_in_html_report == 0, f"Expected the HTML report to not contain the string '{variable_or_tag}'"
 
+
+@then('I should see the generated HTML report contains "{count}" occurrences of the "{string_to_search}" string')
+def verify_string_count_in_html_report(context, count, string_to_search):
+    total = get_string_instances_from_html_report(context, string_to_search)
+    logging.info(f"Total instances of '{string_to_search}' in the HTML report: {total}")
+    assert total == int(count), f"Expected {count} occurrences of '{string_to_search}' in HTML report, found {total}"
+
+
+@then('I should see all scenarios in the JSON report have a rule field')
+def verify_json_scenarios_have_rule_field(context):
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            assert 'rule' in scenario, f"Scenario '{scenario['name']}' is missing 'rule' field in JSON report"
+
+
+@then('I should see the JSON report contains scenarios with rule "{rule_name}"')
+def verify_json_scenarios_with_rule(context, rule_name):
+    data = _load_json_report(context)
+    matching = [
+        scenario
+        for feature in data['features']
+        for scenario in feature['scenarios']
+        if scenario.get('rule') == rule_name
+    ]
+    assert matching, f"No scenarios found with rule '{rule_name}' in JSON report"
+
+
+def _load_json_report(context):
+    report_path = os.path.abspath(os.path.join(context.output_path, 'report.json'))
+    with open(report_path, 'r') as f:
+        return json.load(f)
 
 
 def get_tags_arguments(tags):
@@ -911,4 +993,254 @@ def then_see_strict_execution_order(context, parallel_scheme):
             f"stopped at {current_scenario['stop_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
             f"started at {next_scenario['start_time']}. With --order-tests-strict, scenarios must complete before the next starts!"
 
-    logging.info(f"✅ Strict sequential execution verified for {parallel_scheme} scheme with --order-tests-strict")
+
+# ---------- Stack Trace Report Steps ----------
+
+@when('I run the behavex command with chained exception tests')
+def when_run_chained_exception_tests(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'chained_exception_features', 'chained_exception_tests.feature'),
+        '-o', context.output_path,
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command with only passing chained exception test')
+def when_run_only_passing_chained_exception_test(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'chained_exception_features', 'chained_exception_tests.feature'),
+        '-t', '@PASSING_SCENARIO',
+        '-o', context.output_path,
+    ]
+    execute_command(context, execution_args)
+
+
+@then('the HTML report should contain clickable stack trace markers for failed scenarios')
+def then_html_report_contains_clickable_stack_trace_markers(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    # Use ' data-stack-trace' (leading space) to match the HTML attribute, not the JS selector [data-stack-trace]
+    assert ' data-stack-trace' in html_content, \
+        "Expected HTML report to contain 'data-stack-trace' HTML attribute on failed scenario error elements"
+    # clickable-trace only appears inside rendered <pre> class attributes, never in JS or CSS
+    assert 'clickable-trace' in html_content, \
+        "Expected HTML report to contain 'clickable-trace' CSS class on failed scenario error elements"
+
+
+@then('the HTML report should contain hidden stack trace content blocks')
+def then_html_report_contains_stack_trace_content(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    assert 'stack-trace-content' in html_content, \
+        "Expected HTML report to contain hidden 'stack-trace-content' div blocks with full stack trace"
+    assert 'Traceback (most recent call last)' in html_content, \
+        "Expected stack trace content to include Python traceback header"
+
+
+@then('the HTML report should contain the chained exception cause chain')
+def then_html_report_contains_chained_exception_chain(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    assert 'The above exception was the direct cause of the following exception' in html_content, \
+        "Expected HTML report to contain Python's chained exception cause marker for chained exceptions"
+
+
+@then('the HTML report should not contain stack trace markers')
+def then_html_report_has_no_stack_trace_markers(context):
+    html_report_path = os.path.join(context.output_path, 'report.html')
+    assert os.path.exists(html_report_path), f"HTML report not found at {html_report_path}"
+    with open(html_report_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    # ' data-stack-trace' (leading space) matches the HTML attribute only, not the JS selector [data-stack-trace]
+    assert ' data-stack-trace' not in html_content, \
+        "Expected passing-only HTML report to not render 'data-stack-trace' attribute on any scenario element"
+    # clickable-trace only appears inside rendered <pre> class attributes, so a plain search is reliable
+    assert 'clickable-trace' not in html_content, \
+        "Expected passing-only HTML report to not render 'clickable-trace' CSS class on any scenario element"
+
+
+@when('I run the behavex command targeting the "{feature_path}" feature')
+@when('I run the behavex command targeting the "{feature_path}" feature with "{parallel_processes}" parallel processes')
+def when_run_with_feature_path(context, feature_path, parallel_processes='1'):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = ['behavex',
+                      os.path.join(tests_features_path, feature_path),
+                      '--parallel-processes', parallel_processes,
+                      '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
+@then('I should see the JUnit XML report was generated')
+def then_junit_xml_report_generated(context):
+    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
+    assert os.path.exists(junit_folder), f"JUnit XML folder not found: {junit_folder}"
+    xml_files = [f for f in os.listdir(junit_folder) if f.endswith('.xml')]
+    assert len(xml_files) > 0, f"No JUnit XML files found in: {junit_folder}"
+
+
+def _get_all_xml_testcases(context):
+    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
+    testcases = []
+    for fname in sorted(os.listdir(junit_folder)):
+        if fname.endswith('.xml'):
+            root = ET.parse(os.path.join(junit_folder, fname)).getroot()
+            testcases.extend(root.findall('testcase'))
+    return testcases
+
+
+@then('I should see "{count}" scenarios with status "{status}" in the JUnit XML report')
+def then_junit_xml_scenarios_with_status(context, count, status):
+    testcases = _get_all_xml_testcases(context)
+    matching = [tc for tc in testcases if tc.get('status') == status]
+    assert len(matching) == int(count), \
+        f"Expected {count} scenarios with status '{status}' in JUnit XML, found {len(matching)}"
+
+
+@then('I should see the scenario name "{name}" in the JUnit XML report')
+def then_junit_xml_scenario_name(context, name):
+    testcases = _get_all_xml_testcases(context)
+    names = [tc.get('name', '') for tc in testcases]
+    name_lower = name.lower()
+    assert any(name_lower in n.lower() for n in names), \
+        f"Scenario name containing '{name}' not found in JUnit XML. Found: {names}"
+
+
+@then('I should see error messages for failed scenarios in the JUnit XML report')
+def then_junit_xml_failure_messages(context):
+    testcases = _get_all_xml_testcases(context)
+    failed = [tc for tc in testcases if tc.get('status') == 'failed']
+    assert failed, "No failed scenarios found in JUnit XML report"
+    for tc in failed:
+        failure_el = tc.find('failure')
+        assert failure_el is not None, f"Failed testcase '{tc.get('name')}' has no <failure> element"
+        message = failure_el.get('message') or (failure_el.text or '').strip()
+        assert message, f"Failed testcase '{tc.get('name')}' has empty failure message"
+
+
+@then('I should see "{count}" XML files in the JUnit report folder')
+def then_junit_xml_file_count(context, count):
+    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
+    xml_files = [f for f in os.listdir(junit_folder) if f.endswith('.xml')]
+    assert len(xml_files) == int(count), \
+        f"Expected {count} XML files in JUnit folder, found {len(xml_files)}: {xml_files}"
+
+
+@then('I should see "{count}" scenarios in the JSON report')
+def then_json_report_scenario_count(context, count):
+    data = _load_json_report(context)
+    total = sum(len(feature['scenarios']) for feature in data['features'])
+    assert total == int(count), f"Expected {count} scenarios in JSON report, found {total}"
+
+
+@then('I should see scenario outline parameters in the JSON report')
+def then_json_outline_parameters(context):
+    data = _load_json_report(context)
+    outline_scenarios = [
+        scenario
+        for feature in data['features']
+        for scenario in feature['scenarios']
+        if scenario.get('parameters')
+    ]
+    assert outline_scenarios, "No scenarios with parameters found in JSON report"
+    for scenario in outline_scenarios:
+        assert isinstance(scenario['parameters'], dict), \
+            f"Scenario '{scenario['name']}' parameters should be a dict, got: {type(scenario['parameters'])}"
+        assert len(scenario['parameters']) > 0, \
+            f"Scenario '{scenario['name']}' parameters dict is empty"
+
+
+@then('I should see background steps in the JSON report for each scenario')
+def then_json_background_steps(context):
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            bg = scenario.get('background')
+            assert bg is not None, \
+                f"Scenario '{scenario['name']}' has no 'background' field in JSON report"
+            steps = bg.get('steps', [])
+            assert len(steps) > 0, \
+                f"Scenario '{scenario['name']}' background has no steps in JSON report"
+
+
+@then('I should see the JSON report was generated')
+def then_json_report_generated(context):
+    report_path = os.path.abspath(os.path.join(context.output_path, 'report.json'))
+    assert os.path.exists(report_path), f"JSON report not found at {report_path}"
+    assert os.path.getsize(report_path) > 0, f"JSON report is empty at {report_path}"
+    with open(report_path, 'r') as f:
+        data = json.load(f)
+    assert data, "JSON report is empty or null"
+
+
+@then('I should see the JSON report has the correct top-level structure')
+def then_json_top_level_structure(context):
+    data = _load_json_report(context)
+    for key in ('environment', 'features', 'steps_definition'):
+        assert key in data, f"JSON report missing top-level key: '{key}'"
+    assert isinstance(data['features'], list), "JSON report 'features' should be a list"
+    assert isinstance(data['steps_definition'], dict), "JSON report 'steps_definition' should be a dict"
+
+
+@then('I should see all scenario statuses in the JSON report are valid strings')
+def then_json_scenario_statuses_are_strings(context):
+    valid_statuses = {'passed', 'failed', 'skipped', 'error', 'untested', 'undefined'}
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            status = scenario.get('status')
+            assert isinstance(status, str), \
+                f"Scenario '{scenario['name']}' status is not a string: {type(status).__name__} = {status}"
+            assert status in valid_statuses, \
+                f"Scenario '{scenario['name']}' has unrecognized status: '{status}'"
+
+
+@then('I should see the JSON report contains error information for failed scenarios')
+def then_json_failing_scenarios_have_error_info(context):
+    data = _load_json_report(context)
+    failed_scenarios = [
+        scenario
+        for feature in data['features']
+        for scenario in feature['scenarios']
+        if scenario.get('status') in ('failed', 'error')
+    ]
+    assert failed_scenarios, "No failed scenarios found in JSON report"
+    for scenario in failed_scenarios:
+        assert scenario.get('error_msg'), \
+            f"Failed scenario '{scenario['name']}' has no error_msg in JSON report"
+        assert scenario.get('error_step') is not None, \
+            f"Failed scenario '{scenario['name']}' has no error_step in JSON report"
+
+
+@then('I should see the failing scenarios file was generated in the output folder')
+def then_failing_scenarios_file_generated(context):
+    failures_path = os.path.abspath(os.path.join(context.output_path, 'failing_scenarios.txt'))
+    assert os.path.exists(failures_path), \
+        f"failing_scenarios.txt not found at {failures_path}"
+    assert os.path.getsize(failures_path) > 0, \
+        f"failing_scenarios.txt is empty at {failures_path}"
+
+
+@then('I store the JSON report scenario count for later comparison')
+def then_store_json_scenario_count(context):
+    data = _load_json_report(context)
+    context.stored_scenario_count = sum(len(feature['scenarios']) for feature in data['features'])
+
+
+@then('I should see the JSON report scenario count matches the stored count')
+def then_json_count_matches_stored(context):
+    data = _load_json_report(context)
+    current_count = sum(len(feature['scenarios']) for feature in data['features'])
+    stored = getattr(context, 'stored_scenario_count', None)
+    assert stored is not None, "No stored scenario count — call 'I store the JSON report scenario count' first"
+    assert current_count == stored, \
+        f"JSON scenario count mismatch: single process had {stored}, parallel run had {current_count}"

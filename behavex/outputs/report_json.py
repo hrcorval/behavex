@@ -2,7 +2,7 @@
 
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 JSON test execution report.
@@ -33,30 +33,17 @@ from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
 
 def add_step_info(step, parent_node):
     index = len(parent_node)
-    parent_node.append(_step_to_dict(index, step))
+    step_info = _step_to_dict(index, step)
+    parent_node.append(step_info)
+    return step_info
 
 
 def add_step_info_background(step, parent_node):
-    step_info = {}
-    for attrib in ('step_type', 'name', 'text', 'status'):
-        step_info[attrib] = text(getattr(step, attrib))
-    step_info['duration'] = step.duration or 0
-    # Add start and stop times if they exist
-    if hasattr(step, 'start'):
-        step_info['start'] = getattr(step, 'start')
-    if hasattr(step, 'stop'):
-        step_info['stop'] = getattr(step, 'stop')
-    if step.table:
-        step_info['table'] = {}
-        for heading in step.table.headings:
-            step_info['table'][heading] = []
-            for row in step.table:
-                step_info['table'][heading].append(row[heading])
-    step_info['index'] = len(parent_node)
-    step_info['background'] = 'True'
-    process_step_definition(step, step_info)
-    parent_node.append(step_info)
-    return step_info
+    # Mark the step object as belonging to a background before serializing.
+    # This is safe because behave creates a fresh Step instance per scenario
+    # execution, so the mutation does not affect other scenarios.
+    step.background = 'True'
+    return add_step_info(step, parent_node)
 
 
 def generate_execution_info(features):
@@ -70,7 +57,14 @@ def generate_execution_info(features):
                 scenarios = feature_scenario.scenarios
             else:
                 scenarios = [feature_scenario]
-            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature)[1]
+            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None)[1]
+        for rule in getattr(feature, 'rules', []):
+            for rule_scenario in rule.scenarios:
+                if isinstance(rule_scenario, ScenarioOutline):
+                    scenarios = rule_scenario.scenarios
+                else:
+                    scenarios = [rule_scenario]
+                scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=rule.name)[1]
 
         if scenario_list:
             feature_info = {}
@@ -155,7 +149,7 @@ def _processing_background_feature(feature):
     return feature_background
 
 
-def _processing_scenarios(scenarios, scenario_list, id_feature):
+def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
     scenario_outline_index = 0
     overall_status = 'passed'
     is_dry_run = get_param('dry_run')
@@ -215,6 +209,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature):
             scenario_info['error_lines'] = error_lines
             scenario_info['error_step'] = error_step
             scenario_info['error_background'] = error_background
+            scenario_info['rule'] = rule_name
             scenario_info['id_hash'] = generate_uuid()
             scenario_info['identifier_hash'] = scenario.identifier_hash if hasattr(scenario, 'identifier_hash') else get_string_hash(f"{str(scenario.feature.filename)}-{str(scenario.line)}")
             scenario_info['process_id'] = str(scenario.process_id) if hasattr(scenario, 'process_id') else str(os.getpid())
@@ -302,6 +297,8 @@ def _step_to_dict(index, step):
             step_info['table'][heading] = []
             for row in step.table:
                 step_info['table'][heading].append(row[heading])
+    if hasattr(step, 'background'):
+        step_info['background'] = step.background
     process_step_definition(step, step_info)
     step_info['index'] = index
     return step_info

@@ -1,6 +1,6 @@
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 Allure formatter for BehaveX test results.
@@ -498,7 +498,8 @@ class AllureBehaveXFormatter:
                 test_error_msg = None  # Store test's error message
                 last_details = None  # Store last error details
 
-                for step in scenario['steps']:
+                all_steps = [*scenario.get("background", {}).get("steps", []), *scenario["steps"]]
+                for step in all_steps:
                     allure_step = TestStepResult(
                         name=f"{step['step_type'].capitalize()} {step['name']}"
                     )

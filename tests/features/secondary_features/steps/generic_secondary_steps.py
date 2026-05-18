@@ -25,6 +25,30 @@ except (ImportError, ModuleNotFoundError) as e:
     logging.warning(f"behavex-images not available, image attachment tests will be skipped: {e}")
 
 
+@given('a step that raises a simple exception')
+def step_raises_simple_exception(context):
+    raise ValueError("Something went wrong: invalid input value")
+
+
+@given('a step that raises a chained exception with two levels')
+def step_raises_chained_exception_two_levels(context):
+    try:
+        raise ValueError("Root cause: database connection failed")
+    except ValueError as e:
+        raise RuntimeError("Service layer error: could not process request") from e
+
+
+@given('a step that raises a chained exception with three levels')
+def step_raises_chained_exception_three_levels(context):
+    try:
+        try:
+            raise IOError("Level 1: file not found at /data/config.json")
+        except IOError as e:
+            raise ValueError("Level 2: configuration could not be loaded") from e
+    except ValueError as e:
+        raise RuntimeError("Level 3: application failed to initialize") from e
+
+
 @given('a failing condition')
 def given_failing_condition(context):
     context.condition = 'fail'

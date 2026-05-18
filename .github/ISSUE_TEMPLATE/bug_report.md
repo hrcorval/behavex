@@ -1,38 +1,61 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
+about: Report a bug or unexpected behavior in BehaveX
+title: '[BUG] '
+labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Description
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+A clear and concise description of the bug.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Environment
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+- **BehaveX version** (`uv run behavex --version`):
+- **Behave version** (`pip show behave | grep Version`):
+- **Python version** (`python --version`):
+- **Operating system**:
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+## Reproduction
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+Minimal feature file and steps to reproduce the issue:
 
-**Additional context**
-Add any other context about the problem here.
+```gherkin
+Feature: Example
+  Scenario: Failing scenario
+    Given ...
+    When ...
+    Then ...
+```
+
+```python
+# steps/example.py
+@given('...')
+def step_impl(context):
+    ...
+```
+
+**Command used:**
+```bash
+uv run behavex features/example.feature --parallel-processes 2
+```
+
+## Expected behavior
+
+What you expected to happen.
+
+## Actual behavior
+
+What actually happened.
+
+## Full error output
+
+```
+paste full traceback or error output here
+```
+
+## Additional context
+
+Any other context (e.g., `environment.py` hooks, custom formatters, CI environment).

@@ -1,4 +1,4 @@
-[![Downloads](https://static.pepy.tech/badge/behavex)](https://pepy.tech/project/behavex)
+[![Downloads](https://static.pepy.tech/badge/behavex/month)](https://pepy.tech/project/behavex)
 [![PyPI version](https://badge.fury.io/py/behavex.svg)](https://badge.fury.io/py/behavex)
 [![Python Versions](https://img.shields.io/pypi/pyversions/behavex.svg)](https://pypi.org/project/behavex/)
 [![Dependency Status](https://img.shields.io/librariesio/github/hrcorval/behavex)](https://libraries.io/github/hrcorval/behavex)
@@ -6,28 +6,33 @@
 [![Build Status](https://github.com/hrcorval/behavex/actions/workflows/python-package.yml/badge.svg)](https://github.com/hrcorval/behavex/actions)
 [![GitHub last commit](https://img.shields.io/github/last-commit/hrcorval/behavex.svg)](https://github.com/hrcorval/behavex/commits/main)
 
-# BehaveX Documentation
+# BehaveX
+
+> Production-grade test orchestration for Python BDD.
+
+![BehaveX HTML Report Demo](https://github.com/hrcorval/behavex/blob/master/img/demo.gif?raw=true)
 
 ## ✨ Latest Features
 
-Just to mention the most important features delivered in latest BehaveX releases:
+🔍 **Stack Trace on Error** *(v4.6.2)* - Click on any failed step in the HTML report to expand the full stack trace inline — no more hunting through logs.
 
-🏷️ **Tag Expressions v2 Support** *(v4.6.0)* - Native support for Cucumber-style tag expressions with boolean logic (and, or, not), parentheses grouping, wildcard matching (@prefix*, @*suffix, @*substring*), and complex filtering. Supported in Behave 1.3.0+ using zero external dependencies. See [Tag Expressions](#tag-expressions) for comprehensive examples and usage.
+📐 **Gherkin Rule Section Support** *(v4.6.2)* - Full support for `Rule:` blocks in feature files, correctly rendered in HTML and XML reports.
 
-🚀 **Enhanced Behave Integration** *(v4.5.0)* - Added support for newer behave versions (>= 1.3.0). Also, major performance overhaul using direct Behave Runner class integration, providing better programmatic control with improved status detection efficiency. See [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130) for upgrade considerations.
+🏷️ **Tag Expressions v2** *(v4.6.0)* - Native Cucumber-style tag expressions with boolean logic (`and`, `or`, `not`), parentheses grouping, and wildcard matching (`@prefix*`, `@*suffix`). Zero external dependencies. See [Tag Expressions](#tag-expressions).
 
-🛠️ **Enhanced Error Status Handling** *(v4.5.0)* - Comprehensive improvements in "error" status management, now preserving original "error" status instead of converting to "failed" for more accurate reporting.
+🚀 **Enhanced Behave Integration** *(v4.5.0)* - Support for Behave >= 1.3.0 alongside 1.2.6. Major performance overhaul using direct Behave Runner class integration. See [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130).
 
-📊 **Interactive Execution Timeline Chart** *(v4.5.0)* - New visual timeline in HTML reports displaying scenario execution order, duration, and status across parallel processes.
+📊 **Interactive Execution Timeline** *(v4.5.0)* - Visual timeline in HTML reports showing scenario execution order, duration, and status across all parallel workers.
 
-🎯 **Test Execution Ordering** *(v4.4.1)* - Control the sequence of scenario and feature execution during parallel runs using order tags (e.g., `@ORDER_001`, `@ORDER_010`). Now includes strict ordering mode (`--order-tests-strict`) for scenarios that must wait for lower-order tests to complete.
+🎯 **Test Execution Ordering** *(v4.4.1)* - Control scenario and feature execution sequence in parallel runs using `@ORDER_001` tags. Includes strict ordering mode (`--order-tests-strict`) for dependency-aware execution.
 
-📊 **Allure Reports Integration** *(v4.2.1)* - Generate beautiful, comprehensive test reports with Allure framework integration.
+📊 **Allure Reports Integration** *(v4.2.1)* - Generate Allure reports with full BehaveX support including thread labels, background steps, and evidence attachments.
 
 📈 **Console Progress Bar** *(v3.2.13)* - Real-time progress tracking during parallel test execution.
 
 ## Table of Contents
 - [Introduction](#introduction)
+- [Who Uses BehaveX](#who-uses-behavex)
 - [Features](#features)
 - [Installation Instructions](#installation-instructions)
 - [Migration to BehaveX 4.5.0](#migration-to-behavex-450--behave--130)
@@ -48,17 +53,49 @@ Just to mention the most important features delivered in latest BehaveX releases
 - [Handling Failing Scenarios](#handling-failing-scenarios)
 - [Displaying Progress Bar in Console](#displaying-progress-bar-in-console)
 - [Allure Reports Integration](#allure-reports-integration)
-- [Show Your Support](#show-your-support)
+- [Get Involved](#get-involved)
 
 ## Introduction
 
-**BehaveX** is a BDD testing solution built on top of the Python Behave library, orchestrating parallel test sessions to enhance your testing workflow with additional features and performance improvements. It's particularly beneficial in the following scenarios:
+**BehaveX** is a production-grade test orchestration layer for Python BDD teams. It extends [Behave](https://behave.readthedocs.io) with parallel execution, enterprise-grade reporting, and the operational controls needed to run test suites at scale.
 
-- **Accelerating test execution**: Significantly reduce test run times through parallel execution by feature or scenario.
-- **Enhancing test reporting**: Generate comprehensive and visually appealing HTML and JSON reports for in-depth analysis and integration with other tools.
-- **Improving test visibility**: Provide detailed evidence, such as screenshots and logs, essential for understanding test failures and successes.
-- **Optimizing test automation**: Utilize features like test retries, test muting, and performance metrics for efficient test maintenance and analysis.
-- **Managing complex test suites**: Handle large test suites with advanced features for organization, execution, and comprehensive reporting through multiple formats and custom formatters.
+It's particularly beneficial when you need to:
+
+- **Run tests faster**: Parallel execution by feature or scenario — no code changes required.
+- **Report with confidence**: HTML, JSON, JUnit, and Allure reports with screenshots, logs, and per-scenario evidence.
+- **Operate at scale**: Auto-retry, test muting, execution ordering, dry runs, and CI/CD integration out of the box.
+- **Gain full visibility**: Execution timeline, automation rate, pass rate, and step reusability metrics in every run.
+
+Downloaded **121,000+ times per month** across teams ranging from open-source projects to enterprise QA labs.
+
+## BehaveX vs Behave
+
+BehaveX is a zero-friction upgrade — your existing feature files and step definitions work unchanged.
+
+| Capability | Behave | BehaveX |
+|---|---|---|
+| Parallel execution | ❌ | ✅ By feature or scenario, N processes |
+| HTML report | ❌ | ✅ With screenshots, logs, evidence |
+| Allure integration | ❌ | ✅ Full support with thread labels |
+| Auto-retry on failure | ❌ | ✅ `@AUTORETRY` / `@AUTORETRY_3` |
+| Test muting | ❌ | ✅ `@MUTE` — run but exclude from CI results |
+| Execution ordering | ❌ | ✅ `@ORDER_001` tags for dependency-aware runs |
+| Execution timeline | ❌ | ✅ Visual timeline across parallel workers |
+| Pass rate & automation metrics | ❌ | ✅ Per-run dashboard in HTML report |
+| Dry run with HTML report | Basic | ✅ Shareable spec report with stakeholders |
+| Per-scenario log files | ❌ | ✅ Linked directly in HTML report |
+| Screenshot evidence | ❌ | ✅ Via `behavex-images` |
+
+## Who Uses BehaveX
+
+BehaveX is trusted by teams and organizations across the industry:
+
+- **[Apache NiFi MiNiFi C++](https://github.com/apache/nifi-minifi-cpp)** — The Apache Foundation uses BehaveX as the testing framework for their C++ dataflow agent (172★, 101 forks).
+- **[LambdaTest](https://github.com/LambdaTest/Python-Behave-Selenium)** — Featured in LambdaTest's official Python BDD testing documentation and examples.
+- **[SovereignCloudStack](https://github.com/SovereignCloudStack/scs-health-monitor)** — European sovereign cloud initiative (Gaia-X ecosystem) uses BehaveX for real-life IaaS/KaaS health monitoring.
+- **[Qase](https://github.com/rmontemor-qase/behavex-qase-integration)** — Official integration with the Qase enterprise test management platform.
+
+*Using BehaveX in your organization? [Open a PR](https://github.com/hrcorval/behavex/pulls) to be listed here.*
 
 ## Features
 
@@ -821,10 +858,13 @@ This utility is helpful when you want to:
 - Create reports from archived test results
 - Generate reports in different locations without re-running tests
 
-## Show Your Support
+## Get Involved
 
-**If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.
+BehaveX grows through community use and contribution. If it's useful to your team:
 
-By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
+- **⭐ Star the repo** — helps other teams discover the project
+- **🐛 Report issues** — your use case helps improve BehaveX for everyone  
+- **🔧 Contribute** — PRs are welcome, from docs to features
+- **📢 Spread the word** — mention BehaveX when you talk about Python testing
 
-Thank you in advance for your support! We truly appreciate it.
+Used by the **Apache Foundation**, **LambdaTest**, **SovereignCloudStack**, and teams worldwide.

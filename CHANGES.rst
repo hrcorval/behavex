@@ -1,6 +1,39 @@
 Version History
 ===============================================================================
 
+Version: 4.6.2rc1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Added visual grouping of scenarios by ``Rule`` in the HTML report. Scenarios belonging to a ``Rule`` block are now rendered under a dedicated header row displaying the Rule name, making it easy to identify which business rule each scenario belongs to. The ``rule`` field is also included in the JSON report for each scenario (``null`` for scenarios not inside any Rule block), enabling programmatic access to Rule membership.
+* Improved Rule header visibility when using HTML report filters. Rule header rows now correctly hide when all their scenarios are filtered out (e.g., when searching for a specific scenario, filtering by tag, or filtering by status), and show again when any of their scenarios becomes visible. This applies to the scenario search, tag filter, and status filter interactions.
+* Extended the Rule processing test suite with scenarios that validate Rule section display in the HTML report (header row presence, correct header count per feature) and Rule metadata in the JSON report (``rule`` field presence and correct values for each scenario).
+
+Version: 4.6.1rc1
+-------------------------------------------------------------------------------
+
+ENHANCEMENTS:
+
+* Added full stack trace visibility in the HTML report for failed scenarios. Clicking on the red error message now opens a modal displaying the complete Python traceback, including chained exception cause chains. The error element is rendered with a pointer cursor and tooltip to indicate it is interactive.
+* Added native support for Gherkin ``Rule`` sections. Scenarios inside ``Rule`` blocks were previously silently skipped because behave 1.3.3+ stores them in ``feature.rules`` rather than ``feature.scenarios``. BehaveX now collects and executes all scenarios regardless of whether they are at the feature level or inside a Rule, including correct reporting in HTML and XML outputs and proper parallel execution support. (JSON report ``rule`` field attribution is added in 4.6.2.)
+
+FIXES:
+
+* Fixed a parallel-execution edge case where the shallow feature copy used when dispatching a single scenario still referenced the original ``feature.rules``, causing ``get_all_feature_scenarios`` to double-count rule scenarios in JSON reports.
+* Fixed exit code returning 0 when step loading fails with an ``ImportError`` (or any exception). BehaveX now returns exit code 1 when an execution error occurs and no scenarios successfully ran, preventing misleading "green" results when the test suite was never actually executed (`issue #234 <https://github.com/hrcorval/behavex/issues/234>`__).
+* Fixed ``KeyError: 'error_lines'`` in XML report generation when a step has no matching definition. The ``get_lines_exception`` function now safely returns an empty string when ``error_lines`` is absent from the step dictionary (`issue #235 <https://github.com/hrcorval/behavex/issues/235>`__).
+* Fixed scenario output not being visible in the console when running with a single process. BehaveX now routes Behave's formatter output directly to ``stdout`` in single-process mode and applies ``line_buffering`` for real-time output on Linux and Windows where ``stdout`` is block-buffered when not attached to a TTY. In multi-process mode, formatter output is intentionally suppressed to prevent interleaved output from concurrent processes (`issue #236 <https://github.com/hrcorval/behavex/issues/236>`__).
+
+BREAKING CHANGES:
+
+* Dropped support for Python 3.5, 3.6, and 3.7. These versions reached end-of-life and represent less than 1% of active PyPI downloads combined. The minimum supported Python version is now 3.8.
+
+CONTRIBUTIONS:
+
+* Thanks to `bombsimon <https://github.com/bombsimon>`__ for contributing the full stack trace visibility feature in the HTML report (`PR #238 <https://github.com/hrcorval/behavex/pull/238>`__).
+* Thanks to `chriskite <https://github.com/chriskite>`__ for contributing support for Gherkin Rule sections (`PR #241 <https://github.com/hrcorval/behavex/pull/241>`__).
+
 Version: 4.6.0
 -------------------------------------------------------------------------------
 

@@ -17,14 +17,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-        behave-version: ['1.2.6', '1.3.0', '1.3.1', 'latest']
+        behave-version: ['1.2.6', '1.3.0', '1.3.1', '1.3.3', 'latest']
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -44,7 +44,7 @@ jobs:
           else
             python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
           fi
-          python -m pip install dist/behavex-4.6.0.tar.gz --no-deps
+          python -m pip install dist/behavex-*.tar.gz --no-deps
           python -m pip install behavex-images==3.3.1
           pip freeze
           echo "Installed behave version:"
@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-${{ matrix.os }}-py${{ matrix.python-version }}-behave${{ matrix.behave-version }}
-          path: /home/runner/work/behavex/behavex/output/report.json
+          path: ${{ github.workspace }}/output/report.json
 
   # Test behavex without setuptools
   test-without-setuptools:
@@ -76,14 +76,14 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.12', '3.13']
-        behave-version: ['1.2.6', '1.3.0', '1.3.1', 'latest']
+        behave-version: ['1.2.6', '1.3.0', '1.3.1', '1.3.3', 'latest']
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -100,7 +100,7 @@ jobs:
           fi
           python -m pip install behavex-images==3.3.1
           python -m build
-          python -m pip install dist/behavex-4.6.0.tar.gz --no-deps
+          python -m pip install dist/behavex-*.tar.gz --no-deps
           echo "Installed behave version:"
           python -c "import behave; print(f'behave {behave.__version__}')"
 

@@ -488,7 +488,19 @@
                         <th style="width: 80px;height: 24px" class="text-center">Duration</th>
                         <th style="width: 180px;height: 24px" class="text-center">Evidence</th>
                     </tr>
+                    {%- set current_rule = namespace(name=none) -%}
                     {%- for scenario in feature.scenarios -%}
+                        {%- set scenario_rule = scenario.rule if (scenario.rule is defined and scenario.rule) else none -%}
+                        {%- if scenario_rule != current_rule.name -%}
+                            {%- set current_rule.name = scenario_rule -%}
+                            {%- if scenario_rule -%}
+                                <tr class="rule-header-row">
+                                    <td colspan="5" style="background-color:#eef2f7;padding:6px 14px;border-left:3px solid #5b9bd5;font-size:0.92em;">
+                                        <span class="glyphicon glyphicon-list-alt" style="margin-right:6px;color:#5b9bd5;"></span><b>Rule:</b> {{ scenario_rule|e }}
+                                    </td>
+                                </tr>
+                            {%- endif -%}
+                        {%- endif -%}
                         {%- set scenario_hash = scenario.identifier_hash if scenario.identifier_hash is defined else (feature.filename + "-" + scenario.line|string)|get_string_hash -%}
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
@@ -672,7 +684,8 @@
                  {%- if error_msg or error_lines -%}
                     <ul class="list-unstyled">
                         <li>
-                            <pre class="red-behavex behavex_letter">
+                            <pre class="red-behavex behavex_letter{%- if scenario.error_lines %} clickable-trace{%- endif -%}"
+                                {%- if scenario.error_lines %} data-stack-trace style="cursor: pointer;" title="Click to view full stack trace"{% endif %}>
                                 {%- if error_msg -%}
                                     {%- for line in error_msg -%}
                                         {%- if line -%}
@@ -687,6 +700,17 @@
                                     {%- endfor -%}
                                 {%- endif -%}
                             </pre>
+                            {%- if scenario.error_lines -%}
+                            <div class="stack-trace-content" style="display: none;">
+                                <pre style="white-space: pre; word-wrap: normal;">
+                                    {%- if scenario.error_lines is string -%}
+                                        {{ scenario.error_lines | e }}
+                                    {%- else -%}
+                                        {{ scenario.error_lines | join('') | e }}
+                                    {%- endif -%}
+                                </pre>
+                            </div>
+                            {%- endif -%}
                         </li>
                     </ul>
                  {%- endif -%}
@@ -1072,6 +1096,16 @@
             modal.modal('show');
         })
 
+        $(document).on('click', '.red-behavex[data-stack-trace]', function(e){
+            var div = $(this).siblings('.stack-trace-content').first();
+            var modal = $('#modal-logs');
+            var body_modal = modal.find('div.modal-body');
+            var clone_div = div.clone();
+            clone_div.css('display', '');
+            body_modal.html(clone_div);
+            modal.modal('show');
+        });
+
         // Old event handlers have been moved to use event delegation in document.ready
 
         function filter_status(status){
@@ -1163,6 +1197,7 @@
                 });
 
             }
+            update_rule_headers();
         }
 
         function reset_filters(filters){
@@ -1185,6 +1220,22 @@
             show_all();
          });
 
+        function update_rule_headers() {
+            $('tr.rule-header-row').each(function() {
+                var rule_row = $(this);
+                var has_visible = false;
+                var next = rule_row.next('tr');
+                while (next.length && !next.hasClass('rule-header-row') && !next.hasClass('table-header')) {
+                    if (next.is(':visible') && next.hasClass('feature-scenario')) {
+                        has_visible = true;
+                        break;
+                    }
+                    next = next.next('tr');
+                }
+                rule_row.toggle(has_visible);
+            });
+        }
+
         function show_all(){
             $('tr.feature_passed').show();
             $('tr.feature_failed').show();
@@ -1196,11 +1247,13 @@
             $('tr[class=behavex-row-total]').show();
             $('a[data-show=true]').click();
             $('.feature-scenario').show();
+            $('tr.rule-header-row').show();
             $('span[data-feature-id]').parents('tr').find('tr').show();
         }
 
         function show_scenario(id_hash_){
             $('.feature-scenario').hide();
+            $('tr.rule-header-row').hide();
             $('span.glyphicon-menu-down').click();
             $('a[data-show=true]').click();
             reset_filters();
@@ -1215,6 +1268,11 @@
             span_scenario.click();
             span_scenario.parents('tr').focus();
             $('tr[class=behavex-row-total]').hide();
+            var prev = span_scenario.parents('tr').first().prev('tr');
+            while (prev.length && !prev.hasClass('table-header')) {
+                if (prev.hasClass('rule-header-row')) { prev.show(); break; }
+                prev = prev.prev('tr');
+            }
         }
 
         function show_tag(tag){
@@ -1241,6 +1299,7 @@
                     scenario.hide();
                 }
             }
+            update_rule_headers();
             $('tr[class=behavex-row-total]').hide();
             expanded = document.querySelectorAll("button[aria-controls='collapse-filters']")[0].getAttribute("aria-expanded")
             if(expanded=="false") {

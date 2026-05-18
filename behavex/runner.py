@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""BehaveX - Agile test wrapper on top of Behave (BDD).
+"""BehaveX - Production-grade test orchestration for Python BDD..
 
 This module provides the main entry point for running BehaveX tests,
 including setup, execution, and reporting.
@@ -341,14 +341,20 @@ def launch_behavex():
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
                     failures_file.write(','.join(failures))
-        # Calculates final exit code. execution_codes is 1 only if an execution exception arises
+        # Calculates final exit code. execution_codes is 2 if an execution exception arises
         if isinstance(execution_codes, list):
             execution_failed = True if sum(execution_codes) > 0 else False
             execution_interrupted_or_crashed = True if any([code == 2 for code in execution_codes]) else False
         else:
             execution_failed = True if execution_codes > 0 else False
             execution_interrupted_or_crashed = True if execution_codes == 2 else False
-        exit_code = (EXIT_ERROR if (execution_failed and failing_non_muted_tests) or execution_interrupted_or_crashed else EXIT_OK)
+        # Treat as error when execution failed but no scenario actually ran (e.g. ImportError during step loading)
+        no_scenarios_ran = (
+            totals['scenarios']['passed'] == 0
+            and totals['scenarios']['failed'] == 0
+            and totals['scenarios']['error'] == 0
+        )
+        exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
     except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
@@ -525,10 +531,10 @@ def _wait_for_futures(futures, execution_codes, json_reports):
             if isinstance(e, BrokenProcessPool):
                 print_parallel('process.pool.broken.main', str(e))
                 # Mark as failed execution but continue processing remaining futures
-                execution_codes.append(1)
+                execution_codes.append(2)
             else:
                 print_parallel('parallel.process.error', str(e))
-                execution_codes.append(1)
+                execution_codes.append(2)
 
 
 def launch_by_feature(features,
@@ -1017,7 +1023,11 @@ def _launch_behave(behave_args):
             # Create runner instance
             runner = Runner(config)
 
-            # Run the tests (Behave output suppressed via format configuration)
+            # Ensure line-buffered stdout so formatter output appears in real time on all
+            # platforms (Linux/Windows block-buffer stdout when not a TTY by default)
+            if 'null' not in (config.format or []):
+                sys.stdout.reconfigure(line_buffering=True)
+
             runner.run()
 
             # Calculate execution code using runner internal state
@@ -1452,22 +1462,14 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         arguments.append('--tags')
         arguments.append('~@MANUAL')
 
-    # Handle output suppression based on execution mode
+    # Handle output based on execution mode
     if multiprocess:
-        # In multiprocess: use null format to suppress verbose step output
+        # In multiprocess: suppress output entirely — mixing output from concurrent processes
+        # in the console would produce unreadable interleaved text
         arguments.append('--format')
         arguments.append('null')
-    else:
-        # In single process: redirect output to behave.log to keep console clean
-        output_folder = get_env('OUTPUT')
-        if output_folder:
-            behave_log_path = os.path.join(output_folder, 'behave', 'behave.log')
-            # Ensure behave directory exists
-            behave_dir = os.path.dirname(behave_log_path)
-            if not os.path.exists(behave_dir):
-                os.makedirs(behave_dir)
-            arguments.append('--outfile')
-            arguments.append(behave_log_path)
+    # In single process: no --outfile and no --format override, so behave writes
+    # to stdout directly using the default pretty formatter (or any user-specified formatter)
 
     args_sys = config.args if config else None
     set_args_captures(arguments, args_sys)
@@ -1513,6 +1515,9 @@ def _get_feature_json_skeleton(behave_element):
     elif type(behave_element) is Scenario:
         feature = copy.copy(behave_element.feature)
         feature.scenarios = [behave_element]
+        # Clear rules so get_all_feature_scenarios returns only the single dispatched scenario
+        if hasattr(feature, 'rules'):
+            feature.rules = []
     else:
         raise Exception("No feature or scenario to process...")
     execution_info = generate_execution_info([feature])

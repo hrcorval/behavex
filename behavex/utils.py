@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 """
 # __future__ added for compatibility
@@ -57,7 +57,7 @@ def handle_execution_complete_callback(codes,
         tuple_values = future.result()
     except: # isort:skip
         json_reports += []
-        codes.append(1)
+        codes.append(2)
     if tuple_values:
         execution_code, map_json = tuple_values
         json_reports += [map_json]
@@ -195,7 +195,7 @@ def explore_features(features_path, features_list=None):
             if feature:
                 if scenario_line:
                     # iterate over scenarios and add the scenario that matches the scenario line
-                    for scenario in feature.scenarios:
+                    for scenario in get_all_feature_scenarios(feature):
                         #check if scenario is a ScenarioOutline
                         if isinstance(scenario, ScenarioOutline):
                             for example in scenario.scenarios:
@@ -205,7 +205,7 @@ def explore_features(features_path, features_list=None):
                             if scenario.line == int(scenario_line):
                                 features_list.append(scenario)
                 else:
-                    features_list.extend(feature.scenarios)
+                    features_list.extend(get_all_feature_scenarios(feature))
     else:
         try:
             for node in os.listdir(normalized_features_path):
@@ -216,7 +216,7 @@ def explore_features(features_path, features_list=None):
                     abs_feature_path = os.path.abspath(node_path)
                     feature = should_feature_be_run(abs_feature_path)
                     if feature:
-                        features_list.extend(feature.scenarios)
+                        features_list.extend(get_all_feature_scenarios(feature))
         except OSError as e:
             print(f"Error accessing path {features_path}: {e}")
             return features_list
@@ -231,7 +231,7 @@ def should_feature_be_run(path_feature):
     else:
         tags_list = []
         if hasattr(feature, 'scenarios'):
-            scenarios_instances = get_scenarios_instances(feature.scenarios)
+            scenarios_instances = get_scenarios_instances(get_all_feature_scenarios(feature))
             for scenario in scenarios_instances:
                 scenario_tags = get_scenario_tags(scenario)
                 tags_list.append(scenario_tags)
@@ -245,7 +245,7 @@ def should_feature_be_run(path_feature):
 
 def match_any_paths(feature):
     result = False
-    for scenario in feature.scenarios:
+    for scenario in get_all_feature_scenarios(feature):
         if hasattr(scenario, 'scenarios'):
             for outline in scenario.scenarios:
                 if IncludePathsMatch()(outline.filename, outline.line):
@@ -260,7 +260,7 @@ def match_any_name(feature):
     if not IncludeNameMatch().bool():
         return True
     result = False
-    for scenario in feature.scenarios:
+    for scenario in get_all_feature_scenarios(feature):
         if hasattr(scenario, 'scenarios'):
             for outline in scenario.scenarios:
                 if IncludeNameMatch()(outline.name):
@@ -328,18 +328,19 @@ def set_env_variable(key, value):
 
 
 def print_env_variables(keys):
-    key_length = 20
-    value_length = 60
-    separator = '|{}| {}|'.format(''.ljust(key_length, '-'), ''.ljust(value_length, '-'))
-    header = '|{}| {}|'.format('ENV. VARIABLE'.ljust(key_length), 'VALUE'.ljust(value_length))
+    if not keys:
+        return
+    env_data = [(key.upper(), os.environ.get(key, '----')) for key in keys]
+    key_width = max(max(len(k) for k, _ in env_data), len('ENV. VARIABLE')) + 1
+    val_width = max(max(len(v) for _, v in env_data), len('VALUE'))
+
+    separator = f"|{'-' * (key_width + 2)}|{'-' * (val_width + 2)}|"
 
     print(separator)
-    print(header)
+    print(f"| {'ENV. VARIABLE'.ljust(key_width)} | {'VALUE'.ljust(val_width)} |")
     print(separator)
-    for key in keys:
-        value = os.environ.get(key)
-        value = value if value else '----'
-        print('|{}| {}|'.format(key.upper().ljust(key_length), str(value).ljust(value_length)))
+    for key, value in env_data:
+        print(f"| {key.ljust(key_width)} | {value.ljust(val_width)} |")
     print(separator)
 
 
@@ -425,7 +426,7 @@ def len_scenarios(feature_file):
     data = codecs.open(feature_file, encoding='utf8').read()
     feature = parse_feature(data=data)
     amount_scenarios = 0
-    scenarios_instances = get_scenarios_instances(feature.scenarios)
+    scenarios_instances = get_scenarios_instances(get_all_feature_scenarios(feature))
     for scenario in scenarios_instances:
         # Using enhanced tag matching with version-aware v1/v2 tag expression support
         # (match_for_execution includes both v1 and v2 implementations internally)
@@ -498,6 +499,19 @@ def get_scenario_tags(scenario, include_outline_example_tags=True):
         scenario_tags_set = set(scenario_tags)
     result = list(scenario_tags_set)
     return result
+
+
+def get_all_feature_scenarios(feature):
+    """Return all scenarios from a feature, including those inside Rule blocks.
+
+    In behave 1.3.3+, scenarios inside Rule blocks are stored in feature.rules,
+    not in feature.scenarios. This helper combines both so callers need not
+    know which behave version is in use.
+    """
+    all_scenarios = list(feature.scenarios)
+    for rule in getattr(feature, 'rules', []):
+        all_scenarios.extend(rule.scenarios)
+    return all_scenarios
 
 
 def get_scenarios_instances(scenarios):

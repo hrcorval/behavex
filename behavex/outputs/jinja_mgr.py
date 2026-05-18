@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 
 Jinja template handler.
@@ -167,6 +167,8 @@ def _print_step_json(step):
 
 def get_lines_exception(step):
     if type(step) is dict:
+        if 'error_lines' not in step:
+            return u''
         return u'\n'.join(
             [16 * u' ' + line for line in step['error_lines']]
         ).strip()

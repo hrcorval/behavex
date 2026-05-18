@@ -1,20 +1,38 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
+about: Suggest a new feature or enhancement for BehaveX
+title: '[FEATURE] '
+labels: enhancement
 assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Summary
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+A one-sentence description of the feature.
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+## Problem it solves
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+What's the current limitation or pain point? What are you trying to do that BehaveX doesn't support today?
+
+## Proposed solution
+
+Describe the behavior you'd like to see. If it involves a new CLI argument, show an example:
+
+```bash
+behavex --my-new-flag value
+```
+
+If it involves new API or hooks, show how you'd expect to use it:
+
+```python
+# example usage
+```
+
+## Alternatives considered
+
+Any workarounds you've tried, or alternative approaches that could solve this.
+
+## Additional context
+
+Links to related issues, Behave docs, or other testing frameworks that already implement this.

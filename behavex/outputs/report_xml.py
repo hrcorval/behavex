@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /*
-* BehaveX - Agile test wrapper on top of Behave (BDD)
+* BehaveX - Production-grade test orchestration for Python BDD.
 */
 """
 # __future__ has been added in order to maintain compatibility
@@ -23,7 +23,7 @@ from behavex.outputs.jinja_mgr import TemplateHandler
 from behavex.outputs.report_utils import (get_save_function,
                                           match_for_execution,
                                           retry_file_operation, text)
-from behavex.utils import get_scenario_tags
+from behavex.utils import get_all_feature_scenarios, get_scenario_tags
 
 
 def generate_junit_xml_filename(filename):
@@ -71,7 +71,7 @@ def _export_feature_to_xml(feature, isobject=True):
                 ),
                 [],
             )
-        scenarios = flatter_scenarios(feature_.scenarios) if isobject else feature_['scenarios']
+        scenarios = flatter_scenarios(get_all_feature_scenarios(feature_)) if isobject else feature_['scenarios']
         return scenarios
 
     def get_status(scenario_):
