@@ -53,17 +53,18 @@ Just to mention the most important features delivered in latest BehaveX releases
 - [Handling Failing Scenarios](#handling-failing-scenarios)
 - [Displaying Progress Bar in Console](#displaying-progress-bar-in-console)
 - [Allure Reports Integration](#allure-reports-integration)
-- [Show Your Support](#show-your-support)
+- [Get Involved](#get-involved)
 
 ## Introduction
 
-**BehaveX** is a BDD testing solution built on top of the Python Behave library, orchestrating parallel test sessions to enhance your testing workflow with additional features and performance improvements. It's particularly beneficial in the following scenarios:
+**BehaveX** is a production-grade test orchestration layer for Python BDD teams. It extends [Behave](https://behave.readthedocs.io) with parallel execution, enterprise-grade reporting, and the operational controls needed to run test suites at scale.
 
-- **Accelerating test execution**: Significantly reduce test run times through parallel execution by feature or scenario.
-- **Enhancing test reporting**: Generate comprehensive and visually appealing HTML and JSON reports for in-depth analysis and integration with other tools.
-- **Improving test visibility**: Provide detailed evidence, such as screenshots and logs, essential for understanding test failures and successes.
-- **Optimizing test automation**: Utilize features like test retries, test muting, and performance metrics for efficient test maintenance and analysis.
-- **Managing complex test suites**: Handle large test suites with advanced features for organization, execution, and comprehensive reporting through multiple formats and custom formatters.
+It's particularly beneficial when you need to:
+
+- **Run tests faster**: Parallel execution by feature or scenario — no code changes required.
+- **Report with confidence**: HTML, JSON, JUnit, and Allure reports with screenshots, logs, and per-scenario evidence.
+- **Operate at scale**: Auto-retry, test muting, execution ordering, dry runs, and CI/CD integration out of the box.
+- **Gain full visibility**: Execution timeline, automation rate, pass rate, and step reusability metrics in every run.
 
 ## Who Uses BehaveX
 
@@ -837,10 +838,13 @@ This utility is helpful when you want to:
 - Create reports from archived test results
 - Generate reports in different locations without re-running tests
 
-## Show Your Support
+## Get Involved
 
-**If you find this project helpful or interesting, we would appreciate it if you could give it a star** (:star:). It's a simple way to show your support and let us know that you find value in our work.
+BehaveX grows through community use and contribution. If it's useful to your team:
 
-By starring this repository, you help us gain visibility among other developers and contributors. It also serves as motivation for us to continue improving and maintaining this project.
+- **⭐ Star the repo** — helps other teams discover the project
+- **🐛 Report issues** — your use case helps improve BehaveX for everyone  
+- **🔧 Contribute** — PRs are welcome, from docs to features
+- **📢 Spread the word** — mention BehaveX when you talk about Python testing
 
-Thank you in advance for your support! We truly appreciate it.
+Used by the **Apache Foundation**, **LambdaTest**, **SovereignCloudStack**, and teams worldwide.
