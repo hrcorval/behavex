@@ -3,6 +3,13 @@ import logging
 from behave import given
 
 
+@given('a passing condition')
+def step_passing_condition(context):
+    # Local copy needed: fixture features run in isolated subprocesses that only
+    # load steps from their own steps/ directory.
+    logging.info('a passing condition')
+
+
 @given('a step that raises a simple exception')
 def step_raises_simple_exception(context):
     raise ValueError("Something went wrong: invalid input value")
@@ -25,8 +32,3 @@ def step_raises_chained_exception_three_levels(context):
             raise ValueError("Level 2: configuration could not be loaded") from e
     except ValueError as e:
         raise RuntimeError("Level 3: application failed to initialize") from e
-
-
-@given('a passing condition')
-def step_passing_condition(context):
-    logging.info('a passing condition')

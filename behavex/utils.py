@@ -25,11 +25,6 @@ from functools import reduce
 from tempfile import gettempdir
 
 from behave.model import ScenarioOutline
-
-try:
-    from behave.model import Rule as BehaveRule
-except ImportError:
-    BehaveRule = None  # behave < 1.3.3 does not have Rule support
 from behave.parser import parse_feature, parse_file
 from configobj import ConfigObj
 
@@ -522,9 +517,7 @@ def get_all_feature_scenarios(feature):
 def get_scenarios_instances(scenarios):
     scenarios_to_iterate = []
     for scenario in scenarios:
-        if BehaveRule is not None and isinstance(scenario, BehaveRule):
-            scenarios_to_iterate.extend(get_scenarios_instances(scenario.scenarios))
-        elif isinstance(scenario, ScenarioOutline):
+        if isinstance(scenario, ScenarioOutline):
             for scenario_outline_instance in scenario.scenarios:
                 scenarios_to_iterate.append(scenario_outline_instance)
         else:

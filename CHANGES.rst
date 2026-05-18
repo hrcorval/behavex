@@ -16,7 +16,7 @@ Version: 4.6.1rc1
 ENHANCEMENTS:
 
 * Added full stack trace visibility in the HTML report for failed scenarios. Clicking on the red error message now opens a modal displaying the complete Python traceback, including chained exception cause chains. The error element is rendered with a pointer cursor and tooltip to indicate it is interactive.
-* Added native support for Gherkin ``Rule`` sections. Scenarios inside ``Rule`` blocks were previously silently skipped because behave 1.3.3+ stores them in ``feature.rules`` rather than ``feature.scenarios``. BehaveX now collects and executes all scenarios regardless of whether they are at the feature level or inside a Rule, including correct reporting in HTML, XML, and JSON outputs and proper parallel execution support.
+* Added native support for Gherkin ``Rule`` sections. Scenarios inside ``Rule`` blocks were previously silently skipped because behave 1.3.3+ stores them in ``feature.rules`` rather than ``feature.scenarios``. BehaveX now collects and executes all scenarios regardless of whether they are at the feature level or inside a Rule, including correct reporting in HTML and XML outputs and proper parallel execution support. (JSON report ``rule`` field attribution is added in 4.6.2.)
 
 FIXES:
 

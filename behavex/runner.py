@@ -1026,10 +1026,7 @@ def _launch_behave(behave_args):
             # Ensure line-buffered stdout so formatter output appears in real time on all
             # platforms (Linux/Windows block-buffer stdout when not a TTY by default)
             if 'null' not in (config.format or []):
-                try:
-                    sys.stdout.reconfigure(line_buffering=True)
-                except AttributeError:
-                    pass  # Python < 3.7
+                sys.stdout.reconfigure(line_buffering=True)
 
             runner.run()
 

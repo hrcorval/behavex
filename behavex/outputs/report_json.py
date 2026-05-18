@@ -39,6 +39,9 @@ def add_step_info(step, parent_node):
 
 
 def add_step_info_background(step, parent_node):
+    # Mark the step object as belonging to a background before serializing.
+    # This is safe because behave creates a fresh Step instance per scenario
+    # execution, so the mutation does not affect other scenarios.
     step.background = 'True'
     return add_step_info(step, parent_node)
 
