@@ -1,0 +1,122 @@
+# BehaveX configuration file example
+#
+# Copy this file to your project root as behavex.cfg or behavex.ini and
+# BehaveX will pick it up automatically (no --config flag needed).
+#
+# You can also point to any location explicitly:
+#   uv run behavex features/ --config path/to/my_config.cfg
+#
+# Format: ConfigObj INI  https://configobj.readthedocs.io
+# All values shown are the built-in defaults unless noted otherwise.
+
+[output]
+# Folder for HTML/JSON/JUnit reports.
+path = output
+
+[progress_bar]
+# When True, each progress update is printed on its own line instead of
+# overwriting the previous one (useful for CI logs).
+print_updates_in_new_lines = False
+
+[test_run]
+# Tags that are excluded from every run, regardless of --tags.
+# Useful for permanently skipping categories (e.g. @SLOW, @FLAKY).
+tags_to_skip =
+
+[params]
+
+# ── Filtering ──────────────────────────────────────────────────────────────────
+
+# Comma-separated tag list; each entry is AND-ed (same as multiple --tags).
+# Example: tags = @SMOKE, @REGRESSION
+tags =
+
+# Run only scenarios whose name contains this substring.
+# WARNING: not supported in parallel execution — see README.
+name =
+
+# Exclude feature files matching this regex.
+exclude =
+
+# ── Paths ──────────────────────────────────────────────────────────────────────
+
+# Additional feature paths or FEATURE_FILE:LINE references (comma-separated).
+include_paths =
+
+# Path to a failing_scenarios.txt file to rerun only previously failing scenarios.
+rerun_failures =
+
+# ── Parallelism ────────────────────────────────────────────────────────────────
+
+# Number of parallel Behave worker processes.
+parallel_processes = 1
+
+# Granularity of parallel dispatch: scenario or feature.
+parallel_scheme = scenario
+
+# Milliseconds to wait before spawning each additional worker.
+parallel_delay = 0
+
+# ── Output & formatters ────────────────────────────────────────────────────────
+
+# Custom formatter in MODULE:CLASS form.
+# Example for Allure:
+#   formatter = behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter
+formatter =
+
+# Output subdirectory for the formatter, relative to the output folder.
+# Default for Allure: allure-results
+formatter_outdir =
+
+# Set to False to skip attaching scenario log files to formatter reports.
+formatter_attach_logs = True
+
+# Show a progress bar in the console during parallel execution.
+show_progress_bar = False
+
+# ── Test ordering ──────────────────────────────────────────────────────────────
+
+# Sort scenarios/features by @ORDER_NNN tags before dispatching.
+order_tests = False
+
+# Wait for all lower-order tests to finish before starting higher-order ones.
+# Implies order_tests = True. May reduce parallel throughput.
+order_tests_strict = False
+
+# Tag prefix used for ordering (e.g. ORDER for @ORDER_001).
+order_tag_prefix = ORDER
+
+# ── Dry run ────────────────────────────────────────────────────────────────────
+
+# List scenarios in reports without executing steps.
+dry_run = False
+
+# ── Behave pass-through ────────────────────────────────────────────────────────
+
+no_color = False
+no_capture = False
+capture_stderr = False
+no_logcapture = False
+no_snippets = False
+
+# CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET
+logging_level = INFO
+logging_format =
+logging_datefmt =
+logging_filter =
+
+# KEY=VALUE pairs available in Behave's context.userdata (comma-separated).
+# Example: define = env=staging, timeout=30
+define =
+
+# Feature file language code (e.g. es, fr, de).
+lang =
+
+# Steps sub-directory stage (advanced Behave feature).
+stage =
+
+# ── Parameters NOT compatible with parallel execution ──────────────────────────
+# Uncomment only when running with parallel_processes = 1.
+
+# stop = False     # stops only the worker that hits the failure, not all workers
+# wip = False      # may cause workers to fail when no @wip scenarios are assigned

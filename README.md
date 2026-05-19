@@ -41,6 +41,7 @@
 - [Constraints](#constraints)
 - [Supported Behave Arguments](#supported-behave-arguments)
 - [Specific Arguments from BehaveX](#specific-arguments-from-behavex)
+- [Configuration File](#configuration-file)
 - [Parallel Test Executions](#parallel-test-executions)
 - [Test Execution Ordering](#test-execution-ordering)
 - [Test Execution Reports](#test-execution-reports)
@@ -434,6 +435,102 @@ behavex -t=@api -t=~@slow -t=~@flaky → behavex -t="@api and not @slow and not 
 - **order-tests** (--order-tests): Enables sorting of scenarios/features by execution order using special order tags (only effective with parallel execution).
 - **order-tests-strict** (--order-tests-strict): Ensures tests run in strict order in parallel mode, with tests waiting for lower-order tests to complete (automatically enables --order-tests). May reduce parallel execution performance.
 - **order-tag-prefix** (--order-tag-prefix): Specifies the prefix for order tags (default: 'ORDER').
+
+## Configuration File
+
+Instead of passing arguments on every command line invocation, you can place a configuration file in your project root. BehaveX auto-discovers it in this order:
+
+1. Path given with `--config` / `-c` (explicit override)
+2. `behavex.cfg` in the current working directory
+3. `behavex.ini` in the current working directory
+4. Built-in defaults
+
+### Format
+
+The file uses [ConfigObj](https://configobj.readthedocs.io) INI syntax — the same format as the `--config` argument has always accepted.
+
+```ini
+[output]
+# Output folder for HTML/JSON/JUnit reports (default: output)
+path = output
+
+[progress_bar]
+# Print each progress update on a new line instead of overwriting (default: False)
+print_updates_in_new_lines = False
+
+[test_run]
+# Tags to always exclude from every run, regardless of --tags (default: empty)
+tags_to_skip =
+
+[params]
+# ── Filtering ──────────────────────────────────────────────────────────────────
+# Comma-separated list; each entry is AND-ed together (same as multiple --tags).
+tags = @SMOKE, @REGRESSION
+
+# Only run features/scenarios whose name matches this substring.
+# WARNING: not compatible with parallel execution — see notes below.
+name =
+
+# Regex to exclude feature files.
+exclude =
+
+# ── Parallelism ────────────────────────────────────────────────────────────────
+parallel_processes = 4
+parallel_scheme = scenario     # scenario | feature
+parallel_delay = 0             # ms delay between spawning each worker
+
+# ── Output & formatters ────────────────────────────────────────────────────────
+formatter = behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter
+formatter_outdir = allure-results
+formatter_attach_logs = True
+
+show_progress_bar = False
+
+# ── Test ordering ──────────────────────────────────────────────────────────────
+order_tests = False
+order_tests_strict = False
+order_tag_prefix = ORDER
+
+# ── Rerun failures ─────────────────────────────────────────────────────────────
+rerun_failures =              # path to failing_scenarios.txt
+include_paths =               # comma-separated list of feature paths
+
+# ── Behave pass-through ────────────────────────────────────────────────────────
+dry_run = False
+no_color = False
+no_capture = False
+capture_stderr = False
+no_logcapture = False
+no_snippets = False
+logging_level = INFO           # CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET
+logging_format =
+logging_datefmt =
+logging_filter =
+define =                       # list of KEY=VALUE pairs for Behave userdata
+lang =                         # feature file language (e.g. es, fr)
+stage =                        # steps sub-directory stage
+
+# ── Not compatible with parallel execution ─────────────────────────────────────
+# stop = False       # stops only the worker that hits the failure, not all workers
+# wip = False        # may cause workers to fail when no @wip scenarios are assigned
+```
+
+> **Note on `--config`:** you can also point to any file explicitly:
+> ```bash
+> uv run behavex features/ --config path/to/my_config.cfg
+> ```
+
+### Parameters incompatible with parallel execution
+
+The following parameters are accepted in the config file but will trigger a warning and behave unexpectedly when `parallel_processes > 1`:
+
+| Parameter | Problem |
+|---|---|
+| `stop` | Stops only the worker that hits the first failure; other workers keep running |
+| `wip` | May cause individual workers to fail when no `@wip` scenarios are assigned to them |
+| `name` | Name filter runs inside each worker after BehaveX has already dispatched scenarios by line number, which can silently drop scenarios |
+
+Use `--tags @WIP` instead of `wip`, and run with a single process if you need fail-fast behaviour (`--parallel-processes 1`).
 
 ## Parallel Test Executions
 
