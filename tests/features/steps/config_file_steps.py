@@ -24,15 +24,19 @@ def _clean_child_env():
 
 def _make_config_dir(context):
     if not hasattr(context, 'config_dir'):
-        # Parent behavex sets TEMP/TMP/TMPDIR to its own output/temp dir.
-        # Temporarily clear those so mkdtemp picks the real system temp.
-        saved = {k: os.environ.pop(k, None) for k in ('TMPDIR', 'TEMP', 'TMP')}
-        try:
-            config_dir = tempfile.mkdtemp(prefix='bhx_cfg_test_')
-        finally:
-            for k, v in saved.items():
-                if v is not None:
-                    os.environ[k] = v
+        # Parent behavex overrides TEMP to its own output/temp dir.  We MUST
+        # pass an explicit dir= so the config test dirs land in a short system
+        # path, not nested inside output/temp.  Long nested paths break the
+        # child's multiprocessing SyncManager socket with AF_UNIX path too long.
+        if os.path.isdir('/tmp'):
+            base_tmp = '/tmp'  # POSIX (Linux / macOS)
+        else:
+            # Windows — LOCALAPPDATA\Temp is never touched by behavex
+            base_tmp = os.path.join(
+                os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'Temp'
+            )
+            os.makedirs(base_tmp, exist_ok=True)
+        config_dir = tempfile.mkdtemp(prefix='bhx_cfg_test_', dir=base_tmp)
         context.add_cleanup(shutil.rmtree, config_dir, ignore_errors=True)
         context.config_dir = config_dir
     return context.config_dir
