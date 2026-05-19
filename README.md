@@ -438,99 +438,88 @@ behavex -t=@api -t=~@slow -t=~@flaky → behavex -t="@api and not @slow and not 
 
 ## Configuration File
 
-Instead of passing arguments on every command line invocation, you can place a configuration file in your project root. BehaveX auto-discovers it in this order:
+Instead of passing arguments on every command line invocation, you can place a configuration file in your project root. BehaveX auto-discovers it from the current working directory in this order:
 
-1. Path given with `--config` / `-c` (explicit override)
-2. `behavex.cfg` in the current working directory
-3. `behavex.ini` in the current working directory
-4. Built-in defaults
+| Priority | Source |
+|---|---|
+| 1 (highest) | `--config <path>` — explicit path passed on the command line |
+| 2 | `behavex.cfg` in the current working directory |
+| 3 | `behavex.ini` in the current working directory |
+| 4 | `behave.ini` in the current working directory |
+| 5 (lowest) | Built-in defaults |
 
 ### Format
 
-The file uses [ConfigObj](https://configobj.readthedocs.io) INI syntax — the same format as the `--config` argument has always accepted.
+The file uses INI syntax. All CLI arguments go under `[params]`. BehaveX also recognises `[output]`, `[progress_bar]`, and `[test_run]` for settings that have no CLI equivalent.
 
 ```ini
 [output]
-# Output folder for HTML/JSON/JUnit reports (default: output)
-path = output
+path = test-results              # folder where HTML/JSON/JUnit reports are written
 
 [progress_bar]
-# Print each progress update on a new line instead of overwriting (default: False)
-print_updates_in_new_lines = False
+print_updates_in_new_lines = True    # True: each update on a new line; False: overwrite
 
 [test_run]
-# Tags to always exclude from every run, regardless of --tags (default: empty)
-tags_to_skip =
+tags_to_skip = @SKIP, @MANUAL   # always excluded, regardless of --tags
 
 [params]
-# ── Filtering ──────────────────────────────────────────────────────────────────
-# Comma-separated list; each entry is AND-ed together (same as multiple --tags).
-tags = @SMOKE, @REGRESSION
+# Filtering
+tags               = @SMOKE, @REGRESSION        # AND-ed; equivalent to multiple --tags
+name               = checkout                   # substring match on scenario name (not compatible with parallel execution)
+exclude            = .*draft.*                  # regex — matching feature files are skipped
 
-# Only run features/scenarios whose name matches this substring.
-# WARNING: not compatible with parallel execution — see notes below.
-name =
-
-# Regex to exclude feature files.
-exclude =
-
-# ── Parallelism ────────────────────────────────────────────────────────────────
+# Parallelism
 parallel_processes = 4
-parallel_scheme = scenario     # scenario | feature
-parallel_delay = 0             # ms delay between spawning each worker
+parallel_scheme    = scenario                   # scenario | feature
+parallel_delay     = 500                        # ms delay between spawning each worker
 
-# ── Output & formatters ────────────────────────────────────────────────────────
-formatter = behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter
-formatter_outdir = allure-results
+# Output & formatters
+show_progress_bar  = True
+formatter          = behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter
+formatter_outdir   = allure-results
 formatter_attach_logs = True
 
-show_progress_bar = False
+# Test ordering
+order_tests        = True
+order_tests_strict = False                      # True: enforce strict ordering across workers
+order_tag_prefix   = PRIORITY                   # tag prefix used for ordering (e.g. @PRIORITY_001)
 
-# ── Test ordering ──────────────────────────────────────────────────────────────
-order_tests = False
-order_tests_strict = False
-order_tag_prefix = ORDER
+# Rerun failures
+rerun_failures     = output/failing_scenarios.txt
+include_paths      = tests/smoke, tests/regression
 
-# ── Rerun failures ─────────────────────────────────────────────────────────────
-rerun_failures =              # path to failing_scenarios.txt
-include_paths =               # comma-separated list of feature paths
-
-# ── Behave pass-through ────────────────────────────────────────────────────────
-dry_run = False
-no_color = False
-no_capture = False
-capture_stderr = False
-no_logcapture = False
-no_snippets = False
-logging_level = INFO           # CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET
-logging_format =
-logging_datefmt =
-logging_filter =
-define =                       # list of KEY=VALUE pairs for Behave userdata
-lang =                         # feature file language (e.g. es, fr)
-stage =                        # steps sub-directory stage
-
-# ── Not compatible with parallel execution ─────────────────────────────────────
-# stop = False       # stops only the worker that hits the failure, not all workers
-# wip = False        # may cause workers to fail when no @wip scenarios are assigned
+# Behave pass-through
+dry_run            = False
+no_color           = False
+no_capture         = False
+capture_stderr     = False
+no_logcapture      = False
+no_snippets        = False
+logging_level      = DEBUG                      # CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET
+logging_format     = %(asctime)s %(levelname)s %(message)s
+logging_datefmt    = %Y-%m-%d %H:%M:%S
+logging_filter     = myapp
+define             = env=staging db_host=localhost
+lang               = es                         # feature file language code (e.g. es, fr, de)
+stage              = dev                        # steps sub-directory stage prefix
 ```
 
-> **Note on `--config`:** you can also point to any file explicitly:
+> **Tip:** use `--config` to target any file explicitly — useful for environment-specific configs:
 > ```bash
-> uv run behavex features/ --config path/to/my_config.cfg
+> behavex features/ --config ci/behavex_ci.cfg
 > ```
 
 ### Parameters incompatible with parallel execution
 
-The following parameters are accepted in the config file but will trigger a warning and behave unexpectedly when `parallel_processes > 1`:
+`stop`, `wip`, and `name` are accepted in the config file but do not work correctly when `parallel_processes > 1`:
 
 | Parameter | Problem |
 |---|---|
-| `stop` | Stops only the worker that hits the first failure; other workers keep running |
+| `stop` | Only stops the worker that hits the first failure; other workers keep running |
 | `wip` | May cause individual workers to fail when no `@wip` scenarios are assigned to them |
-| `name` | Name filter runs inside each worker after BehaveX has already dispatched scenarios by line number, which can silently drop scenarios |
+| `name` | Filter runs inside each worker after scenarios have already been dispatched, which can silently drop scenarios |
 
-Use `--tags @WIP` instead of `wip`, and run with a single process if you need fail-fast behaviour (`--parallel-processes 1`).
+Use `--tags @WIP` instead of `wip`. For fail-fast behaviour, combine `stop` with `--parallel-processes 1`.
 
 ## Parallel Test Executions
 
