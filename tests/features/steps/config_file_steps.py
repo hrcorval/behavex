@@ -8,10 +8,31 @@ from behave import given, then, when
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'secondary_features')
 
+# Env vars that parent behavex injects into its own process.  The child
+# subprocess must NOT inherit them — they would override the child's own config
+# discovery and output paths, causing spurious failures.
+_PARENT_BEHAVEX_ENV_VARS = frozenset({
+    'CONFIG', 'OUTPUT', 'TAGS', 'PARALLEL_SCHEME',
+    'PARALLEL_PROCESSES', 'FEATURES_PATH', 'TEMP', 'LOGS', 'LOGGING_LEVEL',
+})
+
+
+def _clean_child_env():
+    """Return a copy of os.environ without parent-behavex-injected variables."""
+    return {k: v for k, v in os.environ.items() if k not in _PARENT_BEHAVEX_ENV_VARS}
+
 
 def _make_config_dir(context):
     if not hasattr(context, 'config_dir'):
-        config_dir = tempfile.mkdtemp(prefix='bhx_cfg_test_')
+        # Parent behavex sets TEMP/TMP/TMPDIR to its own output/temp dir.
+        # Temporarily clear those so mkdtemp picks the real system temp.
+        saved = {k: os.environ.pop(k, None) for k in ('TMPDIR', 'TEMP', 'TMP')}
+        try:
+            config_dir = tempfile.mkdtemp(prefix='bhx_cfg_test_')
+        finally:
+            for k, v in saved.items():
+                if v is not None:
+                    os.environ[k] = v
         context.add_cleanup(shutil.rmtree, config_dir, ignore_errors=True)
         context.config_dir = config_dir
     return context.config_dir
@@ -47,7 +68,6 @@ def given_explicit_config_file(context, param, value):
     config_dir = _make_config_dir(context)
     content = f'[params]\n{param} = {value}\n'
     explicit_path = _write_config_file(config_dir, 'explicit_config.cfg', content)
-    # Store the --config flag so the @when step picks it up automatically.
     context.extra_cli_args = getattr(context, 'extra_cli_args', []) + ['--config', explicit_path]
 
 
@@ -77,7 +97,10 @@ def when_run_from_config_dir(context, feature_name):
         output_path = os.path.join(context.config_dir, 'output')
         context.output_path = output_path
         cmd = ['behavex', feature_path, '-o', output_path] + extra
-    context.result = subprocess.run(cmd, capture_output=True, text=True, cwd=context.config_dir)
+    child_env = _clean_child_env()
+    context.result = subprocess.run(
+        cmd, capture_output=True, text=True, cwd=context.config_dir, env=child_env
+    )
     if context.result.returncode != 0:
         import logging
         logging.error(
