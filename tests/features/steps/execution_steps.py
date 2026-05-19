@@ -217,7 +217,11 @@ def when_run_dry_run(context):
 @then('I should see the following behavex console outputs and exit code "{expected_exit_code}"')
 def then_see_console_outputs(context, expected_exit_code=None):
     if expected_exit_code is not None:
-        assert int(context.result.returncode) == int(expected_exit_code), "Behavex exit code is not expected"
+        assert int(context.result.returncode) == int(expected_exit_code), (
+            f"Behavex exit code is not expected (got {context.result.returncode}, expected {expected_exit_code})\n"
+            f"STDOUT:\n{context.result.stdout}\n"
+            f"STDERR:\n{context.result.stderr}"
+        )
     for row in context.table:
         assert row['output_line'] in context.result.stdout, f"Unexpected output when checking console outputs: {context.result.stdout}\n\nOutput line not found: {row['output_line']}\n"
 

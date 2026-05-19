@@ -78,6 +78,15 @@ def when_run_from_config_dir(context, feature_name):
         context.output_path = output_path
         cmd = ['behavex', feature_path, '-o', output_path] + extra
     context.result = subprocess.run(cmd, capture_output=True, text=True, cwd=context.config_dir)
+    if context.result.returncode != 0:
+        import logging
+        logging.error(
+            f"Child behavex process failed (rc={context.result.returncode})\n"
+            f"CMD: {' '.join(cmd)}\n"
+            f"CWD: {context.config_dir}\n"
+            f"STDOUT:\n{context.result.stdout}\n"
+            f"STDERR:\n{context.result.stderr}"
+        )
     context.extra_cli_args = []
     context.skip_output_arg = False
 
