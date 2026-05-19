@@ -78,7 +78,6 @@ BEHAVEX_ARGS = [
 ]
 
 
-
 def parse_arguments(args):
     """Process all command line arguments"""
     parser = argparse.ArgumentParser(

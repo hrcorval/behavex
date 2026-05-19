@@ -25,6 +25,8 @@ Feature: Configuration file support
       | parallel_processes | 2       | PARALLEL_PROCESSES  \| 2       |
       | parallel_scheme    | feature | PARALLEL_SCHEME     \| feature |
       | logging_level      | DEBUG   | LOGGING_LEVEL       \| DEBUG   |
+      | dry_run            | True    | PARALLEL_PROCESSES             |
+      | no_capture         | True    | scenarios passed               |
 
   @CONFIG_FILE @CONFIG_FILE_PARAMS
   Scenario: BehaveX reads tags from a behavex.cfg config file
@@ -125,3 +127,19 @@ Feature: Configuration file support
     Then I should see the following behavex console outputs and exit code "0"
       | output_line                 |
       | PARALLEL_PROCESSES  \| 2   |
+
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Warnings for params incompatible with parallel execution
+  # ─────────────────────────────────────────────────────────────────────────
+
+  @CONFIG_FILE @CONFIG_FILE_WARNINGS
+  Scenario: BehaveX prints a warning when a parallel-incompatible param is set in the config file
+    Given a "behavex.cfg" config file with params:
+      | param              | value |
+      | parallel_processes | 2     |
+      | stop               | True  |
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                            |
+      | not compatible with parallel execution |

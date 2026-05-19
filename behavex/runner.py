@@ -1390,9 +1390,7 @@ def _warn_parallel_incompatible_params():
     """Emit warnings for config/CLI params that do not work correctly in parallel mode."""
     for param, reason in _PARALLEL_INCOMPATIBLE_PARAMS:
         if get_param(param):
-            logging.warning(
-                "Parameter '%s' is not compatible with parallel execution: %s", param, reason
-            )
+            print(f"WARNING: Parameter '{param}' is not compatible with parallel execution: {reason}")
 
 
 def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):

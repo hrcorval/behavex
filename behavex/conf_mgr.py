@@ -144,9 +144,9 @@ class ConfigRun(metaclass=ExecutionSingleton):
         config_value = self.get_param_config(key_chain)
         if config_value not in (None, '', [], {}):
             return config_value
-        # Both CLI and config are "empty"; prefer the config default (a typed
-        # empty value like '' or False) over argparse None.
-        return config_value if cli_value is None else cli_value
+        # Both CLI and config are "empty"; return the typed config default
+        # (e.g. '' or False) rather than argparse None.
+        return config_value
 
     def get_env(self, key, optional=None):
         return self.environ.get(key.lower(), optional)

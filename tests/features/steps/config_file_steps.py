@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import subprocess
@@ -77,6 +78,13 @@ def given_explicit_config_file(context, param, value):
     context.extra_cli_args = getattr(context, 'extra_cli_args', []) + ['--config', explicit_path]
 
 
+@given('a "{filename}" config file with params:')
+def given_config_file_with_params_table(context, filename):
+    config_dir = _make_config_dir(context)
+    content = '[params]\n' + ''.join(f'{row["param"]} = {row["value"]}\n' for row in context.table)
+    _write_config_file(config_dir, filename, content)
+
+
 @given('the CLI args "{cli_args}"')
 def given_extra_cli_args(context, cli_args):
     context.extra_cli_args = getattr(context, 'extra_cli_args', []) + cli_args.split()
@@ -108,7 +116,6 @@ def when_run_from_config_dir(context, feature_name):
         cmd, capture_output=True, text=True, cwd=context.config_dir, env=child_env
     )
     if context.result.returncode != 0:
-        import logging
         logging.error(
             f"Child behavex process failed (rc={context.result.returncode})\n"
             f"CMD: {' '.join(cmd)}\n"
