@@ -31,10 +31,12 @@ def _make_config_dir(context):
         if os.path.isdir('/tmp'):
             base_tmp = '/tmp'  # POSIX (Linux / macOS)
         else:
-            # Windows — LOCALAPPDATA\Temp is never touched by behavex
-            base_tmp = os.path.join(
-                os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'Temp'
-            )
+            # Windows: create the config dir on the same drive as the feature files.
+            # Behave <=1.2.6 calls os.path.relpath(feature_path, cwd) without
+            # catching ValueError, which fails when cwd and feature path are on
+            # different drives (e.g. D:\ repo vs C:\Temp on GitHub Actions runners).
+            drive, _ = os.path.splitdrive(secondary_features_path)
+            base_tmp = drive + os.sep + 'bhx_cfg_tmp'
             os.makedirs(base_tmp, exist_ok=True)
         config_dir = tempfile.mkdtemp(prefix='bhx_cfg_test_', dir=base_tmp)
         context.add_cleanup(shutil.rmtree, config_dir, ignore_errors=True)
