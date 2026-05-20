@@ -1248,3 +1248,37 @@ def then_json_count_matches_stored(context):
     assert stored is not None, "No stored scenario count — call 'I store the JSON report scenario count' first"
     assert current_count == stored, \
         f"JSON scenario count mismatch: single process had {stored}, parallel run had {current_count}"
+
+
+# ---------- No-Report Steps ----------
+
+@when('I run the behavex command with --no-report flag using "{parallel_processes}" parallel processes')
+def when_run_with_no_report(context, parallel_processes):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        '-o', context.output_path,
+        '--no-report',
+        '--parallel-processes', parallel_processes,
+    ]
+    execute_command(context, execution_args)
+
+
+@then('the output folder should not exist')
+def then_output_folder_not_exist(context):
+    output_path = os.path.abspath(context.output_path)
+    assert not os.path.exists(output_path), \
+        f"Output folder should not exist but was found at: {output_path}"
+
+
+@then('no report files should exist in the output folder')
+def then_no_report_files_exist(context):
+    output_path = os.path.abspath(context.output_path)
+    if not os.path.exists(output_path):
+        return
+    report_files = ['report.html', 'report.json', 'overall_status.json', 'failing_scenarios.txt']
+    for report_file in report_files:
+        file_path = os.path.join(output_path, report_file)
+        assert not os.path.exists(file_path), \
+            f"Report file should not exist but was found at: {file_path}"
