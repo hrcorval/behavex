@@ -52,7 +52,7 @@ Feature: Configuration file support
 
   @CONFIG_FILE @CONFIG_FILE_PARAMS
   Scenario: BehaveX reads show_progress_bar from a behavex.cfg config file
-    Given a "behavex.cfg" config file with params:
+    Given a "behavex.cfg" config file with params
       | param              | value |
       | show_progress_bar  | True  |
       | parallel_processes | 2     |
@@ -186,7 +186,7 @@ Feature: Configuration file support
 
   @CONFIG_FILE @CONFIG_FILE_WARNINGS
   Scenario: BehaveX prints a warning when a parallel-incompatible param is set in the config file
-    Given a "behavex.cfg" config file with params:
+    Given a "behavex.cfg" config file with params
       | param              | value |
       | parallel_processes | 2     |
       | stop               | True  |

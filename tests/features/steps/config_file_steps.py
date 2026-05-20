@@ -78,7 +78,7 @@ def given_explicit_config_file(context, param, value):
     context.extra_cli_args = getattr(context, 'extra_cli_args', []) + ['--config', explicit_path]
 
 
-@given('a "{filename}" config file with params:')
+@given('a "{filename}" config file with params')
 def given_config_file_with_params_table(context, filename):
     config_dir = _make_config_dir(context)
     content = '[params]\n' + ''.join(f'{row["param"]} = {row["value"]}\n' for row in context.table)
