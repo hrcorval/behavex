@@ -59,6 +59,15 @@ def given_passing_condition(context):
     context.condition = 'pass'
     logging.info('a passing condition')
 
+
+@given('the userdata key "{key}" equals "{expected_value}"')
+def given_userdata_key_equals(context, key, expected_value):
+    actual = context.config.userdata.get(key)
+    assert actual == expected_value, (
+        f"Expected userdata['{key}'] = '{expected_value}' but got '{actual}'. "
+        f"The 'define' parameter was likely not applied from the config file."
+    )
+
 @given('image attachments are set to ONLY_ON_FAILURE condition')
 def given_image_attachments_only_on_failure(context):
     """Set image attachments to ONLY_ON_FAILURE condition"""

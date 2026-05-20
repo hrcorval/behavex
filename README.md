@@ -490,18 +490,8 @@ include_paths      = tests/smoke, tests/regression
 
 # Behave pass-through
 dry_run            = False
-no_color           = False
-no_capture         = False
-capture_stderr     = False
-no_logcapture      = False
-no_snippets        = False
 logging_level      = DEBUG                      # CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET
-logging_format     = %(asctime)s %(levelname)s %(message)s
-logging_datefmt    = %Y-%m-%d %H:%M:%S
-logging_filter     = myapp
 define             = env=staging db_host=localhost
-lang               = es                         # feature file language code (e.g. es, fr, de)
-stage              = dev                        # steps sub-directory stage prefix
 ```
 
 > **Tip:** use `--config` to target any file explicitly — useful for environment-specific configs:
@@ -520,6 +510,23 @@ stage              = dev                        # steps sub-directory stage pref
 | `name` | Filter runs inside each worker after scenarios have already been dispatched, which can silently drop scenarios |
 
 Use `--tags @WIP` instead of `wip`. For fail-fast behaviour, combine `stop` with `--parallel-processes 1`.
+
+### Behave Arguments Not Yet Supported in Config File
+
+The following Behave arguments are not yet applied when set in the configuration file.
+
+| Behave argument       | Description                                     |
+|-----------------------|-------------------------------------------------|
+| `--no-color`          | Disable colored output                          |
+| `--no-capture`        | Don't capture stdout from steps                 |
+| `--capture-stderr`    | Capture stderr from steps                       |
+| `--no-logcapture`     | Don't capture logging output from steps         |
+| `--no-snippets`       | Suppress undefined step snippets                |
+| `--logging-format`    | Custom log format string                        |
+| `--logging-datefmt`   | Custom log date format                          |
+| `--logging-filter`    | Logging filter name                             |
+| `--lang`              | Feature file language code (e.g. `es`, `fr`)   |
+| `--stage`             | Steps sub-directory stage prefix                |
 
 ## Parallel Test Executions
 

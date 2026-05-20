@@ -25,8 +25,41 @@ Feature: Configuration file support
       | parallel_processes | 2       | PARALLEL_PROCESSES  \| 2       |
       | parallel_scheme    | feature | PARALLEL_SCHEME     \| feature |
       | logging_level      | DEBUG   | LOGGING_LEVEL       \| DEBUG   |
-      | dry_run            | True    | PARALLEL_PROCESSES             |
-      | no_capture         | True    | scenarios passed               |
+
+  @CONFIG_FILE @CONFIG_FILE_PARAMS
+  Scenario: BehaveX reads dry_run from a behavex.cfg config file
+    Given a "behavex.cfg" config file with param "dry_run" set to "True"
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line       |
+      | Dry run completed |
+
+  @CONFIG_FILE @CONFIG_FILE_PARAMS
+  Scenario: BehaveX reads tags_to_skip from [test_run] section of behavex.cfg
+    Given a "behavex.cfg" config file with section "[test_run]" param "tags_to_skip" set to "PASSING_TAG_1"
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line        |
+      | 4 scenarios passed |
+
+  @CONFIG_FILE @CONFIG_FILE_PARAMS
+  Scenario: BehaveX reads define from a behavex.cfg config file
+    Given a "behavex.cfg" config file with param "define" set to "bhx_test_key=bhx_test_value"
+    When I run behavex from the config file directory for feature "userdata_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line       |
+      | 1 scenario passed |
+
+  @CONFIG_FILE @CONFIG_FILE_PARAMS
+  Scenario: BehaveX reads show_progress_bar from a behavex.cfg config file
+    Given a "behavex.cfg" config file with params:
+      | param              | value |
+      | show_progress_bar  | True  |
+      | parallel_processes | 2     |
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line               |
+      | Executed scenarios: 100%\| |
 
   @CONFIG_FILE @CONFIG_FILE_PARAMS
   Scenario: BehaveX reads tags from a behavex.cfg config file
@@ -123,6 +156,24 @@ Feature: Configuration file support
   Scenario: Explicit --config flag takes priority over auto-discovered behavex.cfg
     Given a "behavex.cfg" config file with param "parallel_processes" set to "3"
     And an explicit config file with param "parallel_processes" set to "2"
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                 |
+      | PARALLEL_PROCESSES  \| 2   |
+
+  @CONFIG_FILE @CONFIG_FILE_PRIORITY
+  Scenario: behavex.cfg takes priority over behavex.ini when both are present
+    Given a "behavex.cfg" config file with param "parallel_processes" set to "2"
+    And a "behavex.ini" config file with param "parallel_processes" set to "3"
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                 |
+      | PARALLEL_PROCESSES  \| 2   |
+
+  @CONFIG_FILE @CONFIG_FILE_PRIORITY
+  Scenario: behavex.ini takes priority over behave.ini when both are present
+    Given a "behavex.ini" config file with param "parallel_processes" set to "2"
+    And a "behave.ini" config file with param "parallel_processes" set to "3"
     When I run behavex from the config file directory for feature "passing_tests.feature"
     Then I should see the following behavex console outputs and exit code "0"
       | output_line                 |

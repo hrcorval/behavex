@@ -1355,7 +1355,8 @@ def _store_tags_to_env_variable(tags):
     elif tags is None:
         tags = []
     tags_skip = [tag for tag in tags_skip if tag not in tags]
-    tags = tags + ['~@{0}'.format(tag) for tag in tags_skip] if tags else []
+    exclusion_tags = ['~@{0}'.format(tag) for tag in tags_skip]
+    tags = tags + exclusion_tags if tags else exclusion_tags
     if tags:
         for tag in tags:
             existing_tags = get_env('TAGS')
@@ -1518,10 +1519,15 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                 value_arg = value_arg.replace(features_path, 'features').replace(
                     '\\', '\\\\'
                 )
-        if arg == 'define' and value_arg:
-            for key_value in value_arg:
-                arguments.append('--define')
-                arguments.append(key_value)
+        if arg == 'define':
+            if not value_arg:
+                value_arg = get_param('define')
+            if isinstance(value_arg, str) and value_arg:
+                value_arg = [value_arg]
+            if value_arg:
+                for key_value in value_arg:
+                    arguments.append('--define')
+                    arguments.append(key_value)
         if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
             arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):
