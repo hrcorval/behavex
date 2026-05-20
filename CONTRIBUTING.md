@@ -117,6 +117,7 @@ These contributors reported issues that led to concrete fixes in BehaveX:
 | [@Kikkomanq](https://github.com/Kikkomanq) | Python 3.13 installation failure | Fixed in v4.1.2 |
 | [@athiradamodaran](https://github.com/athiradamodaran) | Scenario outline names not displayed correctly in reports | Fixed in v4.3.x |
 | [@AppeltansPieter](https://github.com/AppeltansPieter) | Zero exit code when parallel process fails | Fixed in v4.6.2 |
+| [@Mahul1992](https://github.com/Mahul1992) | Configuration params not read from `behavex.cfg` / `behavex.ini` | Fixed in v4.6.3 |
 
 ### Ideas and Inspiration
 

@@ -37,22 +37,31 @@ def get_config():
     tags_to_skip=string(default="")
 
     [params]
-    requirements_config=string(default="")
     tags=list(default=list())
+    parallel_processes=integer(default=1)
+    parallel_scheme=option('feature', 'scenario', default='scenario')
+    parallel_delay=integer(default=0)
+    include_paths=list(default=list())
+    rerun_failures=string(default="")
     dry_run=boolean(default=False)
+    show_progress_bar=boolean(default=False)
+    formatter=string(default="")
+    formatter_outdir=string(default="")
+    formatter_attach_logs=boolean(default=True)
+    order_tests=boolean(default=False)
+    order_tests_strict=boolean(default=False)
+    order_tag_prefix=string(default="ORDER")
     no_color=boolean(default=False)
-    define=string(default="")
+    no_capture=boolean(default=False)
+    capture_stderr=boolean(default=False)
+    no_logcapture=boolean(default=False)
+    no_snippets=boolean(default=False)
+    define=list(default=list())
     exclude=string(default="")
     include=string(default="")
     name=string(default="")
-    no_capture=boolean(default=False)
-    capture=boolean(default=True)
-    capture_stderr=boolean(default=False)
-    no_logcapture=boolean(default=False)
-    logcapture=boolean(default=True)
-    no_snippets=boolean(default=False)
-    stop=boolean(default=False)
-    tags_help=boolean(default=False)
+    lang=string(default="")
+    stage=string(default="")
     logging_level=option('CRITICAL', \
                          'ERROR', \
                          'WARNING', \
@@ -60,10 +69,12 @@ def get_config():
                          'DEBUG', \
                          'NOTSET', \
                          default='INFO')
-    parallel_processes=integer(default=1)
-    parallel_scheme=option('feature', 'scenario', default='scenario')
-    include_paths=list(default=list())
-    rerun_failures=string(default="")
+    logging_format=string(default="")
+    logging_datefmt=string(default="")
+    logging_filter=string(default="")
+    stop=boolean(default=False)
+    wip=boolean(default=False)
+    requirements_config=string(default="")
     """
     global CONFIG
     global CONFIG_PATH
@@ -121,10 +132,21 @@ class ConfigRun(metaclass=ExecutionSingleton):
     def get_param(self, key_chain, arg=None):
         if not arg:
             arg = key_chain.split('.')[-1]
-        if self.args and getattr(self.args, arg):
-            return getattr(self.args, arg)
-        else:
-            return self.get_param_config(key_chain)
+        cli_value = getattr(self.args, arg, None) if self.args else None
+        # None/empty-string/empty-list → argparse default, fall through to config.
+        # False is NOT in this set because store_false params use False to signal
+        # that the user explicitly passed the flag (e.g. --no-formatter-attach-logs).
+        # All store_true params must have default=None (not False) so that their
+        # "not set" state is also None, not False.
+        cli_is_unset = cli_value is None or cli_value == '' or cli_value == []
+        if not cli_is_unset:
+            return cli_value
+        config_value = self.get_param_config(key_chain)
+        if config_value not in (None, '', [], {}):
+            return config_value
+        # Both CLI and config are "empty"; return the typed config default
+        # (e.g. '' or False) rather than argparse None.
+        return config_value
 
     def get_env(self, key, optional=None):
         return self.environ.get(key.lower(), optional)

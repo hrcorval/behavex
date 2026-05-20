@@ -352,6 +352,17 @@ def set_environ_config(args_parsed):
 
     if args_parsed.config:
         CONFIG_PATH = args_parsed.config
+
+    # Auto-discover a project-level config file from the current working directory.
+    # Priority: behavex.cfg > behavex.ini > behave.ini (Behave's own config).
+    if CONFIG_PATH is None:
+        for filename in ('behavex.cfg', 'behavex.ini', 'behave.ini'):
+            candidate = os.path.join(os.getcwd(), filename)
+            if os.path.isfile(candidate):
+                CONFIG_PATH = candidate
+                break
+
+    # Fall back to the internal bundled defaults.
     if CONFIG_PATH is None:
         fwk_path = os.environ.get('BEHAVEX_PATH')
         CONFIG_PATH = os.path.join(fwk_path, 'conf_behavex.cfg')
@@ -400,7 +411,7 @@ def configure_logging(args_parse):
         logging.config.fileConfig(logging_file)
     except Exception as logging_ex:
         print(logging_ex)
-    if args_parse.parallel_processes > 1:
+    if (get_param('parallel_processes') or 1) > 1:
         logger = logging.getLogger()  # this gets the root logger
         lh_stdout = logger.handlers[0]  # stdout is the only handler initially
         # ... here I add my own handlers

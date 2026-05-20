@@ -41,6 +41,7 @@
 - [Constraints](#constraints)
 - [Supported Behave Arguments](#supported-behave-arguments)
 - [Specific Arguments from BehaveX](#specific-arguments-from-behavex)
+- [Configuration File](#configuration-file)
 - [Parallel Test Executions](#parallel-test-executions)
 - [Test Execution Ordering](#test-execution-ordering)
 - [Test Execution Reports](#test-execution-reports)
@@ -434,6 +435,98 @@ behavex -t=@api -t=~@slow -t=~@flaky → behavex -t="@api and not @slow and not 
 - **order-tests** (--order-tests): Enables sorting of scenarios/features by execution order using special order tags (only effective with parallel execution).
 - **order-tests-strict** (--order-tests-strict): Ensures tests run in strict order in parallel mode, with tests waiting for lower-order tests to complete (automatically enables --order-tests). May reduce parallel execution performance.
 - **order-tag-prefix** (--order-tag-prefix): Specifies the prefix for order tags (default: 'ORDER').
+
+## Configuration File
+
+Instead of passing arguments on every command line invocation, you can place a configuration file in your project root. BehaveX auto-discovers it from the current working directory in this order:
+
+| Priority | Source |
+|---|---|
+| 1 (highest) | `--config <path>` — explicit path passed on the command line |
+| 2 | `behavex.cfg` in the current working directory |
+| 3 | `behavex.ini` in the current working directory |
+| 4 | `behave.ini` in the current working directory |
+| 5 (lowest) | Built-in defaults |
+
+### Format
+
+The file uses INI syntax. All CLI arguments go under `[params]`. BehaveX also recognises `[output]`, `[progress_bar]`, and `[test_run]` for settings that have no CLI equivalent.
+
+```ini
+[output]
+path = test-results              # folder where HTML/JSON/JUnit reports are written
+
+[progress_bar]
+print_updates_in_new_lines = True    # True: each update on a new line; False: overwrite
+
+[test_run]
+tags_to_skip = @SKIP, @MANUAL   # always excluded, regardless of --tags
+
+[params]
+# Filtering
+tags               = @SMOKE, @REGRESSION        # AND-ed; equivalent to multiple --tags
+name               = checkout                   # substring match on scenario name (not compatible with parallel execution)
+exclude            = .*draft.*                  # regex — matching feature files are skipped
+
+# Parallelism
+parallel_processes = 4
+parallel_scheme    = scenario                   # scenario | feature
+parallel_delay     = 500                        # ms delay between spawning each worker
+
+# Output & formatters
+show_progress_bar  = True
+formatter          = behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter
+formatter_outdir   = allure-results
+formatter_attach_logs = True
+
+# Test ordering
+order_tests        = True
+order_tests_strict = False                      # True: enforce strict ordering across workers
+order_tag_prefix   = PRIORITY                   # tag prefix used for ordering (e.g. @PRIORITY_001)
+
+# Rerun failures
+rerun_failures     = output/failing_scenarios.txt
+include_paths      = tests/smoke, tests/regression
+
+# Behave pass-through
+dry_run            = False
+logging_level      = DEBUG                      # CRITICAL | ERROR | WARNING | INFO | DEBUG | NOTSET
+define             = env=staging db_host=localhost
+```
+
+> **Tip:** use `--config` to target any file explicitly — useful for environment-specific configs:
+> ```bash
+> behavex features/ --config ci/behavex_ci.cfg
+> ```
+
+### Parameters incompatible with parallel execution
+
+`stop`, `wip`, and `name` are accepted in the config file but do not work correctly when `parallel_processes > 1`:
+
+| Parameter | Problem |
+|---|---|
+| `stop` | Only stops the worker that hits the first failure; other workers keep running |
+| `wip` | May cause individual workers to fail when no `@wip` scenarios are assigned to them |
+| `name` | Filter runs inside each worker after scenarios have already been dispatched, which can silently drop scenarios |
+
+Use `--tags @WIP` instead of `wip`. For fail-fast behaviour, combine `stop` with `--parallel-processes 1`.
+
+### Behave Arguments Not Yet Supported in Config File
+
+The following Behave arguments are not yet applied when set in the configuration file.
+
+| Behave argument       | Description                                     |
+|-----------------------|-------------------------------------------------|
+| `--no-color`          | Disable colored output                          |
+| `--no-capture`        | Don't capture stdout from steps                 |
+| `--capture-stderr`    | Capture stderr from steps                       |
+| `--no-logcapture`     | Don't capture logging output from steps         |
+| `--no-snippets`       | Suppress undefined step snippets                |
+| `--logging-format`    | Custom log format string                        |
+| `--logging-datefmt`   | Custom log date format                          |
+| `--logging-filter`    | Logging filter name                             |
+| `--lang`              | Feature file language code (e.g. `es`, `fr`)   |
+| `--stage`             | Steps sub-directory stage prefix                |
 
 ## Parallel Test Executions
 

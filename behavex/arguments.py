@@ -137,6 +137,7 @@ def parse_arguments(args):
         '--no_color',
         help='Disable the use of ANSI color escapes.',
         action='store_true',
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -145,6 +146,7 @@ def parse_arguments(args):
         'behaviour. This switch is used to override a '
         'configuration file setting.',
         action='store_true',
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -178,7 +180,7 @@ def parse_arguments(args):
         '--no-capture',
         '--no_capture',
         help="Don't capture stdout (any stdout output will be printed immediately.)",
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -189,13 +191,14 @@ def parse_arguments(args):
         'default behaviour. This switch is used to '
         'override a configuration file setting.',
         action='store_true',
+        default=None,
         required=False,
     )
     parser.add_argument(
         '--no-capture-stderr',
         '--no_capture_stderr',
         help="Don't capture stderr (any stderr output will be printed immediately.)",
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -206,7 +209,7 @@ def parse_arguments(args):
         'nted if there is a failure) This is the default'
         ' behaviour. This switch is used to override a '
         'configuration file setting.',
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -215,7 +218,7 @@ def parse_arguments(args):
         '--no_logcapture',
         help="Don't capture logging. Logging configuration will be left intact.",
         action='store_true',
-        default=False,
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -227,6 +230,7 @@ def parse_arguments(args):
         'switch is used to override a configuration file'
         ' setting.',
         action='store_true',
+        default=None,
         required=False,
     )
     # parser.add_argument('--summary',
@@ -256,7 +260,7 @@ def parse_arguments(args):
         '--no-snippets',
         '--no_snippets',
         help="Don't print snippets for unimplemented steps.",
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -265,6 +269,7 @@ def parse_arguments(args):
         help='Specifies that the test execution should stop at the first failure. '
              'Note that this argument is not supported for parallel test executions',
         action='store_true',
+        default=None,
         required=False,
     )
     parser.add_argument(
@@ -272,20 +277,21 @@ def parse_arguments(args):
         '--tags_help',
         help='Show help for tag expressions.',
         action='store_true',
+        default=None,
         required=False,
     )
     # -------------------- adding lastly ---------------------------------------
     parser.add_argument(
         '--logging-level',
         '--logging_level',
-        default='INFO',
+        default=None,
         choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'],
         help='Specifies the logging level to capture.',
         required=False,
     )
     parser.add_argument(
         '--parallel-processes',
-        default=1,
+        default=None,
         type=int,
         help='Specifies the number of parallel processes that can be executed simultaneously.',
         required=False,
@@ -293,14 +299,14 @@ def parse_arguments(args):
     parser.add_argument(
         '--parallel-scheme',
         choices=['feature', 'scenario'],
-        default='scenario',
+        default=None,
         help="Specifies whether parallel execution should be performed at the scenario or feature level.",
         required=False,
     )
     parser.add_argument(
         '--parallel-delay',
         type=int,
-        default=0,
+        default=None,
         help='Delay in milliseconds before starting each parallel process')
     parser.add_argument(
         '-ip',
@@ -324,7 +330,7 @@ def parse_arguments(args):
         '-spb',
         '--show-progress-bar',
         help="Shows the execution progress bar in console.",
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -350,7 +356,7 @@ def parse_arguments(args):
         dest='formatter_attach_logs',
         help="Do not attach scenario logs to the report formatter.",
         action='store_false',
-        default=True,
+        default=None,
         required=False,
     )
 
@@ -371,7 +377,7 @@ def parse_arguments(args):
         '--order-tests',
         '--order_tests',
         help="Sort scenarios/features by execution order using tags like @ORDER_001, @ORDER_010, etc. Lower numbers execute first.",
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -381,7 +387,7 @@ def parse_arguments(args):
         '--order_tests_strict',
         help="Enables strict test ordering where tests with higher order numbers wait for all lower-order tests to complete first "
              "(automatically enables --order-tests). Note: This may reduce parallel execution performance as processes must wait for lower-order tests to complete.",
-        default=False,
+        default=None,
         action='store_true',
         required=False,
     )
@@ -390,7 +396,7 @@ def parse_arguments(args):
         '--order-tag-prefix',
         '--order_tag_prefix',
         help="Specify the prefix for order tags (default: ORDER). Example: ORDER for @ORDER_001 tags.",
-        default='ORDER',
+        default=None,
         required=False,
     )
 

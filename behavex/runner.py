@@ -232,6 +232,8 @@ def launch_behavex():
         if parallel_processes > 1 and not get_param('dry_run')
         else False
     )
+    if multiprocess:
+        _warn_parallel_incompatible_params()
     set_behave_tags()
     scenario = False
     notify_missing_features(features_path)
@@ -1280,13 +1282,13 @@ def _set_env_variables(args):
         set_env_variable('OUTPUT', output_folder)
     else:
         set_env_variable('OUTPUT', os.path.abspath(output_folder))
-    _store_tags_to_env_variable(args.tags)
+    _store_tags_to_env_variable(get_param('tags'))
     if get_param('include_paths'):
         set_env_variable('INCLUDE_PATHS', get_param('include_paths'))
     if get_param('include'):
         set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
-        set_env_variable('NAME', args.name)
+        set_env_variable('NAME', get_param('name'))
     if get_param('formatter'):
         formatter_outdir = get_param('formatter_outdir', '')
         formatter_spec = get_param('formatter')
@@ -1346,9 +1348,15 @@ def _store_tags_to_env_variable(tags):
         tags_skip = [tags_skip]
     else:
         tags_skip = tags_skip
-    tags = tags if tags is not None else []
+    # Normalize to list: CLI gives a list, config file may give a str for single
+    # values (configobj list-type validation fails for single entries without commas).
+    if isinstance(tags, str):
+        tags = [t.strip() for t in tags.split(',') if t.strip()]
+    elif tags is None:
+        tags = []
     tags_skip = [tag for tag in tags_skip if tag not in tags]
-    tags = tags + ['~@{0}'.format(tag) for tag in tags_skip] if tags else []
+    exclusion_tags = ['~@{0}'.format(tag) for tag in tags_skip]
+    tags = tags + exclusion_tags if tags else exclusion_tags
     if tags:
         for tag in tags:
             existing_tags = get_env('TAGS')
@@ -1358,6 +1366,32 @@ def _store_tags_to_env_variable(tags):
                 set_env_variable('TAGS', tag)
     else:
         set_env_variable('TAGS', '')
+
+
+_PARALLEL_INCOMPATIBLE_PARAMS = [
+    (
+        'stop',
+        'stops only the worker process that hits the first failure; other workers keep running. '
+        'Use serial execution (--parallel-processes 1) if you need fail-fast behaviour.',
+    ),
+    (
+        'wip',
+        'WIP mode may cause individual workers to fail when no @wip scenarios are assigned to them. '
+        'Apply the @WIP tag via --tags instead.',
+    ),
+    (
+        'name',
+        'name-based filtering runs inside each worker after BehaveX has already dispatched '
+        'scenarios by line number, which can silently drop scenarios from the run.',
+    ),
+]
+
+
+def _warn_parallel_incompatible_params():
+    """Emit warnings for config/CLI params that do not work correctly in parallel mode."""
+    for param, reason in _PARALLEL_INCOMPATIBLE_PARAMS:
+        if get_param(param):
+            print(f"WARNING: Parameter '{param}' is not compatible with parallel execution: {reason}")
 
 
 def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):
@@ -1485,10 +1519,15 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                 value_arg = value_arg.replace(features_path, 'features').replace(
                     '\\', '\\\\'
                 )
-        if arg == 'define' and value_arg:
-            for key_value in value_arg:
-                arguments.append('--define')
-                arguments.append(key_value)
+        if arg == 'define':
+            if not value_arg:
+                value_arg = get_param('define')
+            if isinstance(value_arg, str) and value_arg:
+                value_arg = [value_arg]
+            if value_arg:
+                for key_value in value_arg:
+                    arguments.append('--define')
+                    arguments.append(key_value)
         if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
             arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):
