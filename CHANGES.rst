@@ -1,6 +1,20 @@
 Version History
 ===============================================================================
 
+Version: 4.6.3
+-------------------------------------------------------------------------------
+
+FIXES:
+
+* Fixed ``tags_to_skip`` (``[test_run]`` config section) being silently ignored when no ``tags`` filter was set alongside it. Exclusion tags are now applied even when no other tag filter is active.
+* Fixed ``define`` parameter from the config file being silently ignored. BehaveX now correctly passes ``--define key=value`` entries to Behave when set in the configuration file. Also fixed a configobj edge case where a single-item list value was returned as a plain string instead of a list.
+
+ENHANCEMENTS:
+
+* Added behavioral test scenarios for config file parameters: ``dry_run``, ``tags_to_skip``, ``define``, and ``show_progress_bar``. Tests now assert observable system behavior rather than configuration echo output.
+* Added config file discovery hierarchy tests verifying that ``behavex.cfg`` takes priority over ``behavex.ini``, and ``behavex.ini`` takes priority over ``behave.ini``, when multiple config files are present in the same directory.
+* Improved README documentation for the Configuration File section: the ``[params]`` example block now only shows parameters that are fully applied from the config file. Added a new "Behave Arguments Not Yet Supported in Config File" subsection listing Behave arguments whose config file values are not yet applied at runtime.
+
 Version: 4.6.2rc1
 -------------------------------------------------------------------------------
 
