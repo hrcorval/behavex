@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.6.3] - 2026-05-19
+
+### Added
+- **Config file: `define` parameter support** — `define = key=value` entries in `behavex.cfg` are now correctly passed to Behave as `--define` arguments, making userdata accessible via `context.config.userdata`.
+- **Behavioral test coverage for config file parameters** — New test scenarios validate that `dry_run`, `tags_to_skip`, `define`, and `show_progress_bar` actually change system behavior when set in the config file, not just that their values are echoed in the startup summary.
+- **Config file discovery hierarchy tests** — New tests verify that `behavex.cfg` takes priority over `behavex.ini`, and `behavex.ini` takes priority over `behave.ini`, when multiple config files are present.
+
+### Fixed
+- **`tags_to_skip` ignored without a tags filter** — Tags listed under `[test_run] tags_to_skip` were silently dropped when no `tags` filter was set. They are now applied unconditionally.
+- **`define` single-value parsed as string** — When a single `define` entry was set in the config file, configobj returned a plain string instead of a list, causing the value to be iterated character by character. It is now correctly normalized to a list before being passed to Behave.
+
+### Changed
+- README Configuration File section updated: the `[params]` example block now only shows parameters that are fully applied from the config file. A new "Behave Arguments Not Yet Supported in Config File" subsection documents which Behave arguments are not yet applied when set via config file.
+
+---
+
 ## [4.6.2] - 2026-05-18
 
 ### Added
