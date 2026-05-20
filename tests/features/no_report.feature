@@ -5,9 +5,10 @@ Feature: No Report argument
     Given I have installed behavex
     When I run the behavex command with --no-report flag using "<parallel_processes>" parallel processes
     Then I should see the following behavex console outputs and exit code "0"
-      | output_line                           |
-      | scenarios passed, 0 failed, 0 skipped |
-      | Exit code: 0                          |
+      | output_line                                                  |
+      | scenarios passed, 0 failed, 0 skipped                        |
+      | Temporary assets (logs, evidence, images) are located at:    |
+      | Exit code: 0                                                 |
     And the output folder should not exist
     And I should not see error messages in the output
 

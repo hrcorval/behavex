@@ -373,6 +373,8 @@ def launch_behavex():
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
+    if get_param('no_report'):
+        print('\nTemporary assets (logs, evidence, images) are located at: {}'.format(get_env('LOGS')))
     print('Exit code: {}'.format(exit_code))
     return exit_code
 
