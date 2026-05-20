@@ -314,3 +314,23 @@ def step_see_critical_processing(context):
     assert context.critical_condition, "Critical condition was not established"
     assert context.critical_action, "Critical action was not executed"
     logging.info("Critical processing verified")
+
+
+# ---------- Evidence Attachment Steps ----------
+
+@given('I attach a file to the scenario evidence path')
+def step_attach_file_to_evidence(context):
+    evidence_dir = context.evidence_path
+    evidence_file = os.path.join(evidence_dir, 'evidence_sample.txt')
+    with open(evidence_file, 'w') as f:
+        f.write('evidence content')
+    context.evidence_file_path = evidence_file
+    logging.info(f"Evidence file written to: {evidence_file}")
+
+
+@then('the evidence file should exist in the evidence folder')
+def step_evidence_file_exists(context):
+    assert hasattr(context, 'evidence_file_path'), "evidence_file_path not set"
+    assert os.path.exists(context.evidence_file_path), \
+        f"Evidence file not found at: {context.evidence_file_path}"
+    logging.info("Evidence file exists as expected")
