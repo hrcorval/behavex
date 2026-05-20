@@ -75,6 +75,7 @@ BEHAVEX_ARGS = [
     'order_tests',
     'order_tests_strict',
     'order_tag_prefix',
+    'no_report',
 ]
 
 
@@ -397,6 +398,17 @@ def parse_arguments(args):
         '--order_tag_prefix',
         help="Specify the prefix for order tags (default: ORDER). Example: ORDER for @ORDER_001 tags.",
         default=None,
+        required=False,
+    )
+    parser.add_argument(
+        '--no-report',
+        '--no_report',
+        action='store_true',
+        default=False,
+        dest='no_report',
+        help='Disable all file output. No HTML/JSON/XML reports or output folder will be created. '
+             'Evidence and scenario logs are redirected to the system temp directory. '
+             'Useful when running in environments with no filesystem write permissions.',
         required=False,
     )
 

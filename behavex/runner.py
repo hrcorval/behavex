@@ -154,8 +154,9 @@ def run(args):
         os.environ['FEATURES_PATH'] = 'features'
     _set_env_variables(args_parsed)
     set_system_paths()
-    cleanup_folders()
-    copy_bootstrap_html_generator()
+    if not get_param('no_report'):
+        cleanup_folders()
+        copy_bootstrap_html_generator()
     configure_logging(args_parsed)
     match_include = MatchInclude()
     include_path_match = IncludePathsMatch()
@@ -293,7 +294,7 @@ def launch_behavex():
                                                             process_pool,
                                                             lock,
                                                             show_progress_bar)
-        wrap_up_process_pools(process_pool, json_reports, scenario)
+        merged_json = wrap_up_process_pools(process_pool, json_reports, scenario)
 
         if get_param('dry_run'):
             print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
@@ -304,7 +305,7 @@ def launch_behavex():
         # TODO: Replace logs below with test execution logs when an unexpected error occurs
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
-        results = get_json_results()
+        results = merged_json if get_param('no_report') else get_json_results()
         processed_feature_filenames = []
         if results:
             for feature in results['features']:
@@ -339,7 +340,7 @@ def launch_behavex():
                         totals['scenarios']['untested'] += 1
                     else:
                         totals['scenarios']['skipped'] += 1
-            if failures:
+            if failures and not get_param('no_report'):
                 failures_file_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_failures'])
                 with open(failures_file_path, 'w') as failures_file:
                     failures_file.write(','.join(failures))
@@ -370,7 +371,7 @@ def launch_behavex():
         exit_code = EXIT_ERROR
     if multiprocess:
         print_execution_summary(totals, failures, results)  # failures initialized above
-    if results and results['features'] and not get_param('formatter'):
+    if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
     print('Exit code: {}'.format(exit_code))
     return exit_code
@@ -1132,14 +1133,16 @@ def wrap_up_process_pools(process_pool,
         merged_json = json_reports
     if global_vars.progress_bar_instance:
         global_vars.progress_bar_instance.finish()
-    status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
-    with open(status_info, 'w') as file_info:
-        over_status = {'status': get_overall_status(merged_json)}
-        file_info.write(json.dumps(over_status))
-    path_info = os.path.join(output, global_vars.report_filenames['report_json'])
-    with open(path_info, 'w') as file_info:
-        file_info.write(json.dumps(merged_json))
-    generate_reports(merged_json)
+    if not get_param('no_report'):
+        status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
+        with open(status_info, 'w') as file_info:
+            over_status = {'status': get_overall_status(merged_json)}
+            file_info.write(json.dumps(over_status))
+        path_info = os.path.join(output, global_vars.report_filenames['report_json'])
+        with open(path_info, 'w') as file_info:
+            file_info.write(json.dumps(merged_json))
+        generate_reports(merged_json)
+    return merged_json
 
 
 def remove_temporary_files(parallel_processes, json_reports):
@@ -1184,7 +1187,8 @@ def remove_temporary_files(parallel_processes, json_reports):
         json_reports = [json_reports]
     for json_report in json_reports:
         if 'features' in json_report and json_report['features']:
-            feature_name = os.path.join(get_env('OUTPUT'), u'{}.tmp'.format(json_report['features'][0]['name']))
+            feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
+            feature_name = os.path.join(feature_tmp_dir, u'{}.tmp'.format(json_report['features'][0]['name']))
             if os.path.exists(feature_name):
                 try:
                     os.remove(feature_name)
@@ -1225,8 +1229,9 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                 if reported_scenario['line'] == scenario_line:
                     executed_scenarios.append(reported_scenario)
             json_output['features'][0]['scenarios'] = executed_scenarios
+            feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
             feature_name = os.path.join(
-                get_env('OUTPUT'), u'{}.tmp'.format(os.path.basename(feature_filename))
+                feature_tmp_dir, u'{}.tmp'.format(os.path.basename(feature_filename))
             )
             processed_feature_data = json_output['features'][0]
             processed_feature_data['scenarios'] = executed_scenarios
@@ -1315,6 +1320,11 @@ def _set_env_variables(args):
         set_env_variable(arg.upper(), get_param(arg))
 
     set_env_variable('TEMP', os.path.join(get_env('output'), 'temp'))
+    if get_param('no_report'):
+        set_env_variable('NO_REPORT', True)
+        set_env_variable('LOGS', os.path.join(gettempdir(), 'bhx_logs'))
+        set_env_variable('TEMP', os.path.join(gettempdir(), 'bhx_temp'))
+        os.makedirs(get_env('temp'), exist_ok=True)
     set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))
@@ -1434,7 +1444,12 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
         else:
             arguments.append('--summary')
         arguments.append('--junit-directory')
-        arguments.append(output_folder)
+        if get_param('no_report'):
+            behave_outdir = os.path.join(gettempdir(), 'bhx_behave')
+            os.makedirs(behave_outdir, exist_ok=True)
+            arguments.append(behave_outdir)
+        else:
+            arguments.append(output_folder)
         # Note: --outfile removed since we get execution results directly from runner
         arguments.append('-D')
         arguments.append(f'worker_id=0')

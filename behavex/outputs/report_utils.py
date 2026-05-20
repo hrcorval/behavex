@@ -276,6 +276,8 @@ def get_status(dictionary):
 
 
 def get_test_execution_tags():
+    if get_param('no_report'):
+        return get_env('behave_tags') or ''
     if not get_env('behave_tags'):
         behave_tags_path = os.path.join(
             os.path.abspath(get_env('OUTPUT')), global_vars.behave_tags_file

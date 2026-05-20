@@ -346,7 +346,8 @@ def after_feature(context, feature):  # pyright: ignore[reportUnusedParameter]
     try:
         if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
             return
-        report_xml.export_feature_to_xml(feature)
+        if not get_param('no_report'):
+            report_xml.export_feature_to_xml(feature)
     except Exception as exception:
         _log_exception_and_continue('after_feature (behavex)', exception)
 
@@ -355,7 +356,8 @@ def after_all(context):
     try:
         # noinspection PyProtectedMember
         feature_list = report_json.generate_execution_info(context._runner.features)
-        report_json.generate_json_report(feature_list)
+        if not get_param('no_report'):
+            report_json.generate_json_report(feature_list)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
 

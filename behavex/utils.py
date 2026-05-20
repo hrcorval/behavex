@@ -462,7 +462,6 @@ def set_behave_tags_legacy():
     Legacy tag processing implementation.
     Uses the original complex string manipulation approach.
     """
-    behave_tags = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
     tags = []
     # Check for tags passed as arguments
     first_tag = True
@@ -485,9 +484,13 @@ def set_behave_tags_legacy():
     tags_line = ' '.join(tags)
     tags_line = tags_line.replace('~', 'not ')
     tags_line = tags_line.replace(',', ' or ')
-    retry_file_operation(
-        behave_tags, execution=get_save_function(behave_tags, tags_line)
-    )
+    # Cache in env var so get_test_execution_tags() can skip the file read
+    set_env('behave_tags', tags_line)
+    if not get_param('no_report'):
+        behave_tags_path = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
+        retry_file_operation(
+            behave_tags_path, execution=get_save_function(behave_tags_path, tags_line)
+        )
 
 
 
