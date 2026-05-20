@@ -44,7 +44,7 @@ Feature: Configuration file support
 
   @CONFIG_FILE @CONFIG_FILE_PARAMS
   Scenario: BehaveX reads define from a behavex.cfg config file
-    Given a "behavex.cfg" config file with param "define" set to "bhx_test_key=bhx_test_value"
+    Given a "behavex.cfg" config file with param "define" set to "test_udkey=test_udvalue"
     When I run behavex from the config file directory for feature "userdata_tests.feature"
     Then I should see the following behavex console outputs and exit code "0"
       | output_line       |
