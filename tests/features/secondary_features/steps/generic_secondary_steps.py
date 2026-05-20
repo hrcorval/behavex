@@ -79,6 +79,18 @@ def given_image_attachments_only_on_failure(context):
     except (ImportError, ModuleNotFoundError):
         logging.warning('behavex-images not available, skipping attachment condition setup')
 
+
+@given('image attachments are set to ALWAYS condition')
+def given_image_attachments_always(context):
+    """Set image attachments to ALWAYS condition so images are saved even for passing tests"""
+    try:
+        from behavex_images import image_attachments
+        from behavex_images.image_attachments import AttachmentsCondition
+        image_attachments.set_attachments_condition(context, AttachmentsCondition.ALWAYS)
+        logging.info('Image attachments set to ALWAYS condition')
+    except (ImportError, ModuleNotFoundError):
+        logging.warning('behavex-images not available, skipping attachment condition setup')
+
 @then('a failing condition is performed')
 def then_failing_condition_performed(context):
     """Perform a failing assertion to create failed status"""

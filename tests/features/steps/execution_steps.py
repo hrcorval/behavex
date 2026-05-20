@@ -1279,6 +1279,20 @@ def when_run_with_no_report_and_evidence(context, parallel_processes):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command with --no-report flag and image attachments using "{parallel_processes}" parallel processes')
+def when_run_with_no_report_and_images(context, parallel_processes):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'secondary_features', 'evidence_tests.feature'),
+        '-t', '@IMAGE_EVIDENCE_ATTACHMENT',
+        '-o', context.output_path,
+        '--no-report',
+        '--parallel-processes', parallel_processes,
+    ]
+    execute_command(context, execution_args)
+
+
 @then('the output folder should not exist')
 def then_output_folder_not_exist(context):
     output_path = os.path.abspath(context.output_path)
