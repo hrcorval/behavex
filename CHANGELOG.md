@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [4.6.3] - 2026-05-19
+## [4.6.3] - 2026-05-20
 
 ### Added
 - **Config file: `define` parameter support** — `define = key=value` entries in `behavex.cfg` are now correctly passed to Behave as `--define` arguments, making userdata accessible via `context.config.userdata`.
@@ -16,6 +16,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - **`tags_to_skip` ignored without a tags filter** — Tags listed under `[test_run] tags_to_skip` were silently dropped when no `tags` filter was set. They are now applied unconditionally.
 - **`define` single-value parsed as string** — When a single `define` entry was set in the config file, configobj returned a plain string instead of a list, causing the value to be iterated character by character. It is now correctly normalized to a list before being passed to Behave.
+- **`dry_run` HTML report false positive on `BHX_` check** — The assertion that verifies no internal BehaveX variables appear in the HTML report used a case-insensitive search. Test keys named `bhx_test_key` / `bhx_test_value` were matching the `BHX_` prefix, causing the check to fail erroneously. Test keys renamed to avoid the collision.
+- **`config file with params` step undefined on behave 1.2.6** — behave 1.2.6 strips the trailing colon from step text when a data table follows, so the step pattern `a "{filename}" config file with params:` was never matched on that version. Removed the colon from the pattern and feature file for full cross-version compatibility.
 
 ### Changed
 - README Configuration File section updated: the `[params]` example block now only shows parameters that are fully applied from the config file. A new "Behave Arguments Not Yet Supported in Config File" subsection documents which Behave arguments are not yet applied when set via config file.
