@@ -88,6 +88,7 @@ BehaveX is a zero-friction upgrade — your existing feature files and step defi
 Full documentation at **[behavex.readthedocs.io](https://behavex.readthedocs.io)**
 
 - [Getting Started](https://behavex.readthedocs.io/getting-started.html)
+- [Migrating from Behave](https://behavex.readthedocs.io/migrating-from-behave.html)
 - [Tag Expressions](https://behavex.readthedocs.io/tag-expressions.html)
 - [Parallel Execution](https://behavex.readthedocs.io/parallel-execution.html)
 - [Reporting](https://behavex.readthedocs.io/reporting.html)
