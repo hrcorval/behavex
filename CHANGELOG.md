@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.6.4] - 2026-05-20
+
+### Added
+- **`before_all_workers` / `after_all_workers` hooks** — Two new lifecycle hooks available in `environment.py` that run once in the coordinator process, before any parallel worker is spawned and after all workers have finished. Values set on `context` in `before_all_workers` are transparently injected into every worker's Behave context before `before_all` fires, making them readable from all hooks and step definitions as plain `context` attributes. Non-JSON-serializable values (e.g. database connections, sockets) raise a `TypeError` immediately with a clear message and a list of supported types.
+- **`context.behavex` execution metadata** — BehaveX now injects a `context.behavex` namespace into every worker process, available from `before_all` onwards in any hook or step definition. Attributes: `parallel_scheme` (`'scenario'` or `'feature'`), `parallel_processes` (int), `is_worker` (bool), `worker_id` (int). Replaces the previous pattern of reading `context.config.userdata['worker_id']` directly.
+- **`--no-report` flag** — Disables all file output: no output folder is created, no HTML/JSON/XML reports are written, no failures file. Evidence, logs, and images are silently redirected to the system temp directory. The exit code still reflects pass/fail. Designed for read-only environments such as Docker containers or CI runners with restricted filesystem access. The path to temporary assets is printed to the console at the end of the run.
+- **Hooks in Parallel Execution documentation** — New README section with a hook firing matrix table showing exactly when each hook fires across sequential, feature-parallel, and scenario-parallel modes; full documentation for `before_all_workers` / `after_all_workers`; and a `context.behavex` attribute reference with usage examples.
+
+---
+
 ## [4.6.3] - 2026-05-20
 
 ### Added
