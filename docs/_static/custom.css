@@ -1,11 +1,12 @@
 /* Force list-table column widths to be respected */
-.wy-table-responsive table {
+.rst-content table.docutils {
     table-layout: fixed;
     width: 100%;
 }
 
-.wy-table-responsive table td,
-.wy-table-responsive table th {
+.rst-content table.docutils td,
+.rst-content table.docutils th {
     overflow-wrap: break-word;
-    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
 }

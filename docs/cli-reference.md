@@ -35,31 +35,84 @@ The following Behave arguments are supported by BehaveX:
 * - Argument
   - Description
 * - `-o` / `--output-folder`
-  - Output folder for execution reports (JUnit, HTML, JSON)
+  - Output folder for execution reports (JUnit, HTML, JSON).
+
+    ```bash
+    behavex -t=@TAG -o=test-results
+    ```
 * - `-d` / `--dry-run`
-  - Perform a dry run — lists scenarios in reports without executing them
+  - Lists scenarios in reports without executing them.
+
+    ```bash
+    behavex -t=@TAG --dry-run
+    ```
 * - `--parallel-processes`
-  - Number of parallel Behave processes
+  - Number of parallel Behave processes.
+
+    ```bash
+    behavex -t=@TAG --parallel-processes=4
+    ```
 * - `--parallel-scheme`
-  - Parallel execution scheme: `scenario` or `feature`
+  - Parallel execution scheme: `scenario` or `feature`.
+
+    ```bash
+    behavex --parallel-processes=4 --parallel-scheme=scenario
+    ```
 * - `--show-progress-bar`
-  - Display a progress bar in the console during parallel execution
+  - Display a progress bar in the console during parallel execution.
+
+    ```bash
+    behavex --parallel-processes=3 --show-progress-bar
+    ```
 * - `--formatter`
-  - Custom formatter (e.g., Allure formatter class path)
+  - Custom formatter class path (e.g., Allure formatter).
+
+    ```bash
+    behavex --formatter=behavex.outputs.formatters\
+    .allure_behavex_formatter:AllureBehaveXFormatter
+    ```
 * - `--formatter-outdir`
-  - Output directory for formatter results (default: `output/allure-results`)
+  - Output directory for formatter results (default: `output/allure-results`).
+
+    ```bash
+    behavex --formatter=<class> --formatter-outdir=my-allure-results
+    ```
 * - `--no-formatter-attach-logs`
-  - Disable automatic attachment of scenario log files to formatter reports
+  - Disable automatic attachment of scenario log files to formatter reports.
+
+    ```bash
+    behavex --formatter=<class> --no-formatter-attach-logs
+    ```
 * - `--order-tests`
-  - Enable scenario/feature sorting by order tags (parallel execution only)
+  - Enable scenario/feature sorting by order tags (parallel execution only).
+
+    ```bash
+    behavex --order-tests --parallel-processes=4
+    ```
 * - `--order-tests-strict`
-  - Strict ordering — tests wait for lower-order tests to complete (enables `--order-tests` automatically)
+  - Strict ordering — tests wait for lower-order tests to complete (enables `--order-tests` automatically).
+
+    ```bash
+    behavex --order-tests-strict --parallel-processes=3
+    ```
 * - `--order-tag-prefix`
-  - Prefix for order tags (default: `ORDER`)
+  - Prefix for order tags (default: `ORDER`).
+
+    ```bash
+    behavex --order-tests --order-tag-prefix=PRIORITY
+    ```
 * - `-rf` / `--rerun-failures`
-  - Path to `failing_scenarios.txt` file to rerun failed scenarios
+  - Path to `failing_scenarios.txt` to rerun failed scenarios.
+
+    ```bash
+    behavex -rf=./output/failing_scenarios.txt
+    ```
 * - `--no-report`
-  - Disable all file output. No reports or output folder are created. Evidence goes to the system temp directory. Useful for read-only environments (Docker, restricted CI).
+  - Disable all file output. No reports or output folder are created. Evidence goes to the system temp directory. Useful for read-only environments.
+
+    ```bash
+    behavex -t=@TAG --no-report
+    ```
 :::
 
 ## Configuration File
