@@ -15,6 +15,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Hooks in Parallel Execution documentation** — New README section with a hook firing matrix table showing exactly when each hook fires across sequential, feature-parallel, and scenario-parallel modes; full documentation for `before_all_workers` / `after_all_workers`; and a `context.behavex` attribute reference with usage examples.
 
 ### Contributors
+- Thanks to [@ngonzalez625](https://github.com/ngonzalez625) for raising the need for a no-report execution mode ([Discussion #222](https://github.com/hrcorval/behavex/discussions/222)).
 - Thanks to [@sk3-25](https://github.com/sk3-25) for the discussion and design ideas behind `before_all_workers` / `after_all_workers` ([Discussion #239](https://github.com/hrcorval/behavex/discussions/239)).
 
 ---
