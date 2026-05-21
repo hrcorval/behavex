@@ -1325,14 +1325,3 @@ def then_output_folder_not_exist(context):
     assert not os.path.exists(output_path), \
         f"Output folder should not exist but was found at: {output_path}"
 
-
-@then('no report files should exist in the output folder')
-def then_no_report_files_exist(context):
-    output_path = os.path.abspath(context.output_path)
-    if not os.path.exists(output_path):
-        return
-    report_files = ['report.html', 'report.json', 'overall_status.json', 'failing_scenarios.txt']
-    for report_file in report_files:
-        file_path = os.path.join(output_path, report_file)
-        assert not os.path.exists(file_path), \
-            f"Report file should not exist but was found at: {file_path}"

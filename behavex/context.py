@@ -4,6 +4,7 @@ BehaveXContext — shared context object for before_all_workers / after_all_work
 """
 
 import json
+from typing import NoReturn
 
 
 class BehaveXContext:
@@ -77,7 +78,7 @@ class BehaveXContext:
             )
         object.__setattr__(self, key, value)
 
-    def __getattr__(self, key: str) -> object:
+    def __getattr__(self, key: str) -> NoReturn:
         raise AttributeError(
             f"[BehaveX] 'BehaveXContext' has no attribute '{key}'. "
             f"Make sure it was set in before_all_workers."

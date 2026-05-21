@@ -240,7 +240,9 @@ def launch_behavex():
         _warn_parallel_incompatible_params()
     set_behave_tags()
     bhx_context = BehaveXContext()
+    bhx_before_workers_ok = False
     _call_bhx_hook('before_all_workers', bhx_context)
+    bhx_before_workers_ok = True
     shared_data = bhx_context._to_dict()
     if shared_data:
         os.environ['BHX_SHARED_CONTEXT'] = json.dumps(shared_data)
@@ -378,7 +380,8 @@ def launch_behavex():
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
     finally:
-        _call_bhx_hook('after_all_workers', bhx_context)
+        if bhx_before_workers_ok:
+            _call_bhx_hook('after_all_workers', bhx_context)
     if multiprocess:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
@@ -1301,16 +1304,22 @@ def _find_user_environment_path() -> str | None:
     return None
 
 
+_bhx_user_environment_module = None
+
+
 def _call_bhx_hook(hook_name: str, *args) -> None:
-    """Load the user's environment.py and call hook_name if defined."""
-    env_path = _find_user_environment_path()
-    if not env_path:
-        return
-    try:
+    """Load the user's environment.py (cached) and call hook_name if defined."""
+    global _bhx_user_environment_module
+    if _bhx_user_environment_module is None:
+        env_path = _find_user_environment_path()
+        if not env_path:
+            return
         spec = importlib.util.spec_from_file_location('bhx_user_environment', env_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        hook_fn = getattr(module, hook_name, None)
+        _bhx_user_environment_module = module
+    try:
+        hook_fn = getattr(_bhx_user_environment_module, hook_name, None)
         if callable(hook_fn):
             hook_fn(*args)
     except Exception as ex:
@@ -1367,7 +1376,7 @@ def _set_env_variables(args):
         set_env_variable('NO_REPORT', True)
         set_env_variable('LOGS', os.path.join(gettempdir(), 'bhx_logs'))
         set_env_variable('TEMP', os.path.join(gettempdir(), 'bhx_temp'))
-        os.makedirs(get_env('temp'), exist_ok=True)
+        os.makedirs(get_env('TEMP'), exist_ok=True)
     set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))

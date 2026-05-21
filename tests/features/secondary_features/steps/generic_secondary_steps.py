@@ -91,6 +91,7 @@ def given_image_attachments_always(context):
     except (ImportError, ModuleNotFoundError):
         logging.warning('behavex-images not available, skipping attachment condition setup')
 
+
 @then('a failing condition is performed')
 def then_failing_condition_performed(context):
     """Perform a failing assertion to create failed status"""
