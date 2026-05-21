@@ -12,6 +12,7 @@ import os
 import shutil
 import sys
 from datetime import datetime
+from types import SimpleNamespace
 
 # Third-party imports
 import behave
@@ -218,6 +219,23 @@ def _inject_shared_context(context) -> None:
         logging.warning(f"[BehaveX] Could not inject shared context from before_all_workers: {ex}")
 
 
+def _build_execution_context(context) -> SimpleNamespace:
+    """Build the context.behavex namespace exposed to all hooks and steps."""
+    is_worker = bool(get_env('multiprocessing'))
+    parallel_processes = int(get_param('parallel_processes') or 1)
+    parallel_scheme = get_param('parallel_scheme') or 'scenario'
+    try:
+        worker_id = int(context.config.userdata.get('worker_id', 0))
+    except (AttributeError, TypeError, ValueError):
+        worker_id = 0
+    return SimpleNamespace(
+        parallel_scheme=parallel_scheme,
+        parallel_processes=parallel_processes,
+        is_worker=is_worker,
+        worker_id=worker_id,
+    )
+
+
 def before_all(context):
     """Setup up initial tests configuration."""
     try:
@@ -227,6 +245,8 @@ def before_all(context):
         object.__setattr__(context, 'bhx_inside_scenario', False)
         # Store framework settings to make them accessible from steps
         object.__setattr__(context, 'bhx_config_framework', conf_mgr.get_config())
+        # Expose BehaveX execution metadata to all hooks and steps
+        object.__setattr__(context, 'behavex', _build_execution_context(context))
     except Exception as exception:
         _log_exception_and_continue('before_all (behavex)', exception)
 
