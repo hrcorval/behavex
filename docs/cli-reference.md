@@ -29,7 +29,7 @@ The following Behave arguments are supported by BehaveX:
 ## BehaveX-Specific Arguments
 
 :::{list-table}
-:widths: 50 50
+:widths: 35 65
 :header-rows: 1
 
 * - Argument
@@ -59,7 +59,7 @@ The following Behave arguments are supported by BehaveX:
 * - `-rf` / `--rerun-failures`
   - Path to `failing_scenarios.txt` file to rerun failed scenarios
 * - `--no-report`
-  - Disable all file output — no HTML/JSON/XML reports, no output folder. Evidence and logs are redirected to the system temp directory. Exit code still reflects pass/fail. Useful in read-only environments (Docker, CI runners with restricted filesystem access).
+  - Disable all file output. No reports or output folder are created. Evidence goes to the system temp directory. Useful for read-only environments (Docker, restricted CI).
 :::
 
 ## Configuration File
