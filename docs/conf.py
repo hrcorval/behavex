@@ -51,6 +51,12 @@ autoapi_template_dir = '_autoapi_templates'
 autoapi_generate_api_docs = True
 autoapi_add_toctree_entry = False  # We'll add it manually to control placement
 
+# -- HTML theme options -----------------------------------------------------
+html_theme_options = {
+    'collapse_navigation': False,
+    'navigation_depth': 3,
+}
+
 # -- HTML output options ----------------------------------------------------
 html_static_path = []
 html_show_sourcelink = True
