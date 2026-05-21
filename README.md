@@ -43,6 +43,7 @@
 - [Specific Arguments from BehaveX](#specific-arguments-from-behavex)
 - [Configuration File](#configuration-file)
 - [Parallel Test Executions](#parallel-test-executions)
+- [Hooks in Parallel Execution](#hooks-in-parallel-execution)
 - [Test Execution Ordering](#test-execution-ordering)
 - [Test Execution Reports](#test-execution-reports)
 - [Attaching Images to the HTML Report](#attaching-images-to-the-html-report)
@@ -396,7 +397,7 @@ behavex -t=@api -t=~@slow -t=~@flaky → behavex -t="@api and not @slow and not 
 ## Constraints
 
 - Not all Behave arguments are yet supported.
-- Parallel execution is implemented using concurrent Behave processes. This means that any hooks defined in the `environment.py` module will run in each parallel process. This includes the **before_all** and **after_all** hooks, which will execute in every parallel process. The same is true for the **before_feature** and **after_feature** hooks when parallel execution is organized by scenario.
+- Parallel execution is implemented using concurrent Behave processes. Hook firing frequency varies by parallel scheme — see [Hooks in Parallel Execution](#hooks-in-parallel-execution) for the full matrix.
 
 ## Supported Behave Arguments
 
@@ -552,6 +553,88 @@ BehaveX populates the Behave contexts with the `worker_id` user-specific data. T
 For example, if BehaveX is started with `--parallel-processes 2`, the first instance of behave will receive `worker_id=0`, and the second instance will receive `worker_id=1`.
 
 This variable can be accessed within the python tests using `context.config.userdata['worker_id']`.
+
+## Hooks in Parallel Execution
+
+Understanding how Behave hooks fire in each parallel scheme is essential for writing correct setup and teardown logic.
+
+### Hook Firing Matrix
+
+| Hook | Sequential (`--parallel-processes 1`) | `--parallel-scheme feature` | `--parallel-scheme scenario` |
+|---|---|---|---|
+| `before_all_workers` | Once — coordinator process | Once — coordinator process | Once — coordinator process |
+| `before_all` | Once | Once per worker process | Once per worker process |
+| `before_feature` | Once per feature | Once per feature ✓ | Once per scenario ⚠ |
+| `before_scenario` | Once per scenario | Once per scenario | Once per scenario |
+| `after_scenario` | Once per scenario | Once per scenario | Once per scenario |
+| `after_feature` | Once per feature | Once per feature ✓ | Once per scenario ⚠ |
+| `after_all` | Once | Once per worker process | Once per worker process |
+| `after_all_workers` | Once — coordinator process | Once — coordinator process | Once — coordinator process |
+
+> **⚠ scenario scheme**: In `--parallel-scheme scenario`, each worker process runs a single scenario from a feature file. As a result, `before_feature` and `after_feature` fire once per scenario instead of once per feature — the same frequency as `before_scenario` / `after_scenario`.
+
+### BehaveX-Specific Hooks
+
+BehaveX adds two hooks that are not part of standard Behave: `before_all_workers` and `after_all_workers`. They run once in the **coordinator process** — before any worker is spawned and after all workers have finished — making them the right place for global setup and teardown that should not repeat across workers.
+
+Define them in your `environment.py` the same way as any other Behave hook:
+
+```python
+def before_all_workers(context):
+    # Runs once before any parallel worker starts.
+    # Values set here are transparently injected into every worker's
+    # behave context before before_all fires, readable as plain attributes.
+    context.base_url = "https://staging.example.com"
+    context.db_name = "test_db"
+    context.retry_count = 3
+
+def after_all_workers(context):
+    # Runs once after all parallel workers have finished.
+    # Values set in before_all_workers are still accessible here.
+    print(f"All workers finished. Base URL was: {context.base_url}")
+```
+
+Values set on `context` in `before_all_workers` must be JSON-serializable (str, int, float, bool, list, dict, or None), since they are passed to worker processes via environment variables. Attempting to set a non-serializable value (such as a database connection or a socket) raises a `TypeError` immediately with a clear message.
+
+### Execution Metadata: `context.behavex`
+
+BehaveX injects a `context.behavex` namespace in every worker process, available from `before_all` onwards in any hook or step definition:
+
+| Attribute | Type | Description |
+|---|---|---|
+| `context.behavex.parallel_scheme` | `str` | `'scenario'` or `'feature'` |
+| `context.behavex.parallel_processes` | `int` | Number of parallel workers configured |
+| `context.behavex.is_worker` | `bool` | `True` when running inside a worker subprocess |
+| `context.behavex.worker_id` | `int` | Worker index (0 in single-process mode) |
+
+**Typical use — guard feature-level setup in scenario-parallel mode:**
+
+```python
+def before_feature(context, feature):
+    # In --parallel-scheme scenario, before_feature fires once per scenario.
+    # Skip feature-level setup here and move it to before_scenario instead.
+    if context.behavex.parallel_scheme == 'scenario':
+        return
+    setup_feature_database(feature.name)
+
+def after_feature(context, feature):
+    if context.behavex.parallel_scheme == 'scenario':
+        return
+    teardown_feature_database(feature.name)
+```
+
+**Typical use — allocate resources per worker:**
+
+```python
+def before_all(context):
+    if context.behavex.is_worker:
+        # Each worker gets its own browser instance.
+        context.browser = create_browser(worker_id=context.behavex.worker_id)
+
+def after_all(context):
+    if context.behavex.is_worker:
+        context.browser.quit()
+```
 
 ## Test Execution Ordering
 
