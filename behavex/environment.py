@@ -6,6 +6,7 @@ BehaveX - Production-grade test orchestration for Python BDD.
 
 # Standard library imports
 import functools
+import json
 import logging
 import os
 import shutil
@@ -97,6 +98,10 @@ def extend_behave_hooks():
                         if hasattr(arg, 'config') or hasattr(arg, 'feature'):
                             actual_context = arg
                             break
+
+            # Inject values from before_all_workers before any before_all hook runs
+            if name == 'before_all' and actual_context is not None:
+                _inject_shared_context(actual_context)
 
             # Call the original behave hook first (except for after hooks)
             if name.startswith('before_') or name in ['before_tag', 'after_tag']:
@@ -198,6 +203,19 @@ def extend_behave_hooks():
                     return run_hook(self, hook_name, hook_target, *remaining_args)
 
             ModelRunner.run_hook_with_capture = run_hook_with_capture
+
+
+def _inject_shared_context(context) -> None:
+    """Inject values set in before_all_workers into the behave context."""
+    shared_json = os.environ.get('BHX_SHARED_CONTEXT', '')
+    if not shared_json:
+        return
+    try:
+        shared_data = json.loads(shared_json)
+        for key, value in shared_data.items():
+            setattr(context, key, value)
+    except Exception as ex:
+        logging.warning(f"[BehaveX] Could not inject shared context from before_all_workers: {ex}")
 
 
 def before_all(context):

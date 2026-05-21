@@ -1250,6 +1250,32 @@ def then_json_count_matches_stored(context):
         f"JSON scenario count mismatch: single process had {stored}, parallel run had {current_count}"
 
 
+# ---------- Worker Hooks Steps ----------
+
+@when('I run the behavex command targeting the worker hooks feature with "{parallel_processes}" parallel processes')
+def when_run_worker_hooks_feature(context, parallel_processes):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'worker_hooks_features'),
+        '-t', '@WORKER_HOOKS',
+        '-o', context.output_path,
+        '--parallel-processes', parallel_processes,
+    ]
+    execute_command(context, execution_args)
+
+
+@when('I run the behavex command targeting the invalid worker hooks feature')
+def when_run_invalid_worker_hooks_feature(context):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, 'worker_hooks_invalid_features'),
+        '-o', context.output_path,
+    ]
+    execute_command(context, execution_args)
+
+
 # ---------- No-Report Steps ----------
 
 @when('I run the behavex command with --no-report flag using "{parallel_processes}" parallel processes')

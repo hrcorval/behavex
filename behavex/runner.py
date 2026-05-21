@@ -41,9 +41,12 @@ from behave.runner import Runner
 
 # Local imports
 # noinspection PyUnresolvedReferences
+import importlib.util
+
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, get_env, get_param
+from behavex.context import BehaveXContext
 from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
@@ -236,6 +239,11 @@ def launch_behavex():
     if multiprocess:
         _warn_parallel_incompatible_params()
     set_behave_tags()
+    bhx_context = BehaveXContext()
+    _call_bhx_hook('before_all_workers', bhx_context)
+    shared_data = bhx_context._to_dict()
+    if shared_data:
+        os.environ['BHX_SHARED_CONTEXT'] = json.dumps(shared_data)
     scenario = False
     notify_missing_features(features_path)
     features_list = {}
@@ -369,6 +377,8 @@ def launch_behavex():
         except Exception as e:
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
+    finally:
+        _call_bhx_hook('after_all_workers', bhx_context)
     if multiprocess:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
@@ -1275,6 +1285,37 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
     finally:
         if lock:
             lock.release()
+
+
+def _find_user_environment_path() -> str | None:
+    """Return the path to the user's environment.py, or None if not found."""
+    features_path = os.environ.get('FEATURES_PATH', '')
+    for path in features_path.split(','):
+        path = path.strip()
+        if not path:
+            continue
+        candidate_dir = path if os.path.isdir(path) else os.path.dirname(path)
+        env_file = os.path.join(candidate_dir, 'environment.py')
+        if os.path.exists(env_file):
+            return env_file
+    return None
+
+
+def _call_bhx_hook(hook_name: str, *args) -> None:
+    """Load the user's environment.py and call hook_name if defined."""
+    env_path = _find_user_environment_path()
+    if not env_path:
+        return
+    try:
+        spec = importlib.util.spec_from_file_location('bhx_user_environment', env_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        hook_fn = getattr(module, hook_name, None)
+        if callable(hook_fn):
+            hook_fn(*args)
+    except Exception as ex:
+        logging.error(f"[BehaveX] Error in {hook_name}: {ex}")
+        raise
 
 
 def _set_env_variables(args):
