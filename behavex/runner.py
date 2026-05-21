@@ -32,7 +32,7 @@ from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 # Third-party imports
 from behave.configuration import Configuration
@@ -1290,7 +1290,7 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
             lock.release()
 
 
-def _find_user_environment_path() -> str | None:
+def _find_user_environment_path() -> Optional[str]:
     """Return the path to the user's environment.py, or None if not found."""
     features_path = os.environ.get('FEATURES_PATH', '')
     for path in features_path.split(','):
