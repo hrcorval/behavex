@@ -14,6 +14,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`--no-report` flag** — Disables all file output: no output folder is created, no HTML/JSON/XML reports are written, no failures file. Evidence, logs, and images are silently redirected to the system temp directory. The exit code still reflects pass/fail. Designed for read-only environments such as Docker containers or CI runners with restricted filesystem access. The path to temporary assets is printed to the console at the end of the run.
 - **Hooks in Parallel Execution documentation** — New README section with a hook firing matrix table showing exactly when each hook fires across sequential, feature-parallel, and scenario-parallel modes; full documentation for `before_all_workers` / `after_all_workers`; and a `context.behavex` attribute reference with usage examples.
 
+### Contributors
+- Thanks to [@sk3-25](https://github.com/sk3-25) for the discussion and design ideas behind `before_all_workers` / `after_all_workers` ([Discussion #239](https://github.com/hrcorval/behavex/discussions/239)).
+
 ---
 
 ## [4.6.3] - 2026-05-20
