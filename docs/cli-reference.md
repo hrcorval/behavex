@@ -42,6 +42,7 @@ The following Behave arguments are supported by BehaveX:
 | `--order-tests-strict` | Strict ordering — tests wait for lower-order tests to complete (enables `--order-tests` automatically) |
 | `--order-tag-prefix` | Prefix for order tags (default: `ORDER`) |
 | `-rf` / `--rerun-failures` | Path to `failing_scenarios.txt` file to rerun failed scenarios |
+| `--no-report` | Disable all file output — no HTML/JSON/XML reports, no output folder. Evidence and logs are redirected to the system temp directory. Exit code still reflects pass/fail. Useful in read-only environments (Docker, CI runners with restricted filesystem access). |
 
 ## Configuration File
 

@@ -16,6 +16,12 @@
 
 ## ✨ Latest Features
 
+🪝 **`before_all_workers` / `after_all_workers` hooks** *(v4.6.4)* — New lifecycle hooks that run once in the coordinator process, before any worker starts and after all finish. Values set on `context` are injected into every worker automatically.
+
+📊 **`context.behavex` execution metadata** *(v4.6.4)* — BehaveX now injects a `context.behavex` namespace into every worker: `parallel_scheme`, `parallel_processes`, `is_worker`, `worker_id`.
+
+🚫 **`--no-report` flag** *(v4.6.4)* — Disables all file output. No HTML/JSON/XML reports or output folder are created. Evidence is redirected to the system temp directory. Designed for read-only CI environments.
+
 🔍 **Stack Trace on Error** *(v4.6.2)* — Click on any failed step in the HTML report to expand the full stack trace inline.
 
 📐 **Gherkin Rule Section Support** *(v4.6.2)* — Full support for `Rule:` blocks in feature files.
