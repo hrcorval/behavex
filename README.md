@@ -87,12 +87,14 @@ BehaveX is a zero-friction upgrade — your existing feature files and step defi
 
 Full documentation at **[behavex.readthedocs.io](https://behavex.readthedocs.io)**
 
-- [Getting Started](https://behavex.readthedocs.io/en/latest/getting-started.html)
-- [Tag Expressions](https://behavex.readthedocs.io/en/latest/tag-expressions.html)
-- [Parallel Execution](https://behavex.readthedocs.io/en/latest/parallel-execution.html)
-- [Reporting](https://behavex.readthedocs.io/en/latest/reporting.html)
-- [Test Management](https://behavex.readthedocs.io/en/latest/test-management.html)
-- [CLI Reference](https://behavex.readthedocs.io/en/latest/cli-reference.html)
+- [Getting Started](https://behavex.readthedocs.io/getting-started.html)
+- [Migrating from Behave](https://behavex.readthedocs.io/migrating-from-behave.html)
+- [Tag Expressions](https://behavex.readthedocs.io/tag-expressions.html)
+- [Parallel Execution](https://behavex.readthedocs.io/parallel-execution.html)
+- [Reporting](https://behavex.readthedocs.io/reporting.html)
+- [Test Management](https://behavex.readthedocs.io/test-management.html)
+- [CLI Reference](https://behavex.readthedocs.io/cli-reference.html)
+- [Utilities](https://behavex.readthedocs.io/utilities.html)
 
 ## Get Involved
 
