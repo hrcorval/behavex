@@ -1,12 +1,25 @@
 Welcome to BehaveX's documentation!
-===================================
+====================================
 
-.. include:: ../README.md
-   :parser: myst_parser.sphinx_
+**BehaveX** is a production-grade test orchestration layer for Python BDD teams.
+It extends `Behave <https://behave.readthedocs.io>`_ with parallel execution,
+enterprise-grade reporting, and the operational controls needed to run test suites at scale.
 
 .. toctree::
    :maxdepth: 2
-   :caption: API Reference:
+   :caption: User Guide
+
+   getting-started
+   tag-expressions
+   parallel-execution
+   reporting
+   test-management
+   cli-reference
+   utilities
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
 
    autoapi/behavex/index
 
