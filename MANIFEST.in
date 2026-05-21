@@ -2,3 +2,11 @@ include LICENSE
 include README.md
 recursive-include behavex *.*
 prune behavex\tests
+prune output
+prune output_allure_baseline
+prune output_allure_test
+prune output_allure_test2
+prune output_baseline
+prune output_full_test
+prune output_report
+prune output_stack_trace_demo
