@@ -52,7 +52,8 @@ autoapi_generate_api_docs = True
 autoapi_add_toctree_entry = False  # We'll add it manually to control placement
 
 # -- HTML output options ----------------------------------------------------
-html_static_path = []
+html_static_path = ['_static']
+html_css_files = ['custom.css']
 html_show_sourcelink = True
 html_show_sphinx = True
 html_show_copyright = True

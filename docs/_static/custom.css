@@ -1,0 +1,11 @@
+/* Force list-table column widths to be respected */
+.wy-table-responsive table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
