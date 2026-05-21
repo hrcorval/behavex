@@ -10,6 +10,7 @@ enterprise-grade reporting, and the operational controls needed to run test suit
    :caption: User Guide
 
    getting-started
+   migrating-from-behave
    tag-expressions
    parallel-execution
    reporting
