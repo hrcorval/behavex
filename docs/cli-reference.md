@@ -28,21 +28,39 @@ The following Behave arguments are supported by BehaveX:
 
 ## BehaveX-Specific Arguments
 
-| Argument | Description |
-|---|---|
-| `-o` / `--output-folder` | Output folder for execution reports (JUnit, HTML, JSON) |
-| `-d` / `--dry-run` | Perform a dry run — lists scenarios in reports without executing them |
-| `--parallel-processes` | Number of parallel Behave processes |
-| `--parallel-scheme` | Parallel execution scheme: `scenario` or `feature` |
-| `--show-progress-bar` | Display a progress bar in the console during parallel execution |
-| `--formatter` | Custom formatter (e.g., Allure formatter class path) |
-| `--formatter-outdir` | Output directory for formatter results (default: `output/allure-results`) |
-| `--no-formatter-attach-logs` | Disable automatic attachment of scenario log files to formatter reports |
-| `--order-tests` | Enable scenario/feature sorting by order tags (parallel execution only) |
-| `--order-tests-strict` | Strict ordering — tests wait for lower-order tests to complete (enables `--order-tests` automatically) |
-| `--order-tag-prefix` | Prefix for order tags (default: `ORDER`) |
-| `-rf` / `--rerun-failures` | Path to `failing_scenarios.txt` file to rerun failed scenarios |
-| `--no-report` | Disable all file output — no HTML/JSON/XML reports, no output folder. Evidence and logs are redirected to the system temp directory. Exit code still reflects pass/fail. Useful in read-only environments (Docker, CI runners with restricted filesystem access). |
+:::{list-table}
+:widths: 50 50
+:header-rows: 1
+
+* - Argument
+  - Description
+* - `-o` / `--output-folder`
+  - Output folder for execution reports (JUnit, HTML, JSON)
+* - `-d` / `--dry-run`
+  - Perform a dry run — lists scenarios in reports without executing them
+* - `--parallel-processes`
+  - Number of parallel Behave processes
+* - `--parallel-scheme`
+  - Parallel execution scheme: `scenario` or `feature`
+* - `--show-progress-bar`
+  - Display a progress bar in the console during parallel execution
+* - `--formatter`
+  - Custom formatter (e.g., Allure formatter class path)
+* - `--formatter-outdir`
+  - Output directory for formatter results (default: `output/allure-results`)
+* - `--no-formatter-attach-logs`
+  - Disable automatic attachment of scenario log files to formatter reports
+* - `--order-tests`
+  - Enable scenario/feature sorting by order tags (parallel execution only)
+* - `--order-tests-strict`
+  - Strict ordering — tests wait for lower-order tests to complete (enables `--order-tests` automatically)
+* - `--order-tag-prefix`
+  - Prefix for order tags (default: `ORDER`)
+* - `-rf` / `--rerun-failures`
+  - Path to `failing_scenarios.txt` file to rerun failed scenarios
+* - `--no-report`
+  - Disable all file output — no HTML/JSON/XML reports, no output folder. Evidence and logs are redirected to the system temp directory. Exit code still reflects pass/fail. Useful in read-only environments (Docker, CI runners with restricted filesystem access).
+:::
 
 ## Configuration File
 
