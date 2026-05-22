@@ -21,7 +21,7 @@ dependencies = [
     "configobj",
     "minify-html",
     "csscompressor",
-    "packaging"
+    "packaging",
 ]
 # Entry points are statically defined below
 
@@ -45,6 +45,9 @@ classifiers = [
 homepage = "https://github.com/hrcorval/behavex"
 
 [project.optional-dependencies]
+api = [
+    "pydantic>=2.0.0",
+]
 dev = [
     "pytest",
     "pytest-cov",
@@ -54,6 +57,11 @@ dev = [
 
 [tool.setuptools.packages.find]
 exclude = ["tests"]
+
+[dependency-groups]
+dev = [
+    "beautifulsoup4>=4.14.3",
+]
 
 [project.scripts]
 behavex = "behavex.runner:main"

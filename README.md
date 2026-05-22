@@ -16,6 +16,8 @@
 
 ## ✨ Latest Features
 
+🤖 **`BehaveXRunner` Python API** *(v4.7.0)* — Drive BehaveX programmatically from Python. No CLI required. Returns structured Pydantic models with full feature/scenario/step results. Install with `pip install 'behavex[api]'`.
+
 🪝 **`before_all_workers` / `after_all_workers` hooks** *(v4.6.4)* — New lifecycle hooks that run once in the coordinator process, before any worker starts and after all finish. Values set on `context` are injected into every worker automatically.
 
 📊 **`context.behavex` execution metadata** *(v4.6.4)* — BehaveX now injects a `context.behavex` namespace into every worker: `parallel_scheme`, `parallel_processes`, `is_worker`, `worker_id`.
