@@ -97,6 +97,8 @@ Full documentation at **[behavex.readthedocs.io](https://behavex.readthedocs.io)
 - [Reporting](https://behavex.readthedocs.io/reporting.html)
 - [Test Management](https://behavex.readthedocs.io/test-management.html)
 - [CLI Reference](https://behavex.readthedocs.io/cli-reference.html)
+- [Utilities](https://behavex.readthedocs.io/utilities.html)
+- [API Reference](https://behavex.readthedocs.io/autoapi/behavex/index.html)
 
 ## Get Involved
 
