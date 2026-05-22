@@ -91,6 +91,8 @@ class FeatureResult(BaseModel):
 
 
 class RunSummary(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
     total: int
     passed: int
     failed: int

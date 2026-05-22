@@ -52,16 +52,12 @@ dev = [
     "pytest",
     "pytest-cov",
     "flake8",
-    "black"
+    "black",
+    "beautifulsoup4>=4.14.3",
 ]
 
 [tool.setuptools.packages.find]
 exclude = ["tests"]
-
-[dependency-groups]
-dev = [
-    "beautifulsoup4>=4.14.3",
-]
 
 [project.scripts]
 behavex = "behavex.runner:main"
