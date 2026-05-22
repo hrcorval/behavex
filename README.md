@@ -16,7 +16,7 @@
 
 ## ✨ Latest Features
 
-🤖 **`BehaveXRunner` Python API** *(v4.7.0)* — Drive BehaveX programmatically from Python. No CLI required. Returns structured Pydantic models with full feature/scenario/step results. Install with `pip install 'behavex[api]'`.
+🤖 **`BehaveXRunner` Python API** *(v4.7.0)* — Drive BehaveX programmatically from Python. No CLI required. Returns structured Pydantic models with full feature/scenario/step results. Install with `pip install 'behavex[api]'`. See [Python API docs](https://behavex.readthedocs.io/python-api.html).
 
 🪝 **`before_all_workers` / `after_all_workers` hooks** *(v4.6.4)* — New lifecycle hooks that run once in the coordinator process, before any worker starts and after all finish. Values set on `context` are injected into every worker automatically.
 
@@ -91,6 +91,7 @@ Full documentation at **[behavex.readthedocs.io](https://behavex.readthedocs.io)
 
 - [Getting Started](https://behavex.readthedocs.io/getting-started.html)
 - [Migrating from Behave](https://behavex.readthedocs.io/migrating-from-behave.html)
+- [Python API](https://behavex.readthedocs.io/python-api.html)
 - [Tag Expressions](https://behavex.readthedocs.io/tag-expressions.html)
 - [Parallel Execution](https://behavex.readthedocs.io/parallel-execution.html)
 - [Reporting](https://behavex.readthedocs.io/reporting.html)
