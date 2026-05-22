@@ -82,6 +82,23 @@ Feature: BehaveXRunner Python API
     When I run BehaveXRunner with passing tests, no_report enabled, and a configured output folder
     Then the RunResult has "0" features
 
+  @API_RUNNER_MODEL_006
+  Scenario: ScenarioResult.tags is populated from the report
+    When I run BehaveXRunner with passing tests and a configured output folder
+    Then at least one scenario in the RunResult has tags
+
+  @API_RUNNER_009
+  Scenario: BehaveXRunner with multiple tags applies AND logic
+    When I run BehaveXRunner with passing tests filtered by tags "@PASSING_TAG_3" and "@PASSING_TAG_3_1"
+    Then the RunResult exit_code should be "0"
+    And I should see "1 scenario passed" in the BehaveXRunner output
+
+  @API_RUNNER_010
+  Scenario: BehaveXRunner with dry_run=True does not execute steps
+    When I run BehaveXRunner with dry_run enabled
+    Then the RunResult exit_code should be "0"
+    And I should see "Dry run completed" in the BehaveXRunner output
+
   @API_RUNNER_RUN_ID_001
   Scenario: RunResult exposes a unique run_id for each execution
     When I run BehaveXRunner with passing tests
