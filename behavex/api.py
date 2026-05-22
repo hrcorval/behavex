@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import json
 import os
+import uuid
 from typing import List, Optional
 
 from behavex import runner
@@ -89,10 +90,11 @@ class BehaveXRunner:
 
     def run(self) -> RunResult:
         """Execute the test run and return a RunResult."""
+        run_id = str(uuid.uuid4())
         args = self._build_args()
         exit_code = runner.run(args)
         features = self._load_features()
-        return RunResult(exit_code=exit_code, output_folder=self.output_folder, features=features)
+        return RunResult(run_id=run_id, exit_code=exit_code, output_folder=self.output_folder, features=features)
 
     def _load_features(self) -> List[FeatureResult]:
         """Read report.json after a run and return parsed feature results."""

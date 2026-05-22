@@ -81,3 +81,13 @@ Feature: BehaveXRunner Python API
   Scenario: RunResult.features is empty when no_report is enabled
     When I run BehaveXRunner with passing tests, no_report enabled, and a configured output folder
     Then the RunResult has "0" features
+
+  @API_RUNNER_RUN_ID_001
+  Scenario: RunResult exposes a unique run_id for each execution
+    When I run BehaveXRunner with passing tests
+    Then the RunResult run_id is a valid UUID
+
+  @API_RUNNER_RUN_ID_002
+  Scenario: Each BehaveXRunner.run() call produces a different run_id
+    When I run BehaveXRunner with passing tests twice
+    Then the two run_ids are different

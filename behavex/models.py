@@ -100,6 +100,7 @@ class RunSummary(BaseModel):
 class RunResult(BaseModel):
     model_config = ConfigDict(extra='ignore')
 
+    run_id: str
     exit_code: int
     output_folder: str
     features: List[FeatureResult] = Field(default_factory=list)
