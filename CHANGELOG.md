@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [4.7.0] - Unreleased
+## [4.7.0] - 2026-05-21
 
 ### Added
 - **`BehaveXRunner` BehaveX API** — BehaveX can now be invoked programmatically from Python without the CLI. `BehaveXRunner` accepts all CLI parameters as typed keyword arguments and returns a structured `RunResult`. Designed for AI agents, test orchestrators, and any automation that drives BehaveX programmatically.
