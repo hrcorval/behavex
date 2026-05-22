@@ -90,6 +90,33 @@ behavex -t=@smoke -o=test-results
 
 See [Tag Expressions](tag-expressions.md) for the full filtering reference.
 
+## Using an existing behave.ini
+
+BehaveX auto-discovers `behavex.cfg`, `behavex.ini`, and `behave.ini` in the current working directory. It reads BehaveX parameters only from files that contain at least one BehaveX-specific section (`[params]`, `[output]`, `[test_run]`, or `[progress_bar]`).
+
+If your project already has a `behave.ini` with only a `[behave]` section, BehaveX leaves it untouched and lets Behave handle it. This means:
+
+- Multi-line continuation values in `behave.ini` (standard `configparser` syntax) are fully supported — BehaveX won't try to parse them.
+- There is no need to maintain separate config files for BehaveX and Behave if you only need Behave settings.
+
+To add BehaveX-specific settings alongside your existing `behave.ini`, either add a `[params]` section to it or create a separate `behavex.cfg` / `behavex.ini` file in the same directory.
+
+See [CLI Reference](cli-reference.md) for the full list of configurable parameters.
+
+## Local packages and sys.path
+
+BehaveX automatically adds the project root (the directory you run `behavex` from) to `sys.path`. This means local packages sitting alongside your `features/` folder are importable from `environment.py` and step definitions without any extra configuration:
+
+```
+project/
+├── automation/        ← importable as "from automation import ..."
+└── features/
+    ├── environment.py
+    └── steps/
+```
+
+This works in all execution modes — single-process, feature-parallel, and scenario-parallel — including inside spawned worker processes on macOS and Windows.
+
 ## Migration to BehaveX 4.5.0 + Behave >= 1.3.0
 
 When upgrading to BehaveX 4.5.0 with Behave 1.3.0 or newer, be aware of the following:
