@@ -18,12 +18,6 @@ enterprise-grade reporting, and the operational controls needed to run test suit
    cli-reference
    utilities
 
-.. toctree::
-   :maxdepth: 2
-   :caption: API Reference
-
-   autoapi/behavex/index
-
 Indices and tables
 ==================
 
