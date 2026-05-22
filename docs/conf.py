@@ -61,7 +61,8 @@ html_theme_options = {
 }
 
 # -- HTML output options ----------------------------------------------------
-html_static_path = []
+html_static_path = ['_static']
+html_css_files = ['custom.css']
 html_show_sourcelink = True
 html_show_sphinx = True
 html_show_copyright = True
