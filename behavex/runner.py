@@ -200,6 +200,11 @@ def setup_running_failures(args_parsed):
 def init_multiprocessing(idQueue, parallel_delay):
     try:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # Spawned worker processes (macOS/Windows default) do not inherit sys.path.
+        # Re-add the project root so that local packages resolve inside workers.
+        cwd = os.getcwd()
+        if cwd not in sys.path:
+            sys.path.insert(0, cwd)
         # Retrieve one of the unique IDs
         worker_id = idQueue.get()
         # Use the unique ID to name the process
@@ -240,6 +245,11 @@ def launch_behavex():
         _warn_parallel_incompatible_params()
     set_behave_tags()
     bhx_context = BehaveXContext()
+    # environment.py is loaded before Behave's PathManager is active, so CWD may
+    # not be in sys.path yet.  Add it early so local imports in environment.py work.
+    cwd = os.getcwd()
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
     bhx_before_workers_ok = False
     _call_bhx_hook('before_all_workers', bhx_context)
     bhx_before_workers_ok = True
