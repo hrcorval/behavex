@@ -344,6 +344,20 @@ def print_env_variables(keys):
     print(separator)
 
 
+_BEHAVEX_CONFIG_SECTIONS = frozenset({'params', 'output', 'test_run', 'progress_bar'})
+
+
+def _has_behavex_sections(config_path: str) -> bool:
+    """Return True if the file contains at least one BehaveX-specific section."""
+    import configparser
+    cp = configparser.RawConfigParser()
+    try:
+        cp.read(config_path)
+    except Exception:
+        return False
+    return bool(_BEHAVEX_CONFIG_SECTIONS.intersection(cp.sections()))
+
+
 def set_environ_config(args_parsed):
     global CONFIG
     global CONFIG_PATH
@@ -359,6 +373,11 @@ def set_environ_config(args_parsed):
         for filename in ('behavex.cfg', 'behavex.ini', 'behave.ini'):
             candidate = os.path.join(os.getcwd(), filename)
             if os.path.isfile(candidate):
+                if filename == 'behave.ini' and not _has_behavex_sections(candidate):
+                    # behave.ini with no BehaveX sections belongs to Behave, not us.
+                    # ConfigObj cannot parse configparser-style multi-line values,
+                    # so skip it and let Behave handle the file itself.
+                    break
                 CONFIG_PATH = candidate
                 break
 

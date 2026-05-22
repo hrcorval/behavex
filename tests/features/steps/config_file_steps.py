@@ -90,6 +90,24 @@ def given_extra_cli_args(context, cli_args):
     context.extra_cli_args = getattr(context, 'extra_cli_args', []) + cli_args.split()
 
 
+@given('a "behave.ini" file with only Behave-native settings and multi-line format values')
+def given_behave_ini_multiline_format(context):
+    config_dir = _make_config_dir(context)
+    # Multi-line continuation syntax valid for configparser but NOT for ConfigObj.
+    # This is the root cause of Issue #247 Bug 1.
+    content = '[behave]\nformat = plain\n    progress\n'
+    _write_config_file(config_dir, 'behave.ini', content)
+
+
+@given('a "behave.ini" file with only a "[behave]" section')
+def given_behave_ini_behave_only_section(context):
+    config_dir = _make_config_dir(context)
+    # [behave] is Behave's own section — not a BehaveX section.
+    # parallel_processes here must NOT be read as a BehaveX param.
+    content = '[behave]\nparallel_processes = 99\n'
+    _write_config_file(config_dir, 'behave.ini', content)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # When steps — single pattern avoids Behave ambiguity with greedy {params}
 # ─────────────────────────────────────────────────────────────────────────────
