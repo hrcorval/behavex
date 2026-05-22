@@ -194,3 +194,26 @@ Feature: Configuration file support
     Then I should see the following behavex console outputs and exit code "0"
       | output_line                            |
       | not compatible with parallel execution |
+
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # behave.ini compatibility (Issue #247 — Bug 1)
+  # ConfigObj cannot parse configparser-style multi-line continuation values.
+  # BehaveX must skip behave.ini when it contains no BehaveX-specific sections.
+  # ─────────────────────────────────────────────────────────────────────────
+
+  @CONFIG_FILE @CONFIG_FILE_BEHAVE_INI_COMPAT
+  Scenario: BehaveX does not crash when behave.ini has multi-line continuation values
+    Given a "behave.ini" file with only Behave-native settings and multi-line format values
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line       |
+      | 5 scenarios passed |
+
+  @CONFIG_FILE @CONFIG_FILE_BEHAVE_INI_COMPAT
+  Scenario: behave.ini with only Behave-native sections is not used for BehaveX configuration
+    Given a "behave.ini" file with only a "[behave]" section
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                  |
+      | PARALLEL_PROCESSES  \| 1    |
