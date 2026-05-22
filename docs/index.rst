@@ -11,6 +11,7 @@ enterprise-grade reporting, and the operational controls needed to run test suit
 
    getting-started
    migrating-from-behave
+   python-api
    tag-expressions
    parallel-execution
    reporting
