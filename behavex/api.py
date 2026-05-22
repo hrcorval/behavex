@@ -155,6 +155,7 @@ class BehaveXRunner:
         if self.formatter_outdir is not None:
             args += ["--formatter-outdir", self.formatter_outdir]
 
+        # Only the disable flag exists; True means "use default" (logs attached), so no flag needed.
         if self.formatter_attach_logs is False:
             args.append("--no-formatter-attach-logs")
 

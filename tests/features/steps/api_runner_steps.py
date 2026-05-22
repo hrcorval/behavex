@@ -1,8 +1,10 @@
 import json
 import os
 import random
+import re
 import shutil
 import subprocess
+from typing import List, Optional
 
 from behave import then, when
 
@@ -56,14 +58,53 @@ print("__RESULT__:" + json.dumps(_data))
 """
 
 
+def _run_script(script: str) -> subprocess.CompletedProcess:
+    """Run a Python script in a subprocess using the project's uv environment."""
+    return subprocess.run(
+        ['uv', 'run', 'python', '-c', script],
+        capture_output=True,
+        text=True,
+        cwd=root_project_path,
+        env=_clean_child_env(),
+    )
+
+
+def _parse_result(proc: subprocess.CompletedProcess) -> dict:
+    """Extract the __RESULT__ JSON line from subprocess stdout."""
+    for line in proc.stdout.splitlines():
+        if line.startswith('__RESULT__:'):
+            return json.loads(line[len('__RESULT__:'):])
+    raise AssertionError(
+        f'BehaveXRunner subprocess did not emit a result.\n'
+        f'STDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
+    )
+
+
+def _store_result(context, proc: subprocess.CompletedProcess) -> None:
+    context.api_run_result = _parse_result(proc)
+    context.api_run_output = proc.stdout
+
+
 def _run_via_api(
     context,
     feature_path: str,
-    tags: list | None = None,
+    tags: Optional[List[str]] = None,
     output_folder: str = '',
     no_report: bool = True,
+    **extra_kwargs,
 ) -> None:
-    """Invoke BehaveXRunner in a subprocess and store the result in context."""
+    """Invoke BehaveXRunner in a subprocess and store the result in context.
+
+    extra_kwargs are passed through as BehaveXRunner constructor arguments.
+    String values are automatically repr'd so they are valid Python literals
+    when interpolated into the subprocess script.
+    """
+    def _as_py_literal(v):
+        return repr(v) if isinstance(v, str) else v
+
+    kwargs_lines = ''.join(
+        f'    {k}={_as_py_literal(v)},\n' for k, v in extra_kwargs.items()
+    )
     script = f"""
 import json, sys
 sys.path.insert(0, {repr(root_project_path)})
@@ -73,28 +114,9 @@ result = BehaveXRunner(
     tags={repr(tags or [])},
     output_folder={repr(output_folder)},
     no_report={no_report},
-).run()
+{kwargs_lines}).run()
 """ + _SERIALIZE_RESULT
-    proc = subprocess.run(
-        ['uv', 'run', 'python', '-c', script],
-        capture_output=True,
-        text=True,
-        cwd=root_project_path,
-        env=_clean_child_env(),
-    )
-
-    api_result = None
-    for line in proc.stdout.splitlines():
-        if line.startswith('__RESULT__:'):
-            api_result = json.loads(line[len('__RESULT__:'):])
-
-    assert api_result is not None, (
-        f'BehaveXRunner subprocess did not emit a result.\n'
-        f'STDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
-    )
-
-    context.api_run_result = api_result
-    context.api_run_output = proc.stdout
+    _store_result(context, _run_script(script))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -131,34 +153,12 @@ def when_api_run_with_output_folder(context):
 @when('I run BehaveXRunner with passing tests using "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
 def when_api_run_parallel(context, parallel_processes, parallel_scheme):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    script = f"""
-import json, sys
-sys.path.insert(0, {repr(root_project_path)})
-from behavex import BehaveXRunner
-result = BehaveXRunner(
-    paths=[{repr(feature_path)}],
-    parallel_processes={int(parallel_processes)},
-    parallel_scheme={repr(parallel_scheme)},
-    no_report=True,
-).run()
-""" + _SERIALIZE_RESULT
-    proc = subprocess.run(
-        ['uv', 'run', 'python', '-c', script],
-        capture_output=True,
-        text=True,
-        cwd=root_project_path,
-        env=_clean_child_env(),
+    _run_via_api(
+        context,
+        feature_path,
+        parallel_processes=int(parallel_processes),
+        parallel_scheme=parallel_scheme,
     )
-    api_result = None
-    for line in proc.stdout.splitlines():
-        if line.startswith('__RESULT__:'):
-            api_result = json.loads(line[len('__RESULT__:'):])
-    assert api_result is not None, (
-        f'BehaveXRunner subprocess did not emit a result.\n'
-        f'STDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
-    )
-    context.api_run_result = api_result
-    context.api_run_output = proc.stdout
 
 
 @when('I run BehaveXRunner with passing tests, no_report enabled, and a configured output folder')
@@ -178,32 +178,7 @@ def when_api_run_with_two_tags(context, tag_a, tag_b):
 @when('I run BehaveXRunner with dry_run enabled')
 def when_api_run_dry_run(context):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    script = f"""
-import json, sys
-sys.path.insert(0, {repr(root_project_path)})
-from behavex import BehaveXRunner
-result = BehaveXRunner(
-    paths=[{repr(feature_path)}],
-    dry_run=True,
-    no_report=True,
-).run()
-""" + _SERIALIZE_RESULT
-    proc = subprocess.run(
-        ['uv', 'run', 'python', '-c', script],
-        capture_output=True,
-        text=True,
-        cwd=root_project_path,
-        env=_clean_child_env(),
-    )
-    api_result = None
-    for line in proc.stdout.splitlines():
-        if line.startswith('__RESULT__:'):
-            api_result = json.loads(line[len('__RESULT__:'):])
-    assert api_result is not None, (
-        f'Subprocess did not emit a result.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
-    )
-    context.api_run_result = api_result
-    context.api_run_output = proc.stdout
+    _run_via_api(context, feature_path, dry_run=True)
 
 
 @when('I run BehaveXRunner with failing tests and a configured output folder')
@@ -467,7 +442,6 @@ def then_first_failed_scenario_name(context, expected):
 
 @then('the RunResult run_id is a valid UUID')
 def then_run_id_is_uuid(context):
-    import re
     run_id = context.api_run_result['run_id']
     uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
     assert re.match(uuid_pattern, run_id), (
@@ -488,21 +462,8 @@ result1 = runner.run()
 result2 = runner.run()
 print("__RESULT__:" + json.dumps({{"run_id_1": result1.run_id, "run_id_2": result2.run_id}}))
 """
-    proc = subprocess.run(
-        ['uv', 'run', 'python', '-c', script],
-        capture_output=True,
-        text=True,
-        cwd=root_project_path,
-        env=_clean_child_env(),
-    )
-    api_result = None
-    for line in proc.stdout.splitlines():
-        if line.startswith('__RESULT__:'):
-            api_result = json.loads(line[len('__RESULT__:'):])
-    assert api_result is not None, (
-        f'Subprocess did not emit a result.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
-    )
-    context.api_run_result = api_result
+    proc = _run_script(script)
+    context.api_run_result = _parse_result(proc)
     context.api_run_output = proc.stdout
 
 
