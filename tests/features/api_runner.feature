@@ -108,3 +108,25 @@ Feature: BehaveXRunner Python API
   Scenario: Each BehaveXRunner.run() call produces a different run_id
     When I run BehaveXRunner with passing tests twice
     Then the two run_ids are different
+    And both runs completed successfully
+
+  @API_RUNNER_011
+  Scenario: BehaveXRunner with name filter limits executed scenarios by scenario name
+    When I run BehaveXRunner with passing tests filtered by name "This test should pass and does not contain a tag"
+    Then the RunResult exit_code should be "0"
+    And I should see "1 scenario passed" in the BehaveXRunner output
+
+  @API_RUNNER_012
+  Scenario: BehaveXRunner with stop=True passes the stop flag to the runner
+    When I run BehaveXRunner with failing tests and stop enabled
+    Then the RunResult exit_code should be "1"
+
+  @API_RUNNER_013
+  Scenario: BehaveXRunner with define passes user-defined variables to scenarios
+    When I run BehaveXRunner with userdata tests and define "test_udkey=test_udvalue"
+    Then the RunResult exit_code should be "0"
+
+  @API_RUNNER_014
+  Scenario: BehaveXRunner with logging_level set does not break execution
+    When I run BehaveXRunner with passing tests and logging_level "WARNING"
+    Then the RunResult exit_code should be "0"
