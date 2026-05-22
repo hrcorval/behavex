@@ -50,6 +50,7 @@ _data = {
         }
         for s in result.failed_scenarios
     ],
+    "tagged_scenario_count": sum(1 for f in result.features for s in f.scenarios if s.tags),
 }
 print("__RESULT__:" + json.dumps(_data))
 """
@@ -166,6 +167,43 @@ def when_api_run_no_report(context):
     output_folder = os.path.join('output', f'api_runner_no_report_{_random_suffix()}')
     context.configured_output_folder = output_folder
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=True)
+
+
+@when('I run BehaveXRunner with passing tests filtered by tags "{tag_a}" and "{tag_b}"')
+def when_api_run_with_two_tags(context, tag_a, tag_b):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_via_api(context, feature_path, tags=[tag_a, tag_b])
+
+
+@when('I run BehaveXRunner with dry_run enabled')
+def when_api_run_dry_run(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+result = BehaveXRunner(
+    paths=[{repr(feature_path)}],
+    dry_run=True,
+    no_report=True,
+).run()
+""" + _SERIALIZE_RESULT
+    proc = subprocess.run(
+        ['uv', 'run', 'python', '-c', script],
+        capture_output=True,
+        text=True,
+        cwd=root_project_path,
+        env=_clean_child_env(),
+    )
+    api_result = None
+    for line in proc.stdout.splitlines():
+        if line.startswith('__RESULT__:'):
+            api_result = json.loads(line[len('__RESULT__:'):])
+    assert api_result is not None, (
+        f'Subprocess did not emit a result.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
+    )
+    context.api_run_result = api_result
+    context.api_run_output = proc.stdout
 
 
 @when('I run BehaveXRunner with failing tests and a configured output folder')
@@ -474,6 +512,14 @@ def then_run_ids_differ(context):
     id2 = context.api_run_result['run_id_2']
     assert id1 != id2, (
         f'Expected two different run_ids but both were: {repr(id1)}'
+    )
+
+
+@then('at least one scenario in the RunResult has tags')
+def then_some_scenarios_have_tags(context):
+    count = context.api_run_result['tagged_scenario_count']
+    assert count > 0, (
+        'Expected at least one scenario with tags in RunResult, but tagged_scenario_count=0.'
     )
 
 
