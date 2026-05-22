@@ -12,3 +12,26 @@ os.environ['BEHAVEX_PATH'] = os.path.dirname(os.path.realpath(__file__))
 # Set the features path
 os.environ['FEATURES_PATH'] = os.environ.get('FEATURES_PATH', 'features')
 
+try:
+    from behavex.api import BehaveXRunner  # noqa: E402
+    from behavex.models import (  # noqa: E402
+        BackgroundResult,
+        FeatureResult,
+        RunResult,
+        RunSummary,
+        ScenarioResult,
+        StepResult,
+    )
+    __all__ = [
+        'BehaveXRunner',
+        'RunResult',
+        'RunSummary',
+        'FeatureResult',
+        'ScenarioResult',
+        'StepResult',
+        'BackgroundResult',
+    ]
+except ImportError:
+    # pydantic not installed — API surface unavailable, CLI still works normally
+    __all__ = []
+
