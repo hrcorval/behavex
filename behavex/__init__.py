@@ -31,7 +31,9 @@ try:
         'StepResult',
         'BackgroundResult',
     ]
-except ImportError:
+except ImportError as _e:
+    if 'pydantic' not in str(_e).lower():
+        raise
     # pydantic not installed — API surface unavailable, CLI still works normally
     __all__ = []
 

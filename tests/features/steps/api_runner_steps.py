@@ -66,6 +66,7 @@ def _run_script(script: str) -> subprocess.CompletedProcess:
         text=True,
         cwd=root_project_path,
         env=_clean_child_env(),
+        timeout=120,
     )
 
 
@@ -100,7 +101,7 @@ def _run_via_api(
     when interpolated into the subprocess script.
     """
     def _as_py_literal(v):
-        return repr(v) if isinstance(v, str) else v
+        return repr(v)
 
     kwargs_lines = ''.join(
         f'    {k}={_as_py_literal(v)},\n' for k, v in extra_kwargs.items()
@@ -262,6 +263,7 @@ def _run_without_pydantic(script_body: str) -> subprocess.CompletedProcess:
         text=True,
         cwd=root_project_path,
         env=_clean_child_env(),
+        timeout=60,
     )
 
 
@@ -460,7 +462,12 @@ from behavex import BehaveXRunner
 runner = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True)
 result1 = runner.run()
 result2 = runner.run()
-print("__RESULT__:" + json.dumps({{"run_id_1": result1.run_id, "run_id_2": result2.run_id}}))
+print("__RESULT__:" + json.dumps({{
+    "run_id_1": result1.run_id,
+    "run_id_2": result2.run_id,
+    "exit_code_1": result1.exit_code,
+    "exit_code_2": result2.exit_code,
+}}))
 """
     proc = _run_script(script)
     context.api_run_result = _parse_result(proc)
@@ -495,3 +502,41 @@ def then_first_failed_scenario_has_errors(context):
     assert scenario['has_error_step'], (
         f'Expected error_step to be set for failed scenario "{scenario["name"]}".'
     )
+
+
+@then('both runs completed successfully')
+def then_both_runs_passed(context):
+    code1 = context.api_run_result['exit_code_1']
+    code2 = context.api_run_result['exit_code_2']
+    assert code1 == 0 and code2 == 0, (
+        f'Expected both runs to exit with code 0, got: run1={code1}, run2={code2}.\n'
+        f'Output:\n{context.api_run_output}'
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _build_args coverage — name, stop, define, logging_level
+# ─────────────────────────────────────────────────────────────────────────────
+
+@when('I run BehaveXRunner with passing tests filtered by name "{name}"')
+def when_api_run_with_name(context, name):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_via_api(context, feature_path, name=name)
+
+
+@when('I run BehaveXRunner with failing tests and stop enabled')
+def when_api_run_stop(context):
+    feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
+    _run_via_api(context, feature_path, stop=True)
+
+
+@when('I run BehaveXRunner with userdata tests and define "{userdata}"')
+def when_api_run_with_define(context, userdata):
+    feature_path = os.path.join(secondary_features_path, 'userdata_tests.feature')
+    _run_via_api(context, feature_path, tags=['@USERDATA'], define=[userdata])
+
+
+@when('I run BehaveXRunner with passing tests and logging_level "{level}"')
+def when_api_run_with_logging_level(context, level):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_via_api(context, feature_path, logging_level=level)
