@@ -31,6 +31,22 @@ def before_scenario(context, scenario):
     assert v == "local_pkg_loaded", f"local_pkg not importable in worker: got {v!r}"
 '''
 
+# Plain Behave environment — no before_all_workers / after_all_workers.
+# This is the exact reporter's scenario in Issue #247: the module is loaded by
+# _call_bhx_hook to check for BehaveX hooks; the top-level import must not fail.
+_ENVIRONMENT_PY_PLAIN = '''\
+from local_pkg import SHARED_VALUE  # top-level import from local package
+
+
+def before_all(context):
+    pass
+
+
+def before_scenario(context, scenario):
+    from local_pkg import SHARED_VALUE as v  # noqa: PLC0415
+    assert v == "local_pkg_loaded", f"local_pkg not importable: got {v!r}"
+'''
+
 _TEST_FEATURE = '''\
 Feature: Local package import test
 
@@ -67,8 +83,7 @@ def _make_project_dir(context):
     return context.project_dir
 
 
-@given('a project directory with a local package and an environment.py that imports from it')
-def given_project_with_local_package(context):
+def _create_project(context, env_content: str) -> None:
     project_dir = _make_project_dir(context)
 
     pkg_dir = os.path.join(project_dir, 'local_pkg')
@@ -81,7 +96,7 @@ def given_project_with_local_package(context):
     os.makedirs(steps_dir, exist_ok=True)
 
     with open(os.path.join(features_dir, 'environment.py'), 'w') as f:
-        f.write(_ENVIRONMENT_PY)
+        f.write(env_content)
 
     with open(os.path.join(features_dir, 'local_import.feature'), 'w') as f:
         f.write(_TEST_FEATURE)
@@ -89,6 +104,16 @@ def given_project_with_local_package(context):
     open(os.path.join(steps_dir, '__init__.py'), 'w').close()
     with open(os.path.join(steps_dir, 'steps.py'), 'w') as f:
         f.write(_STEPS_PY)
+
+
+@given('a project directory with a local package and a plain environment.py that imports from it')
+def given_project_with_plain_environment(context):
+    _create_project(context, _ENVIRONMENT_PY_PLAIN)
+
+
+@given('a project directory with a local package and an environment.py that imports from it')
+def given_project_with_local_package(context):
+    _create_project(context, _ENVIRONMENT_PY)
 
 
 @when('I run behavex from that project directory with "{n}" parallel process')
