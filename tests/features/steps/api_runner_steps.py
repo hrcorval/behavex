@@ -30,6 +30,7 @@ def _random_suffix(n: int = 6) -> str:
 _SERIALIZE_RESULT = """
 _s = result.summary
 _data = {
+    "run_id": result.run_id,
     "exit_code": result.exit_code,
     "passed": result.passed,
     "output_folder": result.output_folder,
@@ -423,6 +424,56 @@ def then_first_failed_scenario_name(context, expected):
     actual = scenarios[0]['name']
     assert actual == expected, (
         f'Expected first failed scenario name "{expected}", got "{actual}".'
+    )
+
+
+@then('the RunResult run_id is a valid UUID')
+def then_run_id_is_uuid(context):
+    import re
+    run_id = context.api_run_result['run_id']
+    uuid_pattern = r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    assert re.match(uuid_pattern, run_id), (
+        f'Expected run_id to be a valid UUID4, got: {repr(run_id)}'
+    )
+
+
+@when('I run BehaveXRunner with passing tests twice')
+def when_api_run_passing_twice(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+runner = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True)
+result1 = runner.run()
+result2 = runner.run()
+print("__RESULT__:" + json.dumps({{"run_id_1": result1.run_id, "run_id_2": result2.run_id}}))
+"""
+    proc = subprocess.run(
+        ['uv', 'run', 'python', '-c', script],
+        capture_output=True,
+        text=True,
+        cwd=root_project_path,
+        env=_clean_child_env(),
+    )
+    api_result = None
+    for line in proc.stdout.splitlines():
+        if line.startswith('__RESULT__:'):
+            api_result = json.loads(line[len('__RESULT__:'):])
+    assert api_result is not None, (
+        f'Subprocess did not emit a result.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
+    )
+    context.api_run_result = api_result
+    context.api_run_output = proc.stdout
+
+
+@then('the two run_ids are different')
+def then_run_ids_differ(context):
+    id1 = context.api_run_result['run_id_1']
+    id2 = context.api_run_result['run_id_2']
+    assert id1 != id2, (
+        f'Expected two different run_ids but both were: {repr(id1)}'
     )
 
 
