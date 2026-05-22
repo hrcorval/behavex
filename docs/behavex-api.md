@@ -1,4 +1,4 @@
-# Python API
+# BehaveX API
 
 BehaveX can be driven programmatically via `BehaveXRunner`, without using the CLI. This is the recommended interface for AI agents, test orchestrators, CI scripts, and any automation that needs structured output.
 

@@ -9,9 +9,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [4.7.0] - Unreleased
 
 ### Added
-- **`BehaveXRunner` Python API** — BehaveX can now be invoked programmatically from Python without the CLI. `BehaveXRunner` accepts all CLI parameters as typed keyword arguments and returns a structured `RunResult`. Designed for AI agents, test orchestrators, and any automation that drives BehaveX programmatically.
+- **`BehaveXRunner` BehaveX API** — BehaveX can now be invoked programmatically from Python without the CLI. `BehaveXRunner` accepts all CLI parameters as typed keyword arguments and returns a structured `RunResult`. Designed for AI agents, test orchestrators, and any automation that drives BehaveX programmatically.
 - **Pydantic result models** (`behavex[api]` optional extra) — `RunResult`, `FeatureResult`, `ScenarioResult`, `StepResult`, `BackgroundResult`, and `RunSummary` provide a typed, structured view of test results. Includes convenience properties: `result.passed`, `result.summary`, `result.failed_scenarios`, `scenario.failed`, `feature.failed_scenarios`, and more.
-- **`[api]` optional extra** — Pydantic is an optional dependency, not added to the base install. Existing `pip install behavex` users are fully unaffected. Install with `pip install 'behavex[api]'` to activate the Python API.
+- **`[api]` optional extra** — Pydantic is an optional dependency, not added to the base install. Existing `pip install behavex` users are fully unaffected. Install with `pip install 'behavex[api]'` to activate the BehaveX API.
 - **`run_id` in `RunResult`** — Every `BehaveXRunner.run()` call now returns a unique UUID4 `run_id`, enabling agents and orchestrators to correlate runs with logs, traces, or external systems without ambiguity.
 
 ---
