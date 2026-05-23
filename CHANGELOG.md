@@ -12,6 +12,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`behave.ini` with multi-line values crashes BehaveX** ([#247](https://github.com/hrcorval/behavex/issues/247)) — BehaveX auto-discovery now skips `behave.ini` when the file contains no BehaveX-specific sections (`[params]`, `[output]`, `[test_run]`, `[progress_bar]`). ConfigObj (used internally) cannot parse Python `configparser`-style multi-line continuation values such as `format = plain\n    progress`, causing a hard crash on startup. A `behave.ini` with only a `[behave]` section is Behave's own configuration and is now left exclusively for Behave to handle.
 - **Local packages not importable from `environment.py` and worker processes** ([#247](https://github.com/hrcorval/behavex/issues/247)) — The project root (current working directory) is now added to `sys.path` at two critical points: (1) before `_call_bhx_hook()` loads `environment.py` in the coordinator process, so top-level imports in `environment.py` resolve before Behave's `PathManager` is active; (2) in `init_multiprocessing()` for each spawned worker process, since macOS and Windows use the `spawn` start method which does not inherit the parent's `sys.path`.
 
+### Contributors
+- Thanks to [@qriwty](https://github.com/qriwty) for reporting both regressions in detail with a clear reproduction case ([Issue #247](https://github.com/hrcorval/behavex/issues/247)).
+
 ---
 
 ## [4.6.4] - 2026-05-21
