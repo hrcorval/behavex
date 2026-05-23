@@ -270,6 +270,7 @@ def launch_behavex():
         if parallel_processes > 1 and not get_param('dry_run')
         else False
     )
+    _parallel_run = _is_parallel_run  # local snapshot; finally block resets the global
     if _is_parallel_run:
         _warn_parallel_incompatible_params()
     set_behave_tags()
@@ -425,7 +426,7 @@ def launch_behavex():
         _is_parallel_run = False
         if bhx_before_workers_ok:
             _call_bhx_hook('after_all_workers', bhx_context)
-    if _is_parallel_run:
+    if _parallel_run:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
