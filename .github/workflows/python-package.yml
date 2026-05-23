@@ -57,10 +57,10 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             dir
-            behavex .\\tests\\features\\*.feature
+            behavex .\\tests\\features\\*.feature --exclude api_runner
           else
             ls -la tests/features/
-            behavex tests/features/*.feature
+            behavex tests/features/ --exclude api_runner
           fi
 
       # Set report.json to be available as an artifact for debugging
@@ -68,6 +68,60 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-${{ matrix.os }}-py${{ matrix.python-version }}-behave${{ matrix.behave-version }}
+          path: ${{ github.workspace }}/output/report.json
+
+  # Test BehaveXRunner Python API (requires pydantic)
+  test-api:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.11', '3.13']
+        behave-version: ['1.2.6', '1.3.3', 'latest']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install setuptools
+        run: |
+          python -m pip install 'setuptools>=61'
+
+      - name: Install behavex[api] with behave ${{ matrix.behave-version }}
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m build
+          python -m pip install beautifulsoup4
+          if [ "${{ matrix.behave-version }}" == "latest" ]; then
+            python -m pip install behave jinja2 configobj minify-html csscompressor allure-python-commons
+          else
+            python -m pip install behave==${{ matrix.behave-version }} jinja2 configobj minify-html csscompressor allure-python-commons
+          fi
+          python -m pip install dist/behavex-*.tar.gz --no-deps
+          python -m pip install "pydantic>=2.0.0"
+          python -m pip install behavex-images==3.3.1
+          pip freeze
+          echo "Installed behave version:"
+          python -c "import behave; print(f'behave {behave.__version__}')"
+          echo "Installed pydantic version:"
+          python -c "import pydantic; print(f'pydantic {pydantic.__version__}')"
+
+      - name: Run BehaveXRunner API tests
+        run: |
+          behavex tests/features/api_runner.feature
+
+      - name: Set report.json to be available as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-api-py${{ matrix.python-version }}-behave${{ matrix.behave-version }}
           path: ${{ github.workspace }}/output/report.json
 
   # Test behavex without setuptools
