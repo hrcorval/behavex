@@ -90,6 +90,7 @@ _completed_count: int = 0
 _is_parallel_run: bool = False
 # Active executor — stored so BehaveXRunner.stop() can shut it down from another thread.
 _active_executor: Optional[ProcessPoolExecutor] = None
+_last_run_results: list = []
 
 
 def _fire_progress(scenario_name: str, feature_name: str, status: str, duration: float) -> None:
@@ -424,6 +425,8 @@ def launch_behavex():
     finally:
         _active_executor = None
         _is_parallel_run = False
+        global _last_run_results
+        _last_run_results = merged_json.get('features', []) if isinstance(merged_json, dict) else []
         if bhx_before_workers_ok:
             _call_bhx_hook('after_all_workers', bhx_context)
     if _parallel_run:
@@ -1463,15 +1466,14 @@ def _store_tags_to_env_variable(tags):
     tags_skip = [tag for tag in tags_skip if tag not in tags]
     exclusion_tags = ['~@{0}'.format(tag) for tag in tags_skip]
     tags = tags + exclusion_tags if tags else exclusion_tags
+    # Clear any TAGS carried over from a previous run before rebuilding.
+    # Without this, repeated runs in the same process accumulate tags and
+    # corrupt the reporting filter, causing summary counts to be zero and
+    # eventually producing SyntaxError from eval() in match_for_execution_v1.
+    set_env('tags', '')
+    os.environ.pop('TAGS', None)
     if tags:
-        for tag in tags:
-            existing_tags = get_env('TAGS')
-            if existing_tags:
-                set_env_variable('TAGS', existing_tags + ';' + tag)
-            else:
-                set_env_variable('TAGS', tag)
-    else:
-        set_env_variable('TAGS', '')
+        set_env_variable('TAGS', ';'.join(tags))
 
 
 _PARALLEL_INCOMPATIBLE_PARAMS = [

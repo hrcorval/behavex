@@ -96,6 +96,7 @@ class BehaveXRunner:
         args = self._build_args()
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
+        runner._last_run_results = []  # clear before run so stale data never leaks
         try:
             exit_code = runner.run(args)
         finally:
@@ -118,7 +119,14 @@ class BehaveXRunner:
             pass
 
     def _load_features(self) -> List[FeatureResult]:
-        """Read report.json after a run and return parsed feature results."""
+        """Return feature results from the just-completed run.
+
+        Prefers the in-memory results set by runner.launch_behavex() so this
+        works even when no_report=True.  Falls back to report.json for safety.
+        """
+        in_memory = getattr(runner, '_last_run_results', [])
+        if in_memory:
+            return [FeatureResult.model_validate(f) for f in in_memory]
         if self.no_report or not self.output_folder:
             return []
         report_path = os.path.join(self.output_folder, 'report.json')
