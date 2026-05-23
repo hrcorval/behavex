@@ -14,6 +14,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`[api]` optional extra** — Pydantic is an optional dependency, not added to the base install. Existing `pip install behavex` users are fully unaffected. Install with `pip install 'behavex[api]'` to activate the BehaveX API.
 - **`run_id` in `RunResult`** — Every `BehaveXRunner.run()` call now returns a unique UUID4 `run_id`, enabling agents and orchestrators to correlate runs with logs, traces, or external systems without ambiguity.
 
+### Contributors
+- Thanks to [@qriwty](https://github.com/qriwty) for reporting both regressions in detail with a clear reproduction case ([Issue #247](https://github.com/hrcorval/behavex/issues/247)).
+
 ---
 
 ## [4.6.4] - 2026-05-21
