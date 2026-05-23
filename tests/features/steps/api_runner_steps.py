@@ -4,6 +4,7 @@ import random
 import re
 import shutil
 import subprocess
+import sys
 from typing import List, Optional
 
 from behave import then, when
@@ -59,9 +60,9 @@ print("__RESULT__:" + json.dumps(_data))
 
 
 def _run_script(script: str) -> subprocess.CompletedProcess:
-    """Run a Python script in a subprocess using the project's uv environment."""
+    """Run a Python script in a subprocess using the same Python interpreter."""
     return subprocess.run(
-        ['uv', 'run', 'python', '-c', script],
+        [sys.executable, '-c', script],
         capture_output=True,
         text=True,
         cwd=root_project_path,
