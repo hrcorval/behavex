@@ -60,7 +60,7 @@ jobs:
             behavex .\\tests\\features\\*.feature --exclude api_runner
           else
             ls -la tests/features/
-            behavex tests/features/ --exclude api_runner
+            behavex tests/features/*.feature --exclude api_runner
           fi
 
       # Set report.json to be available as an artifact for debugging
