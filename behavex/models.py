@@ -7,6 +7,16 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+class ProgressEvent(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    scenario_name: str
+    feature_name: str
+    status: str
+    duration: float
+    completed: int
+
+
 class StepResult(BaseModel):
     model_config = ConfigDict(extra='ignore')
 

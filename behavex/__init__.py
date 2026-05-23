@@ -17,6 +17,7 @@ try:
     from behavex.models import (  # noqa: E402
         BackgroundResult,
         FeatureResult,
+        ProgressEvent,
         RunResult,
         RunSummary,
         ScenarioResult,
@@ -24,6 +25,7 @@ try:
     )
     __all__ = [
         'BehaveXRunner',
+        'ProgressEvent',
         'RunResult',
         'RunSummary',
         'FeatureResult',

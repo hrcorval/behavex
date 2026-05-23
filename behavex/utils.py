@@ -62,6 +62,19 @@ def handle_execution_complete_callback(codes,
         execution_code, map_json = tuple_values
         json_reports += [map_json]
         codes.append(execution_code)
+        try:
+            from behavex import runner as _runner
+            if _runner._progress_callback is not None:
+                for feature in map_json.get('features', []):
+                    for scenario in feature.get('scenarios', []):
+                        _runner._fire_progress(
+                            scenario_name=scenario.get('name', ''),
+                            feature_name=feature.get('name', ''),
+                            status=scenario.get('status', ''),
+                            duration=float(scenario.get('duration', 0.0)),
+                        )
+        except Exception:
+            pass
     if progress_bar_instance:
         progress_bar_instance.update()
 

@@ -540,3 +540,286 @@ def when_api_run_with_define(context, userdata):
 def when_api_run_with_logging_level(context, level):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
     _run_via_api(context, feature_path, logging_level=level)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# on_progress callback steps (015, 016, 017)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SERIALIZE_PROGRESS = """
+_data = {
+    "exit_code": result.exit_code,
+    "event_count": len(_events),
+    "events": _events,
+}
+print("__RESULT__:" + json.dumps(_data))
+"""
+
+_PROGRESS_CALLBACK = """
+_events = []
+
+def _on_progress(event):
+    _events.append({
+        "scenario_name": event.scenario_name,
+        "feature_name": event.feature_name,
+        "status": event.status,
+        "completed": event.completed,
+    })
+"""
+
+_RAISING_PROGRESS_CALLBACK = """
+def _on_progress(event):
+    raise RuntimeError("boom")
+"""
+
+_SERIALIZE_EXIT_CODE_ONLY = """
+_data = {"exit_code": result.exit_code, "event_count": 0, "events": []}
+print("__RESULT__:" + json.dumps(_data))
+"""
+
+
+def _run_with_progress_callback(
+    context,
+    feature_path: str,
+    callback_snippet: str = _PROGRESS_CALLBACK,
+    parallel_processes: int = 1,
+    parallel_scheme: str = 'scenario',
+    serialize_snippet: str = _SERIALIZE_PROGRESS,
+) -> None:
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{callback_snippet}
+result = BehaveXRunner(
+    paths=[{repr(feature_path)}],
+    no_report=True,
+    parallel_processes={parallel_processes},
+    parallel_scheme={repr(parallel_scheme)},
+    on_progress=_on_progress,
+).run()
+""" + serialize_snippet
+    proc = _run_script(script)
+    context.api_run_result = _parse_result(proc)
+    context.api_run_output = proc.stdout
+
+
+@when('I run BehaveXRunner with passing tests and an on_progress callback')
+def when_api_run_with_progress_callback(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_with_progress_callback(context, feature_path)
+
+
+@when('I run BehaveXRunner with passing tests using "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and an on_progress callback')
+def when_api_run_parallel_with_progress_callback(context, parallel_processes, parallel_scheme):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_with_progress_callback(
+        context,
+        feature_path,
+        parallel_processes=int(parallel_processes),
+        parallel_scheme=parallel_scheme,
+    )
+
+
+@when('I run BehaveXRunner with passing tests and an on_progress callback that always raises')
+def when_api_run_with_raising_progress_callback(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_with_progress_callback(
+        context,
+        feature_path,
+        callback_snippet=_RAISING_PROGRESS_CALLBACK,
+        serialize_snippet=_SERIALIZE_EXIT_CODE_ONLY,
+    )
+
+
+@then('the on_progress callback was called at least "{expected}" time')
+@then('the on_progress callback was called at least "{expected}" times')
+def then_progress_callback_called_at_least(context, expected):
+    actual = context.api_run_result['event_count']
+    assert actual >= int(expected), (
+        f'Expected on_progress to be called at least {expected} time(s), got {actual}.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+@then('each on_progress event has a non-empty scenario_name and feature_name')
+def then_progress_events_have_names(context):
+    events = context.api_run_result['events']
+    assert events, 'No on_progress events were captured.'
+    for i, event in enumerate(events):
+        assert event['scenario_name'], f'Event {i} has empty scenario_name: {event}'
+        assert event['feature_name'], f'Event {i} has empty feature_name: {event}'
+
+
+@then('each on_progress event has a status of "{expected_status}"')
+def then_progress_events_have_status(context, expected_status):
+    events = context.api_run_result['events']
+    assert events, 'No on_progress events were captured.'
+    for i, event in enumerate(events):
+        assert event['status'] == expected_status, (
+            f'Event {i} has status "{event["status"]}", expected "{expected_status}": {event}'
+        )
+
+
+@then('the completed counter in on_progress events is strictly increasing')
+def then_progress_completed_strictly_increasing(context):
+    events = context.api_run_result['events']
+    assert events, 'No on_progress events were captured.'
+    completed_values = [e['completed'] for e in events]
+    for i in range(1, len(completed_values)):
+        assert completed_values[i] > completed_values[i - 1], (
+            f'completed counter is not strictly increasing at index {i}: {completed_values}'
+        )
+
+
+@when('I run BehaveXRunner with failing tests and an on_progress callback')
+def when_api_run_failing_with_progress_callback(context):
+    feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
+    _run_with_progress_callback(context, feature_path)
+
+
+@when('I run BehaveXRunner with failing tests using "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and an on_progress callback')
+def when_api_run_failing_parallel_with_progress_callback(context, parallel_processes, parallel_scheme):
+    feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
+    _run_with_progress_callback(
+        context,
+        feature_path,
+        parallel_processes=int(parallel_processes),
+        parallel_scheme=parallel_scheme,
+    )
+
+
+@then('at least one on_progress event has a status of "{expected_status}"')
+def then_at_least_one_progress_event_has_status(context, expected_status):
+    events = context.api_run_result['events']
+    assert events, 'No on_progress events were captured.'
+    matching = [e for e in events if e['status'] == expected_status]
+    assert matching, (
+        f'No on_progress event with status "{expected_status}" found.\n'
+        f'Events: {events}'
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# stop() steps (022, 023, 024)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SERIALIZE_STOP = """
+_data = {"exit_code": result.exit_code, "exception": None}
+print("__RESULT__:" + json.dumps(_data))
+"""
+
+_SERIALIZE_STOP_NO_RUN = """
+_data = {"exit_code": 0, "exception": None}
+print("__RESULT__:" + json.dumps(_data))
+"""
+
+
+def _run_stop_script(script: str) -> None:
+    proc = _run_script(script)
+    for line in proc.stdout.splitlines():
+        if line.startswith('__RESULT__:'):
+            context_result = json.loads(line[len('__RESULT__:'):])
+            return proc, context_result
+    raise AssertionError(
+        f'stop() subprocess did not emit a result.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
+    )
+
+
+@when('I call stop() on a BehaveXRunner that is not running')
+def when_stop_outside_run(context):
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+runner = BehaveXRunner(paths=["tests/features"])
+try:
+    runner.stop()
+    exception = None
+except Exception as e:
+    exception = str(e)
+_data = {{"exit_code": 0, "exception": exception}}
+print("__RESULT__:" + json.dumps(_data))
+"""
+    proc = _run_script(script)
+    context.api_run_result = _parse_result(proc)
+    context.api_run_output = proc.stdout
+
+
+@when('I run BehaveXRunner with passing tests and call stop() from a background thread')
+def when_run_with_stop_non_parallel(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys, threading
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+runner = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True)
+exception = None
+
+# stop() is called from a background thread 0.5s after run() starts.
+# In non-parallel mode there is no executor, so stop() is a no-op.
+timer = threading.Timer(0.5, runner.stop)
+timer.start()
+try:
+    result = runner.run()
+    exit_code = result.exit_code
+except Exception as e:
+    exit_code = 2
+    exception = str(e)
+finally:
+    timer.cancel()
+
+_data = {{"exit_code": exit_code, "exception": exception}}
+print("__RESULT__:" + json.dumps(_data))
+"""
+    proc = _run_script(script)
+    context.api_run_result = _parse_result(proc)
+    context.api_run_output = proc.stdout
+
+
+@when('I run BehaveXRunner with passing tests in parallel and call stop() from a background thread')
+def when_run_parallel_with_stop(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys, threading
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+runner = BehaveXRunner(
+    paths=[{repr(feature_path)}],
+    no_report=True,
+    parallel_processes=2,
+    parallel_scheme='scenario',
+)
+exception = None
+
+# stop() is called from a background thread mid-run.
+# All futures are already submitted upfront, so stop() acts as a no-op
+# on already-queued work, but must not raise or deadlock.
+timer = threading.Timer(0.5, runner.stop)
+timer.start()
+try:
+    result = runner.run()
+    exit_code = result.exit_code
+except Exception as e:
+    exit_code = 2
+    exception = str(e)
+finally:
+    timer.cancel()
+
+_data = {{"exit_code": exit_code, "exception": exception}}
+print("__RESULT__:" + json.dumps(_data))
+"""
+    proc = _run_script(script)
+    context.api_run_result = _parse_result(proc)
+    context.api_run_output = proc.stdout
+
+
+@then('no exception was raised')
+def then_no_exception(context):
+    exception = context.api_run_result.get('exception')
+    assert exception is None, (
+        f'Expected no exception but got: {exception}\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )

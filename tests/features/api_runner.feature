@@ -130,3 +130,62 @@ Feature: BehaveXRunner Python API
   Scenario: BehaveXRunner with logging_level set does not break execution
     When I run BehaveXRunner with passing tests and logging_level "WARNING"
     Then the RunResult exit_code should be "0"
+
+  @API_RUNNER_015
+  Scenario: on_progress callback is invoked for each scenario in non-parallel mode
+    When I run BehaveXRunner with passing tests and an on_progress callback
+    Then the on_progress callback was called at least "3" times
+    And each on_progress event has a non-empty scenario_name and feature_name
+    And each on_progress event has a status of "passed"
+    And the completed counter in on_progress events is strictly increasing
+
+  @API_RUNNER_016
+  Scenario: on_progress callback is invoked for each scenario in parallel mode
+    When I run BehaveXRunner with passing tests using "2" parallel processes, "scenario" scheme, and an on_progress callback
+    Then the on_progress callback was called at least "3" times
+    And each on_progress event has a non-empty scenario_name and feature_name
+
+  @API_RUNNER_017
+  Scenario: exceptions raised inside on_progress callback do not affect the exit code
+    When I run BehaveXRunner with passing tests and an on_progress callback that always raises
+    Then the RunResult exit_code should be "0"
+
+  @API_RUNNER_018
+  Scenario: on_progress callback reports failed status for failing tests in non-parallel mode
+    When I run BehaveXRunner with failing tests and an on_progress callback
+    Then the on_progress callback was called at least "1" time
+    And at least one on_progress event has a status of "failed"
+
+  @API_RUNNER_019
+  Scenario: on_progress callback is invoked for each scenario using feature parallel scheme
+    When I run BehaveXRunner with passing tests using "2" parallel processes, "feature" scheme, and an on_progress callback
+    Then the on_progress callback was called at least "3" times
+    And each on_progress event has a non-empty scenario_name and feature_name
+
+  @API_RUNNER_020
+  Scenario: on_progress callback reports failed status for failing tests in parallel mode
+    When I run BehaveXRunner with failing tests using "2" parallel processes, "scenario" scheme, and an on_progress callback
+    Then the on_progress callback was called at least "1" time
+    And at least one on_progress event has a status of "failed"
+
+  @API_RUNNER_021
+  Scenario: on_progress callback reports failed status for failing tests using feature parallel scheme
+    When I run BehaveXRunner with failing tests using "2" parallel processes, "feature" scheme, and an on_progress callback
+    Then the on_progress callback was called at least "1" time
+    And at least one on_progress event has a status of "failed"
+
+  @API_RUNNER_022
+  Scenario: stop() called outside an active run does not raise
+    When I call stop() on a BehaveXRunner that is not running
+    Then no exception was raised
+
+  @API_RUNNER_023
+  Scenario: stop() called from a background thread during non-parallel run completes without error
+    When I run BehaveXRunner with passing tests and call stop() from a background thread
+    Then the RunResult exit_code should be "0"
+    And no exception was raised
+
+  @API_RUNNER_024
+  Scenario: stop() called from a background thread during parallel run does not raise or deadlock
+    When I run BehaveXRunner with passing tests in parallel and call stop() from a background thread
+    Then no exception was raised

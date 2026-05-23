@@ -5,12 +5,12 @@ from __future__ import absolute_import
 import json
 import os
 import uuid
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from behavex import runner
 
 try:
-    from behavex.models import FeatureResult, RunResult
+    from behavex.models import FeatureResult, ProgressEvent, RunResult  # noqa: F401
 except ImportError:
     raise ImportError(
         "BehaveXRunner requires pydantic. Install it with: pip install 'behavex[api]'"
@@ -61,6 +61,7 @@ class BehaveXRunner:
         include: Optional[str] = None,
         exclude: Optional[str] = None,
         define: Optional[List[str]] = None,
+        on_progress: Optional[Callable[["ProgressEvent"], None]] = None,
     ) -> None:
         self.paths = paths or []
         self.tags = tags or []
@@ -70,7 +71,7 @@ class BehaveXRunner:
         self.parallel_delay = parallel_delay
         self.include_paths = include_paths or []
         self.dry_run = dry_run
-        self.stop = stop
+        self.stop_on_failure = stop
         self.show_progress_bar = show_progress_bar
         self.no_report = no_report
         self.config = config
@@ -87,14 +88,34 @@ class BehaveXRunner:
         self.include = include
         self.exclude = exclude
         self.define = define or []
+        self.on_progress = on_progress
 
     def run(self) -> RunResult:
         """Execute the test run and return a RunResult."""
         run_id = str(uuid.uuid4())
         args = self._build_args()
-        exit_code = runner.run(args)
+        runner._progress_callback = self.on_progress
+        runner._completed_count = 0
+        try:
+            exit_code = runner.run(args)
+        finally:
+            runner._progress_callback = None
+            runner._completed_count = 0
         features = self._load_features()
         return RunResult(run_id=run_id, exit_code=exit_code, output_folder=self.output_folder, features=features)
+
+    def stop(self) -> None:
+        """Signal the active parallel executor to stop accepting new work.
+
+        Safe to call from a thread while run() is blocking. Has no effect
+        when called outside of an active run or in single-process mode.
+        """
+        try:
+            executor = runner._active_executor
+            if executor is not None:
+                executor.shutdown(wait=False)
+        except Exception:
+            pass
 
     def _load_features(self) -> List[FeatureResult]:
         """Read report.json after a run and return parsed feature results."""
@@ -134,7 +155,7 @@ class BehaveXRunner:
         if self.dry_run:
             args.append("--dry-run")
 
-        if self.stop:
+        if self.stop_on_failure:
             args.append("--stop")
 
         if self.show_progress_bar:
