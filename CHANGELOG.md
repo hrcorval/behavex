@@ -6,13 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [4.7.0] - 2026-05-21
+## [4.7.0] - 2026-05-22
 
 ### Added
 - **`BehaveXRunner` BehaveX API** — BehaveX can now be invoked programmatically from Python without the CLI. `BehaveXRunner` accepts all CLI parameters as typed keyword arguments and returns a structured `RunResult`. Designed for AI agents, test orchestrators, and any automation that drives BehaveX programmatically.
 - **Pydantic result models** (`behavex[api]` optional extra) — `RunResult`, `FeatureResult`, `ScenarioResult`, `StepResult`, `BackgroundResult`, and `RunSummary` provide a typed, structured view of test results. Includes convenience properties: `result.passed`, `result.summary`, `result.failed_scenarios`, `scenario.failed`, `feature.failed_scenarios`, and more.
 - **`[api]` optional extra** — Pydantic is an optional dependency, not added to the base install. Existing `pip install behavex` users are fully unaffected. Install with `pip install 'behavex[api]'` to activate the BehaveX API.
 - **`run_id` in `RunResult`** — Every `BehaveXRunner.run()` call now returns a unique UUID4 `run_id`, enabling agents and orchestrators to correlate runs with logs, traces, or external systems without ambiguity.
+- **`on_progress` callback on `BehaveXRunner`** — Optional callable invoked after each scenario completes, in both parallel and non-parallel modes. Receives a `ProgressEvent` with `scenario_name`, `feature_name`, `status`, `duration`, and a monotonically increasing `completed` counter. Exceptions raised inside the callback are silently swallowed and never affect the exit code or the run.
+- **`BehaveXRunner.stop()`** — Signals the active parallel executor to stop accepting new work. Safe to call from a separate thread while `run()` is blocking. Has no effect in single-process mode or when called outside an active run.
+- **`ProgressEvent` Pydantic model** — Structured payload delivered to `on_progress` callbacks. Available via `from behavex import ProgressEvent`.
 
 ### Contributors
 - Thanks to [@qriwty](https://github.com/qriwty) for reporting both regressions in detail with a clear reproduction case ([Issue #247](https://github.com/hrcorval/behavex/issues/247)).

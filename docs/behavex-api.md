@@ -65,6 +65,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 | `include` | `str` | Regex pattern to include feature files by path |
 | `exclude` | `str` | Regex pattern to exclude feature files by path |
 | `define` | `list[str]` | User-defined variables as `key=value` strings, accessible via `context.config.userdata` |
+| `on_progress` | `Optional[Callable[[ProgressEvent], None]]` | Optional callback invoked after each scenario completes. Works in both parallel and non-parallel modes. Exceptions inside the callback are silently swallowed and never affect the exit code. |
 
 ### `.run()` → `RunResult`
 
@@ -77,9 +78,44 @@ result1 = runner.run()  # run_id: "a1b2c3d4-..."
 result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
 ```
 
+### `.stop()`
+
+Signals the active parallel executor to stop accepting new work. Must be called from a separate thread, since `.run()` blocks the calling thread.
+
+Has no effect in single-process mode or when called outside an active run.
+
+```python
+import threading
+from behavex import BehaveXRunner
+
+runner = BehaveXRunner(
+    paths=["tests/features"],
+    parallel_processes=4,
+    parallel_scheme="scenario",
+)
+
+# Stop execution after 30 seconds from a background thread
+timer = threading.Timer(30, runner.stop)
+timer.start()
+result = runner.run()
+timer.cancel()
+```
+
 ## Result Models
 
 All models are Pydantic `BaseModel` instances with `extra='ignore'` — unknown fields from `report.json` are silently dropped for forward compatibility.
+
+### `ProgressEvent`
+
+Delivered to the `on_progress` callback after each scenario completes.
+
+| Field | Type | Description |
+|---|---|---|
+| `scenario_name` | `str` | Name of the completed scenario |
+| `feature_name` | `str` | Name of the feature that owns the scenario |
+| `status` | `str` | `'passed'`, `'failed'`, or `'skipped'` |
+| `duration` | `float` | Scenario execution time in seconds |
+| `completed` | `int` | How many scenarios have completed so far in this run (monotonically increasing) |
 
 ### `RunResult`
 
@@ -237,3 +273,21 @@ if not result.passed:
         output_folder="output/rerun",
     ).run()
 ```
+
+### Stream real-time progress with on_progress
+
+```python
+from behavex import BehaveXRunner, ProgressEvent
+
+def handle_progress(event: ProgressEvent) -> None:
+    print(f"[{event.completed}] {event.status}: {event.feature_name} / {event.scenario_name}")
+
+result = BehaveXRunner(
+    paths=["tests/features"],
+    parallel_processes=4,
+    parallel_scheme="scenario",
+    on_progress=handle_progress,
+).run()
+```
+
+The callback fires after every scenario in both parallel and non-parallel modes. Any exception raised inside the callback is silently ignored — it never affects the run or its exit code.

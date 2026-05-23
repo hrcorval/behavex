@@ -369,7 +369,17 @@ def after_scenario(context, scenario):
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
 
-
+        try:
+            from behavex import runner as _runner
+            if _runner._progress_callback is not None and not _runner._is_parallel_run:
+                _runner._fire_progress(
+                    scenario_name=scenario.name,
+                    feature_name=scenario.feature.name,
+                    status=scenario.status if isinstance(scenario.status, str) else scenario.status.name,
+                    duration=scenario.duration or 0.0,
+                )
+        except Exception:
+            pass
 
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)

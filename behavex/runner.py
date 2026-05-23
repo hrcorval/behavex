@@ -32,7 +32,7 @@ from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 # Third-party imports
 from behave.configuration import Configuration
@@ -85,6 +85,34 @@ EXECUTION_BLOCKED_MSG = (
 
 os.environ.setdefault('EXECUTION_CODE', '1')
 match_include = None
+
+# Progress callback state — set by BehaveXRunner.run(), cleared in finally block.
+_progress_callback: Optional[Callable] = None
+_completed_count: int = 0
+_is_parallel_run: bool = False
+# Active executor — stored so BehaveXRunner.stop() can shut it down from another thread.
+_active_executor: Optional[ProcessPoolExecutor] = None
+
+
+def _fire_progress(scenario_name: str, feature_name: str, status: str, duration: float) -> None:
+    """Fire the progress callback if one is registered. Never raises."""
+    global _completed_count
+    if _progress_callback is None:
+        return
+    try:
+        from behavex.models import ProgressEvent
+        _completed_count += 1
+        _progress_callback(ProgressEvent(
+            scenario_name=scenario_name,
+            feature_name=feature_name,
+            status=status,
+            duration=duration,
+            completed=_completed_count,
+        ))
+    except Exception:
+        pass
+
+
 include_path_match = None
 include_name_match = None
 
@@ -238,12 +266,13 @@ def launch_behavex():
         parallel_processes = get_param('parallel_processes')
         parallel_processes = 1 if parallel_processes <= 1 else parallel_processes
         show_progress_bar = get_param('show_progress_bar')
-    multiprocess = (
+    global _is_parallel_run
+    _is_parallel_run = (
         True
         if parallel_processes > 1 and not get_param('dry_run')
         else False
     )
-    if multiprocess:
+    if _is_parallel_run:
         _warn_parallel_incompatible_params()
     set_behave_tags()
     bhx_context = BehaveXContext()
@@ -268,7 +297,7 @@ def launch_behavex():
     for path in features_path.split(','):
         features_list[path] = explore_features(path)
     updated_features_list = create_scenario_line_references(features_list)
-    parallel_scheme = '' if not multiprocess else parallel_scheme
+    parallel_scheme = '' if not _is_parallel_run else parallel_scheme
     manager = multiprocessing.Manager()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
@@ -279,15 +308,16 @@ def launch_behavex():
     for i in range(parallel_processes):
         idQueue.put(i)
     parallel_delay = get_param('parallel_delay')
-    process_pool = ProcessPoolExecutor(max_workers=parallel_processes,
-                                       initializer=init_multiprocessing,
-                                       initargs=(idQueue, parallel_delay))
+    global _active_executor
+    _active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
+                                           initializer=init_multiprocessing,
+                                           initargs=(idQueue, parallel_delay))
     global_vars.execution_start_time = time.time()
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
     failures = []  # Initialize before try block to ensure it's always defined
     # a single behave process prints its own summary, but none runs when nothing matched
-    print_summary = multiprocess
+    print_summary = _is_parallel_run
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -313,17 +343,17 @@ def launch_behavex():
                 print_summary = not get_param('dry_run')
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
-                                                            process_pool,
+                                                            _active_executor,
                                                             lock,
                                                             shared_removed_scenarios,
                                                             show_progress_bar)
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(updated_features_list,
-                                                            process_pool,
+                                                            _active_executor,
                                                             lock,
                                                             show_progress_bar)
-        merged_json = wrap_up_process_pools(process_pool, json_reports, scenario)
+        merged_json = wrap_up_process_pools(_active_executor, json_reports, scenario)
 
         if get_param('dry_run'):
             print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
@@ -389,11 +419,14 @@ def launch_behavex():
                 for process in active_children():  # Terminate all active child processes
                     process.terminate()  # Forcefully terminate each process
                 time.sleep(1)
-            process_pool.shutdown(wait=False)
+            if _active_executor is not None:
+                _active_executor.shutdown(wait=False)
         except Exception as e:
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
     finally:
+        _active_executor = None
+        _is_parallel_run = False
         if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
             exit_code = EXIT_ERROR
     _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json))
