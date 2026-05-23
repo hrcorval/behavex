@@ -256,10 +256,10 @@ sys.modules['pydantic'] = None
 
 
 def _run_without_pydantic(script_body: str) -> subprocess.CompletedProcess:
-    """Run a Python snippet in a subprocess with pydantic blocked."""
+    """Run a Python snippet in a subprocess with pydantic blocked via sys.modules."""
     script = _BLOCK_PYDANTIC_SCRIPT.format(body=script_body)
     return subprocess.run(
-        ['uv', 'run', 'python', '-c', script],
+        [sys.executable, '-c', script],
         capture_output=True,
         text=True,
         cwd=root_project_path,
