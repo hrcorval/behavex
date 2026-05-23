@@ -1470,7 +1470,7 @@ def _store_tags_to_env_variable(tags):
     # Without this, repeated runs in the same process accumulate tags and
     # corrupt the reporting filter, causing summary counts to be zero and
     # eventually producing SyntaxError from eval() in match_for_execution_v1.
-    set_env('tags', '')
+    ConfigRun().set_env('tags', '')
     os.environ.pop('TAGS', None)
     if tags:
         set_env_variable('TAGS', ';'.join(tags))
