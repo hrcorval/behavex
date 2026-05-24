@@ -69,28 +69,38 @@ class ScenarioResult(BaseModel):
     worker_id: str = ''
 
     @property
-    def is_not_automated(self) -> bool:
-        """@MANUAL or @WIP tag: scenario is not automated and never executes."""
+    def is_manual(self) -> bool:
+        """@MANUAL or @WIP tag: scenario is not automated."""
         return 'MANUAL' in self.tags or 'WIP' in self.tags
+
+    # ------------------------------------------------------------------
+    # Non-overlapping outcome properties — manual takes priority so that
+    # passed + failed + error + skipped + untested + manual == total.
+    # ------------------------------------------------------------------
 
     @property
     def passed(self) -> bool:
-        return self.status == 'passed'
+        return self.status == 'passed' and not self.is_manual
 
     @property
     def failed(self) -> bool:
-        return self.status in _FAILED_STATUSES
+        return self.status == 'failed' and not self.is_manual
+
+    @property
+    def errored(self) -> bool:
+        return self.status == 'error' and not self.is_manual
 
     @property
     def skipped(self) -> bool:
-        """Not executed for a runtime reason (conditional skip, --stop, undefined step).
-        Excludes @MANUAL/@WIP scenarios which are counted separately as not_automated."""
-        return self.status not in _FAILED_STATUSES and self.status != 'passed' and not self.is_not_automated
+        return self.status == 'skipped' and not self.is_manual
 
     @property
-    def not_automated(self) -> bool:
-        """@MANUAL or @WIP: appears in the report but is never executed."""
-        return self.is_not_automated
+    def untested(self) -> bool:
+        return self.status == 'untested' and not self.is_manual
+
+    @property
+    def manual(self) -> bool:
+        return self.is_manual
 
 
 class FeatureResult(BaseModel):
@@ -122,8 +132,10 @@ class RunSummary(BaseModel):
     total: int
     passed: int
     failed: int
-    skipped: int
-    not_automated: int = 0
+    error: int = 0
+    skipped: int = 0
+    untested: int = 0
+    manual: int = 0
 
 
 class RunResult(BaseModel):
@@ -140,17 +152,16 @@ class RunResult(BaseModel):
 
     @property
     def summary(self) -> RunSummary:
-        """Non-overlapping counts that always sum to total.
-
-        passed + failed + skipped + not_automated == total
-        """
+        """Non-overlapping counts: passed + failed + error + skipped + untested + manual == total."""
         scenarios = [s for f in self.features for s in f.scenarios]
         return RunSummary(
             total=len(scenarios),
             passed=sum(1 for s in scenarios if s.passed),
             failed=sum(1 for s in scenarios if s.failed),
+            error=sum(1 for s in scenarios if s.errored),
             skipped=sum(1 for s in scenarios if s.skipped),
-            not_automated=sum(1 for s in scenarios if s.not_automated),
+            untested=sum(1 for s in scenarios if s.untested),
+            manual=sum(1 for s in scenarios if s.manual),
         )
 
     @property
