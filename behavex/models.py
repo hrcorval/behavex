@@ -66,10 +66,6 @@ class ScenarioResult(BaseModel):
     worker_id: str = ''
 
     @property
-    def is_manual(self) -> bool:
-        return 'MANUAL' in self.tags
-
-    @property
     def passed(self) -> bool:
         return self.status == 'passed'
 
@@ -78,12 +74,8 @@ class ScenarioResult(BaseModel):
         return self.status == 'failed'
 
     @property
-    def errored(self) -> bool:
-        return self.status == 'error'
-
-    @property
     def skipped(self) -> bool:
-        return self.status == 'skipped' and not self.is_manual
+        return self.status == 'skipped'
 
 
 class FeatureResult(BaseModel):
@@ -114,9 +106,7 @@ class RunSummary(BaseModel):
     total: int
     passed: int
     failed: int
-    errored: int = 0
     skipped: int
-    manual: int = 0
 
 
 class RunResult(BaseModel):
@@ -136,11 +126,9 @@ class RunResult(BaseModel):
         scenarios = [s for f in self.features for s in f.scenarios]
         return RunSummary(
             total=len(scenarios),
-            passed=sum(1 for s in scenarios if s.passed),
-            failed=sum(1 for s in scenarios if s.failed),
-            errored=sum(1 for s in scenarios if s.errored),
-            skipped=sum(1 for s in scenarios if s.skipped),
-            manual=sum(1 for s in scenarios if s.is_manual),
+            passed=sum(1 for s in scenarios if s.status == 'passed'),
+            failed=sum(1 for s in scenarios if s.status == 'failed'),
+            skipped=sum(1 for s in scenarios if s.status == 'skipped'),
         )
 
     @property
