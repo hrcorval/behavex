@@ -6,6 +6,14 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+# Behave statuses that indicate an unexpected exception rather than an assertion failure.
+# hook_error: exception in a before/after hook
+# cleanup_error: exception during teardown
+_ERROR_STATUSES = frozenset({'error', 'hook_error', 'cleanup_error'})
+
+# Statuses that mean the scenario never actually ran.
+_UNTESTED_STATUSES = frozenset({'untested', 'untested_pending', 'untested_undefined', 'undefined'})
+
 
 class ProgressEvent(BaseModel):
     model_config = ConfigDict(extra='ignore')
@@ -70,20 +78,38 @@ class ScenarioResult(BaseModel):
         return 'MANUAL' in self.tags
 
     @property
+    def is_muted(self) -> bool:
+        """Scenarios tagged @MUTE are silenced — failures don't affect the exit code."""
+        return 'MUTE' in self.tags
+
+    @property
     def passed(self) -> bool:
         return self.status == 'passed'
 
     @property
     def failed(self) -> bool:
-        return self.status == 'failed'
+        """Assertion failure, not silenced by @MUTE."""
+        return self.status == 'failed' and not self.is_muted
 
     @property
     def errored(self) -> bool:
-        return self.status == 'error'
+        """Unexpected exception (error/hook_error/cleanup_error), not silenced by @MUTE."""
+        return self.status in _ERROR_STATUSES and not self.is_muted
+
+    @property
+    def muted(self) -> bool:
+        """Failed or errored scenario whose failures are silenced by @MUTE."""
+        return self.is_muted and (self.status == 'failed' or self.status in _ERROR_STATUSES)
 
     @property
     def skipped(self) -> bool:
+        """Programmatically skipped via context.scenario.skip(), not a @MANUAL scenario."""
         return self.status == 'skipped' and not self.is_manual
+
+    @property
+    def untested(self) -> bool:
+        """Never executed — stopped before reaching this scenario, or step undefined."""
+        return self.status in _UNTESTED_STATUSES
 
 
 class FeatureResult(BaseModel):
@@ -105,7 +131,17 @@ class FeatureResult(BaseModel):
 
     @property
     def failed_scenarios(self) -> List[ScenarioResult]:
-        return [s for s in self.scenarios if s.status == 'failed']
+        """Assertion failures only, excluding muted."""
+        return [s for s in self.scenarios if s.failed]
+
+    @property
+    def errored_scenarios(self) -> List[ScenarioResult]:
+        """Unexpected exceptions only, excluding muted."""
+        return [s for s in self.scenarios if s.errored]
+
+    @property
+    def muted_scenarios(self) -> List[ScenarioResult]:
+        return [s for s in self.scenarios if s.muted]
 
 
 class RunSummary(BaseModel):
@@ -117,6 +153,8 @@ class RunSummary(BaseModel):
     errored: int = 0
     skipped: int
     manual: int = 0
+    muted: int = 0
+    untested: int = 0
 
 
 class RunResult(BaseModel):
@@ -141,8 +179,21 @@ class RunResult(BaseModel):
             errored=sum(1 for s in scenarios if s.errored),
             skipped=sum(1 for s in scenarios if s.skipped),
             manual=sum(1 for s in scenarios if s.is_manual),
+            muted=sum(1 for s in scenarios if s.muted),
+            untested=sum(1 for s in scenarios if s.untested),
         )
 
     @property
     def failed_scenarios(self) -> List[ScenarioResult]:
+        """Assertion failures only, excluding muted."""
         return [s for f in self.features for s in f.failed_scenarios]
+
+    @property
+    def errored_scenarios(self) -> List[ScenarioResult]:
+        """Unexpected exceptions only, excluding muted."""
+        return [s for f in self.features for s in f.errored_scenarios]
+
+    @property
+    def muted_scenarios(self) -> List[ScenarioResult]:
+        """Failed or errored scenarios silenced by @MUTE."""
+        return [s for f in self.features for s in f.muted_scenarios]
