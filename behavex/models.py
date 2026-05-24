@@ -6,6 +6,9 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+# Statuses BehaveX treats as execution failures (maps to HTML report "Failed" column).
+_FAILED_STATUSES = frozenset({'failed', 'error'})
+
 
 class ProgressEvent(BaseModel):
     model_config = ConfigDict(extra='ignore')
@@ -66,16 +69,28 @@ class ScenarioResult(BaseModel):
     worker_id: str = ''
 
     @property
+    def is_not_automated(self) -> bool:
+        """@MANUAL or @WIP tag: scenario is not automated and never executes."""
+        return 'MANUAL' in self.tags or 'WIP' in self.tags
+
+    @property
     def passed(self) -> bool:
         return self.status == 'passed'
 
     @property
     def failed(self) -> bool:
-        return self.status == 'failed'
+        return self.status in _FAILED_STATUSES
 
     @property
     def skipped(self) -> bool:
-        return self.status == 'skipped'
+        """Not executed for a runtime reason (conditional skip, --stop, undefined step).
+        Excludes @MANUAL/@WIP scenarios which are counted separately as not_automated."""
+        return self.status not in _FAILED_STATUSES and self.status != 'passed' and not self.is_not_automated
+
+    @property
+    def not_automated(self) -> bool:
+        """@MANUAL or @WIP: appears in the report but is never executed."""
+        return self.is_not_automated
 
 
 class FeatureResult(BaseModel):
@@ -97,7 +112,8 @@ class FeatureResult(BaseModel):
 
     @property
     def failed_scenarios(self) -> List[ScenarioResult]:
-        return [s for s in self.scenarios if s.status == 'failed']
+        """All scenarios that broke (failed or error), including muted ones."""
+        return [s for s in self.scenarios if s.status in _FAILED_STATUSES]
 
 
 class RunSummary(BaseModel):
@@ -107,6 +123,7 @@ class RunSummary(BaseModel):
     passed: int
     failed: int
     skipped: int
+    not_automated: int = 0
 
 
 class RunResult(BaseModel):
@@ -123,14 +140,20 @@ class RunResult(BaseModel):
 
     @property
     def summary(self) -> RunSummary:
+        """Non-overlapping counts that always sum to total.
+
+        passed + failed + skipped + not_automated == total
+        """
         scenarios = [s for f in self.features for s in f.scenarios]
         return RunSummary(
             total=len(scenarios),
-            passed=sum(1 for s in scenarios if s.status == 'passed'),
-            failed=sum(1 for s in scenarios if s.status == 'failed'),
-            skipped=sum(1 for s in scenarios if s.status == 'skipped'),
+            passed=sum(1 for s in scenarios if s.passed),
+            failed=sum(1 for s in scenarios if s.failed),
+            skipped=sum(1 for s in scenarios if s.skipped),
+            not_automated=sum(1 for s in scenarios if s.not_automated),
         )
 
     @property
     def failed_scenarios(self) -> List[ScenarioResult]:
+        """All scenarios that broke (failed or error), including muted ones."""
         return [s for f in self.features for s in f.failed_scenarios]
