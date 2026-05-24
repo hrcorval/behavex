@@ -88,19 +88,18 @@ class ScenarioResult(BaseModel):
 
     @property
     def failed(self) -> bool:
-        """Assertion failure. Includes @MUTE scenarios — use .muted to check if suppressed."""
-        return self.status == 'failed' and not self.is_muted  # muted counted separately
+        """Assertion failure, not silenced by @MUTE."""
+        return self.status == 'failed' and not self.is_muted
 
     @property
     def errored(self) -> bool:
-        """Unexpected exception (error/hook_error/cleanup_error)."""
-        return self.status in _ERROR_STATUSES
+        """Unexpected exception (error/hook_error/cleanup_error), not silenced by @MUTE."""
+        return self.status in _ERROR_STATUSES and not self.is_muted
 
     @property
     def muted(self) -> bool:
-        """Assertion failure silenced by @MUTE (status=failed + MUTE tag).
-        Matches BehaveX's own HTML report definition: only failed+MUTE, not error+MUTE."""
-        return self.is_muted and self.status == 'failed'
+        """Failed or errored scenario whose failures are silenced by @MUTE."""
+        return self.is_muted and (self.status == 'failed' or self.status in _ERROR_STATUSES)
 
     @property
     def skipped(self) -> bool:
