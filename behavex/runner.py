@@ -349,7 +349,7 @@ def launch_behavex():
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
-                    elif scenario['status'] == 'error' or scenario['status'] == 'undefined':
+                    elif scenario['status'] in ('error', 'undefined', 'hook_error', 'cleanup_error'):
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -435,7 +435,7 @@ def print_execution_summary(totals, failures, results):
                     scenario_line = f"  {filename}:{scenario['line']}  {scenario['name']}"
                     if scenario['status'] == 'failed':
                         failed_scenarios.append(scenario_line)
-                    elif scenario['status'] in ['error', 'undefined']:
+                    elif scenario['status'] in ['error', 'undefined', 'hook_error', 'cleanup_error']:
                         errored_scenarios.append(scenario_line)
 
         # Print errored scenarios first (if any)
@@ -895,8 +895,21 @@ def execute_tests(
         execution_code, generate_report, json_results_str = _launch_behave(behave_args)
         # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
         if generate_report:
-            # print execution code
+            # execution_code == 2 flags a severe outcome (aborted run or a hook failure
+            # of any kind), but it does not by itself mean real results are unavailable:
+            # behave can complete normally and hand back correct per-scenario results
+            # even when one hook raised (e.g. a single scenario's before_scenario
+            # assertion - behave isolates that to just that scenario and keeps going).
+            # Only fall back to the synthetic "everything in this feature failed"
+            # skeleton when there are genuinely no real results to report (e.g. the
+            # runner itself crashed/aborted before producing any feature data).
+            has_real_results = False
             if execution_code == 2:
+                try:
+                    has_real_results = bool(json.loads(json_results_str).get('features'))
+                except (json.JSONDecodeError, ValueError):
+                    has_real_results = False
+            if execution_code == 2 and not has_real_results:
                 # For crashed executions, override with skeleton data if available
                 if feature_json_skeleton:
                     json_output = {'environment': [],
@@ -995,6 +1008,13 @@ def _calculate_execution_code_from_runner(runner):
             return 2  # Aborted execution
 
         # Check for hook failures using runner.hook_failures (more reliable than text parsing)
+        #
+        # NOTE: runner.hook_failures counts *any* hook exception (before_all,
+        # before_scenario, before_step, tag hooks, ...) alike, so execution_code 2 here
+        # does not necessarily mean the run crashed - behave may have completed normally
+        # with real, correct per-scenario results despite a hook failure (e.g. a single
+        # scenario's before_scenario assertion). See execute_tests()'s handling of
+        # execution_code == 2, which only discards real results when none were captured.
         if hasattr(runner, 'hook_failures') and runner.hook_failures > 0:
             return 2  # Hook failures
 
