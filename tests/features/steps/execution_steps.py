@@ -1075,12 +1075,15 @@ def then_html_report_has_no_stack_trace_markers(context):
 
 @when('I run the behavex command targeting the "{feature_path}" feature')
 @when('I run the behavex command targeting the "{feature_path}" feature with "{parallel_processes}" parallel processes')
-def when_run_with_feature_path(context, feature_path, parallel_processes='1'):
+@when('I run the behavex command targeting the "{feature_path}" feature with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
+def when_run_with_feature_path(context, feature_path, parallel_processes='1', parallel_scheme=None):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
                       os.path.join(tests_features_path, feature_path),
                       '--parallel-processes', parallel_processes,
                       '-o', context.output_path]
+    if parallel_scheme:
+        execution_args.extend(['--parallel-scheme', parallel_scheme])
     execute_command(context, execution_args)
 
 
