@@ -333,7 +333,7 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                elif feature['status'] == 'error' or feature['status'] == 'undefined':
+                elif feature['status'] in ('error', 'undefined', 'hook_error'):
                     totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
@@ -349,7 +349,7 @@ def launch_behavex():
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
                             failing_non_muted_tests = True
-                    elif scenario['status'] == 'error' or scenario['status'] == 'undefined':
+                    elif scenario['status'] in ('error', 'undefined', 'hook_error'):
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -474,6 +474,8 @@ def print_execution_summary(totals, failures, results):
                     step_status = step.get('status', 'skipped')
                     if step_status == 'undefined':
                         steps_totals['undefined'] += 1
+                    elif step_status == 'hook_error':
+                        steps_totals['error'] += 1
                     elif step_status in steps_totals:
                         steps_totals[step_status] += 1
                     else:
@@ -896,8 +898,15 @@ def execute_tests(
         # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
         if generate_report:
             # print execution code
-            if execution_code == 2:
-                # For crashed executions, override with skeleton data if available
+            # Parse JSON string from _launch_behave (disk-free approach); a hook failure (code 2) still has valid results
+            try:
+                json_output = json.loads(json_results_str)
+            except (json.JSONDecodeError, ValueError) as e:
+                logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
+                logging.error(f"Raw JSON string: {json_results_str}")
+                json_output = None
+            if execution_code == 2 and not (json_output and json_output.get('features')):
+                # Genuine crash with no usable results — fall back to skeleton data
                 if feature_json_skeleton:
                     json_output = {'environment': [],
                                    'features': [json.loads(feature_json_skeleton)],
@@ -916,15 +925,8 @@ def execute_tests(
                                 skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
                 else:
                     json_output = {'environment': [], 'features': [], 'steps_definition': []}
-            else:
-                # Parse JSON string from _launch_behave (disk-free approach)
-                try:
-                    json_output = json.loads(json_results_str)
-                except (json.JSONDecodeError, ValueError) as e:
-                    logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
-                    logging.error(f"Raw JSON string: {json_results_str}")
-                    # Fallback to empty structure
-                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
+            elif json_output is None:
+                json_output = {'environment': [], 'features': [], 'steps_definition': []}
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),
@@ -1066,6 +1068,11 @@ def _launch_behave(behave_args):
                 # Check if runner has features and they contain data
                 if runner and hasattr(runner, 'features') and runner.features:
                     feature_list = generate_execution_info(runner.features)
+                    if getattr(runner, 'aborted', False) and getattr(runner, 'hook_failures', 0) > 0:
+                        # before_all/after_all crashes leave features 'untested' instead of 'hook_error'
+                        for feature_info in feature_list:
+                            if feature_info['status'] == 'untested':
+                                feature_info['status'] = 'hook_error'
                     json_results = {
                         'environment': get_environment_details(),
                         'features': feature_list,

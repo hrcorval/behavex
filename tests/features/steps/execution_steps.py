@@ -283,6 +283,31 @@ def then_text_in_console(context, text):
         f"Expected '{text}' in console output, but it was not found.\nOutput:\n{context.result.stdout}"
 
 
+@then('I should see the overall status report shows "{expected_status}"')
+def then_overall_status_report_shows(context, expected_status):
+    status_path = os.path.join(context.output_path, 'overall_status.json')
+    assert os.path.exists(status_path), f"overall_status.json not found at {status_path}"
+    with open(status_path) as status_file:
+        overall_status = json.load(status_file)
+    assert overall_status.get('status') == expected_status, (
+        f"Expected overall_status.json status to be '{expected_status}', got {overall_status}"
+    )
+
+
+@then('I should see the feature status in the JSON report is "{expected_status}"')
+def then_feature_status_in_json_report(context, expected_status):
+    report_path = os.path.join(context.output_path, 'report.json')
+    assert os.path.exists(report_path), f"report.json not found at {report_path}"
+    with open(report_path) as report_file:
+        report = json.load(report_file)
+    assert report['features'], f"report.json contains no features: {report}"
+    for feature in report['features']:
+        assert feature['status'] == expected_status, (
+            f"Expected feature status '{expected_status}', got '{feature['status']}' "
+            f"for feature {feature['name']!r}"
+        )
+
+
 
 
 

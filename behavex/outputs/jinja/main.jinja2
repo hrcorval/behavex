@@ -263,7 +263,7 @@
                                         {# Collect scenarios by worker #}
                                         {%- for feature in features -%}
                                             {%- for scenario in feature.scenarios -%}
-                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.duration > 0 and scenario.status in ['passed', 'failed', 'error'] -%}
+                                                {%- if scenario.start is defined and scenario.duration is defined and scenario.duration > 0 and (scenario.status == 'passed' or scenario.status in failed_statuses) -%}
                                                     {%- set worker_id = scenario.worker_id|default('0') -%}
                                                     {%- set scenario_data = {
                                                         'name': scenario.name,
@@ -315,7 +315,7 @@
                                                             {%- set left_percent = (scenario_start_offset / timeline_duration * 100)|round(2) -%}
                                                             {%- set scenario_width_percent = (scenario.duration / timeline_duration * 100)|round(2) -%}
                                                             {%- set scenario_width_percent = [scenario_width_percent, 1.0]|max -%}
-                                                            {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in ['failed', 'error'] else ('skipped' if scenario.status == 'skipped' else ('untested' if scenario.status == 'untested' else 'skipped'))) -%}
+                                                            {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in failed_statuses else ('skipped' if scenario.status == 'skipped' else ('untested' if scenario.status == 'untested' else 'skipped'))) -%}
                                                             <div class="scenario-segment scenario-{{ status_class }}"
                                                                  style="position: absolute; left: {{ left_percent }}%; width: {{ scenario_width_percent }}%;"
                                                                  data-scenario-name="{{ scenario.name|e }}"
@@ -340,7 +340,7 @@
                                                                         <div class="timeline-summary">
                                         {%- if all_scenarios|length > 0 -%}
                                             {%- set passed_count = all_scenarios|selectattr("status", "equalto", "passed")|list|length -%}
-                                            {%- set failed_count = all_scenarios|selectattr("status", "in", ["failed", "error"])|list|length -%}
+                                            {%- set failed_count = all_scenarios|selectattr("status", "in", failed_statuses)|list|length -%}
                                             {%- set skipped_count = all_scenarios|selectattr("status", "equalto", "skipped")|list|length -%}
                                             {%- set untested_count = all_scenarios|selectattr("status", "equalto", "untested")|list|length -%}
                                             {%- set status_parts = [] -%}
@@ -505,8 +505,8 @@
                         <!-- scenario_hash has been forced to be a string -->
                         {%- set scenario_hash = scenario_hash|string -%}
                         {%- set scenario_tags = scenario|get_scenario_tags -%}
-                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status == 'failed' or scenario.status == 'error' or scenario.status == 'untested')) else False -%}
-                        {%- set scenario_crashed = True if ((scenario.status == 'failed' or scenario.status == 'error') and not scenario.error_background and not scenario.error_step) else False -%}
+                        {%- set scenario_background_failed = True if (scenario.error_background and (scenario.status in failed_statuses or scenario.status == 'untested')) else False -%}
+                        {%- set scenario_crashed = True if (scenario.status in failed_statuses and not scenario.error_background and not scenario.error_step) else False -%}
                         <tr class="table_row_commons behavex_letter feature-scenario text-center"
                                 data-scenario-tags="{{ scenario_tags|to_string_list }}">
                             <td class="text-left grey-behavex">
@@ -678,7 +678,7 @@
             </div>
 
             {% endif%}
-            {%- if step.status == 'failed' or step.status == 'error' or step.status == 'undefined' -%}
+            {%- if step.status in failed_statuses or step.status == 'undefined' -%}
                 <p class="p-step-error"><b>&nbsp;&nbsp;(Step {{step.status }})</b></p>
                  {%- set error_msg, error_lines, error_step = scenario|gather_errors(true) -%}
                  {%- if error_msg or error_lines -%}
