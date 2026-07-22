@@ -79,3 +79,22 @@ Feature: Crashing Tests
       | after_scenario  | 2                  | scenario        |
       | after_step      | 2                  | scenario        |
       | after_tag       | 2                  | scenario        |
+
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in "<behave_hook>" hook must not be reported as passed or skipped
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "<behave_hook>" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line                              |
+    | Exit code: 1                             |
+    And I should see the overall status report shows "failed"
+    And I should see the feature status in the JSON report is "hook_error"
+    Examples:
+      | behave_hook     | parallel_processes | parallel_scheme |
+      | before_all      | 1                  | scenario        |
+      | before_feature  | 1                  | scenario        |
+      | before_all      | 2                  | scenario        |
+      | before_feature  | 2                  | scenario        |
+      | before_all      | 2                  | feature         |
+      | before_feature  | 2                  | feature         |

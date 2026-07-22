@@ -57,14 +57,14 @@ def generate_execution_info(features):
                 scenarios = feature_scenario.scenarios
             else:
                 scenarios = [feature_scenario]
-            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None)[1]
+            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None)
         for rule in getattr(feature, 'rules', []):
             for rule_scenario in rule.scenarios:
                 if isinstance(rule_scenario, ScenarioOutline):
                     scenarios = rule_scenario.scenarios
                 else:
                     scenarios = [rule_scenario]
-                scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=rule.name)[1]
+                scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=rule.name)
 
         if scenario_list:
             feature_info = {}
@@ -151,7 +151,6 @@ def _processing_background_feature(feature):
 
 def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
     scenario_outline_index = 0
-    overall_status = 'passed'
     is_dry_run = get_param('dry_run')
     for scenario in scenarios:
         # Remove BHX_MANUAL_DRY_RUN tag if it is a dry run
@@ -197,12 +196,6 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
                 add_step_info(step, steps)
             scenario_info['steps'] = steps
             scenario_info['outline_index'] = scenario_outline_index
-            if scenario_info['status'] in ['failed', 'error']:
-                # Prioritize error status over failed status for features
-                if scenario_info['status'] == 'error':
-                    overall_status = 'error'
-                elif overall_status not in ['error']:  # Only set to failed if not already error
-                    overall_status = 'failed'
             scenario_outline_index += 1
             scenario_info['background'] = _processing_background(scenario)
             scenario_info['error_msg'] = error_msg
@@ -222,7 +215,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
                     scenario_info['retried'] = True
 
             scenario_list.append(scenario_info)
-    return overall_status, scenario_list
+    return scenario_list
 
 
 def _get_error_scenario(scenario):

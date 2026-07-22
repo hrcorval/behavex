@@ -43,6 +43,9 @@ except ImportError:
 from behavex.conf_mgr import get_env, get_param, set_env
 from behavex.global_vars import global_vars
 
+# Statuses that count as a failed outcome, including hook crashes (Status.hook_error)
+FAILED_STATUSES = {'failed', 'error', 'hook_error'}
+
 
 def gather_steps_with_definition(features, steps_definition):
     all_steps = []
@@ -92,7 +95,7 @@ def get_summary_definition(steps):
         appearances += step_instanced['appearances']
         if 'passed' in step_instanced['status']:
             any_status_passed = True
-        elif 'failed' in step_instanced['status'] or 'error' in step_instanced['status']:
+        elif FAILED_STATUSES.intersection(step_instanced['status']):
             any_status_failed = True
     if any_status_failed:
         result['overall_status'] = 'failed'
@@ -119,9 +122,12 @@ def calculate_status(list_status):
     if 'undefined' in set_status:
         set_status.remove('undefined')
         set_status.add('skipped')
-    # Handle 'error' status as 'failed' for color calculation
+    # Handle 'error' and 'hook_error' statuses as 'failed' for color calculation
     if 'error' in set_status:
         set_status.remove('error')
+        set_status.add('failed')
+    if 'hook_error' in set_status:
+        set_status.remove('hook_error')
         set_status.add('failed')
     if 'failed' in set_status:
         return 'failed'
@@ -268,11 +274,9 @@ def retry_file_operation(dest_path, execution, return_value=False):
 
 
 def get_status(dictionary):
-    return (
-        dictionary.get('failed', False)
-        or dictionary.get('passed', False)
-        or dictionary.get('skipped', 'skipped')
-    )
+    if any(dictionary.get(status, False) for status in FAILED_STATUSES):
+        return 'failed'
+    return dictionary.get('passed', False) or dictionary.get('skipped', 'skipped')
 
 
 def get_test_execution_tags():
