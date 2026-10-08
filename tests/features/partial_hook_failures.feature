@@ -1,8 +1,5 @@
 Feature: Partial hook failures under parallel-scheme feature
 
-  # Regression test for: a single scenario's before_scenario hook failure
-  # incorrectly failed every other scenario in the same feature when running
-  # with `--parallel-scheme feature` and more than one worker process.
   @PARALLEL
   Scenario: A scenario's hook failure must not fail its siblings in the same feature
     Given I have installed behavex

@@ -79,3 +79,19 @@ Feature: Crashing Tests
       | after_scenario  | 2                  | scenario        |
       | after_step      | 2                  | scenario        |
       | after_tag       | 2                  | scenario        |
+
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in "<behave_hook>" hook should report the scenario as failed with "<parallel_scheme>" parallel scheme
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "<behave_hook>" hook with "2" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line                             |
+    | 0 scenarios passed, 1 failed, 0 skipped |
+    | Exit code: 1                            |
+    Examples:
+      | behave_hook    | parallel_scheme |
+      | before_all     | scenario        |
+      | before_all     | feature         |
+      | before_feature | scenario        |
+      | before_feature | feature         |

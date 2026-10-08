@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **A `before_scenario` hook failure marked every scenario in the feature as failed under `--parallel-scheme feature`** ([#249](https://github.com/hrcorval/behavex/pull/249)) — A hook failure no longer replaces the real per-scenario results with the crash skeleton when behave produced them, and scenarios with behave's `hook_error`/`cleanup_error` status are now counted as failures in the console summary.
+
+### Contributors
+- Thanks to [@taltal-beep](https://github.com/taltal-beep) for the fix and the regression test ([PR #249](https://github.com/hrcorval/behavex/pull/249)).
+
+---
+
 ## [4.6.5] - 2026-05-22
 
 ### Fixed
