@@ -76,6 +76,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
 
 EXIT_OK = 0
 EXIT_ERROR = 1
+ERROR_STATUSES = ('error', 'undefined', 'hook_error', 'cleanup_error')
 EXECUTION_BLOCKED_MSG = (
     'Some of the folders or files are being used by another '
     'program. Please, close them and try again...'
@@ -344,12 +345,7 @@ def launch_behavex():
                     totals['scenarios']['skipped'] += len(feature['scenarios'])
                     continue
                 for scenario in feature['scenarios']:
-                    if scenario['status'] == 'failed':
-                        totals['scenarios']['failed'] += 1
-                        failures.append('{}:{}'.format(filename, scenario['line']))
-                        if 'MUTE' not in scenario['tags']:
-                            failing_non_muted_tests = True
-                    elif scenario['status'] in ('error', 'undefined', 'hook_error', 'cleanup_error'):
+                    if scenario['status'] == 'failed' or scenario['status'] in ERROR_STATUSES:
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -435,7 +431,7 @@ def print_execution_summary(totals, failures, results):
                     scenario_line = f"  {filename}:{scenario['line']}  {scenario['name']}"
                     if scenario['status'] == 'failed':
                         failed_scenarios.append(scenario_line)
-                    elif scenario['status'] in ['error', 'undefined', 'hook_error', 'cleanup_error']:
+                    elif scenario['status'] in ERROR_STATUSES:
                         errored_scenarios.append(scenario_line)
 
         # Print errored scenarios first (if any)
@@ -895,21 +891,15 @@ def execute_tests(
         execution_code, generate_report, json_results_str = _launch_behave(behave_args)
         # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
         if generate_report:
-            # execution_code == 2 flags a severe outcome (aborted run or a hook failure
-            # of any kind), but it does not by itself mean real results are unavailable:
-            # behave can complete normally and hand back correct per-scenario results
-            # even when one hook raised (e.g. a single scenario's before_scenario
-            # assertion - behave isolates that to just that scenario and keeps going).
-            # Only fall back to the synthetic "everything in this feature failed"
-            # skeleton when there are genuinely no real results to report (e.g. the
-            # runner itself crashed/aborted before producing any feature data).
-            has_real_results = False
-            if execution_code == 2:
-                try:
-                    has_real_results = bool(json.loads(json_results_str).get('features'))
-                except (json.JSONDecodeError, ValueError):
-                    has_real_results = False
-            if execution_code == 2 and not has_real_results:
+            # Parse JSON string from _launch_behave (disk-free approach)
+            try:
+                json_output = json.loads(json_results_str)
+            except (json.JSONDecodeError, ValueError) as e:
+                logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
+                logging.error(f"Raw JSON string: {json_results_str}")
+                json_output = {'environment': [], 'features': [], 'steps_definition': []}
+            # A hook failure also yields code 2, but behave may still have produced real results
+            if execution_code == 2 and not json_output.get('features'):
                 # For crashed executions, override with skeleton data if available
                 if feature_json_skeleton:
                     json_output = {'environment': [],
@@ -928,15 +918,6 @@ def execute_tests(
                                 skeleton_scenario['status'] = 'failed'
                                 skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
                 else:
-                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
-            else:
-                # Parse JSON string from _launch_behave (disk-free approach)
-                try:
-                    json_output = json.loads(json_results_str)
-                except (json.JSONDecodeError, ValueError) as e:
-                    logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
-                    logging.error(f"Raw JSON string: {json_results_str}")
-                    # Fallback to empty structure
                     json_output = {'environment': [], 'features': [], 'steps_definition': []}
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
@@ -1008,13 +989,6 @@ def _calculate_execution_code_from_runner(runner):
             return 2  # Aborted execution
 
         # Check for hook failures using runner.hook_failures (more reliable than text parsing)
-        #
-        # NOTE: runner.hook_failures counts *any* hook exception (before_all,
-        # before_scenario, before_step, tag hooks, ...) alike, so execution_code 2 here
-        # does not necessarily mean the run crashed - behave may have completed normally
-        # with real, correct per-scenario results despite a hook failure (e.g. a single
-        # scenario's before_scenario assertion). See execute_tests()'s handling of
-        # execution_code == 2, which only discards real results when none were captured.
         if hasattr(runner, 'hook_failures') and runner.hook_failures > 0:
             return 2  # Hook failures
 
