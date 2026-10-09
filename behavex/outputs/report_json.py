@@ -250,6 +250,8 @@ def _get_error_scenario(scenario):
                 error_lines = failing_step['error_lines']
             error_background = False
             break
+    if not error_msg and getattr(scenario, 'hook_failed', False) and scenario.error_message:
+        error_msg = scenario.error_message.splitlines()
     return error_msg, error_lines, failing_step, error_background
 
 

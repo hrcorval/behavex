@@ -1248,6 +1248,16 @@ def then_junit_xml_failing_scenarios(context, count):
         f"Expected {count} JUnit testcases with a <failure> element, found {len(failing)}"
 
 
+@then('I should see the error message of every failed scenario in the JSON report contains "{text}"')
+def then_json_failed_scenarios_error_msg_contains(context, text):
+    failed = [scenario for feature in _load_json_report(context)['features']
+              for scenario in feature['scenarios'] if scenario['status'] in ('failed', 'error')]
+    assert failed, "No failed scenarios found in JSON report"
+    for scenario in failed:
+        assert text in '\n'.join(scenario.get('error_msg') or []), \
+            f"Scenario '{scenario['name']}' error_msg does not contain '{text}': {scenario.get('error_msg')}"
+
+
 @then('I should see the JSON report contains error information for failed scenarios')
 def then_json_failing_scenarios_have_error_info(context):
     data = _load_json_report(context)

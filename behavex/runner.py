@@ -76,7 +76,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
 
 EXIT_OK = 0
 EXIT_ERROR = 1
-SCENARIO_ERROR_STATUSES = ('error', 'undefined')
+ERROR_OR_UNDEFINED_STATUSES = ('error', 'undefined')
 EXECUTION_BLOCKED_MSG = (
     'Some of the folders or files are being used by another '
     'program. Please, close them and try again...'
@@ -334,7 +334,7 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                elif feature['status'] in SCENARIO_ERROR_STATUSES:
+                elif feature['status'] in ERROR_OR_UNDEFINED_STATUSES:
                     totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
@@ -345,7 +345,7 @@ def launch_behavex():
                     totals['scenarios']['skipped'] += len(feature['scenarios'])
                     continue
                 for scenario in feature['scenarios']:
-                    if scenario['status'] == 'failed' or scenario['status'] in SCENARIO_ERROR_STATUSES:
+                    if scenario['status'] == 'failed' or scenario['status'] in ERROR_OR_UNDEFINED_STATUSES:
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -436,7 +436,7 @@ def print_execution_summary(totals, failures, results):
                     scenario_line = f"  {filename}:{scenario['line']}  {scenario['name']}"
                     if scenario['status'] == 'failed':
                         failed_scenarios.append(scenario_line)
-                    elif scenario['status'] in SCENARIO_ERROR_STATUSES:
+                    elif scenario['status'] in ERROR_OR_UNDEFINED_STATUSES:
                         errored_scenarios.append(scenario_line)
 
         # Print errored scenarios first (if any)

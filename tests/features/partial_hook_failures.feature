@@ -12,6 +12,7 @@ Feature: Partial hook failures under parallel-scheme feature
     And I should see all scenario statuses in the JSON report are valid strings
     And I should see "1" failing scenarios in the JUnit XML report
     And I should see the overall status report shows "failed"
+    And I should see the error message of every failed scenario in the JSON report contains "HOOK-ERROR in before_scenario"
 
   Scenario: A scenario's hook failure must be reported with a valid allure status
     Given I have installed behavex
