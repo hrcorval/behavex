@@ -37,7 +37,7 @@ from typing import Any, Dict, Optional
 # Third-party imports
 from behave.configuration import Configuration
 from behave.model import Feature, Scenario, ScenarioOutline
-from behave.runner import Runner
+from behave.runner import ConfigError, Runner
 
 # Local imports
 # noinspection PyUnresolvedReferences
@@ -251,9 +251,13 @@ def launch_behavex():
     cwd = os.getcwd()
     if cwd not in sys.path:
         sys.path.insert(0, cwd)
-    bhx_before_workers_ok = False
-    _call_bhx_hook('before_all_workers', bhx_context)
-    bhx_before_workers_ok = True
+    # behave skips every hook on a dry run, so the worker hooks follow suit
+    run_worker_hooks = not get_param('dry_run')
+    if run_worker_hooks and not _call_bhx_hook('before_all_workers', bhx_context):
+        _call_bhx_hook('after_all_workers', bhx_context)
+        _write_overall_status('failed')
+        print('Exit code: {}'.format(EXIT_ERROR))
+        return EXIT_ERROR
     shared_data = bhx_context._to_dict()
     if shared_data:
         os.environ['BHX_SHARED_CONTEXT'] = json.dumps(shared_data)
@@ -374,11 +378,6 @@ def launch_behavex():
             and totals['scenarios']['error'] == 0
         )
         exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
-        if not get_param('no_report'):
-            overall_status = 'failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json)
-            status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
-            with open(status_path, 'w') as status_file:
-                status_file.write(json.dumps({'status': overall_status}))
     except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
@@ -391,8 +390,9 @@ def launch_behavex():
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
     finally:
-        if bhx_before_workers_ok:
-            _call_bhx_hook('after_all_workers', bhx_context)
+        if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
+            exit_code = EXIT_ERROR
+    _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json))
     if multiprocess:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
@@ -1296,41 +1296,52 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
             lock.release()
 
 
+def _write_overall_status(overall_status):
+    if get_param('no_report'):
+        return
+    status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
+    with open(status_path, 'w') as status_file:
+        status_file.write(json.dumps({'status': overall_status}))
+
+
 def _find_user_environment_path() -> Optional[str]:
-    """Return the path to the user's environment.py, or None if not found."""
-    features_path = os.environ.get('FEATURES_PATH', '')
-    for path in features_path.split(','):
-        path = path.strip()
-        if not path:
-            continue
-        candidate_dir = path if os.path.isdir(path) else os.path.dirname(path)
-        env_file = os.path.join(candidate_dir, 'environment.py')
-        if os.path.exists(env_file):
-            return env_file
-    return None
+    """Return the environment.py behave loads for FEATURES_PATH, or None if there is none."""
+    paths = [path.strip() for path in os.environ.get('FEATURES_PATH', '').split(',') if path.strip()]
+    config = Configuration(command_args=paths)
+    try:
+        Runner(config).setup_paths()
+    except ConfigError:
+        return None
+    env_file = os.path.join(config.base_dir, config.environment_file)
+    return env_file if os.path.isfile(env_file) else None
 
 
 _bhx_user_environment_module = None
 
 
-def _call_bhx_hook(hook_name: str, *args) -> None:
-    """Load the user's environment.py (cached) and call hook_name if defined."""
+def _call_bhx_hook(hook_name: str, *args) -> bool:
+    """Load the user's environment.py (cached) and call hook_name if defined.
+
+    Returns False when the hook raised, after reporting it the way behave reports a HOOK-ERROR.
+    """
     global _bhx_user_environment_module
     if _bhx_user_environment_module is None:
         env_path = _find_user_environment_path()
         if not env_path:
-            return
+            return True
         spec = importlib.util.spec_from_file_location('bhx_user_environment', env_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         _bhx_user_environment_module = module
+    hook_fn = getattr(_bhx_user_environment_module, hook_name, None)
+    if not callable(hook_fn):
+        return True
     try:
-        hook_fn = getattr(_bhx_user_environment_module, hook_name, None)
-        if callable(hook_fn):
-            hook_fn(*args)
+        hook_fn(*args)
     except Exception as ex:
-        logging.error(f"[BehaveX] Error in {hook_name}: {ex}")
-        raise
+        print(f'HOOK-ERROR in {hook_name}: {type(ex).__name__}: {ex}')
+        return False
+    return True
 
 
 def _set_env_variables(args):

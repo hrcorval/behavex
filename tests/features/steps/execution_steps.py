@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+import shlex
 import xml.etree.ElementTree as ET
 from packaging.version import Version
 import subprocess
@@ -679,7 +680,7 @@ def step_verify_images_in_allure_output(context):
         raise FileNotFoundError(f"Allure results directory not found: {allure_results_path}")
 
 
-def execute_command(context, execution_args, print_output=True):
+def execute_command(context, execution_args, print_output=True, env=None):
     if "progress_bar" in context and context.progress_bar:
         execution_args.insert(2, '--show-progress-bar')
     if hasattr(context, 'parallel_processes'):
@@ -687,7 +688,7 @@ def execute_command(context, execution_args, print_output=True):
     if hasattr(context, 'parallel_scheme'):
         execution_args += ['--parallel-scheme', context.parallel_scheme]
     logging.info("Executing command: {}".format(" ".join(execution_args)))
-    context.result = subprocess.run(execution_args, capture_output=True, text=True)
+    context.result = subprocess.run(execution_args, capture_output=True, text=True, env=env)
     if print_output:
         logging.info(context.result.stdout)
 
@@ -1308,19 +1309,6 @@ def then_json_count_matches_stored(context):
 
 # ---------- Worker Hooks Steps ----------
 
-@when('I run the behavex command targeting the worker hooks feature with "{parallel_processes}" parallel processes')
-def when_run_worker_hooks_feature(context, parallel_processes):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
-    execution_args = [
-        'behavex',
-        os.path.join(tests_features_path, 'worker_hooks_features'),
-        '-t', '@WORKER_HOOKS',
-        '-o', context.output_path,
-        '--parallel-processes', parallel_processes,
-    ]
-    execute_command(context, execution_args)
-
-
 @when('I run the behavex command targeting the invalid worker hooks feature')
 def when_run_invalid_worker_hooks_feature(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
@@ -1330,6 +1318,38 @@ def when_run_invalid_worker_hooks_feature(context):
         '-o', context.output_path,
     ]
     execute_command(context, execution_args)
+
+
+@when('I run the behavex command on the "{target}" worker hooks fixture with arguments "{arguments}"')
+def when_run_worker_hooks_fixture_with_arguments(context, target, arguments, env=None):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, target),
+        '-o', context.output_path,
+    ] + shlex.split(arguments)
+    execute_command(context, execution_args, env=env)
+
+
+@when('I run the behavex command on the "{target}" worker hooks fixture with "{variable}" set to "{value}" and arguments "{arguments}"')
+def when_run_worker_hooks_fixture_with_env_variable(context, target, variable, value, arguments):
+    env = os.environ.copy()
+    env[variable] = value
+    when_run_worker_hooks_fixture_with_arguments(context, target, arguments, env=env)
+
+
+@then('I should see the worker hook "{hook_name}" was called "{expected_calls}" times')
+def then_worker_hook_called_times(context, hook_name, expected_calls):
+    calls_path = os.path.join(context.output_path, 'worker_hook_calls.log')
+    recorded_calls = []
+    if os.path.exists(calls_path):
+        with open(calls_path) as calls_file:
+            recorded_calls = calls_file.read().split()
+    actual_calls = recorded_calls.count(hook_name)
+    assert actual_calls == int(expected_calls), (
+        f"Expected {hook_name} to be called {expected_calls} times, got {actual_calls}\n"
+        f"STDOUT:\n{context.result.stdout}"
+    )
 
 
 # ---------- No-Report Steps ----------
