@@ -16,7 +16,8 @@ import minify_html
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
-from behavex.outputs.report_utils import (gather_steps_with_definition,
+from behavex.outputs.report_utils import (FAILED_STATUSES,
+                                          gather_steps_with_definition,
                                           get_environment_details,
                                           get_save_function,
                                           retry_file_operation)
@@ -88,10 +89,11 @@ def _create_files_report(content_to_file):
 
 def get_metrics_variables(scenarios):
     skipped = sum(
-        scenario['status'] not in ['passed', 'failed', 'error'] for scenario in scenarios
+        scenario['status'] != 'passed' and scenario['status'] not in FAILED_STATUSES
+        for scenario in scenarios
     )
     passed = sum(scenario['status'] == 'passed' for scenario in scenarios)
-    failed = sum(scenario['status'] == 'failed' or scenario['status'] == 'error' for scenario in scenarios)
+    failed = sum(scenario['status'] in FAILED_STATUSES for scenario in scenarios)
     scenario_auto = [
         scenario
         for scenario in scenarios
@@ -192,7 +194,7 @@ def export_to_html_table_summary(features):
             if scenario['status'] == 'passed':
                 fields['Executed'] += 1
                 fields['Passed'] += 1
-            elif scenario['status'] == 'failed' or scenario['status'] == 'error':
+            elif scenario['status'] in FAILED_STATUSES:
                 fields['Executed'] += 1
                 fields['Failed'] += 1
             else:

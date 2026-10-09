@@ -334,7 +334,7 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                elif feature['status'] == 'error' or feature['status'] == 'undefined':
+                elif feature['status'] in ('error', 'undefined', 'hook_error'):
                     totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
@@ -470,6 +470,8 @@ def print_execution_summary(totals, failures, results):
                     step_status = step.get('status', 'skipped')
                     if step_status == 'undefined':
                         steps_totals['undefined'] += 1
+                    elif step_status == 'hook_error':
+                        steps_totals['error'] += 1
                     elif step_status in steps_totals:
                         steps_totals[step_status] += 1
                     else:
@@ -1062,6 +1064,11 @@ def _launch_behave(behave_args):
                 # Check if runner has features and they contain data
                 if runner and hasattr(runner, 'features') and runner.features:
                     feature_list = generate_execution_info(runner.features)
+                    if getattr(runner, 'aborted', False) and getattr(runner, 'hook_failures', 0) > 0:
+                        # before_all/after_all crashes leave features 'untested' instead of 'hook_error'
+                        for feature_info in feature_list:
+                            if feature_info['status'] == 'untested':
+                                feature_info['status'] = 'hook_error'
                     json_results = {
                         'environment': get_environment_details(),
                         'features': feature_list,

@@ -170,9 +170,12 @@ def join_scenario_reports(json_reports):
     for feature, status_ in status.items():
         skipped = all(st == 'skipped' for st in status_)
         failed = any(st == 'failed' for st in status_)
+        hook_error = any(st == 'hook_error' for st in status_)
         error = any(st == 'error' or st == 'undefined' for st in status_)
         if skipped:
             result[feature]['features'][0]['status'] = 'skipped'
+        elif hook_error:
+            result[feature]['features'][0]['status'] = 'hook_error'
         elif error:
             result[feature]['features'][0]['status'] = 'error'
         elif failed:
