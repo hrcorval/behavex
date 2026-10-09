@@ -334,7 +334,7 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                elif feature['status'] in ('error', 'undefined'):
+                elif feature['status'] in SCENARIO_ERROR_STATUSES:
                     totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
@@ -374,11 +374,11 @@ def launch_behavex():
             and totals['scenarios']['error'] == 0
         )
         exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
-        if exit_code == EXIT_ERROR and not get_param('no_report'):
-            # A crash outside any scenario (e.g. after_all) leaves every report passed
+        if not get_param('no_report'):
+            overall_status = 'failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json)
             status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
             with open(status_path, 'w') as status_file:
-                status_file.write(json.dumps({'status': 'failed'}))
+                status_file.write(json.dumps({'status': overall_status}))
     except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
@@ -1161,10 +1161,6 @@ def wrap_up_process_pools(process_pool,
     if global_vars.progress_bar_instance:
         global_vars.progress_bar_instance.finish()
     if not get_param('no_report'):
-        status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
-        with open(status_info, 'w') as file_info:
-            over_status = {'status': get_overall_status(merged_json)}
-            file_info.write(json.dumps(over_status))
         path_info = os.path.join(output, global_vars.report_filenames['report_json'])
         with open(path_info, 'w') as file_info:
             file_info.write(json.dumps(merged_json))
