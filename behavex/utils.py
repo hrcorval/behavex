@@ -684,7 +684,7 @@ class IncludeNameMatch(metaclass=ExecutionSingleton):
         return self.reg.pattern
 
     def match(self, scenario):
-        return not self.reg.match(scenario) is None
+        return self.reg.search(scenario) is not None
 
 
 def get_autoretry_attempts(tags):

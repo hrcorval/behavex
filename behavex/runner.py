@@ -285,6 +285,8 @@ def launch_behavex():
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
     failures = []  # Initialize before try block to ensure it's always defined
+    # a single behave process prints its own summary, but none runs when nothing matched
+    print_summary = multiprocess
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -307,6 +309,7 @@ def launch_behavex():
                                                                 shared_removed_scenarios=None)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
+                print_summary = not get_param('dry_run')
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                             process_pool,
@@ -393,7 +396,7 @@ def launch_behavex():
         if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
             exit_code = EXIT_ERROR
     _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json))
-    if multiprocess:
+    if print_summary:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))

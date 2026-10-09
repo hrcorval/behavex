@@ -132,9 +132,9 @@ Use `--tags @WIP` instead of `wip`. For fail-fast behaviour, combine `stop` with
 | `--logging-datefmt` | Custom log date format |
 | `--logging-filter` | Logging filter name |
 | `--lang` | Feature file language code (e.g. `es`, `fr`) |
-| `--stage` | Steps sub-directory stage prefix |
 
 ## Constraints
 
 - Not all Behave arguments are yet supported.
+- There is no `--stage` option. To use staged steps, set the `BEHAVE_STAGE` environment variable (e.g. `BEHAVE_STAGE=product` loads `product_steps/` and `product_environment.py`).
 - Parallel execution is implemented using concurrent Behave processes. Hook firing frequency varies by parallel scheme — see [Hooks in Parallel Execution](parallel-execution.md).
