@@ -76,7 +76,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
 
 EXIT_OK = 0
 EXIT_ERROR = 1
-SCENARIO_ERROR_STATUSES = ('error', 'undefined', 'hook_error', 'cleanup_error')
+SCENARIO_ERROR_STATUSES = ('error', 'undefined')
 EXECUTION_BLOCKED_MSG = (
     'Some of the folders or files are being used by another '
     'program. Please, close them and try again...'

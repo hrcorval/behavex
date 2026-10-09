@@ -30,6 +30,13 @@ from behavex.outputs.report_utils import (get_environment_details,
 from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
                            retry_file_operation)
 
+# Hook failure statuses from behave 1.2.7+; every report already handles 'error'
+HOOK_ERROR_STATUSES = ('hook_error', 'cleanup_error')
+
+
+def _normalize_status(status_name):
+    return 'error' if status_name in HOOK_ERROR_STATUSES else status_name
+
 
 def add_step_info(step, parent_node):
     index = len(parent_node)
@@ -70,7 +77,7 @@ def generate_execution_info(features):
             feature_info = {}
             for attrib in ('name', 'status', 'duration'):
                 value = getattr(feature, attrib)
-                value = value.name if attrib == 'status' else value
+                value = _normalize_status(value.name) if attrib == 'status' else value
                 # Override feature status to 'untested' during dry runs
                 if attrib == 'status' and get_param('dry_run'):
                     value = 'untested'
@@ -170,7 +177,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
             # Use the original status from behave
-            original_status = getattr(scenario, 'status').name
+            original_status = _normalize_status(getattr(scenario, 'status').name)
             # In dry runs, treat failed and error scenarios as skipped since they weren't actually executed
             if is_dry_run and original_status in ['failed', 'error']:
                 scenario_info['status'] = 'skipped'

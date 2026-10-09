@@ -9,3 +9,9 @@ Feature: Partial hook failures under parallel-scheme feature
       | Second scenario fails its before_scenario hook  |
       | 2 scenarios passed, 1 failed, 0 skipped          |
       | Exit code: 1                                     |
+    And I should see all scenario statuses in the JSON report are valid strings
+
+  Scenario: A scenario's hook failure must be reported with a valid allure status
+    Given I have installed behavex
+    When I run the behavex command with allure formatter on "partial_hook_failures/partial_hook_failure.feature"
+    Then I should see that allure result files only contain valid allure statuses
