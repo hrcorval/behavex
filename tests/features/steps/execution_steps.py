@@ -285,10 +285,7 @@ def then_text_in_console(context, text):
 
 @then('I should see the overall status report shows "{expected_status}"')
 def then_overall_status_report_shows(context, expected_status):
-    status_path = os.path.join(context.output_path, 'overall_status.json')
-    assert os.path.exists(status_path), f"overall_status.json not found at {status_path}"
-    with open(status_path) as status_file:
-        overall_status = json.load(status_file)
+    overall_status = _load_json_report(context, 'overall_status.json')
     assert overall_status.get('status') == expected_status, (
         f"Expected overall_status.json status to be '{expected_status}', got {overall_status}"
     )
@@ -398,10 +395,21 @@ def verify_json_scenarios_with_rule(context, rule_name):
     assert matching, f"No scenarios found with rule '{rule_name}' in JSON report"
 
 
-def _load_json_report(context):
-    report_path = os.path.abspath(os.path.join(context.output_path, 'report.json'))
+def _load_json_report(context, filename='report.json'):
+    report_path = os.path.abspath(os.path.join(context.output_path, filename))
     with open(report_path, 'r') as f:
         return json.load(f)
+
+
+def _failed_scenarios_in_json_report(context):
+    failed_scenarios = [
+        scenario
+        for feature in _load_json_report(context)['features']
+        for scenario in feature['scenarios']
+        if scenario.get('status') in ('failed', 'error')
+    ]
+    assert failed_scenarios, "No failed scenarios found in JSON report"
+    return failed_scenarios
 
 
 def get_tags_arguments(tags):
@@ -1250,25 +1258,14 @@ def then_junit_xml_failing_scenarios(context, count):
 
 @then('I should see the error message of every failed scenario in the JSON report contains "{text}"')
 def then_json_failed_scenarios_error_msg_contains(context, text):
-    failed = [scenario for feature in _load_json_report(context)['features']
-              for scenario in feature['scenarios'] if scenario['status'] in ('failed', 'error')]
-    assert failed, "No failed scenarios found in JSON report"
-    for scenario in failed:
+    for scenario in _failed_scenarios_in_json_report(context):
         assert text in '\n'.join(scenario.get('error_msg') or []), \
             f"Scenario '{scenario['name']}' error_msg does not contain '{text}': {scenario.get('error_msg')}"
 
 
 @then('I should see the JSON report contains error information for failed scenarios')
 def then_json_failing_scenarios_have_error_info(context):
-    data = _load_json_report(context)
-    failed_scenarios = [
-        scenario
-        for feature in data['features']
-        for scenario in feature['scenarios']
-        if scenario.get('status') in ('failed', 'error')
-    ]
-    assert failed_scenarios, "No failed scenarios found in JSON report"
-    for scenario in failed_scenarios:
+    for scenario in _failed_scenarios_in_json_report(context):
         assert scenario.get('error_msg'), \
             f"Failed scenario '{scenario['name']}' has no error_msg in JSON report"
         assert scenario.get('error_step') is not None, \

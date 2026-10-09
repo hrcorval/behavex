@@ -88,12 +88,9 @@ def _create_files_report(content_to_file):
 
 
 def get_metrics_variables(scenarios):
-    skipped = sum(
-        scenario['status'] != 'passed' and scenario['status'] not in FAILED_STATUSES
-        for scenario in scenarios
-    )
     passed = sum(scenario['status'] == 'passed' for scenario in scenarios)
     failed = sum(scenario['status'] in FAILED_STATUSES for scenario in scenarios)
+    skipped = len(scenarios) - passed - failed
     scenario_auto = [
         scenario
         for scenario in scenarios

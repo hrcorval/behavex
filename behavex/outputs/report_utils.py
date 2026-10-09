@@ -164,7 +164,7 @@ def gather_steps(features):
                     else 1
                 )
                 passed = 1 if step['status'] == 'passed' else 0
-                failed = 1 if step['status'] in ['failed', 'error'] else 0
+                failed = 1 if step['status'] in FAILED_STATUSES else 0
                 steps[step['name']]['passed'] += passed
                 steps[step['name']]['failed'] += failed
                 steps[step['name']]['quantity'] += add
@@ -277,10 +277,10 @@ def retry_file_operation(dest_path, execution, return_value=False):
                     option = str(input(msg)).upper().strip()
 
 
-def get_status(dictionary):
-    if any(dictionary.get(status, False) for status in FAILED_STATUSES):
+def get_status(statuses):
+    if FAILED_STATUSES & statuses:
         return 'failed'
-    return dictionary.get('passed', False) or dictionary.get('skipped', 'skipped')
+    return 'passed' if 'passed' in statuses else 'skipped'
 
 
 def get_test_execution_tags():
@@ -490,12 +490,8 @@ def copy_bootstrap_html_generator(output):
 
 def get_overall_status(output):
     if not output:
-        return {'status': 'skipped'}
-    overall_status = {
-        feature['status']: feature['status'] for feature in output['features']
-    }
-    overall_status_end = get_status(overall_status)
-    return overall_status_end
+        return 'skipped'
+    return get_status({feature['status'] for feature in output['features']})
 
 
 def get_save_function(path, content):

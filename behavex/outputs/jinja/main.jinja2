@@ -315,7 +315,7 @@
                                                             {%- set left_percent = (scenario_start_offset / timeline_duration * 100)|round(2) -%}
                                                             {%- set scenario_width_percent = (scenario.duration / timeline_duration * 100)|round(2) -%}
                                                             {%- set scenario_width_percent = [scenario_width_percent, 1.0]|max -%}
-                                                            {%- set status_class = 'passed' if scenario.status == 'passed' else ('failed' if scenario.status in failed_statuses else ('skipped' if scenario.status == 'skipped' else ('untested' if scenario.status == 'untested' else 'skipped'))) -%}
+                                                            {%- set status_class = 'failed' if scenario.status in failed_statuses else (scenario.status if scenario.status in ['passed', 'untested'] else 'skipped') -%}
                                                             <div class="scenario-segment scenario-{{ status_class }}"
                                                                  style="position: absolute; left: {{ left_percent }}%; width: {{ scenario_width_percent }}%;"
                                                                  data-scenario-name="{{ scenario.name|e }}"

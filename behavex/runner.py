@@ -907,21 +907,19 @@ def execute_tests(
                                        for feature in json_output.get('features', [])
                                        for scenario in feature.get('scenarios', []))
             if execution_code == 2 and not results_show_failure and feature_json_skeleton:
-                json_output = {'environment': [],
-                               'features': [json.loads(feature_json_skeleton)],
-                               'steps_definition': []}
-                for skeleton_feature in json_output["features"]:
-                    skeleton_feature['status'] = 'failed'
-                    if scenario_line:
-                        for skeleton_scenario in skeleton_feature["scenarios"]:
-                            if str(skeleton_scenario['line']) == str(scenario_line):
-                                skeleton_scenario['status'] = 'failed'
-                                skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
-                    else:
-                        skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
-                        for skeleton_scenario in skeleton_feature["scenarios"]:
+                skeleton_feature = json.loads(feature_json_skeleton)
+                skeleton_feature['status'] = 'failed'
+                if scenario_line:
+                    for skeleton_scenario in skeleton_feature["scenarios"]:
+                        if str(skeleton_scenario['line']) == str(scenario_line):
                             skeleton_scenario['status'] = 'failed'
-                            skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                            skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
+                else:
+                    skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
+                    for skeleton_scenario in skeleton_feature["scenarios"]:
+                        skeleton_scenario['status'] = 'failed'
+                        skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                json_output = {'environment': [], 'features': [skeleton_feature], 'steps_definition': []}
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),

@@ -24,7 +24,8 @@ from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
-from behavex.outputs.report_utils import (get_environment_details,
+from behavex.outputs.report_utils import (FAILED_STATUSES,
+                                          get_environment_details,
                                           get_error_message, get_string_hash,
                                           match_for_execution,
                                           status_with_hook_errors_as_error,
@@ -173,7 +174,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
             # Use the original status from behave
             original_status = status_with_hook_errors_as_error(getattr(scenario, 'status').name)
             # In dry runs, treat failed and error scenarios as skipped since they weren't actually executed
-            if is_dry_run and original_status in ['failed', 'error']:
+            if is_dry_run and original_status in FAILED_STATUSES:
                 scenario_info['status'] = 'skipped'
             else:
                 scenario_info['status'] = original_status
