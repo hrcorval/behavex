@@ -277,12 +277,6 @@ def retry_file_operation(dest_path, execution, return_value=False):
                     option = str(input(msg)).upper().strip()
 
 
-def get_status(statuses):
-    if FAILED_STATUSES & statuses:
-        return 'failed'
-    return 'passed' if 'passed' in statuses else 'skipped'
-
-
 def get_test_execution_tags():
     if get_param('no_report'):
         return get_env('behave_tags') or ''
@@ -491,7 +485,10 @@ def copy_bootstrap_html_generator(output):
 def get_overall_status(output):
     if not output:
         return 'skipped'
-    return get_status({feature['status'] for feature in output['features']})
+    feature_statuses = {feature['status'] for feature in output['features']}
+    if FAILED_STATUSES & feature_statuses:
+        return 'failed'
+    return 'passed' if 'passed' in feature_statuses else 'skipped'
 
 
 def get_save_function(path, content):
