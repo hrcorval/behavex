@@ -95,6 +95,10 @@ Feature: Crashing Tests
       | before_all     | feature         |
       | before_feature | scenario        |
       | before_feature | feature         |
+      | after_feature  | scenario        |
+      | after_feature  | feature         |
+      | after_all      | scenario        |
+      | after_all      | feature         |
 
 
   @CRASHING @CRASHING_BEHAVE_HOOK

@@ -20,10 +20,10 @@ except ImportError:
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.jinja_mgr import TemplateHandler
-from behavex.outputs.report_utils import (HOOK_ERROR_STATUSES,
-                                          get_save_function,
+from behavex.outputs.report_utils import (get_save_function,
                                           match_for_execution,
-                                          retry_file_operation, text)
+                                          retry_file_operation,
+                                          status_with_hook_errors_as_error, text)
 from behavex.utils import get_all_feature_scenarios, get_scenario_tags
 
 
@@ -77,7 +77,9 @@ def _export_feature_to_xml(feature, isobject=True):
 
     def get_status(scenario_):
         if hasattr(scenario_, 'status'):
-            return Status.failed if scenario_.status.name in HOOK_ERROR_STATUSES else scenario_.status
+            if status_with_hook_errors_as_error(scenario_.status.name) == 'error':
+                return Status.failed
+            return scenario_.status
         else:
             status = scenario_['status']
             if 'untested' in status:

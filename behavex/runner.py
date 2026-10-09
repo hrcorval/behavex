@@ -897,11 +897,11 @@ def execute_tests(
                 logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
                 logging.error(f"Raw JSON string: {json_results_str}")
                 json_output = {'environment': [], 'features': [], 'steps_definition': []}
-            # A hook failure also yields code 2; keep behave's results only if some scenario actually ran
-            any_scenario_ran = any(scenario['status'] not in ('untested', 'skipped')
-                                   for feature in json_output.get('features', [])
-                                   for scenario in feature.get('scenarios', []))
-            if execution_code == 2 and not any_scenario_ran:
+            # Any hook failure yields code 2; keep behave's results only if they already show the failure
+            results_show_failure = any(scenario['status'] not in ('passed', 'untested', 'skipped')
+                                       for feature in json_output.get('features', [])
+                                       for scenario in feature.get('scenarios', []))
+            if execution_code == 2 and not results_show_failure:
                 # For crashed executions, override with skeleton data if available
                 if feature_json_skeleton:
                     json_output = {'environment': [],

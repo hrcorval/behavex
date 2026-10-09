@@ -6,10 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [4.6.6] - 2026-10-08
 
 ### Fixed
-- **A `before_scenario` hook failure marked every scenario in the feature as failed under `--parallel-scheme feature`** ([#249](https://github.com/hrcorval/behavex/pull/249)) — A hook failure no longer replaces the real per-scenario results with the crash skeleton when behave produced them, and behave's `hook_error`/`cleanup_error` statuses are reported as `error` across the console, HTML, JSON, JUnit and Allure reports (Allure previously received an invalid status).
+- **A `before_scenario` hook failure marked every scenario in the feature as failed under `--parallel-scheme feature`** ([#249](https://github.com/hrcorval/behavex/pull/249)) — When a hook failure is already reflected in behave's per-scenario results, BehaveX now keeps those results instead of replacing them with the "execution crashed" skeleton, so sibling scenarios keep their real status. Hook failures not attributable to any scenario (`before_all`, `before_feature`, `after_feature`, `after_all`) are still reported as failed scenarios.
+- **Hook failures reported as skipped or with an invalid status** ([#249](https://github.com/hrcorval/behavex/pull/249)) — Behave's `hook_error`/`cleanup_error` statuses (behave 1.2.7+) are now reported as `error` in the console summary, JSON, HTML, JUnit and Allure outputs. Previously the HTML report counted them as skipped, JUnit emitted no failure element, and Allure received an invalid status.
+- **Invalid JUnit XML for scenarios that crashed outside a step** — The `<failure>` element's `type` attribute was unquoted in serial and `--parallel-scheme feature` runs, producing XML that JUnit parsers reject (for example, a `before_scenario` hook failure on behave 1.2.6).
 
 ### Contributors
 - Thanks to [@taltal-beep](https://github.com/taltal-beep) for the fix and the regression test ([PR #249](https://github.com/hrcorval/behavex/pull/249)).
