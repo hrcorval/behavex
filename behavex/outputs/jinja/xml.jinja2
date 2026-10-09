@@ -24,17 +24,18 @@
 {%- endmacro -%}
 {%- macro print_scenario(scenario) -%}
 {%- set scenario_tags = scenario|get_scenario_tags-%}
-{%- set is_muted = ('MUTE' in scenario_tags and (scenario.status == 'failed' or scenario.status == 'error'))-%}
+{%- set scenario_status = scenario.status.name|status_with_hook_errors_as_error -%}
+{%- set is_muted = ('MUTE' in scenario_tags and scenario_status in ['failed', 'error'])-%}
 {%- set errors_step = 0-%}
         {%- for step in scenario.steps -%}
             {%- set errors_step = errors_step + (0 if step.error_message else 1) -%}
         {%- endfor -%}
-        <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ scenario.status if not is_muted else 'skipped'}}"
+        <testcase time="{{ scenario.duration }}" name={{scenario.name|normalize|CIXC|quoteattr|safe}} status="{{ scenario_status if not is_muted else 'skipped'}}"
          classname={{scenario.feature.name|normalize|CIXC|quoteattr|safe }}>
             {%- set steps_with_exception = scenario.steps|get_list_exception_steps(scenario._background_steps) -%}
-            {%- set scenario_crashed = True if ((scenario.status == 'failed' or scenario.status == 'error') and steps_with_exception|length == 0) else False -%}
+            {%- set scenario_crashed = True if (scenario_status in ['failed', 'error'] and steps_with_exception|length == 0) else False -%}
             {%- if scenario_crashed and not is_muted -%}
-                <failure type=Exception message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
+                <failure type="Exception" message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
                     <![CDATA[ {{ scenario.error_msg }} ]]>
                 </failure>
             {%- elif steps_with_exception and not is_muted -%}

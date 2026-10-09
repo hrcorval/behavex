@@ -10,6 +10,7 @@ Feature: Partial hook failures under parallel-scheme feature
       | 2 scenarios passed, 1 failed, 0 skipped          |
       | Exit code: 1                                     |
     And I should see all scenario statuses in the JSON report are valid strings
+    And I should see "1" failing scenarios in the JUnit XML report
 
   Scenario: A scenario's hook failure must be reported with a valid allure status
     Given I have installed behavex

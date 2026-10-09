@@ -95,3 +95,20 @@ Feature: Crashing Tests
       | before_all     | feature         |
       | before_feature | scenario        |
       | before_feature | feature         |
+
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in "<behave_hook>" hook should only report valid statuses
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "<behave_hook>" hook
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    And I should see all scenario statuses in the JSON report are valid strings
+    And I should see all step statuses in the JSON report are valid strings
+    Examples:
+      | behave_hook     |
+      | before_scenario |
+      | before_step     |
+      | after_step      |
+      | after_scenario  |
