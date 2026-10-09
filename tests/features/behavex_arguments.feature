@@ -137,6 +137,7 @@ Feature: Behavex arguments
     | output_line                  |
     | 2 scenarios passed, 0 failed |
     | Exit code: 0                 |
+    And I should not see "not compatible with parallel execution" in the console output
     And I should see the HTML report was generated and contains "2" scenarios
     Examples:
       | parallel_processes | parallel_scheme |

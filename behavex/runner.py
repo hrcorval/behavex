@@ -1366,7 +1366,7 @@ def _set_env_variables(args):
     if get_param('include'):
         set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
-        set_env_variable('NAME', get_param('name'))
+        set_env_variable('NAME', '|'.join(get_name_filters()))
     if get_param('formatter'):
         formatter_outdir = get_param('formatter_outdir', '')
         formatter_spec = get_param('formatter')
@@ -1461,11 +1461,6 @@ _PARALLEL_INCOMPATIBLE_PARAMS = [
         'wip',
         'WIP mode may cause individual workers to fail when no @wip scenarios are assigned to them. '
         'Apply the @WIP tag via --tags instead.',
-    ),
-    (
-        'name',
-        'name-based filtering runs inside each worker after BehaveX has already dispatched '
-        'scenarios by line number, which can silently drop scenarios from the run.',
     ),
 ]
 

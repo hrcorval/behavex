@@ -73,7 +73,7 @@ tags_to_skip = @SKIP, @MANUAL   # always excluded, regardless of --tags
 [params]
 # Filtering
 tags               = @SMOKE, @REGRESSION        # AND-ed; equivalent to multiple --tags
-name               = checkout                   # substring match on scenario name (not compatible with parallel execution)
+name               = checkout                   # regex matched anywhere in the scenario name
 exclude            = .*draft.*                  # regex — matching feature files are skipped
 
 # Parallelism
@@ -109,13 +109,12 @@ define             = env=staging db_host=localhost
 
 ### Parameters Incompatible with Parallel Execution
 
-`stop`, `wip`, and `name` are accepted in the config file but do not work correctly when `parallel_processes > 1`:
+`stop` and `wip` are accepted in the config file but do not work correctly when `parallel_processes > 1`:
 
 | Parameter | Problem |
 |---|---|
 | `stop` | Only stops the worker that hits the first failure; other workers keep running |
 | `wip` | May cause individual workers to fail when no `@wip` scenarios are assigned to them |
-| `name` | Filter runs inside each worker after scenarios have already been dispatched, which can silently drop scenarios |
 
 Use `--tags @WIP` instead of `wip`. For fail-fast behaviour, combine `stop` with `--parallel-processes 1`.
 
