@@ -124,7 +124,7 @@ Feature: Crashing Tests
     | output_line                              |
     | Exit code: 1                             |
     And I should see the overall status report shows "failed"
-    And I should see the feature status in the JSON report is "hook_error"
+    And I should see the feature status in the JSON report is one of "failed, error"
     Examples:
       | behave_hook     | parallel_processes | parallel_scheme |
       | before_all      | 1                  | scenario        |
@@ -133,3 +133,18 @@ Feature: Crashing Tests
       | before_feature  | 2                  | scenario        |
       | before_all      | 2                  | feature         |
       | before_feature  | 2                  | feature         |
+
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in "after_all" hook must not leave the overall status passed with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "after_all" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    And I should see the overall status report shows "failed"
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 2                  | scenario        |
+      | 2                  | feature         |

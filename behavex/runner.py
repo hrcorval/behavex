@@ -334,7 +334,7 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                elif feature['status'] in ('error', 'undefined', 'hook_error'):
+                elif feature['status'] in ('error', 'undefined'):
                     totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
@@ -374,6 +374,11 @@ def launch_behavex():
             and totals['scenarios']['error'] == 0
         )
         exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
+        if exit_code == EXIT_ERROR and not get_param('no_report'):
+            # A crash outside any scenario (e.g. after_all) leaves every report passed
+            status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
+            with open(status_path, 'w') as status_file:
+                status_file.write(json.dumps({'status': 'failed'}))
     except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
@@ -470,8 +475,6 @@ def print_execution_summary(totals, failures, results):
                     step_status = step.get('status', 'skipped')
                     if step_status == 'undefined':
                         steps_totals['undefined'] += 1
-                    elif step_status == 'hook_error':
-                        steps_totals['error'] += 1
                     elif step_status in steps_totals:
                         steps_totals[step_status] += 1
                     else:
@@ -903,26 +906,22 @@ def execute_tests(
             results_show_failure = any(scenario['status'] not in ('passed', 'untested', 'skipped')
                                        for feature in json_output.get('features', [])
                                        for scenario in feature.get('scenarios', []))
-            if execution_code == 2 and not results_show_failure:
-                # For crashed executions, override with skeleton data if available
-                if feature_json_skeleton:
-                    json_output = {'environment': [],
-                                   'features': [json.loads(feature_json_skeleton)],
-                                   'steps_definition': []}
-                    for skeleton_feature in json_output["features"]:
-                        if scenario_line:
-                            for skeleton_scenario in skeleton_feature["scenarios"]:
-                                if str(skeleton_scenario['line']) == str(scenario_line):
-                                    skeleton_scenario['status'] = 'failed'
-                                    skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
-                        else:
-                            skeleton_feature['status'] = 'failed'
-                            skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
-                            for skeleton_scenario in skeleton_feature["scenarios"]:
+            if execution_code == 2 and not results_show_failure and feature_json_skeleton:
+                json_output = {'environment': [],
+                               'features': [json.loads(feature_json_skeleton)],
+                               'steps_definition': []}
+                for skeleton_feature in json_output["features"]:
+                    skeleton_feature['status'] = 'failed'
+                    if scenario_line:
+                        for skeleton_scenario in skeleton_feature["scenarios"]:
+                            if str(skeleton_scenario['line']) == str(scenario_line):
                                 skeleton_scenario['status'] = 'failed'
-                                skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
-                else:
-                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
+                                skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
+                    else:
+                        skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
+                        for skeleton_scenario in skeleton_feature["scenarios"]:
+                            skeleton_scenario['status'] = 'failed'
+                            skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),
@@ -1065,10 +1064,10 @@ def _launch_behave(behave_args):
                 if runner and hasattr(runner, 'features') and runner.features:
                     feature_list = generate_execution_info(runner.features)
                     if getattr(runner, 'aborted', False) and getattr(runner, 'hook_failures', 0) > 0:
-                        # before_all/after_all crashes leave features 'untested' instead of 'hook_error'
+                        # behave leaves features 'untested' when before_all or before_feature aborts the run
                         for feature_info in feature_list:
                             if feature_info['status'] == 'untested':
-                                feature_info['status'] = 'hook_error'
+                                feature_info['status'] = 'error'
                     json_results = {
                         'environment': get_environment_details(),
                         'features': feature_list,

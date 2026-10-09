@@ -294,16 +294,16 @@ def then_overall_status_report_shows(context, expected_status):
     )
 
 
-@then('I should see the feature status in the JSON report is "{expected_status}"')
-def then_feature_status_in_json_report(context, expected_status):
+@then('I should see the feature status in the JSON report is one of "{expected_statuses}"')
+def then_feature_status_in_json_report(context, expected_statuses):
     report_path = os.path.join(context.output_path, 'report.json')
     assert os.path.exists(report_path), f"report.json not found at {report_path}"
     with open(report_path) as report_file:
         report = json.load(report_file)
     assert report['features'], f"report.json contains no features: {report}"
     for feature in report['features']:
-        assert feature['status'] == expected_status, (
-            f"Expected feature status '{expected_status}', got '{feature['status']}' "
+        assert feature['status'] in expected_statuses.split(', '), (
+            f"Expected feature status in '{expected_statuses}', got '{feature['status']}' "
             f"for feature {feature['name']!r}"
         )
 

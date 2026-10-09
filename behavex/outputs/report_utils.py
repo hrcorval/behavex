@@ -51,8 +51,7 @@ def status_with_hook_errors_as_error(status_name):
     return 'error' if status_name in _HOOK_ERROR_STATUSES else status_name
 
 
-# Statuses that count as a failed outcome, including hook crashes (Status.hook_error)
-FAILED_STATUSES = {'failed', 'error', 'hook_error'}
+FAILED_STATUSES = {'failed', 'error'}
 
 
 def gather_steps_with_definition(features, steps_definition):
@@ -130,12 +129,9 @@ def calculate_status(list_status):
     if 'undefined' in set_status:
         set_status.remove('undefined')
         set_status.add('skipped')
-    # Handle 'error' and 'hook_error' statuses as 'failed' for color calculation
+    # Handle 'error' status as 'failed' for color calculation
     if 'error' in set_status:
         set_status.remove('error')
-        set_status.add('failed')
-    if 'hook_error' in set_status:
-        set_status.remove('hook_error')
         set_status.add('failed')
     if 'failed' in set_status:
         return 'failed'
