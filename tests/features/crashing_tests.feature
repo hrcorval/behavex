@@ -117,6 +117,7 @@ Feature: Crashing Tests
       | after_step      |
       | after_scenario  |
 
+  @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A crash in "<behave_hook>" hook must not be reported as passed or skipped
     Given I have installed behavex
     When I run the behavex command with a test that crashes in "<behave_hook>" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
