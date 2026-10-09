@@ -11,6 +11,7 @@ Feature: Partial hook failures under parallel-scheme feature
       | Exit code: 1                                     |
     And I should see all scenario statuses in the JSON report are valid strings
     And I should see "1" failing scenarios in the JUnit XML report
+    And I should see the JUnit XML failure message contains "HOOK-ERROR in before_scenario"
     And I should see the overall status report shows "failed"
     And I should see the error message of every failed scenario in the JSON report contains "HOOK-ERROR in before_scenario"
 

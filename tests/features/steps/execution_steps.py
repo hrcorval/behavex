@@ -1149,6 +1149,15 @@ def then_junit_xml_scenario_name(context, name):
         f"Scenario name containing '{name}' not found in JUnit XML. Found: {names}"
 
 
+@then('I should see the JUnit XML failure message contains "{text}"')
+def then_junit_xml_failure_message_contains(context, text):
+    messages = [failure.get('message', '') + (failure.text or '')
+                for testcase in _get_all_xml_testcases(context)
+                for failure in testcase.findall('failure')]
+    assert any(text in message for message in messages), \
+        f"No JUnit failure message contains '{text}'. Found: {messages}"
+
+
 @then('I should see error messages for failed scenarios in the JUnit XML report')
 def then_junit_xml_failure_messages(context):
     testcases = _get_all_xml_testcases(context)

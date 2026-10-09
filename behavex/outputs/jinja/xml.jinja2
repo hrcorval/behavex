@@ -35,8 +35,8 @@
             {%- set steps_with_exception = scenario.steps|get_list_exception_steps(scenario._background_steps) -%}
             {%- set scenario_crashed = True if (scenario_status in failed_statuses and steps_with_exception|length == 0) else False -%}
             {%- if scenario_crashed and not is_muted -%}
-                <failure type="Exception" message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
-                    <![CDATA[ {{ scenario.error_msg }} ]]>
+                <failure type="Exception" message={{scenario.error_message|get_error_message|CIXC|quoteattr|safe }}>
+                    <![CDATA[ {{ scenario.error_message or '' }} ]]>
                 </failure>
             {%- elif steps_with_exception and not is_muted -%}
                 {%- for step in steps_with_exception -%}
