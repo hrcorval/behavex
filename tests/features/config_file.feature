@@ -71,6 +71,14 @@ Feature: Configuration file support
       | 1 scenario passed                  |
 
   @CONFIG_FILE @CONFIG_FILE_PARAMS
+  Scenario: BehaveX reads name from a behavex.cfg config file
+    Given a "behavex.cfg" config file with param "name" set to "contains another tag"
+    When I run behavex from the config file directory for feature "passing_tests.feature"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line       |
+      | 1 scenario passed |
+
+  @CONFIG_FILE @CONFIG_FILE_PARAMS
   Scenario: BehaveX reads output path from the [output] section of behavex.cfg
     Given a "behavex.cfg" config file with section "[output]" param "path" set to "cfg_custom_output"
     And no explicit output folder is provided

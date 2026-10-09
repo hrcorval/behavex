@@ -67,6 +67,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            expand_paths, explore_features, generate_reports,
                            get_feature_and_scenario_line, get_feature_order,
                            get_json_results, get_logging_level,
+                           get_name_filters,
                            get_scenario_order, get_scenario_tags,
                            get_scenarios_instances, get_text,
                            join_feature_reports, join_scenario_reports,
@@ -1615,6 +1616,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                 for key_value in value_arg:
                     arguments.append('--define')
                     arguments.append(key_value)
+        if arg == 'name':
+            for name in get_name_filters():
+                arguments.extend(['--name', name])
+            continue
         if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
             arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):

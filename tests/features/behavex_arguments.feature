@@ -129,3 +129,18 @@ Feature: Behavex arguments
       | parallel_processes | parallel_scheme |
       | 1                  | scenario        |
       | 2                  | scenario        |
+
+@BEHAVEX_ARGUMENTS @SCENARIO_NAME
+  Scenario Outline: Validate BehaveX runs the scenarios matching any of several names
+    When I run the behavex command on "secondary_features/passing_tests.feature" with arguments "--name 'does not contain a tag' --name 'contains another tag' --parallel-processes <parallel_processes> --parallel-scheme <parallel_scheme>"
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line                  |
+    | 2 scenarios passed, 0 failed |
+    | Exit code: 0                 |
+    And I should see the HTML report was generated and contains "2" scenarios
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 1                  | feature         |
+      | 2                  | scenario        |
+      | 2                  | feature         |

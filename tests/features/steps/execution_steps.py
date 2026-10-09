@@ -1320,8 +1320,9 @@ def when_run_invalid_worker_hooks_feature(context):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command on "{target}" with arguments "{arguments}"')
 @when('I run the behavex command on the "{target}" worker hooks fixture with arguments "{arguments}"')
-def when_run_worker_hooks_fixture_with_arguments(context, target, arguments, env=None):
+def when_run_behavex_on_target_with_arguments(context, target, arguments, env=None):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = [
         'behavex',
@@ -1335,7 +1336,7 @@ def when_run_worker_hooks_fixture_with_arguments(context, target, arguments, env
 def when_run_worker_hooks_fixture_with_env_variable(context, target, variable, value, arguments):
     env = os.environ.copy()
     env[variable] = value
-    when_run_worker_hooks_fixture_with_arguments(context, target, arguments, env=env)
+    when_run_behavex_on_target_with_arguments(context, target, arguments, env=env)
 
 
 @then('I should see the worker hook "{hook_name}" was called "{expected_calls}" times')

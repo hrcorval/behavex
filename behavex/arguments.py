@@ -172,8 +172,10 @@ def parse_arguments(args):
     )
     parser.add_argument(
         '--name',
+        action='append',
         help='Execute feature elements matching a part of the given name '
-             '(a regular expression).',
+             '(a regular expression). Repeat it to run the scenarios matching '
+             'any of the given names.',
         required=False,
     )
     parser.add_argument(

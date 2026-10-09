@@ -667,14 +667,16 @@ class IncludePathsMatch(metaclass=ExecutionSingleton):
 
 
 
+def get_name_filters():
+    """Return the --name expressions as a list: the CLI repeats the flag, the config file holds one."""
+    names = get_param('name') or []
+    return [names] if isinstance(names, str) else names
+
+
 class IncludeNameMatch(metaclass=ExecutionSingleton):
     def __init__(self, expr=None):
         if not expr:
-            expr = get_param('name')
-            if expr:
-                expr = expr.replace("'", '"')
-        if not expr:
-            expr = ''
+            expr = '|'.join(name.replace("'", '"') for name in get_name_filters())
         self.reg = re.compile(expr)
 
     def __call__(self, *args, **kwargs):
