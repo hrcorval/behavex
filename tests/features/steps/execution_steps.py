@@ -1208,6 +1208,24 @@ def then_json_scenario_statuses_are_strings(context):
                 f"Scenario '{scenario['name']}' has unrecognized status: '{status}'"
 
 
+@then('I should see all step statuses in the JSON report are valid strings')
+def then_json_step_statuses_are_valid(context):
+    valid_statuses = {'passed', 'failed', 'skipped', 'error', 'untested', 'undefined'}
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            for step in scenario['steps']:
+                assert step['status'] in valid_statuses, \
+                    f"Step '{step['name']}' in '{scenario['name']}' has unrecognized status: '{step['status']}'"
+
+
+@then('I should see "{count}" failing scenarios in the JUnit XML report')
+def then_junit_xml_failing_scenarios(context, count):
+    failing = [tc for tc in _get_all_xml_testcases(context) if tc.find('failure') is not None]
+    assert len(failing) == int(count), \
+        f"Expected {count} JUnit testcases with a <failure> element, found {len(failing)}"
+
+
 @then('I should see the JSON report contains error information for failed scenarios')
 def then_json_failing_scenarios_have_error_info(context):
     data = _load_json_report(context)

@@ -43,6 +43,13 @@ except ImportError:
 from behavex.conf_mgr import get_env, get_param, set_env
 from behavex.global_vars import global_vars
 
+# Hook failure statuses from behave 1.2.7+, which the reports only know as 'error'
+_HOOK_ERROR_STATUSES = ('hook_error', 'cleanup_error')
+
+
+def status_with_hook_errors_as_error(status_name):
+    return 'error' if status_name in _HOOK_ERROR_STATUSES else status_name
+
 
 def gather_steps_with_definition(features, steps_definition):
     all_steps = []

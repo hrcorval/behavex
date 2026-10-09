@@ -76,6 +76,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
 
 EXIT_OK = 0
 EXIT_ERROR = 1
+SCENARIO_ERROR_STATUSES = ('error', 'undefined')
 EXECUTION_BLOCKED_MSG = (
     'Some of the folders or files are being used by another '
     'program. Please, close them and try again...'
@@ -344,12 +345,7 @@ def launch_behavex():
                     totals['scenarios']['skipped'] += len(feature['scenarios'])
                     continue
                 for scenario in feature['scenarios']:
-                    if scenario['status'] == 'failed':
-                        totals['scenarios']['failed'] += 1
-                        failures.append('{}:{}'.format(filename, scenario['line']))
-                        if 'MUTE' not in scenario['tags']:
-                            failing_non_muted_tests = True
-                    elif scenario['status'] == 'error' or scenario['status'] == 'undefined':
+                    if scenario['status'] == 'failed' or scenario['status'] in SCENARIO_ERROR_STATUSES:
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -435,7 +431,7 @@ def print_execution_summary(totals, failures, results):
                     scenario_line = f"  {filename}:{scenario['line']}  {scenario['name']}"
                     if scenario['status'] == 'failed':
                         failed_scenarios.append(scenario_line)
-                    elif scenario['status'] in ['error', 'undefined']:
+                    elif scenario['status'] in SCENARIO_ERROR_STATUSES:
                         errored_scenarios.append(scenario_line)
 
         # Print errored scenarios first (if any)
@@ -895,8 +891,17 @@ def execute_tests(
         execution_code, generate_report, json_results_str = _launch_behave(behave_args)
         # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
         if generate_report:
-            # print execution code
-            if execution_code == 2:
+            try:
+                json_output = json.loads(json_results_str)
+            except (json.JSONDecodeError, ValueError) as e:
+                logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
+                logging.error(f"Raw JSON string: {json_results_str}")
+                json_output = {'environment': [], 'features': [], 'steps_definition': []}
+            # Any hook failure yields code 2; keep behave's results only if they already show the failure
+            results_show_failure = any(scenario['status'] not in ('passed', 'untested', 'skipped')
+                                       for feature in json_output.get('features', [])
+                                       for scenario in feature.get('scenarios', []))
+            if execution_code == 2 and not results_show_failure:
                 # For crashed executions, override with skeleton data if available
                 if feature_json_skeleton:
                     json_output = {'environment': [],
@@ -915,15 +920,6 @@ def execute_tests(
                                 skeleton_scenario['status'] = 'failed'
                                 skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
                 else:
-                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
-            else:
-                # Parse JSON string from _launch_behave (disk-free approach)
-                try:
-                    json_output = json.loads(json_results_str)
-                except (json.JSONDecodeError, ValueError) as e:
-                    logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
-                    logging.error(f"Raw JSON string: {json_results_str}")
-                    # Fallback to empty structure
                     json_output = {'environment': [], 'features': [], 'steps_definition': []}
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,

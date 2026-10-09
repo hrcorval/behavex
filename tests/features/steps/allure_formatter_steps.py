@@ -1002,3 +1002,27 @@ def then_see_test_defects_category(context):
         categories_data = json.load(f)
         category_names = [cat.get('name') for cat in categories_data]
         assert 'Test Defects' in category_names, f"Test Defects category not found. Found: {category_names}"
+
+
+@when('I run the behavex command with allure formatter on "{feature_path}"')
+def when_run_allure_on_feature(context, feature_path):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, feature_path),
+        '-o', context.output_path,
+        '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
+    ]
+    execute_command(context, execution_args)
+
+
+@then('I should see that allure result files only contain valid allure statuses')
+def then_allure_statuses_are_valid(context):
+    valid_statuses = {'passed', 'failed', 'broken', 'skipped', 'unknown'}
+    allure_results_path = os.path.join(context.output_path, 'allure-results')
+    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
+    assert result_files, "No result files found in allure-results directory"
+    for result_file in result_files:
+        with open(os.path.join(allure_results_path, result_file), 'r') as f:
+            status = json.load(f).get('status')
+        assert status in valid_statuses, f"{result_file} has invalid allure status '{status}'"

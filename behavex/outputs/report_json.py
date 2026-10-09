@@ -26,7 +26,9 @@ from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import (get_environment_details,
                                           get_error_message, get_string_hash,
-                                          match_for_execution, text)
+                                          match_for_execution,
+                                          status_with_hook_errors_as_error,
+                                          text)
 from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
                            retry_file_operation)
 
@@ -70,7 +72,7 @@ def generate_execution_info(features):
             feature_info = {}
             for attrib in ('name', 'status', 'duration'):
                 value = getattr(feature, attrib)
-                value = value.name if attrib == 'status' else value
+                value = status_with_hook_errors_as_error(value.name) if attrib == 'status' else value
                 # Override feature status to 'untested' during dry runs
                 if attrib == 'status' and get_param('dry_run'):
                     value = 'untested'
@@ -170,7 +172,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
             # Use the original status from behave
-            original_status = getattr(scenario, 'status').name
+            original_status = status_with_hook_errors_as_error(getattr(scenario, 'status').name)
             # In dry runs, treat failed and error scenarios as skipped since they weren't actually executed
             if is_dry_run and original_status in ['failed', 'error']:
                 scenario_info['status'] = 'skipped'
@@ -264,6 +266,7 @@ def _step_to_dict(index, step):
         step_info[attrib] = (
             text(getattr(step, attrib)) if text(getattr(step, attrib)) else ''
         )
+    step_info['status'] = status_with_hook_errors_as_error(step_info['status'])
     step_info['duration'] = 0.0
     if hasattr(step, 'duration'):
         step_info['duration'] = step.duration or 0.0
