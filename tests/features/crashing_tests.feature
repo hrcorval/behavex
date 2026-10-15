@@ -131,6 +131,19 @@ Feature: Crashing Tests
 
 
   @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in "<behave_hook>" hook must be reported with valid allure statuses with "<parallel_processes>" parallel processes
+    Given I have installed behavex
+    When I run the behavex command on "crashing_features/crashing_environment_tests.feature" with arguments "--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --parallel-processes <parallel_processes> -D crashing_behave_hook=<behave_hook>"
+    Then I should see that allure result files only contain valid allure statuses
+    Examples:
+      | behave_hook    | parallel_processes |
+      | before_all     | 1                  |
+      | before_all     | 2                  |
+      | before_feature | 1                  |
+      | before_feature | 2                  |
+
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A crash in "<behave_hook>" hook should only report valid statuses
     Given I have installed behavex
     When I run the behavex command with a test that crashes in "<behave_hook>" hook

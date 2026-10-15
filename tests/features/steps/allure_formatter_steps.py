@@ -1024,5 +1024,7 @@ def then_allure_statuses_are_valid(context):
     assert result_files, "No result files found in allure-results directory"
     for result_file in result_files:
         with open(os.path.join(allure_results_path, result_file), 'r') as f:
-            status = json.load(f).get('status')
-        assert status in valid_statuses, f"{result_file} has invalid allure status '{status}'"
+            result = json.load(f)
+        statuses = [result.get('status')] + [step.get('status') for step in result.get('steps', [])]
+        invalid_statuses = [status for status in statuses if status not in valid_statuses]
+        assert not invalid_statuses, f"{result_file} has invalid allure statuses {invalid_statuses}"

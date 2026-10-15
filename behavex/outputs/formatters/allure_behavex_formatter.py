@@ -44,6 +44,8 @@ from allure_commons.utils import now
 from behavex.conf_mgr import get_env, get_param
 from behavex.outputs.report_utils import get_string_hash
 
+ALLURE_STATUS_BY_BEHAVEX_STATUS = {'error': 'broken', 'undefined': 'broken', 'untested': 'skipped'}
+
 
 class AllureBehaveXFormatter:
     """Allure formatter for BehaveX test results."""
@@ -503,12 +505,7 @@ class AllureBehaveXFormatter:
                     allure_step = TestStepResult(
                         name=f"{step['step_type'].capitalize()} {step['name']}"
                     )
-                    # Map BehaveX step statuses to Allure statuses
-                    step_status = step["status"]
-                    if step_status in ['error', 'undefined']:
-                        allure_step.status = 'broken'
-                    else:
-                        allure_step.status = step_status
+                    allure_step.status = ALLURE_STATUS_BY_BEHAVEX_STATUS.get(step["status"], step["status"])
                     allure_step.start = step.get("start", now())
                     allure_step.stop = step.get("stop", now())
                     allure_step.line = step.get("line", 0)
@@ -669,14 +666,7 @@ class AllureBehaveXFormatter:
                 test_case.start = scenario.get("start", now())
                 test_case.stop = scenario.get("stop", now())
 
-                # Map BehaveX statuses to Allure statuses
-                behavex_status = scenario['status']
-                if behavex_status in ['error', 'undefined']:
-                    # BehaveX error/undefined → Allure broken
-                    test_case.status = 'broken'
-                else:
-                    # failed, passed, skipped map directly
-                    test_case.status = behavex_status
+                test_case.status = ALLURE_STATUS_BY_BEHAVEX_STATUS.get(scenario['status'], scenario['status'])
 
                 # Process scenario logs as attachment
                 if get_param('formatter_attach_logs'):
