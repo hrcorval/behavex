@@ -82,23 +82,42 @@ Feature: Crashing Tests
 
 
   @CRASHING @CRASHING_BEHAVE_HOOK
-  Scenario Outline: A crash in "<behave_hook>" hook should report the scenario as failed with "<parallel_scheme>" parallel scheme
+  Scenario Outline: A crash in "<behave_hook>" hook on "<target>" reports the same statuses in parallel as with a single process
     Given I have installed behavex
-    When I run the behavex command with a test that crashes in "<behave_hook>" hook with "2" parallel processes and "<parallel_scheme>" parallel scheme
+    When I run the behavex command on "<target>" with arguments "--parallel-processes 1 --parallel-scheme scenario -D crashing_behave_hook=<behave_hook> -D crashing_tag=<crashing_tag>"
     Then I should see the following behavex console outputs and exit code "1"
-    | output_line                             |
-    | 0 scenarios passed, 1 failed, 0 skipped |
-    | Exit code: 1                            |
+    | output_line  |
+    | Exit code: 1 |
+    And I should see the overall status report shows "failed"
+    And I keep the feature and scenario statuses from the JSON report
+    When I run the behavex command on "<target>" with arguments "--parallel-processes 2 --parallel-scheme scenario -D crashing_behave_hook=<behave_hook> -D crashing_tag=<crashing_tag>"
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    And I should see the overall status report shows "failed"
+    And I should see the same feature and scenario statuses in the JSON report as the kept ones
+    When I run the behavex command on "<target>" with arguments "--parallel-processes 2 --parallel-scheme feature -D crashing_behave_hook=<behave_hook> -D crashing_tag=<crashing_tag>"
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    And I should see the overall status report shows "failed"
+    And I should see the same feature and scenario statuses in the JSON report as the kept ones
     Examples:
-      | behave_hook    | parallel_scheme |
-      | before_all     | scenario        |
-      | before_all     | feature         |
-      | before_feature | scenario        |
-      | before_feature | feature         |
-      | after_feature  | scenario        |
-      | after_feature  | feature         |
-      | after_all      | scenario        |
-      | after_all      | feature         |
+      | target                                               | behave_hook     | crashing_tag |
+      | crashing_features/crashing_environment_tests.feature | before_all      |              |
+      | crashing_features/crashing_environment_tests.feature | before_feature  |              |
+      | crashing_features/crashing_environment_tests.feature | after_feature   |              |
+      | crashing_features/crashing_environment_tests.feature | after_all       |              |
+      | crashing_features/hook_variants                      | before_all      | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | before_feature  | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | before_scenario | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | before_step     | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | before_tag      | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | after_all       | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | after_feature   | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | after_scenario  | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | after_step      | CRASH_HOOK   |
+      | crashing_features/hook_variants                      | after_tag       | CRASH_HOOK   |
 
 
   @CRASHING @CRASHING_BEHAVE_HOOK

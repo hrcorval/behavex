@@ -303,7 +303,23 @@ def then_feature_status_in_json_report(context, expected_statuses):
         )
 
 
+def _feature_and_scenario_statuses(context):
+    return sorted((feature['name'], feature['status'],
+                   sorted((scenario['name'], scenario['status']) for scenario in feature['scenarios']))
+                  for feature in _load_json_report(context)['features'])
 
+
+@then('I keep the feature and scenario statuses from the JSON report')
+def then_keep_feature_and_scenario_statuses(context):
+    context.kept_statuses = _feature_and_scenario_statuses(context)
+
+
+@then('I should see the same feature and scenario statuses in the JSON report as the kept ones')
+def then_same_feature_and_scenario_statuses(context):
+    statuses = _feature_and_scenario_statuses(context)
+    assert statuses == context.kept_statuses, (
+        f"Expected statuses {context.kept_statuses}, got {statuses}"
+    )
 
 
 @then('I should see the same number of scenarios in the reports and the console output')
