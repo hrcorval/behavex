@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [4.6.6] - 2026-10-08
+## [4.6.6] - 2026-10-15
 
 ### Added
 - **Python 3.14 support** — Python 3.14 is now declared in the package classifiers and tested in CI across all supported behave versions (1.2.6, 1.3.0, 1.3.1, 1.3.3 and latest) on Linux, Windows and macOS.
