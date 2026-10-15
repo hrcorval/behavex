@@ -121,6 +121,16 @@ Feature: Crashing Tests
 
 
   @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario: An interrupted run after a hook failure must leave the feature it never reached untested
+    Given I have installed behavex
+    When I run the behavex command on "interrupted_run_features" with arguments "--parallel-processes 1"
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    And I should see "1" features with status "untested" in the JSON report
+
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A crash in "<behave_hook>" hook should only report valid statuses
     Given I have installed behavex
     When I run the behavex command with a test that crashes in "<behave_hook>" hook

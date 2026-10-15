@@ -303,6 +303,14 @@ def then_feature_status_in_json_report(context, expected_statuses):
         )
 
 
+@then('I should see "{count}" features with status "{expected_status}" in the JSON report')
+def then_features_with_status_in_json_report(context, count, expected_status):
+    statuses = [feature['status'] for feature in _load_json_report(context)['features']]
+    assert statuses.count(expected_status) == int(count), (
+        f"Expected {count} features with status '{expected_status}', got {statuses}"
+    )
+
+
 def _feature_and_scenario_statuses(context):
     return sorted((feature['name'], feature['status'],
                    sorted((scenario['name'], scenario['status']) for scenario in feature['scenarios']))

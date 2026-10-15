@@ -1062,8 +1062,10 @@ def _launch_behave(behave_args):
                 # Check if runner has features and they contain data
                 if runner and hasattr(runner, 'features') and runner.features:
                     feature_list = generate_execution_info(runner.features)
-                    if getattr(runner, 'aborted', False) and getattr(runner, 'hook_failures', 0) > 0:
-                        # behave leaves features 'untested' when a before_all failure aborts the run
+                    # A before_all failure aborts the run before any feature runs, leaving them 'untested';
+                    # an interrupted run also aborts, but after some features ran
+                    if (getattr(runner, 'aborted', False) and getattr(runner, 'hook_failures', 0) > 0
+                            and all(feature_info['status'] in ('untested', 'skipped') for feature_info in feature_list)):
                         for feature_info in feature_list:
                             if feature_info['status'] == 'untested':
                                 feature_info['status'] = 'error'
