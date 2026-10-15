@@ -111,3 +111,37 @@ Feature: Behavex arguments
       | equal              | 2                  | feature         | -t PASSING_TAG_1  | This test should pass and contains a tag | 1               |
       | equal              | 2                  | scenario        | -t @PASSING_TAG_1 | This test should pass and contains a tag | 1               |
       | equal              | 2                  | feature         | -t @PASSING_TAG_1 | This test should pass and contains a tag | 1               |
+      | blank              | 1                  | scenario        |                   | should pass and contains a tag           | 1               |
+      | equal              | 1                  | feature         |                   | should pass and contains a tag           | 1               |
+      | blank              | 2                  | scenario        |                   | should pass and contains a tag           | 1               |
+      | equal              | 2                  | feature         |                   | should pass and contains a tag           | 1               |
+
+@BEHAVEX_ARGUMENTS @SCENARIO_NAME
+  Scenario Outline: Validate BehaveX prints the summary when no scenario matches the given name
+    When I run the behavex command with scenario name "Non existing scenario" and the following scheme, processes and tags
+    | parallel_scheme   | parallel_processes   | tags |
+    | <parallel_scheme> | <parallel_processes> |      |
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line                             |
+    | 0 scenarios passed, 0 failed, 0 skipped |
+    | Exit code: 0                            |
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 2                  | scenario        |
+
+@BEHAVEX_ARGUMENTS @SCENARIO_NAME
+  Scenario Outline: Validate BehaveX runs the scenarios matching any of several names
+    When I run the behavex command on "secondary_features/passing_tests.feature" with arguments "--name 'does not contain a tag' --name 'contains another tag' --parallel-processes <parallel_processes> --parallel-scheme <parallel_scheme>"
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line                  |
+    | 2 scenarios passed, 0 failed |
+    | Exit code: 0                 |
+    And I should not see "not compatible with parallel execution" in the console output
+    And I should see the HTML report was generated and contains "2" scenarios
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 1                  | feature         |
+      | 2                  | scenario        |
+      | 2                  | feature         |

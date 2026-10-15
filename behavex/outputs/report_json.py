@@ -24,9 +24,12 @@ from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
-from behavex.outputs.report_utils import (get_environment_details,
+from behavex.outputs.report_utils import (FAILED_STATUSES,
+                                          get_environment_details,
                                           get_error_message, get_string_hash,
-                                          match_for_execution, text)
+                                          match_for_execution,
+                                          status_with_hook_errors_as_error,
+                                          text)
 from behavex.utils import (generate_hash, generate_uuid, get_scenario_tags,
                            retry_file_operation)
 
@@ -57,20 +60,20 @@ def generate_execution_info(features):
                 scenarios = feature_scenario.scenarios
             else:
                 scenarios = [feature_scenario]
-            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None)[1]
+            scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None)
         for rule in getattr(feature, 'rules', []):
             for rule_scenario in rule.scenarios:
                 if isinstance(rule_scenario, ScenarioOutline):
                     scenarios = rule_scenario.scenarios
                 else:
                     scenarios = [rule_scenario]
-                scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=rule.name)[1]
+                scenario_list = _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=rule.name)
 
         if scenario_list:
             feature_info = {}
             for attrib in ('name', 'status', 'duration'):
                 value = getattr(feature, attrib)
-                value = value.name if attrib == 'status' else value
+                value = status_with_hook_errors_as_error(value.name) if attrib == 'status' else value
                 # Override feature status to 'untested' during dry runs
                 if attrib == 'status' and get_param('dry_run'):
                     value = 'untested'
@@ -151,7 +154,6 @@ def _processing_background_feature(feature):
 
 def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
     scenario_outline_index = 0
-    overall_status = 'passed'
     is_dry_run = get_param('dry_run')
     for scenario in scenarios:
         # Remove BHX_MANUAL_DRY_RUN tag if it is a dry run
@@ -170,9 +172,9 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
             scenario_info['name'] = getattr(scenario, 'name')
             scenario_info['duration'] = getattr(scenario, 'duration')
             # Use the original status from behave
-            original_status = getattr(scenario, 'status').name
+            original_status = status_with_hook_errors_as_error(getattr(scenario, 'status').name)
             # In dry runs, treat failed and error scenarios as skipped since they weren't actually executed
-            if is_dry_run and original_status in ['failed', 'error']:
+            if is_dry_run and original_status in FAILED_STATUSES:
                 scenario_info['status'] = 'skipped'
             else:
                 scenario_info['status'] = original_status
@@ -197,12 +199,6 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
                 add_step_info(step, steps)
             scenario_info['steps'] = steps
             scenario_info['outline_index'] = scenario_outline_index
-            if scenario_info['status'] in ['failed', 'error']:
-                # Prioritize error status over failed status for features
-                if scenario_info['status'] == 'error':
-                    overall_status = 'error'
-                elif overall_status not in ['error']:  # Only set to failed if not already error
-                    overall_status = 'failed'
             scenario_outline_index += 1
             scenario_info['background'] = _processing_background(scenario)
             scenario_info['error_msg'] = error_msg
@@ -222,7 +218,7 @@ def _processing_scenarios(scenarios, scenario_list, id_feature, rule_name=None):
                     scenario_info['retried'] = True
 
             scenario_list.append(scenario_info)
-    return overall_status, scenario_list
+    return scenario_list
 
 
 def _get_error_scenario(scenario):
@@ -255,6 +251,8 @@ def _get_error_scenario(scenario):
                 error_lines = failing_step['error_lines']
             error_background = False
             break
+    if not error_msg and getattr(scenario, 'hook_failed', False) and scenario.error_message:
+        error_msg = scenario.error_message.splitlines()
     return error_msg, error_lines, failing_step, error_background
 
 
@@ -264,6 +262,7 @@ def _step_to_dict(index, step):
         step_info[attrib] = (
             text(getattr(step, attrib)) if text(getattr(step, attrib)) else ''
         )
+    step_info['status'] = status_with_hook_errors_as_error(step_info['status'])
     step_info['duration'] = 0.0
     if hasattr(step, 'duration'):
         step_info['duration'] = step.duration or 0.0

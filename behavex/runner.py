@@ -37,7 +37,7 @@ from typing import Any, Dict, Optional
 # Third-party imports
 from behave.configuration import Configuration
 from behave.model import Feature, Scenario, ScenarioOutline
-from behave.runner import Runner
+from behave.runner import ConfigError, Runner
 
 # Local imports
 # noinspection PyUnresolvedReferences
@@ -67,6 +67,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            expand_paths, explore_features, generate_reports,
                            get_feature_and_scenario_line, get_feature_order,
                            get_json_results, get_logging_level,
+                           get_name_filters,
                            get_scenario_order, get_scenario_tags,
                            get_scenarios_instances, get_text,
                            join_feature_reports, join_scenario_reports,
@@ -76,6 +77,7 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
 
 EXIT_OK = 0
 EXIT_ERROR = 1
+ERROR_OR_UNDEFINED_STATUSES = ('error', 'undefined')
 EXECUTION_BLOCKED_MSG = (
     'Some of the folders or files are being used by another '
     'program. Please, close them and try again...'
@@ -250,9 +252,13 @@ def launch_behavex():
     cwd = os.getcwd()
     if cwd not in sys.path:
         sys.path.insert(0, cwd)
-    bhx_before_workers_ok = False
-    _call_bhx_hook('before_all_workers', bhx_context)
-    bhx_before_workers_ok = True
+    # behave skips every hook on a dry run, so the worker hooks follow suit
+    run_worker_hooks = not get_param('dry_run')
+    if run_worker_hooks and not _call_bhx_hook('before_all_workers', bhx_context):
+        _call_bhx_hook('after_all_workers', bhx_context)
+        _write_overall_status('failed')
+        print('Exit code: {}'.format(EXIT_ERROR))
+        return EXIT_ERROR
     shared_data = bhx_context._to_dict()
     if shared_data:
         os.environ['BHX_SHARED_CONTEXT'] = json.dumps(shared_data)
@@ -280,6 +286,8 @@ def launch_behavex():
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
     failures = []  # Initialize before try block to ensure it's always defined
+    # a single behave process prints its own summary, but none runs when nothing matched
+    print_summary = multiprocess
     try:
         config = ConfigRun()
         if parallel_processes == 1 or get_param('dry_run'):
@@ -302,6 +310,7 @@ def launch_behavex():
                                                                 shared_removed_scenarios=None)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
+                print_summary = not get_param('dry_run')
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
                                                             process_pool,
@@ -333,7 +342,7 @@ def launch_behavex():
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
-                elif feature['status'] == 'error' or feature['status'] == 'undefined':
+                elif feature['status'] in ERROR_OR_UNDEFINED_STATUSES:
                     totals['features']['error'] += 1
                 elif feature['status'] == 'passed':
                     totals['features']['passed'] += 1
@@ -344,12 +353,7 @@ def launch_behavex():
                     totals['scenarios']['skipped'] += len(feature['scenarios'])
                     continue
                 for scenario in feature['scenarios']:
-                    if scenario['status'] == 'failed':
-                        totals['scenarios']['failed'] += 1
-                        failures.append('{}:{}'.format(filename, scenario['line']))
-                        if 'MUTE' not in scenario['tags']:
-                            failing_non_muted_tests = True
-                    elif scenario['status'] == 'error' or scenario['status'] == 'undefined':
+                    if scenario['status'] == 'failed' or scenario['status'] in ERROR_OR_UNDEFINED_STATUSES:
                         totals['scenarios']['failed'] += 1
                         failures.append('{}:{}'.format(filename, scenario['line']))
                         if 'MUTE' not in scenario['tags']:
@@ -390,9 +394,10 @@ def launch_behavex():
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
     finally:
-        if bhx_before_workers_ok:
-            _call_bhx_hook('after_all_workers', bhx_context)
-    if multiprocess:
+        if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
+            exit_code = EXIT_ERROR
+    _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json))
+    if print_summary:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
         print('\nHTML output report is located at: {}'.format(os.path.join(get_env('OUTPUT'), "report.html")))
@@ -435,7 +440,7 @@ def print_execution_summary(totals, failures, results):
                     scenario_line = f"  {filename}:{scenario['line']}  {scenario['name']}"
                     if scenario['status'] == 'failed':
                         failed_scenarios.append(scenario_line)
-                    elif scenario['status'] in ['error', 'undefined']:
+                    elif scenario['status'] in ERROR_OR_UNDEFINED_STATUSES:
                         errored_scenarios.append(scenario_line)
 
         # Print errored scenarios first (if any)
@@ -895,36 +900,27 @@ def execute_tests(
         execution_code, generate_report, json_results_str = _launch_behave(behave_args)
         # print("pipenv run behave {} --> Execution Code: {} --> Generate Report: {}".format(" ".join(behave_args), execution_code, generate_report))
         if generate_report:
-            # print execution code
-            if execution_code == 2:
-                # For crashed executions, override with skeleton data if available
-                if feature_json_skeleton:
-                    json_output = {'environment': [],
-                                   'features': [json.loads(feature_json_skeleton)],
-                                   'steps_definition': []}
-                    for skeleton_feature in json_output["features"]:
-                        if scenario_line:
-                            for skeleton_scenario in skeleton_feature["scenarios"]:
-                                if str(skeleton_scenario['line']) == str(scenario_line):
-                                    skeleton_scenario['status'] = 'failed'
-                                    skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
-                        else:
-                            skeleton_feature['status'] = 'failed'
-                            skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
-                            for skeleton_scenario in skeleton_feature["scenarios"]:
-                                skeleton_scenario['status'] = 'failed'
-                                skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+            try:
+                json_output = json.loads(json_results_str)
+            except (json.JSONDecodeError, ValueError) as e:
+                logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
+                logging.error(f"Raw JSON string: {json_results_str}")
+                json_output = {'environment': [], 'features': [], 'steps_definition': []}
+            # Keep behave's results whenever it produced any, as single-process runs do
+            if execution_code == 2 and not json_output.get('features') and feature_json_skeleton:
+                skeleton_feature = json.loads(feature_json_skeleton)
+                skeleton_feature['status'] = 'failed'
+                if scenario_line:
+                    for skeleton_scenario in skeleton_feature["scenarios"]:
+                        if str(skeleton_scenario['line']) == str(scenario_line):
+                            skeleton_scenario['status'] = 'failed'
+                            skeleton_scenario['error_msg'] = get_text('scenario.execution_crashed')
                 else:
-                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
-            else:
-                # Parse JSON string from _launch_behave (disk-free approach)
-                try:
-                    json_output = json.loads(json_results_str)
-                except (json.JSONDecodeError, ValueError) as e:
-                    logging.error(f"Failed to parse JSON results from _launch_behave: {e}")
-                    logging.error(f"Raw JSON string: {json_results_str}")
-                    # Fallback to empty structure
-                    json_output = {'environment': [], 'features': [], 'steps_definition': []}
+                    skeleton_feature['error_msg'] = 'Execution crashed. No outputs could be generated.'
+                    for skeleton_scenario in skeleton_feature["scenarios"]:
+                        skeleton_scenario['status'] = 'failed'
+                        skeleton_scenario['error_msg'] = get_text('feature.execution_crashed')
+                json_output = {'environment': [], 'features': [skeleton_feature], 'steps_definition': []}
             if scenario_line:
                 json_output['features'] = filter_feature_executed(json_output,
                                                                   text(feature_filename),
@@ -1066,6 +1062,13 @@ def _launch_behave(behave_args):
                 # Check if runner has features and they contain data
                 if runner and hasattr(runner, 'features') and runner.features:
                     feature_list = generate_execution_info(runner.features)
+                    # A before_all failure aborts the run before any feature runs, leaving them 'untested';
+                    # an interrupted run also aborts, but after some features ran
+                    if (getattr(runner, 'aborted', False) and getattr(runner, 'hook_failures', 0) > 0
+                            and all(feature_info['status'] in ('untested', 'skipped') for feature_info in feature_list)):
+                        for feature_info in feature_list:
+                            if feature_info['status'] == 'untested':
+                                feature_info['status'] = 'error'
                     json_results = {
                         'environment': get_environment_details(),
                         'features': feature_list,
@@ -1159,10 +1162,6 @@ def wrap_up_process_pools(process_pool,
     if global_vars.progress_bar_instance:
         global_vars.progress_bar_instance.finish()
     if not get_param('no_report'):
-        status_info = os.path.join(output, global_vars.report_filenames['report_overall'])
-        with open(status_info, 'w') as file_info:
-            over_status = {'status': get_overall_status(merged_json)}
-            file_info.write(json.dumps(over_status))
         path_info = os.path.join(output, global_vars.report_filenames['report_json'])
         with open(path_info, 'w') as file_info:
             file_info.write(json.dumps(merged_json))
@@ -1300,41 +1299,52 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
             lock.release()
 
 
+def _write_overall_status(overall_status):
+    if get_param('no_report'):
+        return
+    status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
+    with open(status_path, 'w') as status_file:
+        status_file.write(json.dumps({'status': overall_status}))
+
+
 def _find_user_environment_path() -> Optional[str]:
-    """Return the path to the user's environment.py, or None if not found."""
-    features_path = os.environ.get('FEATURES_PATH', '')
-    for path in features_path.split(','):
-        path = path.strip()
-        if not path:
-            continue
-        candidate_dir = path if os.path.isdir(path) else os.path.dirname(path)
-        env_file = os.path.join(candidate_dir, 'environment.py')
-        if os.path.exists(env_file):
-            return env_file
-    return None
+    """Return the environment.py behave loads for FEATURES_PATH, or None if there is none."""
+    paths = [path.strip() for path in os.environ.get('FEATURES_PATH', '').split(',') if path.strip()]
+    config = Configuration(command_args=paths)
+    try:
+        Runner(config).setup_paths()
+    except ConfigError:
+        return None
+    env_file = os.path.join(config.base_dir, config.environment_file)
+    return env_file if os.path.isfile(env_file) else None
 
 
 _bhx_user_environment_module = None
 
 
-def _call_bhx_hook(hook_name: str, *args) -> None:
-    """Load the user's environment.py (cached) and call hook_name if defined."""
+def _call_bhx_hook(hook_name: str, *args) -> bool:
+    """Load the user's environment.py (cached) and call hook_name if defined.
+
+    Returns False when the hook raised, after reporting it the way behave reports a HOOK-ERROR.
+    """
     global _bhx_user_environment_module
     if _bhx_user_environment_module is None:
         env_path = _find_user_environment_path()
         if not env_path:
-            return
+            return True
         spec = importlib.util.spec_from_file_location('bhx_user_environment', env_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         _bhx_user_environment_module = module
+    hook_fn = getattr(_bhx_user_environment_module, hook_name, None)
+    if not callable(hook_fn):
+        return True
     try:
-        hook_fn = getattr(_bhx_user_environment_module, hook_name, None)
-        if callable(hook_fn):
-            hook_fn(*args)
+        hook_fn(*args)
     except Exception as ex:
-        logging.error(f"[BehaveX] Error in {hook_name}: {ex}")
-        raise
+        print(f'HOOK-ERROR in {hook_name}: {type(ex).__name__}: {ex}')
+        return False
+    return True
 
 
 def _set_env_variables(args):
@@ -1355,7 +1365,7 @@ def _set_env_variables(args):
     if get_param('include'):
         set_env_variable('INCLUDE', get_param('include'))
     if get_param('name'):
-        set_env_variable('NAME', get_param('name'))
+        set_env_variable('NAME', '|'.join(get_name_filters()))
     if get_param('formatter'):
         formatter_outdir = get_param('formatter_outdir', '')
         formatter_spec = get_param('formatter')
@@ -1450,11 +1460,6 @@ _PARALLEL_INCOMPATIBLE_PARAMS = [
         'wip',
         'WIP mode may cause individual workers to fail when no @wip scenarios are assigned to them. '
         'Apply the @WIP tag via --tags instead.',
-    ),
-    (
-        'name',
-        'name-based filtering runs inside each worker after BehaveX has already dispatched '
-        'scenarios by line number, which can silently drop scenarios from the run.',
     ),
 ]
 
@@ -1605,6 +1610,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                 for key_value in value_arg:
                     arguments.append('--define')
                     arguments.append(key_value)
+        if arg == 'name':
+            for name in get_name_filters():
+                arguments.extend(['--name', name])
+            continue
         if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
             arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):

@@ -88,21 +88,21 @@ def _create_project(context, env_content: str) -> None:
 
     pkg_dir = os.path.join(project_dir, 'local_pkg')
     os.makedirs(pkg_dir, exist_ok=True)
-    with open(os.path.join(pkg_dir, '__init__.py'), 'w') as f:
+    with open(os.path.join(pkg_dir, '__init__.py'), 'w', encoding='utf-8') as f:
         f.write(_LOCAL_PKG_INIT)
 
     features_dir = os.path.join(project_dir, 'features')
     steps_dir = os.path.join(features_dir, 'steps')
     os.makedirs(steps_dir, exist_ok=True)
 
-    with open(os.path.join(features_dir, 'environment.py'), 'w') as f:
+    with open(os.path.join(features_dir, 'environment.py'), 'w', encoding='utf-8') as f:
         f.write(env_content)
 
-    with open(os.path.join(features_dir, 'local_import.feature'), 'w') as f:
+    with open(os.path.join(features_dir, 'local_import.feature'), 'w', encoding='utf-8') as f:
         f.write(_TEST_FEATURE)
 
     open(os.path.join(steps_dir, '__init__.py'), 'w').close()
-    with open(os.path.join(steps_dir, 'steps.py'), 'w') as f:
+    with open(os.path.join(steps_dir, 'steps.py'), 'w', encoding='utf-8') as f:
         f.write(_STEPS_PY)
 
 

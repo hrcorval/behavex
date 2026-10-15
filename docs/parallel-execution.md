@@ -58,6 +58,8 @@ def after_all_workers(context):
 
 > **Important:** Values set on `context` in `before_all_workers` must be JSON-serializable (str, int, float, bool, list, dict, or None). Non-serializable values (e.g., database connections, sockets) raise a `TypeError` immediately.
 
+> **Dry runs and failures:** Like behave's own hooks, neither hook runs on `--dry-run`. If `before_all_workers` raises, BehaveX prints a `HOOK-ERROR` line, starts no worker, still calls `after_all_workers` (as behave calls `after_all` after a failed `before_all`), and exits with code 1. A failing `after_all_workers` also makes the run exit with code 1.
+
 ### Execution Metadata: `context.behavex`
 
 BehaveX injects a `context.behavex` namespace in every worker process, available from `before_all` onwards:

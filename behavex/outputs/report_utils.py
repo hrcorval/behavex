@@ -43,6 +43,16 @@ except ImportError:
 from behavex.conf_mgr import get_env, get_param, set_env
 from behavex.global_vars import global_vars
 
+# Hook failure statuses from behave 1.2.7+, which the reports only know as 'error'
+_HOOK_ERROR_STATUSES = ('hook_error', 'cleanup_error')
+
+
+def status_with_hook_errors_as_error(status_name):
+    return 'error' if status_name in _HOOK_ERROR_STATUSES else status_name
+
+
+FAILED_STATUSES = {'failed', 'error'}
+
 
 def gather_steps_with_definition(features, steps_definition):
     all_steps = []
@@ -92,7 +102,7 @@ def get_summary_definition(steps):
         appearances += step_instanced['appearances']
         if 'passed' in step_instanced['status']:
             any_status_passed = True
-        elif 'failed' in step_instanced['status'] or 'error' in step_instanced['status']:
+        elif FAILED_STATUSES.intersection(step_instanced['status']):
             any_status_failed = True
     if any_status_failed:
         result['overall_status'] = 'failed'
@@ -154,7 +164,7 @@ def gather_steps(features):
                     else 1
                 )
                 passed = 1 if step['status'] == 'passed' else 0
-                failed = 1 if step['status'] in ['failed', 'error'] else 0
+                failed = 1 if step['status'] in FAILED_STATUSES else 0
                 steps[step['name']]['passed'] += passed
                 steps[step['name']]['failed'] += failed
                 steps[step['name']]['quantity'] += add
@@ -265,14 +275,6 @@ def retry_file_operation(dest_path, execution, return_value=False):
                         "or 'a' to abort\n"
                     )
                     option = str(input(msg)).upper().strip()
-
-
-def get_status(dictionary):
-    return (
-        dictionary.get('failed', False)
-        or dictionary.get('passed', False)
-        or dictionary.get('skipped', 'skipped')
-    )
 
 
 def get_test_execution_tags():
@@ -482,12 +484,11 @@ def copy_bootstrap_html_generator(output):
 
 def get_overall_status(output):
     if not output:
-        return {'status': 'skipped'}
-    overall_status = {
-        feature['status']: feature['status'] for feature in output['features']
-    }
-    overall_status_end = get_status(overall_status)
-    return overall_status_end
+        return 'skipped'
+    feature_statuses = {feature['status'] for feature in output['features']}
+    if FAILED_STATUSES & feature_statuses:
+        return 'failed'
+    return 'passed' if 'passed' in feature_statuses else 'skipped'
 
 
 def get_save_function(path, content):

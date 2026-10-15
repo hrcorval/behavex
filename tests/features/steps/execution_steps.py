@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+import shlex
 import xml.etree.ElementTree as ET
 from packaging.version import Version
 import subprocess
@@ -283,7 +284,50 @@ def then_text_in_console(context, text):
         f"Expected '{text}' in console output, but it was not found.\nOutput:\n{context.result.stdout}"
 
 
+@then('I should see the overall status report shows "{expected_status}"')
+def then_overall_status_report_shows(context, expected_status):
+    overall_status = _load_json_report(context, 'overall_status.json')
+    assert overall_status.get('status') == expected_status, (
+        f"Expected overall_status.json status to be '{expected_status}', got {overall_status}"
+    )
 
+
+@then('I should see the feature status in the JSON report is one of "{expected_statuses}"')
+def then_feature_status_in_json_report(context, expected_statuses):
+    report = _load_json_report(context)
+    assert report['features'], f"report.json contains no features: {report}"
+    for feature in report['features']:
+        assert feature['status'] in expected_statuses.split(', '), (
+            f"Expected feature status in '{expected_statuses}', got '{feature['status']}' "
+            f"for feature {feature['name']!r}"
+        )
+
+
+@then('I should see "{count}" features with status "{expected_status}" in the JSON report')
+def then_features_with_status_in_json_report(context, count, expected_status):
+    statuses = [feature['status'] for feature in _load_json_report(context)['features']]
+    assert statuses.count(expected_status) == int(count), (
+        f"Expected {count} features with status '{expected_status}', got {statuses}"
+    )
+
+
+def _feature_and_scenario_statuses(context):
+    return sorted((feature['name'], feature['status'],
+                   sorted((scenario['name'], scenario['status']) for scenario in feature['scenarios']))
+                  for feature in _load_json_report(context)['features'])
+
+
+@then('I keep the feature and scenario statuses from the JSON report')
+def then_keep_feature_and_scenario_statuses(context):
+    context.kept_statuses = _feature_and_scenario_statuses(context)
+
+
+@then('I should see the same feature and scenario statuses in the JSON report as the kept ones')
+def then_same_feature_and_scenario_statuses(context):
+    statuses = _feature_and_scenario_statuses(context)
+    assert statuses == context.kept_statuses, (
+        f"Expected statuses {context.kept_statuses}, got {statuses}"
+    )
 
 
 @then('I should see the same number of scenarios in the reports and the console output')
@@ -376,10 +420,21 @@ def verify_json_scenarios_with_rule(context, rule_name):
     assert matching, f"No scenarios found with rule '{rule_name}' in JSON report"
 
 
-def _load_json_report(context):
-    report_path = os.path.abspath(os.path.join(context.output_path, 'report.json'))
+def _load_json_report(context, filename='report.json'):
+    report_path = os.path.abspath(os.path.join(context.output_path, filename))
     with open(report_path, 'r') as f:
         return json.load(f)
+
+
+def _failed_scenarios_in_json_report(context):
+    failed_scenarios = [
+        scenario
+        for feature in _load_json_report(context)['features']
+        for scenario in feature['scenarios']
+        if scenario.get('status') in ('failed', 'error')
+    ]
+    assert failed_scenarios, "No failed scenarios found in JSON report"
+    return failed_scenarios
 
 
 def get_tags_arguments(tags):
@@ -649,7 +704,7 @@ def step_verify_images_in_allure_output(context):
         raise FileNotFoundError(f"Allure results directory not found: {allure_results_path}")
 
 
-def execute_command(context, execution_args, print_output=True):
+def execute_command(context, execution_args, print_output=True, env=None):
     if "progress_bar" in context and context.progress_bar:
         execution_args.insert(2, '--show-progress-bar')
     if hasattr(context, 'parallel_processes'):
@@ -657,7 +712,7 @@ def execute_command(context, execution_args, print_output=True):
     if hasattr(context, 'parallel_scheme'):
         execution_args += ['--parallel-scheme', context.parallel_scheme]
     logging.info("Executing command: {}".format(" ".join(execution_args)))
-    context.result = subprocess.run(execution_args, capture_output=True, text=True)
+    context.result = subprocess.run(execution_args, capture_output=True, text=True, env=env)
     if print_output:
         logging.info(context.result.stdout)
 
@@ -1119,6 +1174,15 @@ def then_junit_xml_scenario_name(context, name):
         f"Scenario name containing '{name}' not found in JUnit XML. Found: {names}"
 
 
+@then('I should see the JUnit XML failure message contains "{text}"')
+def then_junit_xml_failure_message_contains(context, text):
+    messages = [failure.get('message', '') + (failure.text or '')
+                for testcase in _get_all_xml_testcases(context)
+                for failure in testcase.findall('failure')]
+    assert any(text in message for message in messages), \
+        f"No JUnit failure message contains '{text}'. Found: {messages}"
+
+
 @then('I should see error messages for failed scenarios in the JUnit XML report')
 def then_junit_xml_failure_messages(context):
     testcases = _get_all_xml_testcases(context)
@@ -1208,17 +1272,34 @@ def then_json_scenario_statuses_are_strings(context):
                 f"Scenario '{scenario['name']}' has unrecognized status: '{status}'"
 
 
+@then('I should see all step statuses in the JSON report are valid strings')
+def then_json_step_statuses_are_valid(context):
+    valid_statuses = {'passed', 'failed', 'skipped', 'error', 'untested', 'undefined'}
+    data = _load_json_report(context)
+    for feature in data['features']:
+        for scenario in feature['scenarios']:
+            for step in scenario['steps']:
+                assert step['status'] in valid_statuses, \
+                    f"Step '{step['name']}' in '{scenario['name']}' has unrecognized status: '{step['status']}'"
+
+
+@then('I should see "{count}" failing scenarios in the JUnit XML report')
+def then_junit_xml_failing_scenarios(context, count):
+    failing = [tc for tc in _get_all_xml_testcases(context) if tc.find('failure') is not None]
+    assert len(failing) == int(count), \
+        f"Expected {count} JUnit testcases with a <failure> element, found {len(failing)}"
+
+
+@then('I should see the error message of every failed scenario in the JSON report contains "{text}"')
+def then_json_failed_scenarios_error_msg_contains(context, text):
+    for scenario in _failed_scenarios_in_json_report(context):
+        assert text in '\n'.join(scenario.get('error_msg') or []), \
+            f"Scenario '{scenario['name']}' error_msg does not contain '{text}': {scenario.get('error_msg')}"
+
+
 @then('I should see the JSON report contains error information for failed scenarios')
 def then_json_failing_scenarios_have_error_info(context):
-    data = _load_json_report(context)
-    failed_scenarios = [
-        scenario
-        for feature in data['features']
-        for scenario in feature['scenarios']
-        if scenario.get('status') in ('failed', 'error')
-    ]
-    assert failed_scenarios, "No failed scenarios found in JSON report"
-    for scenario in failed_scenarios:
+    for scenario in _failed_scenarios_in_json_report(context):
         assert scenario.get('error_msg'), \
             f"Failed scenario '{scenario['name']}' has no error_msg in JSON report"
         assert scenario.get('error_step') is not None, \
@@ -1252,19 +1333,6 @@ def then_json_count_matches_stored(context):
 
 # ---------- Worker Hooks Steps ----------
 
-@when('I run the behavex command targeting the worker hooks feature with "{parallel_processes}" parallel processes')
-def when_run_worker_hooks_feature(context, parallel_processes):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
-    execution_args = [
-        'behavex',
-        os.path.join(tests_features_path, 'worker_hooks_features'),
-        '-t', '@WORKER_HOOKS',
-        '-o', context.output_path,
-        '--parallel-processes', parallel_processes,
-    ]
-    execute_command(context, execution_args)
-
-
 @when('I run the behavex command targeting the invalid worker hooks feature')
 def when_run_invalid_worker_hooks_feature(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
@@ -1274,6 +1342,39 @@ def when_run_invalid_worker_hooks_feature(context):
         '-o', context.output_path,
     ]
     execute_command(context, execution_args)
+
+
+@when('I run the behavex command on "{target}" with arguments "{arguments}"')
+@when('I run the behavex command on the "{target}" worker hooks fixture with arguments "{arguments}"')
+def when_run_behavex_on_target_with_arguments(context, target, arguments, env=None):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join(tests_features_path, target),
+        '-o', context.output_path,
+    ] + shlex.split(arguments)
+    execute_command(context, execution_args, env=env)
+
+
+@when('I run the behavex command on the "{target}" worker hooks fixture with "{variable}" set to "{value}" and arguments "{arguments}"')
+def when_run_worker_hooks_fixture_with_env_variable(context, target, variable, value, arguments):
+    env = os.environ.copy()
+    env[variable] = value
+    when_run_behavex_on_target_with_arguments(context, target, arguments, env=env)
+
+
+@then('I should see the worker hook "{hook_name}" was called "{expected_calls}" times')
+def then_worker_hook_called_times(context, hook_name, expected_calls):
+    calls_path = os.path.join(context.output_path, 'worker_hook_calls.log')
+    recorded_calls = []
+    if os.path.exists(calls_path):
+        with open(calls_path) as calls_file:
+            recorded_calls = calls_file.read().split()
+    actual_calls = recorded_calls.count(hook_name)
+    assert actual_calls == int(expected_calls), (
+        f"Expected {hook_name} to be called {expected_calls} times, got {actual_calls}\n"
+        f"STDOUT:\n{context.result.stdout}"
+    )
 
 
 # ---------- No-Report Steps ----------

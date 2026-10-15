@@ -20,11 +20,12 @@ import jinja2
 from behavex.conf_mgr import get_env
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.outputs.output_strings import TEXTS
-from behavex.outputs.report_utils import (calculate_status, gather_errors,
-                                          get_error_message, get_string_hash,
-                                          match_for_execution,
+from behavex.outputs.report_utils import (FAILED_STATUSES, calculate_status,
+                                          gather_errors, get_error_message,
+                                          get_string_hash, match_for_execution,
                                           normalize_filename,
-                                          pretty_print_time, resolving_type)
+                                          pretty_print_time, resolving_type,
+                                          status_with_hook_errors_as_error)
 
 
 class TemplateHandler(metaclass=ExecutionSingleton):
@@ -40,6 +41,7 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(gather_errors, 'gather_errors')
         self.add_filter(get_string_hash, 'get_string_hash')
         self.add_filter(normalize_filename, 'normalize')
+        self.add_filter(status_with_hook_errors_as_error, 'status_with_hook_errors_as_error')
         self.add_filter(_resolving_color_class, 'resolving_color_class')
         self.add_filter(pretty_print_time, 'pretty_print_time')
         self.add_filter(_get_list_exception_steps, 'get_list_exception_steps')
@@ -70,6 +72,7 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(_get_exception_class_name, 'get_exception_class_name')
         self.add_filter(_get_exception_message, 'get_exception_message')
         self.template_env.globals.update(get_env=get_env)
+        self.template_env.globals.update(failed_statuses=FAILED_STATUSES)
         # self.template_env.globals.keys() has been forced to be a list
         if 'get_path_log' not in list(self.template_env.globals.keys()):
             self.template_env.globals.update(get_path_log=_get_path_log)
@@ -263,7 +266,7 @@ def _create_progress_html(total, passed=0, failed=0, skipped=0):
 
 def _resolving_color_class(status):
     status_lower = status.lower()
-    if status_lower in ('failed', 'error'):
+    if status_lower in FAILED_STATUSES:
         return 'danger'
     elif status_lower == 'passed':
         return 'success'
