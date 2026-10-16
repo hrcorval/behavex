@@ -2,8 +2,6 @@
 """BehaveX programmatic API."""
 from __future__ import absolute_import
 
-import json
-import os
 import uuid
 from typing import Callable, List, Optional
 
@@ -101,7 +99,6 @@ class BehaveXRunner:
             exit_code = runner.run(args)
         finally:
             runner._progress_callback = None
-            runner._completed_count = 0
         features = self._load_features()
         return RunResult(run_id=run_id, exit_code=exit_code, output_folder=self.output_folder, features=features)
 
@@ -111,30 +108,13 @@ class BehaveXRunner:
         Safe to call from a thread while run() is blocking. Has no effect
         when called outside of an active run or in single-process mode.
         """
-        try:
-            executor = runner._active_executor
-            if executor is not None:
-                executor.shutdown(wait=False)
-        except Exception:
-            pass
+        executor = runner._active_executor
+        if executor is not None:
+            executor.shutdown(wait=False)
 
     def _load_features(self) -> List[FeatureResult]:
-        """Return feature results from the just-completed run.
-
-        Prefers the in-memory results set by runner.launch_behavex() so this
-        works even when no_report=True.  Falls back to report.json for safety.
-        """
-        in_memory = getattr(runner, '_last_run_results', [])
-        if in_memory:
-            return [FeatureResult.model_validate(f) for f in in_memory]
-        if self.no_report or not self.output_folder:
-            return []
-        report_path = os.path.join(self.output_folder, 'report.json')
-        if not os.path.exists(report_path):
-            return []
-        with open(report_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return [FeatureResult.model_validate(feature) for feature in data.get('features', [])]
+        """Return the feature results launch_behavex() kept in memory, so no_report runs have them too."""
+        return [FeatureResult.model_validate(f) for f in runner._last_run_results]
 
     def _build_args(self) -> List[str]:
         """Translate instance params into a CLI args list for runner.run()."""

@@ -6,8 +6,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-# Statuses BehaveX treats as execution failures (maps to HTML report "Failed" column).
-_FAILED_STATUSES = frozenset({'failed', 'error'})
+from behavex.outputs.report_utils import FAILED_STATUSES
+
 
 
 class ProgressEvent(BaseModel):
@@ -123,7 +123,7 @@ class FeatureResult(BaseModel):
     @property
     def failed_scenarios(self) -> List[ScenarioResult]:
         """All scenarios that broke (failed or error), including muted ones."""
-        return [s for s in self.scenarios if s.status in _FAILED_STATUSES]
+        return [s for s in self.scenarios if s.status in FAILED_STATUSES]
 
 
 class RunSummary(BaseModel):
