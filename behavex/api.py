@@ -96,6 +96,7 @@ class BehaveXRunner:
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
         runner._last_run_results = []
+        runner._stop_requested = False
         runner._stopped = False
         try:
             exit_code = runner.run(args)
@@ -113,7 +114,7 @@ class BehaveXRunner:
         executor = runner._active_executor
         if executor is None or not runner._is_parallel_run:
             return
-        runner._stopped = True
+        runner._stop_requested = True
         try:
             executor.shutdown(wait=False, cancel_futures=True)
         except TypeError:  # Python 3.8: no cancel_futures

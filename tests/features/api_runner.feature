@@ -202,12 +202,43 @@ Feature: BehaveXRunner Python API
 
   @API_RUNNER_026
   Scenario: stop() called from on_progress cancels the scenarios a parallel run has not started
-    When I run BehaveXRunner on twelve scenarios with "2" parallel processes and call stop() on the first progress event
+    When I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, "scenario" scheme, and call stop() on progress event "1"
     Then the RunResult exit_code should be "0"
     And the RunResult stopped should be "True"
     And the RunResult passed should be "False"
     And the on_progress callback was called once per scenario in the RunResult summary
     And the RunResult summary total is less than "12"
+
+  @API_RUNNER_043
+  Scenario: stop() called from the last progress event does not mark a complete run as stopped
+    When I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, "scenario" scheme, and call stop() on progress event "12"
+    Then the RunResult exit_code should be "0"
+    And the RunResult stopped should be "False"
+    And the RunResult passed should be "True"
+    And the RunResult summary total is "12"
+
+  @API_RUNNER_044
+  Scenario Outline: stop() called during the serial phase of a parallel run skips the remaining serial units
+    When I run BehaveXRunner on "serial_mix" with "2" parallel processes, "<scheme>" scheme, and call stop() on progress event "1"
+    Then the RunResult stopped should be "True"
+    And the RunResult passed should be "False"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And the RunResult summary total is less than "3"
+    Examples:
+      | scheme   |
+      | scenario |
+      | feature  |
+
+  @API_RUNNER_045
+  Scenario Outline: on_progress fires for the @SERIAL scenarios of a parallel run
+    When I run BehaveXRunner on @SERIAL and parallel scenarios using "2" parallel processes, "<scheme>" scheme, and an on_progress callback
+    Then the RunResult summary total is "5"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And the completed_count in on_progress events is strictly increasing up to the summary total
+    Examples:
+      | scheme   |
+      | scenario |
+      | feature  |
 
   @API_RUNNER_027
   Scenario: repeated runs in one process do not accumulate tag filters
