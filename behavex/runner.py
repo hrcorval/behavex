@@ -27,7 +27,7 @@ import signal
 import sys
 import time
 import traceback
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import CancelledError, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
@@ -157,6 +157,9 @@ def run(args):
     global match_include
     global include_path_match
     global include_name_match
+    # Singletons built by a previous in-process run would keep its config, paths and names
+    for singleton_class in (ConfigRun, MatchInclude, IncludePathsMatch, IncludeNameMatch):
+        ExecutionSingleton._instances.pop(singleton_class, None)
     args_parsed = parse_arguments(args)
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
@@ -190,9 +193,6 @@ def run(args):
         cleanup_folders()
         copy_bootstrap_html_generator()
     configure_logging(args_parsed)
-    # Singletons built from a previous in-process run would keep filtering by its paths and names
-    for match_class in (MatchInclude, IncludePathsMatch, IncludeNameMatch):
-        ExecutionSingleton._instances.pop(match_class, None)
     match_include = MatchInclude()
     include_path_match = IncludePathsMatch()
     include_name_match = IncludeNameMatch()
@@ -318,6 +318,7 @@ def launch_behavex():
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
     failures = []  # Initialize before try block to ensure it's always defined
+    merged_json = None
     # a single behave process prints its own summary, but none runs when nothing matched
     print_summary = _is_parallel_run
     try:
@@ -598,6 +599,8 @@ def _wait_for_futures(futures, execution_codes, json_reports):
         except (KeyboardInterrupt, SystemExit):
             # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
             raise
+        except CancelledError:
+            continue
         except:
             e = sys.exc_info()[1]
             if isinstance(e, BrokenProcessPool):
