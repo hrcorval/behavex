@@ -845,6 +845,23 @@ print("__RESULT__:" + json.dumps({{"totals": totals}}))
     _store_result(context, _run_script(script))
 
 
+@when('I run BehaveXRunner in one process on passing tests, then failing tests, then passing tests with "{processes}" parallel processes')
+def when_api_run_repeated_with_paths(context, processes):
+    passing_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    failing_path = os.path.join(secondary_features_path, 'failing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+totals = [
+    BehaveXRunner(paths=[path], parallel_processes={int(processes)}, no_report=True).run().summary.total
+    for path in ({repr(passing_path)}, {repr(failing_path)}, {repr(passing_path)})
+]
+print("__RESULT__:" + json.dumps({{"totals": totals}}))
+"""
+    _store_result(context, _run_script(script))
+
+
 @then('the in-process run totals are "{expected}"')
 def then_in_process_run_totals(context, expected):
     actual = context.api_run_result['totals']

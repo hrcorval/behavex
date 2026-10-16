@@ -190,6 +190,9 @@ def run(args):
         cleanup_folders()
         copy_bootstrap_html_generator()
     configure_logging(args_parsed)
+    # Singletons built from a previous in-process run would keep filtering by its paths and names
+    for match_class in (MatchInclude, IncludePathsMatch, IncludeNameMatch):
+        ExecutionSingleton._instances.pop(match_class, None)
     match_include = MatchInclude()
     include_path_match = IncludePathsMatch()
     include_name_match = IncludeNameMatch()
