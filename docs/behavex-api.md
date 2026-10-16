@@ -82,9 +82,9 @@ result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
 
 ### `.stop()`
 
-Cancels the scenarios (or features) a parallel run has not started yet. Scenarios already running finish, and `.run()` returns the results gathered so far. Call it from another thread or from the `on_progress` callback, since `.run()` blocks the calling thread.
+Stops a parallel run from submitting more scenarios (or features) and cancels the queued ones. Scenarios already running finish, and `.run()` returns the results gathered so far with `stopped=True`, so `passed` is `False` even though `exit_code` only reflects the scenarios that ran. Call it from another thread or from the `on_progress` callback, since `.run()` blocks the calling thread.
 
-Has no effect in single-process mode or when called outside an active run. On Python 3.8, already-queued work still runs.
+Has no effect in single-process mode or when called outside an active run. On Python 3.8, work already queued still runs; only the scenarios not yet submitted are skipped.
 
 ```python
 import threading
@@ -101,6 +101,9 @@ timer = threading.Timer(30, runner.stop)
 timer.start()
 result = runner.run()
 timer.cancel()
+
+if result.stopped:
+    print(f"Timed out after {result.summary.total} scenarios")
 ```
 
 ## Result Models
@@ -129,7 +132,8 @@ Top-level result returned by `BehaveXRunner.run()`.
 | `exit_code` | `int` | Process exit code (`0` = all passed) |
 | `output_folder` | `str` | Absolute path of the output folder the run used: `output_folder`, else the config file's `[output] path`, else `output` |
 | `features` | `list[FeatureResult]` | Feature results of the run (populated with `no_report=True` too) |
-| `.passed` | `bool` | `True` when `exit_code == 0` |
+| `stopped` | `bool` | `True` when `.stop()` cut the run short |
+| `.passed` | `bool` | `True` when `exit_code == 0` and the run was not stopped |
 | `.summary` | `RunSummary` | Aggregated scenario counts |
 | `.failed_scenarios` | `list[ScenarioResult]` | Scenarios with status `failed` or `error` across all features, including muted ones |
 

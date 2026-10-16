@@ -170,6 +170,8 @@ def extend_behave_hooks():
                     except Exception as hook_error:
                         # Log but don't fail - some hooks might not be implemented in all versions
                         _log_exception_and_continue(f'behave_run_hook({name}) - after', hook_error)
+                if name == 'after_scenario' and actual_context is not None:
+                    behavex_env._fire_scenario_progress(hook_target)
 
         except Exception as exception:
             # Log hook errors but don't break execution
@@ -371,25 +373,32 @@ def after_scenario(context, scenario):
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
             will_retry = context.bhx_execution_attempts[scenario.name] < configured_attempts
-
-        try:
-            from behavex import runner as _runner
-            if _runner._progress_callback is not None and not _runner._is_parallel_run and not will_retry:
-                _runner._fire_progress(
-                    scenario_name=scenario.name,
-                    feature_name=scenario.feature.name,
-                    status=status_with_hook_errors_as_error(scenario.status.name),
-                    duration=scenario.duration or 0.0,
-                )
-        except Exception:
-            pass
-
+        scenario.bhx_will_retry = will_retry
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
         # Always remove ALL file handlers when scenario ends (simple cleanup)
         _close_log_handler()
         object.__setattr__(context, 'bhx_inside_scenario', False)
+
+
+def _fire_scenario_progress(scenario):
+    try:
+        from behavex import runner as _runner
+        if _runner._progress_callback is None or _runner._is_parallel_run or getattr(scenario, 'bhx_will_retry', False):
+            return
+        status = scenario.status.name
+        if getattr(scenario, 'hook_failed', False):
+            # behave sets this status itself only after the user's after_scenario returns
+            status = 'failed' if global_vars.behave_version < (1, 2, 7) else 'error'
+        _runner._fire_progress(
+            scenario_name=scenario.name,
+            feature_name=scenario.feature.name,
+            status=status_with_hook_errors_as_error(status),
+            duration=scenario.duration or 0.0,
+        )
+    except Exception:
+        pass
 
 
 # noinspection PyUnusedLocal

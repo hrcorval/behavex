@@ -20,6 +20,7 @@ _data = {
     "run_id": result.run_id,
     "exit_code": result.exit_code,
     "passed": result.passed,
+    "stopped": result.stopped,
     "output_folder": result.output_folder,
     "feature_count": len(result.features),
     "features": [
@@ -185,6 +186,15 @@ def then_passed(context, expected):
     expected_bool = expected.lower() == 'true'
     assert actual == expected_bool, (
         f'Expected passed={expected_bool}, got {actual}.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+@then('the RunResult stopped should be "{expected}"')
+def then_stopped(context, expected):
+    actual = context.api_run_result['stopped']
+    assert actual == (expected == 'True'), (
+        f'Expected stopped={expected}, got {actual}.\n'
         f'BehaveXRunner output:\n{context.api_run_output}'
     )
 
@@ -526,6 +536,9 @@ def when_api_run_with_logging_level(context, level):
 _SERIALIZE_PROGRESS = """
 _data = {
     "exit_code": result.exit_code,
+    "passed": result.passed,
+    "stopped": result.stopped,
+    "final_statuses": {s.name: s.status for f in result.features for s in f.scenarios},
     "summary_total": result.summary.total,
     "event_count": len(_events),
     "events": _events,
@@ -1027,3 +1040,91 @@ def then_each_run_used_its_config(context):
     for folder in expected:
         assert os.path.isfile(os.path.join(folder, 'report.json')), f'No report.json in {folder}'
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-run state across in-process runs and after_scenario hook errors
+# ─────────────────────────────────────────────────────────────────────────────
+
+@when('I run BehaveXRunner in one process on passing tests, then with include_paths on failing tests only')
+def when_api_run_paths_then_include_paths(context):
+    passing_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    failing_path = os.path.join(secondary_features_path, 'failing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+totals = [
+    BehaveXRunner(paths=[{repr(passing_path)}], no_report=True).run().summary.total,
+    BehaveXRunner(include_paths=[{repr(failing_path)}], no_report=True).run().summary.total,
+]
+print("__RESULT__:" + json.dumps({{"totals": totals}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@when('I run BehaveXRunner in one process with rerun_failures on the failing test, then on passing tests with "{processes}" parallel processes')
+def when_api_run_rerun_failures_then_parallel(context, processes):
+    base = os.path.join(root_project_path, 'output', f'api_runner_rerun_{get_random_number(6)}')
+    context.add_cleanup(shutil.rmtree, base, ignore_errors=True)
+    os.makedirs(base)
+    failures_file = os.path.join(base, 'failing_scenarios.txt')
+    with open(failures_file, 'w') as failures:
+        failures.write(os.path.join(secondary_features_path, 'failing_tests.feature') + ':3')
+    passing_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+totals = [
+    BehaveXRunner(rerun_failures={repr(failures_file)}, no_report=True).run().summary.total,
+    BehaveXRunner(paths=[{repr(passing_path)}], parallel_processes={int(processes)}, no_report=True).run().summary.total,
+]
+print("__RESULT__:" + json.dumps({{"totals": totals}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@when('I run BehaveXRunner on passing scenarios, one with a failing after_scenario hook, with an on_progress callback')
+def when_api_run_failing_teardown_with_progress_callback(context):
+    _run_with_progress_callback(
+        context, os.path.join(api_runner_features_path, 'teardown_error', 'teardown_error.feature')
+    )
+
+
+@then("each on_progress event status matches the scenario's final status in the RunResult")
+def then_progress_status_matches_final_status(context):
+    final_statuses = context.api_run_result['final_statuses']
+    reported = {e['scenario_name']: e['status'] for e in context.api_run_result['events']}
+    assert reported == final_statuses, (
+        f'on_progress statuses {reported} differ from the final statuses {final_statuses}.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner in one process on worker hook tests, then on passing tests')
+def when_api_run_worker_hooks_then_passing(context):
+    worker_hooks_path = os.path.join(root_project_path, 'tests', 'features', 'worker_hooks_features')
+    passing_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    suffix = get_random_number(6)
+    output_folders = [os.path.join(root_project_path, 'output', f'api_runner_hooks_{suffix}_{run}') for run in (1, 2)]
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+for path, output_folder in zip(({repr(worker_hooks_path)}, {repr(passing_path)}), {repr(output_folders)}):
+    BehaveXRunner(paths=[path], output_folder=output_folder).run()
+print("__RESULT__:" + json.dumps({{"output_folders": {repr(output_folders)}}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the second run did not call any worker hook')
+def then_second_run_called_no_worker_hook(context):
+    first_folder, second_folder = context.api_run_result['output_folders']
+    assert os.path.exists(os.path.join(first_folder, 'worker_hook_calls.log')), (
+        f'The first run did not call its worker hooks.\nBehaveXRunner output:\n{context.api_run_output}'
+    )
+    assert not os.path.exists(os.path.join(second_folder, 'worker_hook_calls.log')), (
+        f'The second run called the first run\'s worker hooks.\nBehaveXRunner output:\n{context.api_run_output}'
+    )

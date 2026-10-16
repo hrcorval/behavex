@@ -91,6 +91,8 @@ _completed_count: int = 0
 _is_parallel_run: bool = False
 _active_executor: Optional[ProcessPoolExecutor] = None
 _last_run_results: list = []
+_stopped: bool = False
+_features_path_before_first_run: Optional[str] = None
 
 
 def _fire_progress(scenario_name: str, feature_name: str, status: str, duration: float) -> None:
@@ -157,9 +159,18 @@ def run(args):
     global match_include
     global include_path_match
     global include_name_match
-    # Singletons built by a previous in-process run would keep its config, paths and names
+    global _features_path_before_first_run
+    global _bhx_user_environment_module
+    # Singletons, env vars and global_vars from a previous in-process run would leak into this one
     for singleton_class in (ConfigRun, MatchInclude, IncludePathsMatch, IncludeNameMatch):
         ExecutionSingleton._instances.pop(singleton_class, None)
+    if _features_path_before_first_run is None:
+        _features_path_before_first_run = os.environ.get('FEATURES_PATH', '')
+    os.environ['FEATURES_PATH'] = _features_path_before_first_run
+    for env_var in ('RERUN_FAILURES', 'BHX_SHARED_CONTEXT'):
+        os.environ.pop(env_var, None)
+    global_vars.__init__()
+    _bhx_user_environment_module = None
     args_parsed = parse_arguments(args)
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)

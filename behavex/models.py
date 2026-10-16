@@ -144,10 +144,11 @@ class RunResult(BaseModel):
     exit_code: int
     output_folder: str
     features: List[FeatureResult] = Field(default_factory=list)
+    stopped: bool = False
 
     @property
     def passed(self) -> bool:
-        return self.exit_code == 0
+        return self.exit_code == 0 and not self.stopped
 
     @property
     def summary(self) -> RunSummary:
