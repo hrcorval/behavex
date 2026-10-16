@@ -96,28 +96,30 @@ class BehaveXRunner:
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
         runner._last_run_results = []
+        runner._stopped = False
         try:
             exit_code = runner.run(args)
         finally:
             runner._progress_callback = None
         features = self._load_features()
-        return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')), features=features)
+        return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
+                         features=features, stopped=runner._stopped)
 
     def stop(self) -> None:
-        """Cancel the work a parallel run has not started; running scenarios finish.
+        """Stop a parallel run from submitting more scenarios and cancel the queued ones.
 
-        Safe from another thread or on_progress. No effect on Python 3.8 or single-process runs.
+        Running ones finish, and on Python 3.8 so do queued ones. No effect on single-process runs.
         """
         executor = runner._active_executor
-        if executor is None:
+        if executor is None or not runner._is_parallel_run:
             return
+        runner._stopped = True
         try:
             executor.shutdown(wait=False, cancel_futures=True)
         except TypeError:  # Python 3.8: no cancel_futures
             executor.shutdown(wait=False)
 
     def _load_features(self) -> List[FeatureResult]:
-        """Works with no_report."""
         return [FeatureResult.model_validate(f) for f in runner._last_run_results]
 
     def _build_args(self) -> List[str]:

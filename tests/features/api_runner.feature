@@ -7,6 +7,7 @@ Feature: BehaveXRunner Python API
     When I run BehaveXRunner with passing tests
     Then the RunResult exit_code should be "0"
     And the RunResult passed should be "True"
+    And the RunResult stopped should be "False"
 
   @API_RUNNER_002
   Scenario: BehaveXRunner returns passed=False for a failing test suite
@@ -203,6 +204,8 @@ Feature: BehaveXRunner Python API
   Scenario: stop() called from on_progress cancels the scenarios a parallel run has not started
     When I run BehaveXRunner on twelve scenarios with "2" parallel processes and call stop() on the first progress event
     Then the RunResult exit_code should be "0"
+    And the RunResult stopped should be "True"
+    And the RunResult passed should be "False"
     And the on_progress callback was called once per scenario in the RunResult summary
     And the RunResult summary total is less than "12"
 
@@ -274,3 +277,25 @@ Feature: BehaveXRunner Python API
   Scenario: RunResult.output_folder is the resolved default output folder
     When I run BehaveXRunner with passing tests
     Then the RunResult output_folder is the absolute path of "output"
+
+  @API_RUNNER_039
+  Scenario: a run does not reuse the paths of a previous run in the same process
+    When I run BehaveXRunner in one process on passing tests, then with include_paths on failing tests only
+    Then the in-process run totals are "5, 1"
+
+  @API_RUNNER_040
+  Scenario: a parallel run after a rerun_failures run in the same process runs its own scenarios
+    When I run BehaveXRunner in one process with rerun_failures on the failing test, then on passing tests with "2" parallel processes
+    Then the in-process run totals are "1, 5"
+
+  @API_RUNNER_041
+  Scenario: on_progress reports the final status of a scenario whose after_scenario hook fails
+    When I run BehaveXRunner on passing scenarios, one with a failing after_scenario hook, with an on_progress callback
+    Then the on_progress callback was called once per scenario in the RunResult summary
+    And each on_progress event status matches the scenario's final status in the RunResult
+    And at least one on_progress event has a status of "error"
+
+  @API_RUNNER_042
+  Scenario: a later in-process run does not call the previous run's worker hooks
+    When I run BehaveXRunner in one process on worker hook tests, then on passing tests
+    Then the second run did not call any worker hook
