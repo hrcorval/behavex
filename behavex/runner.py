@@ -92,6 +92,7 @@ _completed_count: int = 0
 _is_parallel_run: bool = False
 _active_executor: Optional[ProcessPoolExecutor] = None
 _last_run_results: list = []
+_stop_requested: bool = False
 _stopped: bool = False
 _features_path_before_first_run: Optional[str] = None
 
@@ -113,6 +114,30 @@ def _fire_progress(scenario_name: str, feature_name: str, status: str, duration:
         ))
     except Exception:
         pass
+
+
+def _fire_report_progress(json_report) -> None:
+    """Never raises."""
+    if _progress_callback is None:
+        return
+    try:
+        for feature in json_report.get('features', []):
+            for scenario in feature.get('scenarios', []):
+                _fire_progress(
+                    scenario_name=scenario.get('name', ''),
+                    feature_name=feature.get('name', ''),
+                    status=scenario.get('status', ''),
+                    duration=float(scenario.get('duration', 0.0)),
+                )
+    except Exception:
+        pass
+
+
+def _skip_serial_unit_if_stopped() -> bool:
+    global _stopped
+    if _stop_requested:
+        _stopped = True
+    return _stop_requested
 
 
 include_path_match = None
@@ -603,8 +628,10 @@ def create_scenario_line_references(features):
 
 def _wait_for_futures(futures, execution_codes, json_reports):
     """Helper function to wait for futures and handle exceptions"""
+    global _stopped
     for future in futures:
         if future.cancelled():
+            _stopped = True
             continue
         try:
             future.result()
@@ -612,6 +639,7 @@ def _wait_for_futures(futures, execution_codes, json_reports):
             # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
             raise
         except CancelledError:
+            _stopped = True
             continue
         except:
             e = sys.exc_info()[1]
@@ -626,11 +654,13 @@ def _wait_for_futures(futures, execution_codes, json_reports):
 
 def _submit_unless_stopped(process_pool, fn, **kwargs):
     """Return None once the pool was shut down (BehaveXRunner.stop())."""
+    global _stopped
     try:
         return process_pool.submit(fn, **kwargs)
     except BrokenProcessPool:
         raise
     except RuntimeError:
+        _stopped = True
         return None
 
 
@@ -692,6 +722,8 @@ def launch_by_feature(features,
     if serial_features:
         print_parallel('feature.serial_execution')
         for serial_feature in serial_features:
+            if _skip_serial_unit_if_stopped():
+                break
             execution_code, map_json = execute_tests(features_path=None,
                                                      feature_filename=serial_feature["feature_filename"],
                                                      feature_json_skeleton=serial_feature["feature_json_skeleton"],
@@ -703,6 +735,7 @@ def launch_by_feature(features,
                                                      shared_removed_scenarios=None)
             json_reports += [map_json]
             execution_codes.append(execution_code)
+            _fire_report_progress(map_json)
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
@@ -845,6 +878,8 @@ def launch_by_scenario(features,
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
         for scen_info in serial_scenarios:
+            if _skip_serial_unit_if_stopped():
+                break
             scenarios_to_run_in_feature = total_scenarios_to_run[scen_info["feature_filename"]]
             execution_code, json_report = execute_tests(features_path=scen_info["features_path"],
                                                         feature_filename=scen_info["feature_filename"],
@@ -857,6 +892,7 @@ def launch_by_scenario(features,
                                                         shared_removed_scenarios=shared_removed_scenarios)
             execution_codes.append(execution_code)
             json_reports.append(json_report)
+            _fire_report_progress(json_report)
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     if parallel_scenarios:

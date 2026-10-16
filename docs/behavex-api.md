@@ -82,7 +82,7 @@ result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
 
 ### `.stop()`
 
-Stops a parallel run from submitting more scenarios (or features) and cancels the queued ones. Scenarios already running finish, and `.run()` returns the results gathered so far with `stopped=True`, so `passed` is `False` even though `exit_code` only reflects the scenarios that ran. Call it from another thread or from the `on_progress` callback, since `.run()` blocks the calling thread.
+Stops a parallel run from starting more scenarios (or features), including the remaining `@SERIAL` ones, and cancels the queued ones. Scenarios already running finish, and `.run()` returns the results gathered so far. When this skipped any work, `stopped` is `True`, so `passed` is `False` even though `exit_code` only reflects the scenarios that ran; a `.stop()` that came after every scenario had already started leaves `stopped` `False`. Call it from another thread or from the `on_progress` callback, since `.run()` blocks the calling thread.
 
 Has no effect in single-process mode or when called outside an active run. On Python 3.8, work already queued still runs; only the scenarios not yet submitted are skipped.
 

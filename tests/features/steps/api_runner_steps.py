@@ -539,6 +539,7 @@ _data = {
     "passed": result.passed,
     "stopped": result.stopped,
     "final_statuses": {s.name: s.status for f in result.features for s in f.scenarios},
+    "summary": result.summary.model_dump(),
     "summary_total": result.summary.total,
     "event_count": len(_events),
     "events": _events,
@@ -611,6 +612,16 @@ def when_api_run_parallel_with_progress_callback(context, parallel_processes, pa
     _run_with_progress_callback(
         context,
         feature_path,
+        parallel_processes=int(parallel_processes),
+        parallel_scheme=parallel_scheme,
+    )
+
+
+@when('I run BehaveXRunner on @SERIAL and parallel scenarios using "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and an on_progress callback')
+def when_api_run_serial_mix_with_progress_callback(context, parallel_processes, parallel_scheme):
+    _run_with_progress_callback(
+        context,
+        os.path.join(api_runner_features_path, 'serial_mix'),
         parallel_processes=int(parallel_processes),
         parallel_scheme=parallel_scheme,
     )
@@ -807,9 +818,9 @@ def then_no_exception(context):
     )
 
 
-@when('I run BehaveXRunner on twelve scenarios with "{parallel_processes}" parallel processes and call stop() on the first progress event')
-def when_run_parallel_stopping_on_first_event(context, parallel_processes):
-    feature_path = os.path.join(api_runner_features_path, 'twelve_scenarios.feature')
+@when('I run BehaveXRunner on "{fixture}" with "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and call stop() on progress event "{event_number}"')
+def when_run_parallel_stopping_on_event(context, fixture, parallel_processes, parallel_scheme, event_number):
+    feature_path = os.path.join(api_runner_features_path, fixture)
     script = f"""
 import json, sys
 sys.path.insert(0, {repr(root_project_path)})
@@ -819,14 +830,14 @@ _record = _on_progress
 
 def _on_progress(event):
     _record(event)
-    if len(_events) == 1:
+    if len(_events) == {int(event_number)}:
         runner.stop()
 
 runner = BehaveXRunner(
     paths=[{repr(feature_path)}],
     no_report=True,
     parallel_processes={int(parallel_processes)},
-    parallel_scheme='scenario',
+    parallel_scheme={repr(parallel_scheme)},
     on_progress=_on_progress,
 )
 result = runner.run()
