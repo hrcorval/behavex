@@ -211,6 +211,16 @@ Feature: BehaveXRunner Python API
     When I run BehaveXRunner on passing tests in one process with tags "@PASSING_TAG_1", none, "@PASSING_TAG_2", none
     Then the in-process run totals are "1, 5, 1, 5"
 
+  @API_RUNNER_030
+  Scenario: repeated runs in one process each run their own paths
+    When I run BehaveXRunner in one process on passing tests, then failing tests, then passing tests with "1" parallel processes
+    Then the in-process run totals are "5, 1, 5"
+
+  @API_RUNNER_031
+  Scenario: repeated parallel runs in one process each run their own paths
+    When I run BehaveXRunner in one process on passing tests, then failing tests, then passing tests with "2" parallel processes
+    Then the in-process run totals are "5, 1, 5"
+
   @API_RUNNER_028
   Scenario: RunResult.summary counts a @MANUAL scenario as manual
     When I run BehaveXRunner with a feature holding one automated and one @MANUAL scenario
