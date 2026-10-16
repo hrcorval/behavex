@@ -48,7 +48,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 | `parallel_delay` | `int` | Delay in seconds between parallel process launches |
 | `include_paths` | `list[str]` | Additional feature paths to include |
 | `dry_run` | `bool` | List scenarios in reports without executing steps |
-| `stop` | `bool` | Stop execution after the first failure |
+| `stop_on_failure` | `bool` | Stop execution after the first failure (CLI `--stop`) |
 | `show_progress_bar` | `bool` | Display a progress bar during parallel execution |
 | `no_report` | `bool` | Disable all file output — no reports, no output folder |
 | `config` | `str` | Path to a BehaveX config file |
@@ -71,6 +71,8 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 
 Executes the test run synchronously and returns a `RunResult`. Each call generates a new `run_id`.
 
+Run one `BehaveXRunner` at a time per process: the run state is module-level, so concurrent `.run()` calls in the same process are not supported.
+
 ```python
 runner = BehaveXRunner(paths=["tests/features"], no_report=True)
 
@@ -80,9 +82,9 @@ result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
 
 ### `.stop()`
 
-Signals the active parallel executor to stop accepting new work. Must be called from a separate thread, since `.run()` blocks the calling thread.
+Cancels the scenarios (or features) a parallel run has not started yet. Scenarios already running finish, and `.run()` returns the results gathered so far. Call it from another thread or from the `on_progress` callback, since `.run()` blocks the calling thread.
 
-Has no effect in single-process mode or when called outside an active run.
+Has no effect in single-process mode or when called outside an active run. On Python 3.8, already-queued work still runs.
 
 ```python
 import threading
@@ -94,7 +96,7 @@ runner = BehaveXRunner(
     parallel_scheme="scenario",
 )
 
-# Stop execution after 30 seconds from a background thread
+# Cancel the scenarios not started yet after 30 seconds
 timer = threading.Timer(30, runner.stop)
 timer.start()
 result = runner.run()
@@ -103,7 +105,7 @@ timer.cancel()
 
 ## Result Models
 
-All models are Pydantic `BaseModel` instances with `extra='ignore'` — unknown fields from `report.json` are silently dropped for forward compatibility.
+All models are Pydantic `BaseModel` instances with `extra='ignore'` — unknown keys in the result dicts are silently dropped for forward compatibility.
 
 ### `ProgressEvent`
 
@@ -113,9 +115,9 @@ Delivered to the `on_progress` callback after each scenario completes.
 |---|---|---|
 | `scenario_name` | `str` | Name of the completed scenario |
 | `feature_name` | `str` | Name of the feature that owns the scenario |
-| `status` | `str` | `'passed'`, `'failed'`, or `'skipped'` |
+| `status` | `str` | The scenario's status string (`'passed'`, `'failed'`, `'skipped'`, `'untested'`); hook errors are reported as `'error'` |
 | `duration` | `float` | Scenario execution time in seconds |
-| `completed` | `int` | How many scenarios have completed so far in this run (monotonically increasing) |
+| `completed_count` | `int` | How many scenarios have completed so far in this run (monotonically increasing) |
 
 ### `RunResult`
 
@@ -126,21 +128,24 @@ Top-level result returned by `BehaveXRunner.run()`.
 | `run_id` | `str` | Unique UUID4 identifying this specific run |
 | `exit_code` | `int` | Process exit code (`0` = all passed) |
 | `output_folder` | `str` | The configured output folder path |
-| `features` | `list[FeatureResult]` | Parsed feature results (empty when `no_report=True` or no `output_folder`) |
+| `features` | `list[FeatureResult]` | Feature results of the run (populated with `no_report=True` too) |
 | `.passed` | `bool` | `True` when `exit_code == 0` |
 | `.summary` | `RunSummary` | Aggregated scenario counts |
-| `.failed_scenarios` | `list[ScenarioResult]` | All failed scenarios across all features |
+| `.failed_scenarios` | `list[ScenarioResult]` | Scenarios with status `failed` or `error` across all features, including muted ones |
 
 ### `RunSummary`
 
-Returned by `RunResult.summary`.
+Returned by `RunResult.summary`. The counts don't overlap and add up to `total`: a `@MANUAL` or `@WIP` scenario counts only as `manual`.
 
 | Field | Type | Description |
 |---|---|---|
 | `total` | `int` | Total number of scenarios |
 | `passed` | `int` | Number of passed scenarios |
 | `failed` | `int` | Number of failed scenarios |
+| `error` | `int` | Number of scenarios with status `error` (e.g. a hook error) |
 | `skipped` | `int` | Number of skipped scenarios |
+| `untested` | `int` | Number of untested scenarios |
+| `manual` | `int` | Number of `@MANUAL` or `@WIP` scenarios |
 
 ### `FeatureResult`
 
@@ -153,14 +158,14 @@ Returned by `RunResult.summary`.
 | `scenarios` | `list[ScenarioResult]` | All scenarios in this feature |
 | `.passed` | `bool` | `True` when `status == 'passed'` |
 | `.failed` | `bool` | `True` when `status == 'failed'` |
-| `.failed_scenarios` | `list[ScenarioResult]` | Failed scenarios in this feature |
+| `.failed_scenarios` | `list[ScenarioResult]` | Scenarios with status `failed` or `error` in this feature, including muted ones |
 
 ### `ScenarioResult`
 
 | Field / Property | Type | Description |
 |---|---|---|
 | `name` | `str` | Scenario name |
-| `status` | `str` | `'passed'`, `'failed'`, or `'skipped'` |
+| `status` | `str` | `'passed'`, `'failed'`, `'error'`, `'skipped'`, or `'untested'` |
 | `duration` | `float` | Execution time in seconds |
 | `line` | `int` | Line number in the feature file |
 | `tags` | `list[str]` | Scenario tags |
@@ -172,9 +177,13 @@ Returned by `RunResult.summary`.
 | `error_lines` | `list[str]` | Error traceback lines |
 | `error_step` | `StepResult \| None` | The step that caused the failure |
 | `worker_id` | `str` | ID of the parallel worker that ran this scenario |
-| `.passed` | `bool` | `True` when `status == 'passed'` |
-| `.failed` | `bool` | `True` when `status == 'failed'` |
-| `.skipped` | `bool` | `True` when `status == 'skipped'` |
+| `.is_manual` | `bool` | `True` when the scenario is tagged `@MANUAL` or `@WIP` |
+| `.passed` | `bool` | `True` when `status == 'passed'` and not `is_manual` |
+| `.failed` | `bool` | `True` when `status == 'failed'` and not `is_manual` |
+| `.errored` | `bool` | `True` when `status == 'error'` and not `is_manual` |
+| `.skipped` | `bool` | `True` when `status == 'skipped'` and not `is_manual` |
+| `.untested` | `bool` | `True` when `status == 'untested'` and not `is_manual` |
+| `.manual` | `bool` | Same as `is_manual` |
 
 ### `StepResult`
 
@@ -241,7 +250,6 @@ result = BehaveXRunner(
     no_report=True,
 ).run()
 
-# result.features is empty when no_report=True
 assert result.passed, f"Smoke tests failed (exit code {result.exit_code})"
 ```
 
@@ -280,7 +288,7 @@ if not result.passed:
 from behavex import BehaveXRunner, ProgressEvent
 
 def handle_progress(event: ProgressEvent) -> None:
-    print(f"[{event.completed}] {event.status}: {event.feature_name} / {event.scenario_name}")
+    print(f"[{event.completed_count}] {event.status}: {event.feature_name} / {event.scenario_name}")
 
 result = BehaveXRunner(
     paths=["tests/features"],

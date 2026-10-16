@@ -12,9 +12,8 @@ from execution_steps import get_random_number
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'secondary_features')
+api_runner_features_path = os.path.join(root_project_path, 'tests', 'features', 'api_runner_features')
 
-# Shared serialization snippet appended to every subprocess script.
-# Serializes all model fields needed by Then steps into a single __RESULT__ line.
 _SERIALIZE_RESULT = """
 _s = result.summary
 _data = {
@@ -27,7 +26,7 @@ _data = {
         {"name": f.name, "status": f.status, "scenario_count": len(f.scenarios)}
         for f in result.features
     ],
-    "summary": {"total": _s.total, "passed": _s.passed, "failed": _s.failed, "skipped": _s.skipped},
+    "summary": _s.model_dump(),
     "failed_scenario_count": len(result.failed_scenarios),
     "failed_scenarios": [
         {
@@ -45,7 +44,6 @@ print("__RESULT__:" + json.dumps(_data))
 
 
 def _run_script(script: str) -> subprocess.CompletedProcess:
-    """Run a Python script in a subprocess using the same Python interpreter."""
     return subprocess.run(
         [sys.executable, '-c', script],
         capture_output=True,
@@ -57,7 +55,6 @@ def _run_script(script: str) -> subprocess.CompletedProcess:
 
 
 def _parse_result(proc: subprocess.CompletedProcess) -> dict:
-    """Extract the __RESULT__ JSON line from subprocess stdout."""
     for line in proc.stdout.splitlines():
         if line.startswith('__RESULT__:'):
             return json.loads(line[len('__RESULT__:'):])
@@ -80,12 +77,7 @@ def _run_via_api(
     no_report: bool = True,
     **extra_kwargs,
 ) -> None:
-    """Invoke BehaveXRunner in a subprocess and store the result in context.
-
-    extra_kwargs are passed through as BehaveXRunner constructor arguments.
-    String values are automatically repr'd so they are valid Python literals
-    when interpolated into the subprocess script.
-    """
+    """extra_kwargs values are repr'd into the script."""
     kwargs_lines = ''.join(
         f'    {k}={v!r},\n' for k, v in extra_kwargs.items()
     )
@@ -252,12 +244,10 @@ def _run_without_pydantic(script_body: str) -> subprocess.CompletedProcess:
 
 @when('I run the behavex CLI without pydantic available')
 def when_cli_without_pydantic(context):
-    # The CLI entry point is runner.main() — it must not require pydantic
     proc = _run_without_pydantic(f"""
 import sys
 sys.path.insert(0, {repr(root_project_path)})
 from behavex.runner import main
-# Patch sys.argv so main() gets --help and exits cleanly without running tests
 sys.argv = ['behavex', '--help']
 try:
     main()
@@ -314,7 +304,7 @@ def then_import_error_raised(context, expected_text):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Model assertion steps (sub-etapa 2)
+# Model assertion steps
 # ─────────────────────────────────────────────────────────────────────────────
 
 @then('the RunResult has at least "{expected}" feature')
@@ -497,7 +487,7 @@ def then_both_runs_passed(context):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# _build_args coverage — name, stop, define, logging_level
+# _build_args coverage — name, stop_on_failure, define, logging_level
 # ─────────────────────────────────────────────────────────────────────────────
 
 @when('I run BehaveXRunner with passing tests filtered by name "{name}"')
@@ -506,10 +496,10 @@ def when_api_run_with_name(context, name):
     _run_via_api(context, feature_path, name=name)
 
 
-@when('I run BehaveXRunner with failing tests and stop enabled')
-def when_api_run_stop(context):
+@when('I run BehaveXRunner with failing tests and stop_on_failure enabled')
+def when_api_run_stop_on_failure(context):
     feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
-    _run_via_api(context, feature_path, stop=True)
+    _run_via_api(context, feature_path, stop_on_failure=True)
 
 
 @when('I run BehaveXRunner with userdata tests and define "{userdata}"')
@@ -525,12 +515,13 @@ def when_api_run_with_logging_level(context, level):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# on_progress callback steps (015, 016, 017)
+# on_progress callback steps
 # ─────────────────────────────────────────────────────────────────────────────
 
 _SERIALIZE_PROGRESS = """
 _data = {
     "exit_code": result.exit_code,
+    "summary_total": result.summary.total,
     "event_count": len(_events),
     "events": _events,
 }
@@ -545,8 +536,13 @@ def _on_progress(event):
         "scenario_name": event.scenario_name,
         "feature_name": event.feature_name,
         "status": event.status,
-        "completed": event.completed,
+        "completed_count": event.completed_count,
     })
+"""
+
+_RAISING_ON_FIRST_CALL_PROGRESS_CALLBACK = _PROGRESS_CALLBACK + """
+    if len(_events) == 1:
+        raise RuntimeError("boom")
 """
 
 _RAISING_PROGRESS_CALLBACK = """
@@ -613,12 +609,25 @@ def when_api_run_with_raising_progress_callback(context):
     )
 
 
-@then('the on_progress callback was called at least "{expected}" time')
-@then('the on_progress callback was called at least "{expected}" times')
-def then_progress_callback_called_at_least(context, expected):
-    actual = context.api_run_result['event_count']
-    assert actual >= int(expected), (
-        f'Expected on_progress to be called at least {expected} time(s), got {actual}.\n'
+@when('I run BehaveXRunner with passing tests and an on_progress callback that raises on its first call')
+def when_api_run_with_raising_once_progress_callback(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    _run_with_progress_callback(
+        context,
+        feature_path,
+        callback_snippet=_RAISING_ON_FIRST_CALL_PROGRESS_CALLBACK,
+    )
+
+
+@then('the on_progress callback was called once per scenario in the RunResult summary')
+def then_progress_callback_called_once_per_scenario(context):
+    result = context.api_run_result
+    assert result['summary_total'] > 0, (
+        f'Expected at least one scenario in the summary.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+    assert result['event_count'] == result['summary_total'], (
+        f'Expected {result["summary_total"]} on_progress call(s), got {result["event_count"]}.\n'
         f'BehaveXRunner output:\n{context.api_run_output}'
     )
 
@@ -642,15 +651,18 @@ def then_progress_events_have_status(context, expected_status):
         )
 
 
-@then('the completed counter in on_progress events is strictly increasing')
-def then_progress_completed_strictly_increasing(context):
+@then('the completed_count in on_progress events is strictly increasing up to the summary total')
+def then_progress_completed_count_strictly_increasing(context):
     events = context.api_run_result['events']
     assert events, 'No on_progress events were captured.'
-    completed_values = [e['completed'] for e in events]
+    completed_values = [e['completed_count'] for e in events]
     for i in range(1, len(completed_values)):
         assert completed_values[i] > completed_values[i - 1], (
-            f'completed counter is not strictly increasing at index {i}: {completed_values}'
+            f'completed_count is not strictly increasing at index {i}: {completed_values}'
         )
+    assert completed_values[-1] == context.api_run_result['summary_total'], (
+        f'Expected the last completed_count to be {context.api_run_result["summary_total"]}: {completed_values}'
+    )
 
 
 @when('I run BehaveXRunner with failing tests and an on_progress callback')
@@ -682,7 +694,7 @@ def then_at_least_one_progress_event_has_status(context, expected_status):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# stop() steps (022, 023, 024)
+# stop() steps
 # ─────────────────────────────────────────────────────────────────────────────
 
 @when('I call stop() on a BehaveXRunner that is not running')
@@ -715,8 +727,7 @@ from behavex import BehaveXRunner
 runner = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True)
 exception = None
 
-# stop() is called from a background thread 0.5s after run() starts.
-# In non-parallel mode there is no executor, so stop() is a no-op.
+# stop() has no effect on a single-process run
 timer = threading.Timer(0.5, runner.stop)
 timer.start()
 try:
@@ -751,9 +762,6 @@ runner = BehaveXRunner(
 )
 exception = None
 
-# stop() is called from a background thread mid-run.
-# All futures are already submitted upfront, so stop() acts as a no-op
-# on already-queued work, but must not raise or deadlock.
 timer = threading.Timer(0.5, runner.stop)
 timer.start()
 try:
@@ -778,4 +786,112 @@ def then_no_exception(context):
     assert exception is None, (
         f'Expected no exception but got: {exception}\n'
         f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner on twelve scenarios with "{parallel_processes}" parallel processes and call stop() on the first progress event')
+def when_run_parallel_stopping_on_first_event(context, parallel_processes):
+    feature_path = os.path.join(api_runner_features_path, 'twelve_scenarios.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_PROGRESS_CALLBACK}
+_record = _on_progress
+
+def _on_progress(event):
+    _record(event)
+    if len(_events) == 1:
+        runner.stop()
+
+runner = BehaveXRunner(
+    paths=[{repr(feature_path)}],
+    no_report=True,
+    parallel_processes={int(parallel_processes)},
+    parallel_scheme='scenario',
+    on_progress=_on_progress,
+)
+result = runner.run()
+""" + _SERIALIZE_PROGRESS
+    _store_result(context, _run_script(script))
+
+
+@then('the RunResult summary total is less than "{expected}"')
+def then_summary_total_lt(context, expected):
+    actual = context.api_run_result['summary_total']
+    assert actual < int(expected), (
+        f'Expected summary.total < {expected}, got {actual}.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Repeated in-process runs, @MANUAL counting and CLI lazy imports
+# ─────────────────────────────────────────────────────────────────────────────
+
+@when('I run BehaveXRunner on passing tests in one process with tags "{tag_a}", none, "{tag_b}", none')
+def when_api_run_repeated_with_tags(context, tag_a, tag_b):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+totals = [
+    BehaveXRunner(paths=[{repr(feature_path)}], tags=tags, no_report=True).run().summary.total
+    for tags in ([{repr(tag_a)}], [], [{repr(tag_b)}], [])
+]
+print("__RESULT__:" + json.dumps({{"totals": totals}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the in-process run totals are "{expected}"')
+def then_in_process_run_totals(context, expected):
+    actual = context.api_run_result['totals']
+    assert actual == [int(t) for t in expected.split(',')], (
+        f'Expected run totals [{expected}], got {actual}.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner with a feature holding one automated and one @MANUAL scenario')
+def when_api_run_with_manual_scenario(context):
+    _run_via_api(context, os.path.join(api_runner_features_path, 'manual_tests.feature'))
+
+
+@then('the RunResult summary manual is "{expected}"')
+def then_summary_manual(context, expected):
+    actual = context.api_run_result['summary']['manual']
+    assert actual == int(expected), f'Expected summary.manual={expected}, got {actual}.'
+
+
+@then('the RunResult summary counts add up to the total')
+def then_summary_counts_add_up(context):
+    summary = context.api_run_result['summary']
+    counted = sum(summary[k] for k in ('passed', 'failed', 'error', 'skipped', 'untested', 'manual'))
+    assert counted == summary['total'], f'Summary counts do not add up to the total: {summary}'
+
+
+@when('I run the behavex CLI on passing tests and list the loaded modules')
+def when_cli_run_listing_modules(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex.runner import main
+sys.argv = ['behavex', {repr(feature_path)}, '--no-report']
+try:
+    main()
+except SystemExit:
+    pass
+print("__RESULT__:" + json.dumps({{"modules": [m for m in ('behavex.models', 'pydantic') if m in sys.modules]}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the CLI run loaded neither "{module_a}" nor "{module_b}"')
+def then_cli_loaded_neither(context, module_a, module_b):
+    loaded = context.api_run_result['modules']
+    assert module_a not in loaded and module_b not in loaded, (
+        f'The CLI imported {loaded}.\nOutput:\n{context.api_run_output}'
     )

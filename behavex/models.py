@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Pydantic models for BehaveXRunner structured output."""
 from __future__ import annotations
 
 from typing import List, Optional
@@ -9,7 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from behavex.outputs.report_utils import FAILED_STATUSES
 
 
-
 class ProgressEvent(BaseModel):
     model_config = ConfigDict(extra='ignore')
 
@@ -17,7 +15,7 @@ class ProgressEvent(BaseModel):
     feature_name: str
     status: str
     duration: float
-    completed: int
+    completed_count: int
 
 
 class StepResult(BaseModel):
@@ -72,11 +70,6 @@ class ScenarioResult(BaseModel):
     def is_manual(self) -> bool:
         """@MANUAL or @WIP tag: scenario is not automated."""
         return 'MANUAL' in self.tags or 'WIP' in self.tags
-
-    # ------------------------------------------------------------------
-    # Non-overlapping outcome properties — manual takes priority so that
-    # passed + failed + error + skipped + untested + manual == total.
-    # ------------------------------------------------------------------
 
     @property
     def passed(self) -> bool:

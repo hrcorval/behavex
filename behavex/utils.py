@@ -52,6 +52,8 @@ def handle_execution_complete_callback(codes,
                                        json_reports,
                                        progress_bar_instance,
                                        future):
+    if future.cancelled():
+        return
     tuple_values = None
     try:
         tuple_values = future.result()

@@ -26,6 +26,7 @@ from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import (create_log_path, get_string_hash,
+                                          status_with_hook_errors_as_error,
                                           strip_ansi_codes)
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
                            get_all_feature_scenarios, get_autoretry_attempts,
@@ -375,7 +376,7 @@ def after_scenario(context, scenario):
                 _runner._fire_progress(
                     scenario_name=scenario.name,
                     feature_name=scenario.feature.name,
-                    status=scenario.status if isinstance(scenario.status, str) else scenario.status.name,
+                    status=status_with_hook_errors_as_error(scenario.status.name),
                     duration=scenario.duration or 0.0,
                 )
         except Exception:
