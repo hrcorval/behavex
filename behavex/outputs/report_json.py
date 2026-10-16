@@ -237,7 +237,7 @@ def _get_error_scenario(scenario):
             if 'error_lines' in list(failing_step.keys()):
                 error_lines = failing_step['error_lines']
             if step.status == 'undefined':
-                error_msg = u'step undefined'
+                error_msg = [u'step undefined']
                 error_lines = []
             error_background = True
             break
