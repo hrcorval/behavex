@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import re
 import shutil
 import subprocess
@@ -8,25 +7,11 @@ import sys
 from typing import List, Optional
 
 from behave import then, when
+from config_file_steps import _clean_child_env
+from execution_steps import get_random_number
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'secondary_features')
-
-# Env vars injected by the parent behavex process that must not leak into the
-# child subprocess, as they would override the child's own config and paths.
-_PARENT_BEHAVEX_ENV_VARS = frozenset({
-    'CONFIG', 'OUTPUT', 'TAGS', 'PARALLEL_SCHEME',
-    'PARALLEL_PROCESSES', 'FEATURES_PATH', 'TEMP', 'LOGS', 'LOGGING_LEVEL',
-})
-
-
-def _clean_child_env() -> dict:
-    return {k: v for k, v in os.environ.items() if k not in _PARENT_BEHAVEX_ENV_VARS}
-
-
-def _random_suffix(n: int = 6) -> str:
-    return str(random.randint(10 ** (n - 1), 10**n - 1))
-
 
 # Shared serialization snippet appended to every subprocess script.
 # Serializes all model fields needed by Then steps into a single __RESULT__ line.
@@ -101,11 +86,8 @@ def _run_via_api(
     String values are automatically repr'd so they are valid Python literals
     when interpolated into the subprocess script.
     """
-    def _as_py_literal(v):
-        return repr(v)
-
     kwargs_lines = ''.join(
-        f'    {k}={_as_py_literal(v)},\n' for k, v in extra_kwargs.items()
+        f'    {k}={v!r},\n' for k, v in extra_kwargs.items()
     )
     script = f"""
 import json, sys
@@ -146,7 +128,7 @@ def when_api_run_with_tag(context, tag):
 @when('I run BehaveXRunner with passing tests and a configured output folder')
 def when_api_run_with_output_folder(context):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    output_folder = os.path.join('output', f'api_runner_{_random_suffix()}')
+    output_folder = os.path.join('output', f'api_runner_{get_random_number(6)}')
     context.configured_output_folder = output_folder
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=False)
@@ -166,7 +148,7 @@ def when_api_run_parallel(context, parallel_processes, parallel_scheme):
 @when('I run BehaveXRunner with passing tests, no_report enabled, and a configured output folder')
 def when_api_run_no_report(context):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    output_folder = os.path.join('output', f'api_runner_no_report_{_random_suffix()}')
+    output_folder = os.path.join('output', f'api_runner_no_report_{get_random_number(6)}')
     context.configured_output_folder = output_folder
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=True)
 
@@ -186,7 +168,7 @@ def when_api_run_dry_run(context):
 @when('I run BehaveXRunner with failing tests and a configured output folder')
 def when_api_run_failing_with_output_folder(context):
     feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
-    output_folder = os.path.join('output', f'api_runner_fail_{_random_suffix()}')
+    output_folder = os.path.join('output', f'api_runner_fail_{get_random_number(6)}')
     context.configured_output_folder = output_folder
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=False)
@@ -471,8 +453,7 @@ print("__RESULT__:" + json.dumps({{
 }}))
 """
     proc = _run_script(script)
-    context.api_run_result = _parse_result(proc)
-    context.api_run_output = proc.stdout
+    _store_result(context, proc)
 
 
 @then('the two run_ids are different')
@@ -601,8 +582,7 @@ result = BehaveXRunner(
 ).run()
 """ + serialize_snippet
     proc = _run_script(script)
-    context.api_run_result = _parse_result(proc)
-    context.api_run_output = proc.stdout
+    _store_result(context, proc)
 
 
 @when('I run BehaveXRunner with passing tests and an on_progress callback')
@@ -705,28 +685,6 @@ def then_at_least_one_progress_event_has_status(context, expected_status):
 # stop() steps (022, 023, 024)
 # ─────────────────────────────────────────────────────────────────────────────
 
-_SERIALIZE_STOP = """
-_data = {"exit_code": result.exit_code, "exception": None}
-print("__RESULT__:" + json.dumps(_data))
-"""
-
-_SERIALIZE_STOP_NO_RUN = """
-_data = {"exit_code": 0, "exception": None}
-print("__RESULT__:" + json.dumps(_data))
-"""
-
-
-def _run_stop_script(script: str) -> None:
-    proc = _run_script(script)
-    for line in proc.stdout.splitlines():
-        if line.startswith('__RESULT__:'):
-            context_result = json.loads(line[len('__RESULT__:'):])
-            return proc, context_result
-    raise AssertionError(
-        f'stop() subprocess did not emit a result.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
-    )
-
-
 @when('I call stop() on a BehaveXRunner that is not running')
 def when_stop_outside_run(context):
     script = f"""
@@ -743,8 +701,7 @@ _data = {{"exit_code": 0, "exception": exception}}
 print("__RESULT__:" + json.dumps(_data))
 """
     proc = _run_script(script)
-    context.api_run_result = _parse_result(proc)
-    context.api_run_output = proc.stdout
+    _store_result(context, proc)
 
 
 @when('I run BehaveXRunner with passing tests and call stop() from a background thread')
@@ -775,8 +732,7 @@ _data = {{"exit_code": exit_code, "exception": exception}}
 print("__RESULT__:" + json.dumps(_data))
 """
     proc = _run_script(script)
-    context.api_run_result = _parse_result(proc)
-    context.api_run_output = proc.stdout
+    _store_result(context, proc)
 
 
 @when('I run BehaveXRunner with passing tests in parallel and call stop() from a background thread')
@@ -813,8 +769,7 @@ _data = {{"exit_code": exit_code, "exception": exception}}
 print("__RESULT__:" + json.dumps(_data))
 """
     proc = _run_script(script)
-    context.api_run_result = _parse_result(proc)
-    context.api_run_output = proc.stdout
+    _store_result(context, proc)
 
 
 @then('no exception was raised')

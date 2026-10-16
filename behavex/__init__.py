@@ -12,30 +12,21 @@ os.environ['BEHAVEX_PATH'] = os.path.dirname(os.path.realpath(__file__))
 # Set the features path
 os.environ['FEATURES_PATH'] = os.environ.get('FEATURES_PATH', 'features')
 
-try:
-    from behavex.api import BehaveXRunner  # noqa: E402
-    from behavex.models import (  # noqa: E402
-        BackgroundResult,
-        FeatureResult,
-        ProgressEvent,
-        RunResult,
-        RunSummary,
-        ScenarioResult,
-        StepResult,
-    )
-    __all__ = [
-        'BehaveXRunner',
-        'ProgressEvent',
-        'RunResult',
-        'RunSummary',
-        'FeatureResult',
-        'ScenarioResult',
-        'StepResult',
-        'BackgroundResult',
-    ]
-except ImportError as _e:
-    if 'pydantic' not in str(_e).lower():
-        raise
-    # pydantic not installed — API surface unavailable, CLI still works normally
-    __all__ = []
+__all__ = [
+    'BehaveXRunner',
+    'ProgressEvent',
+    'RunResult',
+    'RunSummary',
+    'FeatureResult',
+    'ScenarioResult',
+    'StepResult',
+    'BackgroundResult',
+]
 
+
+def __getattr__(name):
+    # Lazy, so the CLI and every spawned worker skip pydantic and the API
+    if name not in __all__:
+        raise AttributeError("module 'behavex' has no attribute {!r}".format(name))
+    from behavex import api, models
+    return getattr(api if name == 'BehaveXRunner' else models, name)
