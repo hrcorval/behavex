@@ -127,7 +127,7 @@ Top-level result returned by `BehaveXRunner.run()`.
 |---|---|---|
 | `run_id` | `str` | Unique UUID4 identifying this specific run |
 | `exit_code` | `int` | Process exit code (`0` = all passed) |
-| `output_folder` | `str` | The configured output folder path |
+| `output_folder` | `str` | Absolute path of the output folder the run used: `output_folder`, else the config file's `[output] path`, else `output` |
 | `features` | `list[FeatureResult]` | Feature results of the run (populated with `no_report=True` too) |
 | `.passed` | `bool` | `True` when `exit_code == 0` |
 | `.summary` | `RunSummary` | Aggregated scenario counts |

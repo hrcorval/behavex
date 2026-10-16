@@ -197,10 +197,15 @@ def then_output_contains(context, text):
     )
 
 
-@then('the RunResult output_folder matches the configured output folder')
+@then('the RunResult output_folder is the absolute path of the configured output folder')
 def then_output_folder_matches(context):
+    then_output_folder_is_absolute(context, context.configured_output_folder)
+
+
+@then('the RunResult output_folder is the absolute path of "{folder}"')
+def then_output_folder_is_absolute(context, folder):
     actual = context.api_run_result['output_folder']
-    expected = context.configured_output_folder
+    expected = os.path.join(root_project_path, folder)
     assert actual == expected, (
         f'Expected output_folder={repr(expected)}, got {repr(actual)}.\n'
         f'BehaveXRunner output:\n{context.api_run_output}'
@@ -912,3 +917,113 @@ def then_cli_loaded_neither(context, module_a, module_b):
     assert module_a not in loaded and module_b not in loaded, (
         f'The CLI imported {loaded}.\nOutput:\n{context.api_run_output}'
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Autoretry progress, irregular error messages, interrupted runs, config files
+# ─────────────────────────────────────────────────────────────────────────────
+
+@when('I run BehaveXRunner on @AUTORETRY scenarios that pass on a retry or fail every attempt with an on_progress callback')
+def when_api_run_autoretry_with_progress_callback(context):
+    _run_with_progress_callback(context, os.path.join(api_runner_features_path, 'autoretry_flaky.feature'))
+
+
+@when('I run BehaveXRunner with a feature whose background step is undefined')
+def when_api_run_undefined_background(context):
+    _run_via_api(
+        context,
+        os.path.join(root_project_path, 'tests', 'features', 'background_features', 'undefined_background_tests.feature'),
+    )
+
+
+@when('I run BehaveXRunner with a crashing test using "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_api_run_crashing_parallel(context, parallel_processes, parallel_scheme):
+    _run_via_api(
+        context,
+        os.path.join(root_project_path, 'tests', 'features', 'crashing_features', 'crashing_tests.feature'),
+        parallel_processes=int(parallel_processes),
+        parallel_scheme=parallel_scheme,
+    )
+
+
+@then('the RunResult first failed scenario has status "{status}" and the error message "{message}"')
+def then_first_failed_scenario_status_and_message(context, status, message):
+    scenarios = context.api_run_result['failed_scenarios']
+    assert scenarios, f'RunResult has no failed scenarios.\nOutput:\n{context.api_run_output}'
+    assert (scenarios[0]['status'], scenarios[0]['error_msg']) == (status, [message]), scenarios[0]
+
+
+@when('I run BehaveXRunner with passing tests while merging the results raises KeyboardInterrupt')
+def when_api_run_interrupted_before_merge(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner, runner
+
+def _interrupt(*args, **kwargs):
+    raise KeyboardInterrupt
+
+runner.wrap_up_process_pools = _interrupt
+result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
+""" + _SERIALIZE_RESULT
+    _store_result(context, _run_script(script))
+
+
+@when('the runner waits on a queued future that stop() cancels meanwhile')
+def when_waiting_on_future_cancelled_meanwhile(context):
+    script = f"""
+import json, sys, threading
+sys.path.insert(0, {repr(root_project_path)})
+from concurrent.futures import Future
+from behavex import runner
+
+future = Future()
+threading.Timer(0.3, future.cancel).start()
+execution_codes = []
+runner._wait_for_futures([future], execution_codes, [])
+print("__RESULT__:" + json.dumps({{"execution_codes": execution_codes}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('no execution code was recorded for the cancelled future')
+def then_no_execution_code_recorded(context):
+    assert context.api_run_result['execution_codes'] == [], context.api_run_result
+
+
+@when('I run BehaveXRunner in one process with a config file setting output folder "{folder_a}", then one setting "{folder_b}"')
+def when_api_run_with_two_config_files(context, folder_a, folder_b):
+    base = os.path.join(root_project_path, 'output', f'api_runner_config_{get_random_number(6)}')
+    context.add_cleanup(shutil.rmtree, base, ignore_errors=True)
+    os.makedirs(base)
+    config_paths = []
+    context.expected_output_folders = []
+    for folder in (folder_a, folder_b):
+        output_folder = os.path.join(base, folder)
+        config_path = os.path.join(base, f'{folder}.cfg')
+        with open(config_path, 'w') as config_file:
+            config_file.write(f'[output]\npath={output_folder}\n')
+        config_paths.append(config_path)
+        context.expected_output_folders.append(output_folder)
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+folders = [BehaveXRunner(paths=[{repr(feature_path)}], config=path).run().output_folder for path in {config_paths!r}]
+print("__RESULT__:" + json.dumps({{"output_folders": folders}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then("each in-process run reported and wrote its report to its own config's output folder")
+def then_each_run_used_its_config(context):
+    expected = context.expected_output_folders
+    assert context.api_run_result['output_folders'] == expected, (
+        f'Expected output folders {expected}, got {context.api_run_result["output_folders"]}.\n'
+        f'Output:\n{context.api_run_output}'
+    )
+    for folder in expected:
+        assert os.path.isfile(os.path.join(folder, 'report.json')), f'No report.json in {folder}'
+

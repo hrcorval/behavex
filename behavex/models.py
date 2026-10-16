@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from behavex.outputs.report_utils import FAILED_STATUSES
 
@@ -65,6 +65,12 @@ class ScenarioResult(BaseModel):
     start: int = 0
     stop: int = 0
     worker_id: str = ''
+
+    @field_validator('error_msg', mode='before')
+    @classmethod
+    def _error_msg_as_list(cls, value):
+        # A crashed worker's skeleton reports a plain string, which the HTML and JUnit reports render as is
+        return [value] if isinstance(value, str) else value
 
     @property
     def is_manual(self) -> bool:

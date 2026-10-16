@@ -21,9 +21,9 @@ Feature: BehaveXRunner Python API
     And I should see "1 scenario passed" in the BehaveXRunner output
 
   @API_RUNNER_004
-  Scenario: BehaveXRunner preserves the output_folder in RunResult
+  Scenario: RunResult.output_folder is the resolved configured output folder
     When I run BehaveXRunner with passing tests and a configured output folder
-    Then the RunResult output_folder matches the configured output folder
+    Then the RunResult output_folder is the absolute path of the configured output folder
     And the RunResult exit_code should be "0"
 
   @API_RUNNER_005
@@ -233,3 +233,44 @@ Feature: BehaveXRunner Python API
   Scenario: the behavex CLI does not import the API models or pydantic
     When I run the behavex CLI on passing tests and list the loaded modules
     Then the CLI run loaded neither "behavex.models" nor "pydantic"
+
+  @API_RUNNER_032
+  Scenario: on_progress fires once per @AUTORETRY scenario, after its final attempt
+    When I run BehaveXRunner on @AUTORETRY scenarios that pass on a retry or fail every attempt with an on_progress callback
+    Then the RunResult exit_code should be "1"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And at least one on_progress event has a status of "passed"
+    And at least one on_progress event has a status of "failed"
+    And the completed_count in on_progress events is strictly increasing up to the summary total
+
+  @API_RUNNER_033
+  Scenario: RunResult loads a scenario whose background step is undefined
+    When I run BehaveXRunner with a feature whose background step is undefined
+    Then the RunResult has "1" failed scenario
+    And the RunResult first failed scenario has status "error" and the error message "step undefined"
+
+  @API_RUNNER_034
+  Scenario: RunResult loads a scenario whose parallel worker crashed
+    When I run BehaveXRunner with a crashing test using "2" parallel processes and "scenario" parallel scheme
+    Then the RunResult has "1" failed scenario
+    And the RunResult first failed scenario has status "failed" and the error message "Execution crashed or was interrupted when executing the scenario. No outputs could be generated."
+
+  @API_RUNNER_035
+  Scenario: an interrupt before the results are merged still returns a RunResult
+    When I run BehaveXRunner with passing tests while merging the results raises KeyboardInterrupt
+    Then the RunResult exit_code should be "1"
+
+  @API_RUNNER_036
+  Scenario: a queued future cancelled by stop() while the runner waits on it is not counted as a crash
+    When the runner waits on a queued future that stop() cancels meanwhile
+    Then no execution code was recorded for the cancelled future
+
+  @API_RUNNER_037
+  Scenario: repeated runs in one process each use their own config file
+    When I run BehaveXRunner in one process with a config file setting output folder "a", then one setting "b"
+    Then each in-process run reported and wrote its report to its own config's output folder
+
+  @API_RUNNER_038
+  Scenario: RunResult.output_folder is the resolved default output folder
+    When I run BehaveXRunner with passing tests
+    Then the RunResult output_folder is the absolute path of "output"

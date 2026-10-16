@@ -381,6 +381,7 @@ def after_scenario(context, scenario):
         # Track retried scenarios for reporting purposes
         # Note: The actual retry logic is handled by patch_scenario_with_autoretry
         # which monkey-patches scenario.run() method
+        will_retry = False
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
             feature_name = scenario.feature.name
             if feature_name not in global_vars.retried_scenarios:
@@ -388,10 +389,11 @@ def after_scenario(context, scenario):
             else:
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
+            will_retry = context.bhx_execution_attempts[scenario.name] < configured_attempts
 
         try:
             from behavex import runner as _runner
-            if _runner._progress_callback is not None and not _runner._is_parallel_run:
+            if _runner._progress_callback is not None and not _runner._is_parallel_run and not will_retry:
                 _runner._fire_progress(
                     scenario_name=scenario.name,
                     feature_name=scenario.feature.name,

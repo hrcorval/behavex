@@ -2,10 +2,12 @@
 """BehaveX programmatic API."""
 from __future__ import absolute_import
 
+import os
 import uuid
 from typing import Callable, List, Optional
 
 from behavex import runner
+from behavex.conf_mgr import get_env
 
 try:
     from behavex.models import FeatureResult, ProgressEvent, RunResult  # noqa: F401
@@ -99,7 +101,7 @@ class BehaveXRunner:
         finally:
             runner._progress_callback = None
         features = self._load_features()
-        return RunResult(run_id=run_id, exit_code=exit_code, output_folder=self.output_folder, features=features)
+        return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')), features=features)
 
     def stop(self) -> None:
         """Cancel the work a parallel run has not started; running scenarios finish.
