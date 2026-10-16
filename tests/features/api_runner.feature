@@ -78,9 +78,10 @@ Feature: BehaveXRunner Python API
     And the RunResult first failed scenario has error details
 
   @API_RUNNER_MODEL_005
-  Scenario: RunResult.features is empty when no_report is enabled
+  Scenario: RunResult.features is populated when no_report is enabled
     When I run BehaveXRunner with passing tests, no_report enabled, and a configured output folder
-    Then the RunResult has "0" features
+    Then the RunResult has at least "1" feature
+    And the RunResult summary total is greater than "0"
 
   @API_RUNNER_MODEL_006
   Scenario: ScenarioResult.tags is populated from the report
@@ -117,8 +118,8 @@ Feature: BehaveXRunner Python API
     And I should see "1 scenario passed" in the BehaveXRunner output
 
   @API_RUNNER_012
-  Scenario: BehaveXRunner with stop=True passes the stop flag to the runner
-    When I run BehaveXRunner with failing tests and stop enabled
+  Scenario: BehaveXRunner with stop_on_failure=True passes the stop flag to the runner
+    When I run BehaveXRunner with failing tests and stop_on_failure enabled
     Then the RunResult exit_code should be "1"
 
   @API_RUNNER_013
@@ -134,44 +135,52 @@ Feature: BehaveXRunner Python API
   @API_RUNNER_015
   Scenario: on_progress callback is invoked for each scenario in non-parallel mode
     When I run BehaveXRunner with passing tests and an on_progress callback
-    Then the on_progress callback was called at least "3" times
+    Then the on_progress callback was called once per scenario in the RunResult summary
     And each on_progress event has a non-empty scenario_name and feature_name
     And each on_progress event has a status of "passed"
-    And the completed counter in on_progress events is strictly increasing
+    And the completed_count in on_progress events is strictly increasing up to the summary total
 
   @API_RUNNER_016
   Scenario: on_progress callback is invoked for each scenario in parallel mode
     When I run BehaveXRunner with passing tests using "2" parallel processes, "scenario" scheme, and an on_progress callback
-    Then the on_progress callback was called at least "3" times
+    Then the on_progress callback was called once per scenario in the RunResult summary
     And each on_progress event has a non-empty scenario_name and feature_name
+    And the completed_count in on_progress events is strictly increasing up to the summary total
 
   @API_RUNNER_017
   Scenario: exceptions raised inside on_progress callback do not affect the exit code
     When I run BehaveXRunner with passing tests and an on_progress callback that always raises
     Then the RunResult exit_code should be "0"
 
+  @API_RUNNER_025
+  Scenario: an on_progress callback that raises once keeps receiving the remaining events
+    When I run BehaveXRunner with passing tests and an on_progress callback that raises on its first call
+    Then the RunResult exit_code should be "0"
+    And the on_progress callback was called once per scenario in the RunResult summary
+
   @API_RUNNER_018
   Scenario: on_progress callback reports failed status for failing tests in non-parallel mode
     When I run BehaveXRunner with failing tests and an on_progress callback
-    Then the on_progress callback was called at least "1" time
+    Then the on_progress callback was called once per scenario in the RunResult summary
     And at least one on_progress event has a status of "failed"
 
   @API_RUNNER_019
   Scenario: on_progress callback is invoked for each scenario using feature parallel scheme
     When I run BehaveXRunner with passing tests using "2" parallel processes, "feature" scheme, and an on_progress callback
-    Then the on_progress callback was called at least "3" times
+    Then the on_progress callback was called once per scenario in the RunResult summary
     And each on_progress event has a non-empty scenario_name and feature_name
+    And the completed_count in on_progress events is strictly increasing up to the summary total
 
   @API_RUNNER_020
   Scenario: on_progress callback reports failed status for failing tests in parallel mode
     When I run BehaveXRunner with failing tests using "2" parallel processes, "scenario" scheme, and an on_progress callback
-    Then the on_progress callback was called at least "1" time
+    Then the on_progress callback was called once per scenario in the RunResult summary
     And at least one on_progress event has a status of "failed"
 
   @API_RUNNER_021
   Scenario: on_progress callback reports failed status for failing tests using feature parallel scheme
     When I run BehaveXRunner with failing tests using "2" parallel processes, "feature" scheme, and an on_progress callback
-    Then the on_progress callback was called at least "1" time
+    Then the on_progress callback was called once per scenario in the RunResult summary
     And at least one on_progress event has a status of "failed"
 
   @API_RUNNER_022
@@ -189,3 +198,28 @@ Feature: BehaveXRunner Python API
   Scenario: stop() called from a background thread during parallel run does not raise or deadlock
     When I run BehaveXRunner with passing tests in parallel and call stop() from a background thread
     Then no exception was raised
+
+  @API_RUNNER_026
+  Scenario: stop() called from on_progress cancels the scenarios a parallel run has not started
+    When I run BehaveXRunner on twelve scenarios with "2" parallel processes and call stop() on the first progress event
+    Then the RunResult exit_code should be "0"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And the RunResult summary total is less than "12"
+
+  @API_RUNNER_027
+  Scenario: repeated runs in one process do not accumulate tag filters
+    When I run BehaveXRunner on passing tests in one process with tags "@PASSING_TAG_1", none, "@PASSING_TAG_2", none
+    Then the in-process run totals are "1, 5, 1, 5"
+
+  @API_RUNNER_028
+  Scenario: RunResult.summary counts a @MANUAL scenario as manual
+    When I run BehaveXRunner with a feature holding one automated and one @MANUAL scenario
+    Then the RunResult summary total is "2"
+    And the RunResult summary passed is "1"
+    And the RunResult summary manual is "1"
+    And the RunResult summary counts add up to the total
+
+  @API_RUNNER_029
+  Scenario: the behavex CLI does not import the API models or pydantic
+    When I run the behavex CLI on passing tests and list the loaded modules
+    Then the CLI run loaded neither "behavex.models" nor "pydantic"

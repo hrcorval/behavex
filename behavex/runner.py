@@ -87,17 +87,15 @@ EXECUTION_BLOCKED_MSG = (
 os.environ.setdefault('EXECUTION_CODE', '1')
 match_include = None
 
-# Progress callback state — set by BehaveXRunner.run(), cleared in finally block.
 _progress_callback: Optional[Callable] = None
 _completed_count: int = 0
 _is_parallel_run: bool = False
-# Active executor — stored so BehaveXRunner.stop() can shut it down from another thread.
 _active_executor: Optional[ProcessPoolExecutor] = None
 _last_run_results: list = []
 
 
 def _fire_progress(scenario_name: str, feature_name: str, status: str, duration: float) -> None:
-    """Fire the progress callback if one is registered. Never raises."""
+    """Never raises."""
     global _completed_count
     if _progress_callback is None:
         return
@@ -109,7 +107,7 @@ def _fire_progress(scenario_name: str, feature_name: str, status: str, duration:
             feature_name=feature_name,
             status=status,
             duration=duration,
-            completed=_completed_count,
+            completed_count=_completed_count,
         ))
     except Exception:
         pass
@@ -591,6 +589,8 @@ def create_scenario_line_references(features):
 def _wait_for_futures(futures, execution_codes, json_reports):
     """Helper function to wait for futures and handle exceptions"""
     for future in futures:
+        if future.cancelled():
+            continue
         try:
             future.result()
         except (KeyboardInterrupt, SystemExit):
@@ -605,6 +605,16 @@ def _wait_for_futures(futures, execution_codes, json_reports):
             else:
                 print_parallel('parallel.process.error', str(e))
                 execution_codes.append(2)
+
+
+def _submit_unless_stopped(process_pool, fn, **kwargs):
+    """Return None once the pool was shut down (BehaveXRunner.stop())."""
+    try:
+        return process_pool.submit(fn, **kwargs)
+    except BrokenProcessPool:
+        raise
+    except RuntimeError:
+        return None
 
 
 def launch_by_feature(features,
@@ -708,16 +718,18 @@ def launch_by_feature(features,
         for parallel_feature in feature_group:
             feature_filename = parallel_feature["feature_filename"]
             feature_json_skeleton = parallel_feature["feature_json_skeleton"]
-            future = process_pool.submit(execute_tests,
-                                         features_path=None,
-                                         feature_filename=feature_filename,
-                                         feature_json_skeleton=feature_json_skeleton,
-                                         scenarios_to_run_in_feature=None,
-                                         scenario_line=None,
-                                         multiprocess=True,
-                                         config=ConfigRun(),
-                                         lock=lock,
-                                         shared_removed_scenarios=None)
+            future = _submit_unless_stopped(process_pool, execute_tests,
+                                            features_path=None,
+                                            feature_filename=feature_filename,
+                                            feature_json_skeleton=feature_json_skeleton,
+                                            scenarios_to_run_in_feature=None,
+                                            scenario_line=None,
+                                            multiprocess=True,
+                                            config=ConfigRun(),
+                                            lock=lock,
+                                            shared_removed_scenarios=None)
+            if future is None:
+                break
             parallel_processes.append(future)
             future.add_done_callback(create_execution_complete_callback_function(
                 execution_codes,
@@ -863,17 +875,19 @@ def launch_by_scenario(features,
                 feature_filename = scenario_information["feature_filename"]
                 feature_json_skeleton = scenario_information["feature_json_skeleton"]
                 scenario_line = scenario_information["scenario_line"]
-                future = process_pool.submit(execute_tests,
-                                            features_path=features_path,
-                                            feature_filename=feature_filename,
-                                            feature_json_skeleton=feature_json_skeleton,
-                                            scenarios_to_run_in_feature=scenarios_to_run_in_feature,
-                                            scenario_line=scenario_line,
-                                            multiprocess=True,
-                                            config=ConfigRun(),
-                                            lock=lock,
-                                            shared_removed_scenarios=shared_removed_scenarios
-                                            )
+                future = _submit_unless_stopped(process_pool, execute_tests,
+                                                features_path=features_path,
+                                                feature_filename=feature_filename,
+                                                feature_json_skeleton=feature_json_skeleton,
+                                                scenarios_to_run_in_feature=scenarios_to_run_in_feature,
+                                                scenario_line=scenario_line,
+                                                multiprocess=True,
+                                                config=ConfigRun(),
+                                                lock=lock,
+                                                shared_removed_scenarios=shared_removed_scenarios
+                                                )
+                if future is None:
+                    break
                 parallel_processes.append(future)
                 future.add_done_callback(create_execution_complete_callback_function(
                     execution_codes,

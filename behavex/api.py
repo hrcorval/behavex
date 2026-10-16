@@ -42,7 +42,7 @@ class BehaveXRunner:
         parallel_delay: Optional[int] = None,
         include_paths: Optional[List[str]] = None,
         dry_run: bool = False,
-        stop: bool = False,
+        stop_on_failure: bool = False,
         show_progress_bar: bool = False,
         no_report: bool = False,
         config: Optional[str] = None,
@@ -69,7 +69,7 @@ class BehaveXRunner:
         self.parallel_delay = parallel_delay
         self.include_paths = include_paths or []
         self.dry_run = dry_run
-        self.stop_on_failure = stop
+        self.stop_on_failure = stop_on_failure
         self.show_progress_bar = show_progress_bar
         self.no_report = no_report
         self.config = config
@@ -89,12 +89,11 @@ class BehaveXRunner:
         self.on_progress = on_progress
 
     def run(self) -> RunResult:
-        """Execute the test run and return a RunResult."""
         run_id = str(uuid.uuid4())
         args = self._build_args()
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
-        runner._last_run_results = []  # clear before run so stale data never leaks
+        runner._last_run_results = []
         try:
             exit_code = runner.run(args)
         finally:
@@ -103,21 +102,23 @@ class BehaveXRunner:
         return RunResult(run_id=run_id, exit_code=exit_code, output_folder=self.output_folder, features=features)
 
     def stop(self) -> None:
-        """Signal the active parallel executor to stop accepting new work.
+        """Cancel the work a parallel run has not started; running scenarios finish.
 
-        Safe to call from a thread while run() is blocking. Has no effect
-        when called outside of an active run or in single-process mode.
+        Safe from another thread or on_progress. No effect on Python 3.8 or single-process runs.
         """
         executor = runner._active_executor
-        if executor is not None:
+        if executor is None:
+            return
+        try:
+            executor.shutdown(wait=False, cancel_futures=True)
+        except TypeError:  # Python 3.8: no cancel_futures
             executor.shutdown(wait=False)
 
     def _load_features(self) -> List[FeatureResult]:
-        """Return the feature results launch_behavex() kept in memory, so no_report runs have them too."""
+        """Works with no_report."""
         return [FeatureResult.model_validate(f) for f in runner._last_run_results]
 
     def _build_args(self) -> List[str]:
-        """Translate instance params into a CLI args list for runner.run()."""
         args: List[str] = []
 
         args.extend(self.paths)
@@ -164,7 +165,7 @@ class BehaveXRunner:
         if self.formatter_outdir is not None:
             args += ["--formatter-outdir", self.formatter_outdir]
 
-        # Only the disable flag exists; True means "use default" (logs attached), so no flag needed.
+        # Only --no-formatter-attach-logs exists.
         if self.formatter_attach_logs is False:
             args.append("--no-formatter-attach-logs")
 
