@@ -8,7 +8,7 @@ import tempfile
 from typing import List, Optional
 
 import behave
-from behave import then, when
+from behave import given, then, when
 from config_file_steps import _clean_child_env
 from execution_steps import get_random_number
 from packaging.version import Version
@@ -1352,3 +1352,9 @@ from behavex import BehaveXRunner
 result = BehaveXRunner({argument}=['-suite/passing_tests.feature'], parallel_processes={int(parallel_processes)}).run()
 """ + _SERIALIZE_RESULT
     _store_result(context, _run_script(script))
+
+
+@given('Python can cancel queued futures')
+def given_python_can_cancel_queued_futures(context):
+    if sys.version_info < (3, 9):
+        context.scenario.skip(reason='Executor.shutdown(cancel_futures=True) requires Python 3.9')

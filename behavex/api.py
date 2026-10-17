@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import contextlib
 import io
 import os
+import sys
 import uuid
 from typing import Callable, List, Optional
 
@@ -137,10 +138,9 @@ class BehaveXRunner:
         executor = runner._active_executor
         if executor is None or not runner._is_parallel_run:
             return
-        try:
+        # Python 3.8 has no cancel_futures, and shutdown(wait=False) there can strand queued futures
+        if sys.version_info >= (3, 9):
             executor.shutdown(wait=False, cancel_futures=True)
-        except TypeError:  # Python 3.8: no cancel_futures
-            executor.shutdown(wait=False)
 
     def _load_features(self) -> List[FeatureResult]:
         return [FeatureResult.model_validate(f) for f in runner._last_run_results]

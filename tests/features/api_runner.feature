@@ -202,6 +202,7 @@ Feature: BehaveXRunner Python API
 
   @API_RUNNER_026
   Scenario: stop() called from on_progress cancels the scenarios a parallel run has not started
+    Given Python can cancel queued futures
     When I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, "scenario" scheme, and call stop() on progress event "1"
     Then the RunResult exit_code should be "0"
     And the RunResult stopped should be "True"
@@ -364,6 +365,7 @@ Feature: BehaveXRunner Python API
 
   @API_RUNNER_049
   Scenario: stop() does not drop a scenario whose result callback finishes after the last future resolves
+    Given Python can cancel queued futures
     When I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, slow result callbacks, and call stop() on progress event "1"
     Then every scenario whose result was handled is in the RunResult and fired its event before run() returned
 
