@@ -387,14 +387,16 @@ Feature: BehaveXRunner Python API
     Then run() raised a ValueError mentioning "BehaveX stopped before running the tests"
 
   @API_RUNNER_053
-  Scenario Outline: a relative path starting with "-" runs its scenarios instead of being parsed as an option by behave
-    When I run BehaveXRunner on passing tests through a relative path starting with "-" using "<processes>" parallel processes
+  Scenario Outline: a relative <argument> entry starting with "-" runs its scenarios instead of being parsed as an option
+    When I run BehaveXRunner on passing tests through a relative <argument> entry starting with "-" using "<processes>" parallel processes
     Then the RunResult exit_code should be "0"
     And the RunResult summary total is "5"
     Examples:
-      | processes |
-      | 1         |
-      | 2         |
+      | argument      | processes |
+      | paths         | 1         |
+      | paths         | 2         |
+      | include_paths | 1         |
+      | include_paths | 2         |
 
   @API_RUNNER_054
   Scenario Outline: on_progress fires for every scenario in the RunResult, including those stop_on_failure left unexecuted

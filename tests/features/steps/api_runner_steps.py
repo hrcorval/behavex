@@ -1338,8 +1338,8 @@ def then_run_raised_value_error(context, text):
     )
 
 
-@when('I run BehaveXRunner on passing tests through a relative path starting with "-" using "{parallel_processes}" parallel processes')
-def when_api_run_dash_prefixed_path(context, parallel_processes):
+@when('I run BehaveXRunner on passing tests through a relative {argument} entry starting with "-" using "{parallel_processes}" parallel processes')
+def when_api_run_dash_prefixed_path(context, argument, parallel_processes):
     work_dir = tempfile.mkdtemp()
     context.add_cleanup(shutil.rmtree, work_dir, ignore_errors=True)
     shutil.copytree(secondary_features_path, os.path.join(work_dir, '-suite'),
@@ -1349,6 +1349,6 @@ import json, os, sys
 sys.path.insert(0, {repr(root_project_path)})
 os.chdir({repr(work_dir)})
 from behavex import BehaveXRunner
-result = BehaveXRunner(paths=['-suite/passing_tests.feature'], parallel_processes={int(parallel_processes)}).run()
+result = BehaveXRunner({argument}=['-suite/passing_tests.feature'], parallel_processes={int(parallel_processes)}).run()
 """ + _SERIALIZE_RESULT
     _store_result(context, _run_script(script))

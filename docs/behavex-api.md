@@ -50,7 +50,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 | `dry_run` | `bool` | List scenarios in reports without executing steps |
 | `stop_on_failure` | `bool` | Stop execution after the first failure (CLI `--stop`) |
 | `show_progress_bar` | `bool` | Display a progress bar during parallel execution |
-| `no_report` | `bool` | Disable all file output — no reports, no output folder |
+| `no_report` | `bool` | Skip the reports and the output folder; scenario logs and other temporary assets are still written to a temporary folder, whose path BehaveX prints at the end |
 | `config` | `str` | Path to a BehaveX config file |
 | `rerun_failures` | `str` | Path to `failing_scenarios.txt` to rerun only failed scenarios |
 | `formatter` | `str` | Custom formatter class path (e.g., Allure formatter) |
