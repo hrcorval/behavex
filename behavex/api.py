@@ -164,7 +164,7 @@ class BehaveXRunner:
             args.append(f"--parallel-delay={self.parallel_delay}")
 
         if self.include_paths:
-            args += ["--include-paths"] + self.include_paths
+            args += ["--include-paths"] + [runner._as_non_option(path) for path in self.include_paths]
 
         if self.dry_run:
             args.append("--dry-run")
