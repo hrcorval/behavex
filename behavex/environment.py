@@ -170,7 +170,9 @@ def extend_behave_hooks():
                     except Exception as hook_error:
                         # Log but don't fail - some hooks might not be implemented in all versions
                         _log_exception_and_continue(f'behave_run_hook({name}) - after', hook_error)
-                if name == 'after_scenario' and actual_context is not None:
+                # an autoretry wrapper reports its scenario once no retry follows
+                if name == 'after_scenario' and actual_context is not None \
+                        and not getattr(hook_target, 'bhx_autoretry', False):
                     behavex_env._fire_scenario_progress(hook_target)
 
         except Exception as exception:
@@ -364,7 +366,6 @@ def after_scenario(context, scenario):
         # Track retried scenarios for reporting purposes
         # Note: The actual retry logic is handled by patch_scenario_with_autoretry
         # which monkey-patches scenario.run() method
-        will_retry = False
         if scenario.status in ('failed', 'untested') and configured_attempts > 0:
             feature_name = scenario.feature.name
             if feature_name not in global_vars.retried_scenarios:
@@ -372,8 +373,6 @@ def after_scenario(context, scenario):
             else:
                 global_vars.retried_scenarios[feature_name].append(scenario.name)
             context.bhx_execution_attempts[scenario.name] += 1
-            will_retry = context.bhx_execution_attempts[scenario.name] < configured_attempts
-        scenario.bhx_will_retry = will_retry
     except Exception as exception:
         _log_exception_and_continue('after_scenario (behavex)', exception)
     finally:
@@ -385,7 +384,7 @@ def after_scenario(context, scenario):
 def _fire_scenario_progress(scenario):
     try:
         from behavex import runner as _runner
-        if _runner._progress_callback is None or _runner._is_parallel_run or getattr(scenario, 'bhx_will_retry', False):
+        if _runner._progress_callback is None or _runner._is_parallel_run:
             return
         status = scenario.status.name
         if getattr(scenario, 'hook_failed', False):
@@ -494,9 +493,12 @@ def patch_scenario_with_autoretry(scenario, max_attempts=3):
         scenario: Scenario or ScenarioOutline to patch
         max_attempts: How many times the scenario can be run (default: 3)
     """
-    def scenario_run_with_retries(scenario_run, *args, **kwargs):
+    def scenario_run_with_retries(scenario_run, attempted_scenario, *args, **kwargs):
         for attempt in range(1, max_attempts + 1):
-            if not scenario_run(*args, **kwargs):
+            failed = scenario_run(*args, **kwargs)
+            if not failed or attempt == max_attempts:
+                _fire_scenario_progress(attempted_scenario)
+            if not failed:
                 if attempt > 1:
                     message = f"BehaveX AUTO-RETRY: Scenario '{scenario.name}' PASSED after {attempt} attempts"
                     print(message)
@@ -518,7 +520,9 @@ def patch_scenario_with_autoretry(scenario, max_attempts=3):
         scenario_outline = scenario
         for individual_scenario in scenario_outline.scenarios:
             scenario_run = individual_scenario.run
-            individual_scenario.run = functools.partial(scenario_run_with_retries, scenario_run)
+            individual_scenario.bhx_autoretry = True
+            individual_scenario.run = functools.partial(scenario_run_with_retries, scenario_run, individual_scenario)
     else:
         scenario_run = scenario.run
-        scenario.run = functools.partial(scenario_run_with_retries, scenario_run)
+        scenario.bhx_autoretry = True
+        scenario.run = functools.partial(scenario_run_with_retries, scenario_run, scenario)

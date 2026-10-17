@@ -98,10 +98,12 @@ class BehaveXRunner:
         runner._last_run_results = []
         runner._stop_requested = False
         runner._stopped = False
+        runner._run_active = True
         try:
             exit_code = runner.run(args)
         finally:
             runner._progress_callback = None
+            runner._run_active = False
         features = self._load_features()
         return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
                          features=features, stopped=runner._stopped)
@@ -111,10 +113,12 @@ class BehaveXRunner:
 
         Running ones finish, and on Python 3.8 so do queued ones. No effect on single-process runs.
         """
+        if not runner._run_active:
+            return
+        runner._stop_requested = True
         executor = runner._active_executor
         if executor is None or not runner._is_parallel_run:
             return
-        runner._stop_requested = True
         try:
             executor.shutdown(wait=False, cancel_futures=True)
         except TypeError:  # Python 3.8: no cancel_futures

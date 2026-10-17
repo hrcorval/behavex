@@ -91,6 +91,7 @@ _completed_count: int = 0
 _is_parallel_run: bool = False
 _active_executor: Optional[ProcessPoolExecutor] = None
 _last_run_results: list = []
+_run_active: bool = False
 _stop_requested: bool = False
 _stopped: bool = False
 _features_path_before_first_run: Optional[str] = None
@@ -652,8 +653,11 @@ def _wait_for_futures(futures, execution_codes, json_reports):
 
 
 def _submit_unless_stopped(process_pool, fn, **kwargs):
-    """Return None once the pool was shut down (BehaveXRunner.stop())."""
+    """Return None once BehaveXRunner.stop() was requested or the pool was shut down."""
     global _stopped
+    if _stop_requested:
+        _stopped = True
+        return None
     try:
         return process_pool.submit(fn, **kwargs)
     except BrokenProcessPool:
