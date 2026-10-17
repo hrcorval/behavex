@@ -378,3 +378,24 @@ Feature: BehaveXRunner Python API
   Scenario: a path that does not exist raises ValueError instead of exiting
     When I run BehaveXRunner on a feature path that does not exist
     Then run() raised a ValueError mentioning "BehaveX stopped before running the tests"
+
+  @API_RUNNER_053
+  Scenario Outline: a relative path starting with "-" runs its scenarios instead of being parsed as an option by behave
+    When I run BehaveXRunner on passing tests through a relative path starting with "-" using "<processes>" parallel processes
+    Then the RunResult exit_code should be "0"
+    And the RunResult summary total is "5"
+    Examples:
+      | processes |
+      | 1         |
+      | 2         |
+
+  @API_RUNNER_054
+  Scenario Outline: on_progress fires for every scenario in the RunResult, including those stop_on_failure left unexecuted
+    When I run BehaveXRunner with stop_on_failure on a failure followed by passing scenarios using "<processes>" parallel processes and an on_progress callback
+    Then the RunResult summary untested is "<untested>"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And the completed_count in on_progress events is strictly increasing up to the summary total
+    Examples:
+      | processes | untested |
+      | 1         | 2        |
+      | 2         | 0        |

@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from typing import List, Optional
 
 import behave
@@ -284,7 +285,7 @@ def then_cli_exits_ok(context):
     assert 'ImportError' not in output and 'pydantic' not in output.lower(), (
         f'CLI raised a pydantic-related error:\n{output}'
     )
-    assert 'EXIT:0' in proc.stdout or 'BehaveX' in output, (
+    assert proc.returncode == 0 and 'EXIT:0' in proc.stdout.splitlines(), (
         f'CLI did not exit cleanly:\n{output}'
     )
 
@@ -401,6 +402,14 @@ def then_summary_skipped(context, expected):
     actual = context.api_run_result['summary']['skipped']
     assert actual == int(expected), (
         f'Expected summary.skipped={expected}, got {actual}.'
+    )
+
+
+@then('the RunResult summary untested is "{expected}"')
+def then_summary_untested(context, expected):
+    actual = context.api_run_result['summary']['untested']
+    assert actual == int(expected), (
+        f'Expected summary.untested={expected}, got {actual}.'
     )
 
 
@@ -587,6 +596,7 @@ def _run_with_progress_callback(
     parallel_processes: int = 1,
     parallel_scheme: str = 'scenario',
     serialize_snippet: str = _SERIALIZE_PROGRESS,
+    stop_on_failure: bool = False,
 ) -> None:
     script = f"""
 import json, sys
@@ -598,6 +608,7 @@ result = BehaveXRunner(
     no_report=True,
     parallel_processes={parallel_processes},
     parallel_scheme={repr(parallel_scheme)},
+    stop_on_failure={stop_on_failure},
     on_progress=_on_progress,
 ).run()
 """ + serialize_snippet
@@ -619,6 +630,16 @@ def when_api_run_parallel_with_progress_callback(context, parallel_processes, pa
         feature_path,
         parallel_processes=int(parallel_processes),
         parallel_scheme=parallel_scheme,
+    )
+
+
+@when('I run BehaveXRunner with stop_on_failure on a failure followed by passing scenarios using "{parallel_processes}" parallel processes and an on_progress callback')
+def when_api_run_stop_on_failure_with_progress_callback(context, parallel_processes):
+    _run_with_progress_callback(
+        context,
+        os.path.join(api_runner_features_path, 'stop_on_failure.feature'),
+        parallel_processes=int(parallel_processes),
+        stop_on_failure=True,
     )
 
 
@@ -1298,3 +1319,19 @@ def then_run_raised_value_error(context, text):
     assert raised and raised['type'] == 'ValueError' and text in raised['message'], (
         f'Expected a ValueError mentioning {text!r}, got {raised}.\nOutput:\n{context.api_run_output}'
     )
+
+
+@when('I run BehaveXRunner on passing tests through a relative path starting with "-" using "{parallel_processes}" parallel processes')
+def when_api_run_dash_prefixed_path(context, parallel_processes):
+    work_dir = tempfile.mkdtemp()
+    context.add_cleanup(shutil.rmtree, work_dir, ignore_errors=True)
+    shutil.copytree(secondary_features_path, os.path.join(work_dir, '-suite'),
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    script = f"""
+import json, os, sys
+sys.path.insert(0, {repr(root_project_path)})
+os.chdir({repr(work_dir)})
+from behavex import BehaveXRunner
+result = BehaveXRunner(paths=['-suite/passing_tests.feature'], parallel_processes={int(parallel_processes)}).run()
+""" + _SERIALIZE_RESULT
+    _store_result(context, _run_script(script))

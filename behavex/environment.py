@@ -410,6 +410,7 @@ def _fire_scenario_progress(scenario):
         if getattr(scenario, 'hook_failed', False):
             # behave sets this status itself only after the user's after_scenario returns
             status = 'failed' if global_vars.behave_version < (1, 2, 7) else 'error'
+        _runner._progress_reported.add((scenario.feature.filename, scenario.line))
         _runner._fire_progress(
             scenario_name=scenario.name,
             feature_name=scenario.feature.name,
