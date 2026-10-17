@@ -25,6 +25,7 @@ import platform
 import re
 import signal
 import sys
+import threading
 import time
 import traceback
 from concurrent.futures import CancelledError, ProcessPoolExecutor
@@ -650,6 +651,15 @@ def _wait_for_futures(futures, execution_codes, json_reports):
             else:
                 print_parallel('parallel.process.error', str(e))
                 execution_codes.append(2)
+        future.bhx_reported.wait()
+
+
+def _add_report_callback(future, execution_codes, json_reports):
+    # set_result wakes result() before callbacks run, and a stopped pool's shutdown no longer joins them
+    future.bhx_reported = threading.Event()
+    future.add_done_callback(create_execution_complete_callback_function(
+        execution_codes, json_reports, global_vars.progress_bar_instance))
+    future.add_done_callback(lambda _: future.bhx_reported.set())
 
 
 def _submit_unless_stopped(process_pool, fn, **kwargs):
@@ -784,11 +794,7 @@ def launch_by_feature(features,
             if future is None:
                 break
             parallel_processes.append(future)
-            future.add_done_callback(create_execution_complete_callback_function(
-                execution_codes,
-                json_reports,
-                global_vars.progress_bar_instance,
-            ))
+            _add_report_callback(future, execution_codes, json_reports)
             group_futures.append(future)
 
         # Wait for completion of this order group before proceeding to the next
@@ -945,11 +951,7 @@ def launch_by_scenario(features,
                 if future is None:
                     break
                 parallel_processes.append(future)
-                future.add_done_callback(create_execution_complete_callback_function(
-                    execution_codes,
-                    json_reports,
-                    global_vars.progress_bar_instance
-                ))
+                _add_report_callback(future, execution_codes, json_reports)
                 group_futures.append(future)
 
             # Wait for completion of this order group before proceeding to the next

@@ -71,6 +71,8 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 
 Executes the test run synchronously and returns a `RunResult`. Each call generates a new `run_id`.
 
+An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a run BehaveX refuses to start (such as duplicated scenarios), also raises `ValueError`; BehaveX prints the reason first. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
+
 Run one `BehaveXRunner` at a time per process: the run state is module-level, so concurrent `.run()` calls in the same process are not supported.
 
 ```python

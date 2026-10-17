@@ -54,9 +54,10 @@ def extend_behave_hooks():
     global hooks_already_set
     behave_run_hook = ModelRunner.run_hook
     behavex_env = sys.modules[__name__]
-    is_dry_run = get_param('dry_run')
 
     def run_hook(self, name, context=None, *args):
+        # read per call: the wrapper is installed once and outlives in-process runs
+        is_dry_run = get_param('dry_run')
 
         # Behave version compatibility: handle different hook signatures
         # Behave 1.2.6: run_hook(name, context, *args) where context is the actual context

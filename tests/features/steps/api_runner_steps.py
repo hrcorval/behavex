@@ -1190,3 +1190,111 @@ def then_second_run_called_no_worker_hook(context):
     assert not os.path.exists(os.path.join(second_folder, 'worker_hook_calls.log')), (
         f'The second run called the first run\'s worker hooks.\nBehaveXRunner output:\n{context.api_run_output}'
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Hook state across runs, slow result callbacks after stop() and invalid arguments
+# ─────────────────────────────────────────────────────────────────────────────
+
+@when('I run BehaveXRunner in one process as a dry run, then as a real run, on passing scenarios, one with a failing after_scenario hook')
+def when_api_dry_run_then_real_run(context):
+    feature_path = os.path.join(api_runner_features_path, 'teardown_error', 'teardown_error.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+BehaveXRunner(paths=[{repr(feature_path)}], dry_run=True, no_report=True).run()
+result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
+""" + _SERIALIZE_RESULT
+    _store_result(context, _run_script(script))
+
+
+@when('I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, slow result callbacks, and call stop() on progress event "1"')
+def when_run_parallel_slow_callbacks_stopping_on_first_event(context):
+    feature_path = os.path.join(api_runner_features_path, 'twelve_scenarios.feature')
+    script = f"""
+import json, sys, time
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner, utils
+{_PROGRESS_CALLBACK}
+_record = _on_progress
+_handle_result = utils.handle_execution_complete_callback
+_results_handled = []
+
+def _slow_handle_result(codes, json_reports, progress_bar, future):
+    if future.cancelled():
+        return
+    time.sleep(0.5)
+    _handle_result(codes, json_reports, progress_bar, future)
+    _results_handled.append(future)
+
+utils.handle_execution_complete_callback = _slow_handle_result
+
+def _on_progress(event):
+    _record(event)
+    if len(_events) == 1:
+        runner.stop()
+
+runner = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True, parallel_processes=2,
+                       parallel_scheme='scenario', on_progress=_on_progress)
+result = runner.run()
+_events_at_return = len(_events)
+time.sleep(2)
+print("__HANDLED__:" + json.dumps({{"results_handled": len(_results_handled), "events_at_return": _events_at_return}}))
+""" + _SERIALIZE_PROGRESS
+    _store_result(context, _run_script(script))
+    for line in context.api_run_output.splitlines():
+        if line.startswith('__HANDLED__:'):
+            context.api_run_result.update(json.loads(line[len('__HANDLED__:'):]))
+
+
+@then('every scenario whose result was handled is in the RunResult and fired its event before run() returned')
+def then_every_handled_result_reported(context):
+    result = context.api_run_result
+    assert result['stopped'], result
+    assert result['summary_total'] == result['results_handled'] == result['events_at_return'], (
+        f'{result["results_handled"]} results handled, {result["summary_total"]} in the RunResult, '
+        f'{result["events_at_return"]} events before run() returned.\nOutput:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner on passing tests with {argument} set to "{value}"')
+def when_api_run_with_argument_value(context, argument, value):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+try:
+    BehaveXRunner(paths=[{repr(feature_path)}], no_report=True, {argument}={repr(value)}).run()
+    raised = None
+except BaseException as error:
+    raised = {{"type": type(error).__name__, "message": str(error)}}
+print("__RESULT__:" + json.dumps({{"raised": raised}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@when('I run BehaveXRunner on a feature path that does not exist')
+def when_api_run_missing_path(context):
+    missing_path = os.path.join(secondary_features_path, 'missing_{}.feature'.format(get_random_number(6)))
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+try:
+    BehaveXRunner(paths=[{repr(missing_path)}], no_report=True).run()
+    raised = None
+except BaseException as error:
+    raised = {{"type": type(error).__name__, "message": str(error)}}
+print("__RESULT__:" + json.dumps({{"raised": raised}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('run() raised a ValueError mentioning "{text}"')
+def then_run_raised_value_error(context, text):
+    raised = context.api_run_result['raised']
+    assert raised and raised['type'] == 'ValueError' and text in raised['message'], (
+        f'Expected a ValueError mentioning {text!r}, got {raised}.\nOutput:\n{context.api_run_output}'
+    )
