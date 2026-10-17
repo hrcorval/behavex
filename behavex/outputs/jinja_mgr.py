@@ -16,6 +16,7 @@ import traceback
 from xml.sax.saxutils import quoteattr  # nosec
 
 import jinja2
+from markupsafe import Markup
 
 from behavex.conf_mgr import get_env
 from behavex.execution_singleton import ExecutionSingleton
@@ -65,6 +66,7 @@ class TemplateHandler(metaclass=ExecutionSingleton):
         self.add_filter(get_path_extra_logs, 'get_path_extra_logs')
         self.add_filter(get_relative_extra_logs_path, 'get_relative_extra_logs_path')
         self.add_filter(clean_invalid_xml_chars, 'CIXC')
+        self.add_filter(escape_cdata, 'escape_cdata')
         self.add_filter(normalize_path, 'normalize_path')
         from behavex.utils import get_scenario_tags
         self.add_filter(get_scenario_tags, 'get_scenario_tags')
@@ -296,6 +298,11 @@ def clean_invalid_xml_chars(xml_content):
     if isinstance(xml_content, bytes):
         xml_content = xml_content.decode()
     return ''.join([clean_char(c) for c in xml_content])
+
+
+def escape_cdata(cdata_content):
+    # A CDATA section ends at the first ']]>', so split it across two sections
+    return Markup(str(cdata_content).replace(']]>', ']]]]><![CDATA[>'))
 
 
 def invalid_xml_remove(c):

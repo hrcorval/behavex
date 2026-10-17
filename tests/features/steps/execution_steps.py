@@ -1183,6 +1183,15 @@ def then_junit_xml_failure_message_contains(context, text):
         f"No JUnit failure message contains '{text}'. Found: {messages}"
 
 
+@then('I should see the JUnit XML system output contains "{text}"')
+def then_junit_xml_system_out_contains(context, text):
+    outputs = [system_out.text or ''
+               for testcase in _get_all_xml_testcases(context)
+               for system_out in testcase.findall('system-out')]
+    assert any(text in output for output in outputs), \
+        f"No JUnit system output contains '{text}'. Found: {outputs}"
+
+
 @then('I should see error messages for failed scenarios in the JUnit XML report')
 def then_junit_xml_failure_messages(context):
     testcases = _get_all_xml_testcases(context)

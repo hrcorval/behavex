@@ -30,3 +30,13 @@ def step_perform_condition(context):
         assert False, "This step is designed to fail"
     elif context.condition == 'skip':
         context.scenario.skip("Skipped")
+
+
+@given('a step with the text "{value}"')
+def step_with_text(context, value):
+    logging.info('a step with the text %s', value)
+
+
+@given('a step that fails with the message "{message}"')
+def step_fails_with_message(context, message):
+    assert False, message

@@ -33,3 +33,13 @@ Feature: JUnit XML Report Validation
   Scenario: HTML and JUnit XML reports contain the same total number of scenarios
     When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
     Then I should see the same number of scenarios in the reports
+
+  Scenario Outline: JUnit XML report stays well-formed when report text contains the CDATA terminator
+    When I run the behavex command targeting the "xml_report_features/cdata_terminator_tests.feature" feature with "<processes>" parallel processes
+    Then I should see "1" scenarios with status "passed" in the JUnit XML report
+    And I should see the JUnit XML system output contains "<![CDATA[value]]>"
+    And I should see the JUnit XML failure message contains "expected ]]> in the body"
+  Examples: process counts
+    | processes |
+    | 1         |
+    | 2         |
