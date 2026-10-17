@@ -229,6 +229,17 @@ Feature: BehaveXRunner Python API
       | scenario |
       | feature  |
 
+  @API_RUNNER_047
+  Scenario Outline: stop() called before a parallel run submits any work skips every scenario
+    When I run BehaveXRunner on "stop_before_workers" with "2" parallel processes, "<scheme>" scheme, and call stop() while before_all_workers runs
+    Then the RunResult stopped should be "True"
+    And the RunResult passed should be "False"
+    And the RunResult summary total is less than "4"
+    Examples:
+      | scheme   |
+      | scenario |
+      | feature  |
+
   @API_RUNNER_045
   Scenario Outline: on_progress fires for the @SERIAL scenarios of a parallel run
     When I run BehaveXRunner on @SERIAL and parallel scenarios using "2" parallel processes, "<scheme>" scheme, and an on_progress callback
@@ -277,11 +288,19 @@ Feature: BehaveXRunner Python API
     And at least one on_progress event has a status of "failed"
     And the completed_count in on_progress events is strictly increasing up to the summary total
 
+  @API_RUNNER_046
+  Scenario: on_progress fires once per @AUTORETRY scenario that ends in error, after its final attempt
+    When I run BehaveXRunner on @AUTORETRY scenarios whose step raises an error or whose teardown fails on every attempt with an on_progress callback
+    Then the RunResult summary total is "2"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And each on_progress event status matches the scenario's final status in the RunResult
+    And at least one on_progress event has behave's error status
+
   @API_RUNNER_033
   Scenario: RunResult loads a scenario whose background step is undefined
     When I run BehaveXRunner with a feature whose background step is undefined
     Then the RunResult has "1" failed scenario
-    And the RunResult first failed scenario has status "error" and the error message "step undefined"
+    And the RunResult first failed scenario has behave's error status and the error message "step undefined"
 
   @API_RUNNER_034
   Scenario: RunResult loads a scenario whose parallel worker crashed
@@ -324,7 +343,7 @@ Feature: BehaveXRunner Python API
     When I run BehaveXRunner on passing scenarios, one with a failing after_scenario hook, with an on_progress callback
     Then the on_progress callback was called once per scenario in the RunResult summary
     And each on_progress event status matches the scenario's final status in the RunResult
-    And at least one on_progress event has a status of "error"
+    And at least one on_progress event has behave's error status
 
   @API_RUNNER_042
   Scenario: a later in-process run does not call the previous run's worker hooks

@@ -6,9 +6,14 @@ import subprocess
 import sys
 from typing import List, Optional
 
+import behave
 from behave import then, when
 from config_file_steps import _clean_child_env
 from execution_steps import get_random_number
+from packaging.version import Version
+
+# behave 1.2.6 reports hook errors and undefined background steps as failed
+BEHAVE_ERROR_STATUS = 'error' if Version(behave.__version__) >= Version('1.2.7') else 'failed'
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'secondary_features')
@@ -711,6 +716,11 @@ def when_api_run_failing_parallel_with_progress_callback(context, parallel_proce
     )
 
 
+@then('at least one on_progress event has behave\'s error status')
+def then_at_least_one_progress_event_has_behave_error_status(context):
+    then_at_least_one_progress_event_has_status(context, BEHAVE_ERROR_STATUS)
+
+
 @then('at least one on_progress event has a status of "{expected_status}"')
 def then_at_least_one_progress_event_has_status(context, expected_status):
     events = context.api_run_result['events']
@@ -845,6 +855,35 @@ result = runner.run()
     _store_result(context, _run_script(script))
 
 
+@when('I run BehaveXRunner on "{fixture}" with "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and call stop() while before_all_workers runs')
+def when_run_parallel_stopping_in_before_all_workers(context, fixture, parallel_processes, parallel_scheme):
+    feature_path = os.path.join(api_runner_features_path, fixture)
+    script = f"""
+import json, sys, threading
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+hook_entered = threading.Event()
+stop_called = threading.Event()
+runner = BehaveXRunner(
+    paths=[{repr(feature_path)}],
+    no_report=True,
+    parallel_processes={int(parallel_processes)},
+    parallel_scheme={repr(parallel_scheme)},
+)
+
+def _stop_once_hook_entered():
+    hook_entered.wait(timeout=60)
+    runner.stop()
+    stop_called.set()
+
+threading.Thread(target=_stop_once_hook_entered, daemon=True).start()
+result = runner.run()
+_events = []
+""" + _SERIALIZE_PROGRESS
+    _store_result(context, _run_script(script))
+
+
 @then('the RunResult summary total is less than "{expected}"')
 def then_summary_total_lt(context, expected):
     actual = context.api_run_result['summary_total']
@@ -952,6 +991,13 @@ def when_api_run_autoretry_with_progress_callback(context):
     _run_with_progress_callback(context, os.path.join(api_runner_features_path, 'autoretry_flaky.feature'))
 
 
+@when('I run BehaveXRunner on @AUTORETRY scenarios whose step raises an error or whose teardown fails on every attempt with an on_progress callback')
+def when_api_run_autoretry_errors_with_progress_callback(context):
+    _run_with_progress_callback(
+        context, os.path.join(api_runner_features_path, 'teardown_error', 'autoretry_errors.feature')
+    )
+
+
 @when('I run BehaveXRunner with a feature whose background step is undefined')
 def when_api_run_undefined_background(context):
     _run_via_api(
@@ -968,6 +1014,11 @@ def when_api_run_crashing_parallel(context, parallel_processes, parallel_scheme)
         parallel_processes=int(parallel_processes),
         parallel_scheme=parallel_scheme,
     )
+
+
+@then('the RunResult first failed scenario has behave\'s error status and the error message "{message}"')
+def then_first_failed_scenario_behave_error_status_and_message(context, message):
+    then_first_failed_scenario_status_and_message(context, BEHAVE_ERROR_STATUS, message)
 
 
 @then('the RunResult first failed scenario has status "{status}" and the error message "{message}"')
