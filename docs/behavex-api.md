@@ -65,7 +65,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 | `include` | `str` | Regex pattern to include feature files by path |
 | `exclude` | `str` | Regex pattern to exclude feature files by path |
 | `define` | `list[str]` | User-defined variables as `key=value` strings, accessible via `context.config.userdata` |
-| `on_progress` | `Optional[Callable[[ProgressEvent], None]]` | Optional callback invoked after each scenario completes. Works in both parallel and non-parallel modes. Exceptions inside the callback are silently swallowed and never affect the exit code. |
+| `on_progress` | `Optional[Callable[[ProgressEvent], None]]` | Optional callback invoked once for every scenario in `RunResult.features`, in both parallel and non-parallel modes; see [Stream progress with on_progress](#stream-progress-with-on_progress) for when events arrive. Exceptions inside the callback are silently swallowed and never affect the exit code. |
 
 ### `.run()` → `RunResult`
 
@@ -114,7 +114,7 @@ All models are Pydantic `BaseModel` instances with `extra='ignore'` — unknown 
 
 ### `ProgressEvent`
 
-Delivered to the `on_progress` callback after each scenario completes.
+Delivered to the `on_progress` callback once for every scenario in `RunResult.features`, after it completes.
 
 | Field | Type | Description |
 |---|---|---|
@@ -288,7 +288,7 @@ if not result.passed:
     ).run()
 ```
 
-### Stream real-time progress with on_progress
+### Stream progress with on_progress
 
 ```python
 from behavex import BehaveXRunner, ProgressEvent
@@ -304,4 +304,10 @@ result = BehaveXRunner(
 ).run()
 ```
 
-The callback fires after every scenario in both parallel and non-parallel modes. Any exception raised inside the callback is silently ignored — it never affects the run or its exit code.
+The callback fires once for every scenario in `RunResult.features`, in both parallel and non-parallel modes, so the number of events equals `result.summary.total`. Events are always per scenario, but when they arrive depends on the mode:
+
+- **Single process** and **`parallel_scheme="scenario"`**: each event arrives as its scenario finishes. Use one of these for timely progress.
+- **`parallel_scheme="feature"`**: the events of a feature arrive together, after the whole feature finishes in its worker.
+- Scenarios behave never ran (after the failure of a single-process `stop_on_failure=True` run, or in a `dry_run=True` run) arrive with status `'untested'` just before `.run()` returns.
+
+Any exception raised inside the callback is silently ignored — it never affects the run or its exit code.

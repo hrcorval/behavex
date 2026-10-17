@@ -109,6 +109,7 @@ class BehaveXRunner:
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
         runner._last_run_results = []
+        runner._progress_reported = set()
         runner._stop_requested = False
         runner._stopped = False
         runner._run_active = True

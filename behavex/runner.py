@@ -92,6 +92,7 @@ _completed_count: int = 0
 _is_parallel_run: bool = False
 _active_executor: Optional[ProcessPoolExecutor] = None
 _last_run_results: list = []
+_progress_reported: set = set()
 _run_active: bool = False
 _stop_requested: bool = False
 _stopped: bool = False
@@ -117,13 +118,15 @@ def _fire_progress(scenario_name: str, feature_name: str, status: str, duration:
         pass
 
 
-def _fire_report_progress(json_report) -> None:
-    """Never raises."""
+def _fire_report_progress(json_report, already_reported=frozenset()) -> None:
+    """Never raises. already_reported holds (feature filename, scenario line) keys to skip."""
     if _progress_callback is None:
         return
     try:
         for feature in json_report.get('features', []):
             for scenario in feature.get('scenarios', []):
+                if (feature.get('filename'), scenario.get('line')) in already_reported:
+                    continue
                 _fire_progress(
                     scenario_name=scenario.get('name', ''),
                     feature_name=feature.get('name', ''),
@@ -467,9 +470,11 @@ def launch_behavex():
         exit_code = EXIT_ERROR
     finally:
         _active_executor = None
-        _is_parallel_run = False
         global _last_run_results
         _last_run_results = merged_json.get('features', []) if isinstance(merged_json, dict) else []
+        if not _is_parallel_run:
+            _fire_report_progress({'features': _last_run_results}, _progress_reported)
+        _is_parallel_run = False
         if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
             exit_code = EXIT_ERROR
     _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json))
@@ -1418,7 +1423,7 @@ def _write_overall_status(overall_status):
 
 def _find_user_environment_path() -> Optional[str]:
     """Return the environment.py behave loads for FEATURES_PATH, or None if there is none."""
-    paths = [path.strip() for path in os.environ.get('FEATURES_PATH', '').split(',') if path.strip()]
+    paths = [_as_non_option(path.strip()) for path in os.environ.get('FEATURES_PATH', '').split(',') if path.strip()]
     config = Configuration(command_args=paths)
     try:
         Runner(config).setup_paths()
@@ -1576,6 +1581,11 @@ def _warn_parallel_incompatible_params():
             print(f"WARNING: Parameter '{param}' is not compatible with parallel execution: {reason}")
 
 
+def _as_non_option(path):
+    # behave reads a relative path starting with "-" (behave's own filenames included) as an option
+    return os.path.abspath(path) if path.startswith('-') else path
+
+
 def _set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):
     """
     Set the arguments for Behave framework based on the given parameters.
@@ -1596,7 +1606,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
     if multiprocess:
         updated_features_path = features_path if not feature else feature
         updated_features_path = updated_features_path if not scenario_line else "{}:{}".format(updated_features_path, scenario_line)
-        arguments.append(updated_features_path)
+        arguments.append(_as_non_option(updated_features_path))
         arguments.append('--no-summary')
         worker_id = multiprocessing.current_process().name.split('-')[-1]
 
@@ -1607,9 +1617,9 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
     else:
         if type(features_path) is list:
             for feature_path in features_path:
-                arguments.append(feature_path)
+                arguments.append(_as_non_option(feature_path))
         else:
-            arguments.append(features_path)
+            arguments.append(_as_non_option(features_path))
         if get_param('dry_run'):
             arguments.append('--no-summary')
             arguments.append('--dry-run')
