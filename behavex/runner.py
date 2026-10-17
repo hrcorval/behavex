@@ -1406,7 +1406,8 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                 total_scenarios = scenarios_to_run_in_feature - removed_scenarios
             if len(processed_feature_data['scenarios']) == total_scenarios:
                 try:
-                    report_xml.export_feature_to_xml(processed_feature_data, False)
+                    if not get_param('no_report'):
+                        report_xml.export_feature_to_xml(processed_feature_data, False)
                 except Exception as ex:
                     traceback.print_exc()
                     print(ex)

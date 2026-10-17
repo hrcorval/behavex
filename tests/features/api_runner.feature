@@ -288,6 +288,13 @@ Feature: BehaveXRunner Python API
     And at least one on_progress event has a status of "failed"
     And the completed_count in on_progress events is strictly increasing up to the summary total
 
+  @API_RUNNER_055
+  Scenario: on_progress skips an @AUTORETRY scenario that the tag filter excludes
+    When I run BehaveXRunner with tags "@INCLUDED" on @AUTORETRY scenarios, one excluded by the tag filter, with an on_progress callback
+    Then the RunResult summary total is "2"
+    And the on_progress callback was called once per scenario in the RunResult summary
+    And no on_progress event is for the scenario "Autoretry scenario excluded by the tag filter"
+
   @API_RUNNER_046
   Scenario: on_progress fires once per @AUTORETRY scenario that ends in error, after its final attempt
     When I run BehaveXRunner on @AUTORETRY scenarios whose step raises an error or whose teardown fails on every attempt with an on_progress callback

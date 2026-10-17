@@ -597,6 +597,7 @@ def _run_with_progress_callback(
     parallel_scheme: str = 'scenario',
     serialize_snippet: str = _SERIALIZE_PROGRESS,
     stop_on_failure: bool = False,
+    tags: Optional[List[str]] = None,
 ) -> None:
     script = f"""
 import json, sys
@@ -605,6 +606,7 @@ from behavex import BehaveXRunner
 {callback_snippet}
 result = BehaveXRunner(
     paths=[{repr(feature_path)}],
+    tags={repr(tags or [])},
     no_report=True,
     parallel_processes={parallel_processes},
     parallel_scheme={repr(parallel_scheme)},
@@ -1016,6 +1018,21 @@ def when_api_run_autoretry_with_progress_callback(context):
 def when_api_run_autoretry_errors_with_progress_callback(context):
     _run_with_progress_callback(
         context, os.path.join(api_runner_features_path, 'teardown_error', 'autoretry_errors.feature')
+    )
+
+
+@when('I run BehaveXRunner with tags "{tags}" on @AUTORETRY scenarios, one excluded by the tag filter, with an on_progress callback')
+def when_api_run_filtered_autoretry_with_progress_callback(context, tags):
+    _run_with_progress_callback(
+        context, os.path.join(api_runner_features_path, 'autoretry_filtered.feature'), tags=[tags]
+    )
+
+
+@then('no on_progress event is for the scenario "{scenario_name}"')
+def then_no_progress_event_for_scenario(context, scenario_name):
+    events = context.api_run_result['events']
+    assert all(e['scenario_name'] != scenario_name for e in events), (
+        f'Unexpected on_progress event for "{scenario_name}": {events}'
     )
 
 

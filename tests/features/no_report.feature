@@ -11,6 +11,8 @@ Feature: No Report argument
       | Exit code: 0                                                 |
     And the output folder should not exist
     And I should not see error messages in the output
+    And I should not see "Another program is using the files" in the console output
+    And I should not see "Traceback" in the console output or its errors
 
     Examples:
       | parallel_processes |

@@ -3,6 +3,7 @@
 Step definitions for autoretry mechanism testing
 """
 
+import json
 import logging
 import os
 import random
@@ -406,3 +407,37 @@ def then_html_report_contains_retry_information(context):
     # Specific retry information validation would require more detailed HTML parsing
     assert len(html_content) > 0, "HTML report should contain content"
     logging.info("HTML report generated successfully with autoretry scenarios")
+
+
+@when('I run the behavex command with an autoretry scenario whose step raises on its first attempt using "{parallel_processes}" parallel processes')
+def when_run_behavex_with_autoretry_error_scenario(context, parallel_processes):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    execution_args = [
+        'behavex',
+        os.path.join('tests', 'features', 'autoretry_raising_features'),
+        '-o', context.output_path,
+        '--parallel-processes', parallel_processes,
+    ]
+    execute_command(context, execution_args)
+
+
+def _json_report_scenario(context, scenario_name):
+    with open(os.path.join(context.output_path, 'report.json'), encoding='utf-8') as report_file:
+        report = json.load(report_file)
+    for feature in report['features']:
+        for scenario in feature['scenarios']:
+            if scenario['name'] == scenario_name:
+                return scenario
+    raise AssertionError(f'Scenario "{scenario_name}" not found in the JSON report')
+
+
+@then('the JSON report marks the scenario "{scenario_name}" as retried')
+def then_json_report_marks_scenario_retried(context, scenario_name):
+    scenario = _json_report_scenario(context, scenario_name)
+    assert scenario.get('retried') is True, f'Expected "{scenario_name}" to be marked as retried: {scenario}'
+
+
+@then('the JSON report does not mark the scenario "{scenario_name}" as retried')
+def then_json_report_does_not_mark_scenario_retried(context, scenario_name):
+    scenario = _json_report_scenario(context, scenario_name)
+    assert 'retried' not in scenario, f'Expected "{scenario_name}" not to be marked as retried: {scenario}'
