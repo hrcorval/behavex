@@ -349,3 +349,32 @@ Feature: BehaveXRunner Python API
   Scenario: a later in-process run does not call the previous run's worker hooks
     When I run BehaveXRunner in one process on worker hook tests, then on passing tests
     Then the second run did not call any worker hook
+
+  @API_RUNNER_048
+  Scenario: a dry run does not suppress the user hooks of a later run in the same process
+    When I run BehaveXRunner in one process as a dry run, then as a real run, on passing scenarios, one with a failing after_scenario hook
+    Then the RunResult has "1" failed scenario
+
+  @API_RUNNER_049
+  Scenario: stop() does not drop a scenario whose result callback finishes after the last future resolves
+    When I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, slow result callbacks, and call stop() on progress event "1"
+    Then every scenario whose result was handled is in the RunResult and fired its event before run() returned
+
+  @API_RUNNER_050
+  Scenario Outline: an invalid <argument> raises ValueError instead of exiting
+    When I run BehaveXRunner on passing tests with <argument> set to "<value>"
+    Then run() raised a ValueError mentioning "invalid choice: '<value>'"
+    Examples:
+      | argument        | value   |
+      | parallel_scheme | bogus   |
+      | logging_level   | verbose |
+
+  @API_RUNNER_051
+  Scenario: a tag starting with "-" is passed to the run instead of being parsed as an option
+    When I run BehaveXRunner with passing tests filtered by tag "-@PASSING_TAG_1"
+    Then the RunResult stopped should be "False"
+
+  @API_RUNNER_052
+  Scenario: a path that does not exist raises ValueError instead of exiting
+    When I run BehaveXRunner on a feature path that does not exist
+    Then run() raised a ValueError mentioning "BehaveX stopped before running the tests"

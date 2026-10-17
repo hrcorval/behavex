@@ -2,11 +2,14 @@
 """BehaveX programmatic API."""
 from __future__ import absolute_import
 
+import contextlib
+import io
 import os
 import uuid
 from typing import Callable, List, Optional
 
 from behavex import runner
+from behavex.arguments import parse_arguments
 from behavex.conf_mgr import get_env
 
 try:
@@ -15,6 +18,15 @@ except ImportError:
     raise ImportError(
         "BehaveXRunner requires pydantic. Install it with: pip install 'behavex[api]'"
     )
+
+
+def _validate_args(args: List[str]) -> None:
+    stderr = io.StringIO()
+    try:
+        with contextlib.redirect_stderr(stderr):
+            parse_arguments(args)
+    except SystemExit:
+        raise ValueError(stderr.getvalue().strip().splitlines()[-1]) from None
 
 
 class BehaveXRunner:
@@ -93,6 +105,7 @@ class BehaveXRunner:
     def run(self) -> RunResult:
         run_id = str(uuid.uuid4())
         args = self._build_args()
+        _validate_args(args)
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
         runner._last_run_results = []
@@ -101,6 +114,10 @@ class BehaveXRunner:
         runner._run_active = True
         try:
             exit_code = runner.run(args)
+        except SystemExit as exit_signal:
+            # BehaveX exits on a missing path or duplicated scenarios after printing why
+            raise ValueError('BehaveX stopped before running the tests (exit code {}); '
+                             'its output explains why'.format(exit_signal.code)) from None
         finally:
             runner._progress_callback = None
             runner._run_active = False
@@ -130,22 +147,20 @@ class BehaveXRunner:
     def _build_args(self) -> List[str]:
         args: List[str] = []
 
-        args.extend(self.paths)
-
         for tag in self.tags:
-            args += ["--tags", tag]
+            args.append(f"--tags={tag}")
 
         if self.output_folder:
-            args += ["--output-folder", self.output_folder]
+            args.append(f"--output-folder={self.output_folder}")
 
         if self.parallel_processes is not None:
-            args += ["--parallel-processes", str(self.parallel_processes)]
+            args.append(f"--parallel-processes={self.parallel_processes}")
 
         if self.parallel_scheme is not None:
-            args += ["--parallel-scheme", self.parallel_scheme]
+            args.append(f"--parallel-scheme={self.parallel_scheme}")
 
         if self.parallel_delay is not None:
-            args += ["--parallel-delay", str(self.parallel_delay)]
+            args.append(f"--parallel-delay={self.parallel_delay}")
 
         if self.include_paths:
             args += ["--include-paths"] + self.include_paths
@@ -163,16 +178,16 @@ class BehaveXRunner:
             args.append("--no-report")
 
         if self.config is not None:
-            args += ["--config", self.config]
+            args.append(f"--config={self.config}")
 
         if self.rerun_failures is not None:
-            args += ["--rerun-failures", self.rerun_failures]
+            args.append(f"--rerun-failures={self.rerun_failures}")
 
         if self.formatter is not None:
-            args += ["--formatter", self.formatter]
+            args.append(f"--formatter={self.formatter}")
 
         if self.formatter_outdir is not None:
-            args += ["--formatter-outdir", self.formatter_outdir]
+            args.append(f"--formatter-outdir={self.formatter_outdir}")
 
         # Only --no-formatter-attach-logs exists.
         if self.formatter_attach_logs is False:
@@ -185,24 +200,27 @@ class BehaveXRunner:
             args.append("--order-tests-strict")
 
         if self.order_tag_prefix is not None:
-            args += ["--order-tag-prefix", self.order_tag_prefix]
+            args.append(f"--order-tag-prefix={self.order_tag_prefix}")
 
         if self.logging_level is not None:
-            args += ["--logging-level", self.logging_level]
+            args.append(f"--logging-level={self.logging_level}")
 
         if self.no_snippets:
             args.append("--no-snippets")
 
         if self.name is not None:
-            args += ["--name", self.name]
+            args.append(f"--name={self.name}")
 
         if self.include is not None:
-            args += ["--include", self.include]
+            args.append(f"--include={self.include}")
 
         if self.exclude is not None:
-            args += ["--exclude", self.exclude]
+            args.append(f"--exclude={self.exclude}")
 
         for definition in self.define:
-            args += ["-D", definition]
+            args.append(f"--define={definition}")
+
+        if self.paths:
+            args += ["--"] + self.paths
 
         return args
