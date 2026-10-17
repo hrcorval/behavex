@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.6.7] - 2026-10-17
+
+### Fixed
+- **HTML report showed an undefined Background step's error one letter per line** — The `step undefined` message of a scenario whose Background step has no definition is now shown on one line, and `report.json` stores it as a list like every other `error_msg`.
+
+---
+
 ## [4.6.6] - 2026-10-15
 
 ### Added

@@ -21,3 +21,7 @@ Feature: Background Step Report Validation
   Scenario: HTML and JUnit XML reports agree on the total scenario count
     When I run the behavex command targeting the "background_features/background_tests.feature" feature
     Then I should see the same number of scenarios in the reports
+
+  Scenario: HTML report shows the error of an undefined background step as one line
+    When I run the behavex command targeting the "background_features/undefined_background_tests.feature" feature
+    Then I should see the generated HTML report contains the "step undefined<br>" string
