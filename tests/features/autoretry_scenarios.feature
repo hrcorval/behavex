@@ -70,3 +70,18 @@ Feature: Autoretry Mechanism Validation
     And I should see that regular scenarios without autoretry tags fail immediately
     And I should see autoretry messages only for scenarios with autoretry tags
     And I should see the HTML report correctly distinguishes between retried and non-retried scenarios
+
+  @AUTORETRY_TESTS @ERROR_SCENARIOS
+  Scenario Outline: Validate an @AUTORETRY scenario that errors on its first attempt is reported as retried
+    Given I have installed behavex
+    When I run the behavex command with an autoretry scenario whose step raises on its first attempt using "<parallel_processes>" parallel processes
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line                           |
+    | 2 scenarios passed, 0 failed          |
+    | Exit code: 0                          |
+    And the JSON report marks the scenario "Scenario whose step raises on its first attempt" as retried
+    And the JSON report does not mark the scenario "Scenario with autoretry that passes on its first attempt" as retried
+    Examples:
+      | parallel_processes |
+      | 1                  |
+      | 2                  |

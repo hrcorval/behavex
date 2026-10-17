@@ -278,6 +278,12 @@ def then_text_not_in_console(context, text):
         f"Expected '{text}' to not appear in console output, but it did.\nOutput:\n{context.result.stdout}"
 
 
+@then('I should not see "{text}" in the console output or its errors')
+def then_text_not_in_console_or_stderr(context, text):
+    output = context.result.stdout + context.result.stderr
+    assert text not in output, f"Expected '{text}' to not appear in the output, but it did.\nOutput:\n{output}"
+
+
 @then('I should see "{text}" in the console output')
 def then_text_in_console(context, text):
     assert text in context.result.stdout, \

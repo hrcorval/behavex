@@ -17,6 +17,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`BehaveXRunner.stop()`** — Stops a parallel run from starting more scenarios (or features), including the remaining `@SERIAL` ones, and cancels the queued ones (on Python 3.8 queued ones still run); running ones finish and `run()` returns the results gathered so far. When this skipped any work, `RunResult.stopped` is set, so `RunResult.passed` is `False`. Safe to call from another thread or from `on_progress`, and honoured even when it comes before the run has submitted any work. Has no effect in single-process mode or outside an active run.
 - **`ProgressEvent` Pydantic model** — Structured payload delivered to `on_progress` callbacks. Available via `from behavex import ProgressEvent`.
 
+### Fixed
+- **`--no-report` parallel runs printed a JUnit file error** — A `--no-report` run with `--parallel-processes` above 1 no longer tries to write the JUnit XML file, so it no longer prints a `FileNotFoundError` traceback and an "Another program is using the files" prompt.
+- **An `@AUTORETRY` scenario retried after an error was not marked as retried** — With behave 1.3.x, a scenario retried because a step raised a non-assertion exception or a hook failed is now marked as retried in the HTML and JSON reports. A scenario is marked only when it actually ran again.
+
 ---
 
 ## [4.6.7] - 2026-10-17

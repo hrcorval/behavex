@@ -26,6 +26,7 @@ from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
 from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import (create_log_path, get_string_hash,
+                                          match_for_execution,
                                           status_with_hook_errors_as_error,
                                           strip_ansi_codes)
 from behavex.utils import (LOGGING_CFG, create_custom_log_when_called,
@@ -360,32 +361,18 @@ def after_step(context, step):  # pyright: ignore[reportUnusedParameter]
 @capture
 def after_scenario(context, scenario):
     scenario.stop = _get_current_timestamp_ms()
-    try:
-        scenario_tags = get_scenario_tags(scenario)
-        configured_attempts = get_autoretry_attempts(scenario_tags)
-
-        # Track retried scenarios for reporting purposes
-        # Note: The actual retry logic is handled by patch_scenario_with_autoretry
-        # which monkey-patches scenario.run() method
-        if scenario.status in ('failed', 'untested') and configured_attempts > 0:
-            feature_name = scenario.feature.name
-            if feature_name not in global_vars.retried_scenarios:
-                global_vars.retried_scenarios[feature_name] = [scenario.name]
-            else:
-                global_vars.retried_scenarios[feature_name].append(scenario.name)
-            context.bhx_execution_attempts[scenario.name] += 1
-    except Exception as exception:
-        _log_exception_and_continue('after_scenario (behavex)', exception)
-    finally:
-        # Always remove ALL file handlers when scenario ends (simple cleanup)
-        _close_log_handler()
-        object.__setattr__(context, 'bhx_inside_scenario', False)
+    # Always remove ALL file handlers when scenario ends (simple cleanup)
+    _close_log_handler()
+    object.__setattr__(context, 'bhx_inside_scenario', False)
 
 
 def _fire_scenario_progress(scenario):
     try:
         from behavex import runner as _runner
         if _runner._progress_callback is None or _runner._is_parallel_run:
+            return
+        # the report drops a tag-excluded scenario that behave still runs as skipped
+        if not match_for_execution(get_scenario_tags(scenario)):
             return
         status = scenario.status.name
         if getattr(scenario, 'hook_failed', False):
@@ -481,6 +468,14 @@ def _log_exception_and_continue(module, exception):
     logging.error(exception)
 
 
+def _record_retry(context, scenario):
+    try:
+        global_vars.retried_scenarios.setdefault(scenario.feature.name, []).append(scenario.name)
+        context.bhx_execution_attempts[scenario.name] += 1
+    except Exception as exception:
+        _log_exception_and_continue('_record_retry', exception)
+
+
 def patch_scenario_with_autoretry(scenario, max_attempts=3):
     """
     Unified BehaveX autoretry implementation for all behave versions.
@@ -495,9 +490,9 @@ def patch_scenario_with_autoretry(scenario, max_attempts=3):
         scenario: Scenario or ScenarioOutline to patch
         max_attempts: How many times the scenario can be run (default: 3)
     """
-    def scenario_run_with_retries(scenario_run, attempted_scenario, *args, **kwargs):
+    def scenario_run_with_retries(scenario_run, attempted_scenario, runner, *args, **kwargs):
         for attempt in range(1, max_attempts + 1):
-            failed = scenario_run(*args, **kwargs)
+            failed = scenario_run(runner, *args, **kwargs)
             if not failed or attempt == max_attempts:
                 _fire_scenario_progress(attempted_scenario)
             if not failed:
@@ -508,6 +503,7 @@ def patch_scenario_with_autoretry(scenario, max_attempts=3):
                 return False    # -- NOT-FAILED = PASSED
             # -- SCENARIO FAILED:
             if attempt < max_attempts:
+                _record_retry(runner.context, attempted_scenario)
                 message = f"BehaveX AUTO-RETRY: Scenario '{scenario.name}' failed, attempt {attempt}/{max_attempts}"
                 print(message)
                 logging.warning(message)
