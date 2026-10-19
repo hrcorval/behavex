@@ -56,6 +56,7 @@ from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
 from behavex.outputs.report_json import (generate_execution_info,
                                          get_environment_details)
 from behavex.outputs.report_utils import (get_overall_status,
+                                          get_string_hash,
                                           match_for_execution,
                                           pretty_print_time,
                                           retry_file_operation, text)
@@ -1224,9 +1225,9 @@ def remove_temporary_files(parallel_processes, json_reports):
 
 
 def _get_feature_tmp_path(feature_filename):
-    # Keyed like the feature's JUnit file, so features sharing a file name in different folders stay apart
+    # Keyed by the full path, so features sharing a file name in different folders stay apart
     feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
-    return os.path.join(feature_tmp_dir, u'{}.tmp'.format(report_xml.generate_junit_xml_filename(feature_filename)))
+    return os.path.join(feature_tmp_dir, u'{}.tmp'.format(get_string_hash(os.path.abspath(feature_filename))))
 
 
 def processing_xml_feature(json_output, scenario_line, feature_filename,
