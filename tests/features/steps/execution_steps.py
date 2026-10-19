@@ -4,6 +4,8 @@ import os
 import random
 import re
 import shlex
+import shutil
+import tempfile
 import xml.etree.ElementTree as ET
 from packaging.version import Version
 import subprocess
@@ -225,6 +227,26 @@ def then_see_console_outputs(context, expected_exit_code=None):
         )
     for row in context.table:
         assert row['output_line'] in context.result.stdout, f"Unexpected output when checking console outputs: {context.result.stdout}\n\nOutput line not found: {row['output_line']}\n"
+
+
+@when('I run the behavex command in a new project with the output folder "{output_folder}"')
+def when_run_in_new_project_with_output_folder(context, output_folder):
+    # A throwaway project, so a deleted output folder can never reach this repository
+    context.project_path = tempfile.mkdtemp()
+    context.add_cleanup(shutil.rmtree, context.project_path, ignore_errors=True)
+    steps_path = os.path.join(context.project_path, 'features', 'steps')
+    os.makedirs(steps_path)
+    with open(os.path.join(context.project_path, 'features', 'passing.feature'), 'w') as feature_file:
+        feature_file.write('Feature: Passing\n\n  Scenario: Passing\n    Given a passing step\n')
+    with open(os.path.join(steps_path, 'steps.py'), 'w') as steps_file:
+        steps_file.write("from behave import given\n\n\n@given('a passing step')\ndef step_passing(context):\n    pass\n")
+    execute_command(context, ['behavex', 'features', '-o', output_folder], cwd=context.project_path)
+
+
+@then('I should see the project feature files were kept')
+def then_project_feature_files_kept(context):
+    for kept_path in (os.path.join('features', 'passing.feature'), os.path.join('features', 'steps', 'steps.py')):
+        assert os.path.exists(os.path.join(context.project_path, kept_path)), f"{kept_path} was deleted"
 
 
 @then('I should not see error messages in the output')
@@ -704,7 +726,7 @@ def step_verify_images_in_allure_output(context):
         raise FileNotFoundError(f"Allure results directory not found: {allure_results_path}")
 
 
-def execute_command(context, execution_args, print_output=True, env=None):
+def execute_command(context, execution_args, print_output=True, env=None, cwd=None):
     if "progress_bar" in context and context.progress_bar:
         execution_args.insert(2, '--show-progress-bar')
     if hasattr(context, 'parallel_processes'):
@@ -712,7 +734,7 @@ def execute_command(context, execution_args, print_output=True, env=None):
     if hasattr(context, 'parallel_scheme'):
         execution_args += ['--parallel-scheme', context.parallel_scheme]
     logging.info("Executing command: {}".format(" ".join(execution_args)))
-    context.result = subprocess.run(execution_args, capture_output=True, text=True, env=env)
+    context.result = subprocess.run(execution_args, capture_output=True, text=True, env=env, cwd=cwd)
     if print_output:
         logging.info(context.result.stdout)
 

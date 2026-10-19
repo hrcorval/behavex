@@ -30,7 +30,7 @@ The following Behave arguments are supported by BehaveX:
 
 | Argument | Description |
 |---|---|
-| `-o` / `--output-folder` | Output folder for execution reports (JUnit, HTML, JSON) |
+| `-o` / `--output-folder` | Output folder for execution reports (JUnit, HTML, JSON). It is emptied before each run, so it cannot be the project folder or contain the features. |
 | `-d` / `--dry-run` | Perform a dry run — lists scenarios in reports without executing them |
 | `--parallel-processes` | Number of parallel Behave processes |
 | `--parallel-scheme` | Parallel execution scheme: `scenario` or `feature` |
