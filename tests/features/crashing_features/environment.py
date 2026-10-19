@@ -6,6 +6,8 @@ def before_all(context):
     logging.info('before_all')
     context.behave_hook = context.config.userdata.get('crashing_behave_hook', '')
     crash_hook_if_specified(context, 'before_all')
+    if 'root_cleanup' in context.behave_hook:
+        context.add_cleanup(crash_cleanup)
 
 def before_feature(context, feature):
     logging.info('before_feature')
@@ -45,3 +47,8 @@ def crash_hook_if_specified(context, hook, tags=None):
     if hook in context.behave_hook:
         print('Making the test crash in {} hook'.format(hook))
         0/0
+
+
+def crash_cleanup():
+    print('Making the test crash in a root cleanup')
+    0/0

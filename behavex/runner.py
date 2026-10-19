@@ -1052,10 +1052,13 @@ def _launch_behave(behave_args):
             if 'null' not in (config.format or []):
                 sys.stdout.reconfigure(line_buffering=True)
 
-            runner.run()
+            run_failed = runner.run()
 
             # Calculate execution code using runner internal state
             execution_code = _calculate_execution_code_from_runner(runner)
+            # behave also fails a run for errors no scenario reflects, such as a failing root cleanup
+            if run_failed and execution_code == 0 and not get_param('dry_run'):
+                execution_code = 2
 
             # Extract results directly from runner and serialize to JSON string
             try:
