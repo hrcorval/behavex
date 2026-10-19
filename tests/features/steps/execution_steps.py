@@ -1176,14 +1176,14 @@ def then_junit_xml_report_generated(context):
     assert len(xml_files) > 0, f"No JUnit XML files found in: {junit_folder}"
 
 
-def _get_all_xml_testcases(context):
+def _get_xml_testcases_by_report(context):
     junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
-    testcases = []
-    for fname in sorted(os.listdir(junit_folder)):
-        if fname.endswith('.xml'):
-            root = ET.parse(os.path.join(junit_folder, fname)).getroot()
-            testcases.extend(root.findall('testcase'))
-    return testcases
+    return {fname: ET.parse(os.path.join(junit_folder, fname)).getroot().findall('testcase')
+            for fname in sorted(os.listdir(junit_folder)) if fname.endswith('.xml')}
+
+
+def _get_all_xml_testcases(context):
+    return [testcase for testcases in _get_xml_testcases_by_report(context).values() for testcase in testcases]
 
 
 @then('I should see "{count}" scenarios with status "{status}" in the JUnit XML report')
@@ -1224,12 +1224,8 @@ def then_junit_xml_system_out_contains(context, text):
 @then('I should see a JUnit XML report with exactly the testcases "{testcase_names}"')
 def then_junit_xml_report_with_exactly_testcases(context, testcase_names):
     expected_names = sorted(name.strip() for name in testcase_names.split(','))
-    junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
-    testcase_names_by_report = {}
-    for fname in sorted(os.listdir(junit_folder)):
-        if fname.endswith('.xml'):
-            root = ET.parse(os.path.join(junit_folder, fname)).getroot()
-            testcase_names_by_report[fname] = sorted(tc.get('name') for tc in root.findall('testcase'))
+    testcase_names_by_report = {fname: sorted(testcase.get('name') for testcase in testcases)
+                                for fname, testcases in _get_xml_testcases_by_report(context).items()}
     assert expected_names in testcase_names_by_report.values(), \
         f"No JUnit XML report holds exactly {expected_names}. Found: {testcase_names_by_report}"
 
