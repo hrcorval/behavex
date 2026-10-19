@@ -49,5 +49,5 @@ def step_fails_on_cdata_terminator_source_line(context):
 
 
 @given('a step that waits "{seconds}" seconds')
-def step_waits(context, seconds):
+def step_waits_given_seconds(context, seconds):
     time.sleep(float(seconds))

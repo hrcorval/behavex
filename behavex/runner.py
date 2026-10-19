@@ -1215,16 +1215,15 @@ def remove_temporary_files(parallel_processes, json_reports):
         json_reports = [json_reports]
     for json_report in json_reports:
         if 'features' in json_report and json_report['features']:
-            feature_name = _get_feature_tmp_path(json_report['features'][0]['filename'])
-            if os.path.exists(feature_name):
+            feature_tmp_file_path = _get_feature_results_tmp_file_path(json_report['features'][0]['filename'])
+            if os.path.exists(feature_tmp_file_path):
                 try:
-                    os.remove(feature_name)
+                    os.remove(feature_tmp_file_path)
                 except Exception as remove_ex:
                     print(remove_ex)
 
 
-def _get_feature_tmp_path(feature_filename):
-    # Keyed by the full path, so features sharing a file name in different folders stay apart
+def _get_feature_results_tmp_file_path(feature_filename):
     feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
     return os.path.join(feature_tmp_dir, u'{}.tmp'.format(get_string_hash(os.path.abspath(feature_filename))))
 
@@ -1262,24 +1261,24 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                 if reported_scenario['line'] == scenario_line:
                     executed_scenarios.append(reported_scenario)
             json_output['features'][0]['scenarios'] = executed_scenarios
-            feature_name = _get_feature_tmp_path(feature_filename)
+            feature_tmp_file_path = _get_feature_results_tmp_file_path(feature_filename)
             processed_feature_data = json_output['features'][0]
             processed_feature_data['scenarios'] = executed_scenarios
-            if os.path.exists(feature_name):
+            if os.path.exists(feature_tmp_file_path):
                 for _ in range(0, 10):
                     try:
-                        processed_feature_data = json.load(open(feature_name, 'r'))
-                        with open(feature_name, 'w') as feature_file:
+                        processed_feature_data = json.load(open(feature_tmp_file_path, 'r'))
+                        with open(feature_tmp_file_path, 'w') as feature_file:
                             for executed_scenario in executed_scenarios:
                                 processed_feature_data['scenarios'].append(executed_scenario)
                             json.dump(processed_feature_data, feature_file)
                         break
                     except Exception as ex:
                         logging.debug(ex)
-                        logging.debug('Retrying reading from {}'.format(feature_name))
+                        logging.debug('Retrying reading from {}'.format(feature_tmp_file_path))
                         time.sleep(1)
             else:
-                with codecs.open(feature_name, 'w', 'utf8') as feature_file:
+                with codecs.open(feature_tmp_file_path, 'w', 'utf8') as feature_file:
                     json.dump(processed_feature_data, feature_file)
             # calculate the total number of scenarios that should be executed
             removed_scenarios = 0
@@ -1296,7 +1295,7 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                     traceback.print_exc()
                     print(ex)
                 finally:
-                    os.remove(feature_name)
+                    os.remove(feature_tmp_file_path)
     except Exception as ex:
         raise ex
     finally:

@@ -6,7 +6,7 @@ Feature: Output Folder
     Then I should see the following behavex console outputs and exit code "1"
     | output_line                                                           |
     | and BehaveX deletes it before each run; use a dedicated output folder |
-    And I should see the project feature files were kept
+    And I should see the project features folder was kept
     Examples:
       | output_folder |
       | .             |
@@ -18,4 +18,4 @@ Feature: Output Folder
     Then I should see the following behavex console outputs and exit code "0"
     | output_line  |
     | Exit code: 0 |
-    And I should see the project feature files were kept
+    And I should see the project features folder was kept

@@ -122,10 +122,10 @@ def when_run_no_tests(context, parallel_processes="1", parallel_scheme='scenario
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook')
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
 def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario',
-                                feature_file='crashing_environment_tests.feature'):
+                                feature_filename='crashing_environment_tests.feature'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
-                os.path.join(tests_features_path, 'crashing_features', feature_file),
+                os.path.join(tests_features_path, 'crashing_features', feature_filename),
                 '-o', context.output_path,
                 '--parallel-processes', parallel_processes,
                 '--parallel-scheme', parallel_scheme,
@@ -136,7 +136,7 @@ def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", pa
 @when('I run the behavex command with a muted failing test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
 def when_run_muted_failing_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme):
     when_run_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme,
-                                feature_file='muted_failing_tests.feature')
+                                feature_filename='muted_failing_tests.feature')
 
 
 @when('I run the behavex command with a skipped test')
@@ -1156,8 +1156,8 @@ def then_junit_xml_report_generated(context):
 
 def _get_xml_testcases_by_report(context):
     junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
-    return {fname: ET.parse(os.path.join(junit_folder, fname)).getroot().findall('testcase')
-            for fname in sorted(os.listdir(junit_folder)) if fname.endswith('.xml')}
+    return {xml_report_filename: ET.parse(os.path.join(junit_folder, xml_report_filename)).getroot().findall('testcase')
+            for xml_report_filename in sorted(os.listdir(junit_folder)) if xml_report_filename.endswith('.xml')}
 
 
 def _get_all_xml_testcases(context):
@@ -1202,8 +1202,8 @@ def then_junit_xml_system_out_contains(context, text):
 @then('I should see a JUnit XML report with exactly the testcases "{testcase_names}"')
 def then_junit_xml_report_with_exactly_testcases(context, testcase_names):
     expected_names = sorted(name.strip() for name in testcase_names.split(','))
-    testcase_names_by_report = {fname: sorted(testcase.get('name') for testcase in testcases)
-                                for fname, testcases in _get_xml_testcases_by_report(context).items()}
+    testcase_names_by_report = {xml_report_filename: sorted(testcase.get('name') for testcase in testcases)
+                                for xml_report_filename, testcases in _get_xml_testcases_by_report(context).items()}
     assert expected_names in testcase_names_by_report.values(), \
         f"No JUnit XML report holds exactly {expected_names}. Found: {testcase_names_by_report}"
 
