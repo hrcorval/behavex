@@ -295,7 +295,8 @@ def _is_same_or_inside(path, folder):
 def cleanup_folders():
     # output folder
     output_folder = get_env('output')
-    feature_paths = [re.sub(r':\d+$', '', path.strip()) for path in os.environ.get('FEATURES_PATH', '').split(',') if path.strip()]
+    features_path = os.environ.get('FEATURES_PATH', '')
+    feature_paths = [get_feature_and_scenario_line(path.strip())[0] for path in features_path.split(',') if path.strip()]
     for protected_path in [os.getcwd()] + feature_paths:
         if _is_same_or_inside(protected_path, output_folder):
             raise ValueError("The output folder '{}' contains '{}' and BehaveX deletes it before each run; "

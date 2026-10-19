@@ -995,12 +995,11 @@ def _calculate_execution_code_from_runner(runner):
         if hasattr(runner, 'hook_failures') and runner.hook_failures > 0:
             return 2  # Hook failures
 
-        # A failing cleanup fails behave's run without failing any scenario
-        if getattr(getattr(runner, 'context', None), 'cleanup_errors', 0) > 0:
-            return 2
-
         # Use context.failed boolean to determine if any tests failed
         if hasattr(runner, 'context') and runner.context:
+            # A failing cleanup fails behave's run without failing any scenario
+            if getattr(runner.context, 'cleanup_errors', 0) > 0:
+                return 2
             if hasattr(runner.context, 'failed'):
                 if runner.context.failed:
                     return 1  # Test failures
@@ -1297,8 +1296,7 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                     traceback.print_exc()
                     print(ex)
                 finally:
-                    path_tmp = u'{}.tmp'.format(feature_name[:-4])
-                    os.remove(path_tmp)
+                    os.remove(feature_name)
     except Exception as ex:
         raise ex
     finally:
