@@ -994,6 +994,10 @@ def _calculate_execution_code_from_runner(runner):
         if hasattr(runner, 'hook_failures') and runner.hook_failures > 0:
             return 2  # Hook failures
 
+        # A failing cleanup fails behave's run without failing any scenario
+        if getattr(getattr(runner, 'context', None), 'cleanup_errors', 0) > 0:
+            return 2
+
         # Use context.failed boolean to determine if any tests failed
         if hasattr(runner, 'context') and runner.context:
             if hasattr(runner.context, 'failed'):
@@ -1052,13 +1056,10 @@ def _launch_behave(behave_args):
             if 'null' not in (config.format or []):
                 sys.stdout.reconfigure(line_buffering=True)
 
-            run_failed = runner.run()
+            runner.run()
 
             # Calculate execution code using runner internal state
             execution_code = _calculate_execution_code_from_runner(runner)
-            # behave also fails a run for errors no scenario reflects, such as a failing root cleanup
-            if run_failed and execution_code == 0 and not get_param('dry_run'):
-                execution_code = 2
 
             # Extract results directly from runner and serialize to JSON string
             try:

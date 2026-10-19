@@ -123,15 +123,22 @@ def when_run_no_tests(context, parallel_processes="1", parallel_scheme='scenario
 
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook')
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
-def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario'):
+def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario',
+                                feature_file='crashing_environment_tests.feature'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
-                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_environment_tests.feature')),
+                os.path.join(tests_features_path, 'crashing_features', feature_file),
                 '-o', context.output_path,
                 '--parallel-processes', parallel_processes,
                 '--parallel-scheme', parallel_scheme,
                 '-D', 'crashing_behave_hook=' + behave_hook]
     execute_command(context, execution_args)
+
+
+@when('I run the behavex command with a muted failing test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_run_muted_failing_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme):
+    when_run_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme,
+                                feature_file='muted_failing_tests.feature')
 
 
 @when('I run the behavex command with a skipped test')
