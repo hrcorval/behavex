@@ -40,3 +40,8 @@ def step_with_text(context, value):
 @given('a step that fails with the message "{message}"')
 def step_fails_with_message(context, message):
     assert False, message
+
+
+@given('a step that fails on a source line containing a CDATA terminator')
+def step_fails_on_cdata_terminator_source_line(context):
+    assert ']]>' == ''

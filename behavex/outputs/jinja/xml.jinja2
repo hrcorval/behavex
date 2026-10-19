@@ -41,7 +41,7 @@
             {%- elif steps_with_exception and not is_muted -%}
                 {%- for step in steps_with_exception -%}
                     <failure type={{ step|get_exception_class_name|normalize|CIXC|quoteattr|safe}} message={{ step|get_exception_message|get_error_message|CIXC|quoteattr|safe}}>
-                        <![CDATA[ Failing step: {{step|print_step|escape_cdata}} Location:{{step.filename|normalize|safe}}
+                        <![CDATA[ Failing step: {{step|print_step|escape_cdata}} Location:{{step.filename|normalize|escape_cdata}}
                          {{step|get_lines_exception|escape_cdata}}
                         ]]>
                     </failure>
