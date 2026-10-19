@@ -1214,13 +1214,18 @@ def remove_temporary_files(parallel_processes, json_reports):
         json_reports = [json_reports]
     for json_report in json_reports:
         if 'features' in json_report and json_report['features']:
-            feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
-            feature_name = os.path.join(feature_tmp_dir, u'{}.tmp'.format(json_report['features'][0]['name']))
+            feature_name = _get_feature_tmp_path(json_report['features'][0]['filename'])
             if os.path.exists(feature_name):
                 try:
                     os.remove(feature_name)
                 except Exception as remove_ex:
                     print(remove_ex)
+
+
+def _get_feature_tmp_path(feature_filename):
+    # Keyed like the feature's JUnit file, so features sharing a file name in different folders stay apart
+    feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
+    return os.path.join(feature_tmp_dir, u'{}.tmp'.format(report_xml.generate_junit_xml_filename(feature_filename)))
 
 
 def processing_xml_feature(json_output, scenario_line, feature_filename,
@@ -1256,10 +1261,7 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                 if reported_scenario['line'] == scenario_line:
                     executed_scenarios.append(reported_scenario)
             json_output['features'][0]['scenarios'] = executed_scenarios
-            feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
-            feature_name = os.path.join(
-                feature_tmp_dir, u'{}.tmp'.format(os.path.basename(feature_filename))
-            )
+            feature_name = _get_feature_tmp_path(feature_filename)
             processed_feature_data = json_output['features'][0]
             processed_feature_data['scenarios'] = executed_scenarios
             if os.path.exists(feature_name):

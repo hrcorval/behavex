@@ -1,4 +1,5 @@
 import logging
+import time
 
 from behave import given, then
 
@@ -45,3 +46,8 @@ def step_fails_with_message(context, message):
 @given('a step that fails on a source line containing a CDATA terminator')
 def step_fails_on_cdata_terminator_source_line(context):
     assert ']]>' == ''
+
+
+@given('a step that waits "{seconds}" seconds')
+def step_waits(context, seconds):
+    time.sleep(float(seconds))

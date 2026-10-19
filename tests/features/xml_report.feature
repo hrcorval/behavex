@@ -43,3 +43,8 @@ Feature: JUnit XML Report Validation
     | processes |
     | 1         |
     | 2         |
+
+  Scenario: Features sharing a file name in different folders keep their own JUnit XML report in parallel
+    When I run the behavex command targeting the "xml_report_features/same_file_name" feature with "3" parallel processes
+    Then I should see a JUnit XML report with exactly the testcases "Api_Login_First_Scenario, Api_Login_Second_Scenario"
+    And I should see a JUnit XML report with exactly the testcases "Web_Login_First_Scenario, Web_Login_Second_Scenario"
