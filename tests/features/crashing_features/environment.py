@@ -52,6 +52,8 @@ def crash_hook_if_specified(context, hook, tags=None):
         return
     if hook in context.behave_hook:
         print('Making the test crash in {} hook'.format(hook))
+        if 'cdata_terminator' in context.behave_hook:
+            raise Exception('crash with ]]> in its message')
         0/0
 
 

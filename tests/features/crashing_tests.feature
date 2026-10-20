@@ -244,3 +244,13 @@ Feature: Crashing Tests
       | feature_cleanup                     | 1         | 1                  | scenario        |
       | feature_cleanup                     | 1         | 2                  | scenario        |
       | feature_cleanup                     | 1         | 2                  | feature         |
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A hook crash message with a CDATA terminator must be kept in the JUnit XML report with "<parallel_processes>" parallel processes
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "before_scenario,cdata_terminator" hook with "<parallel_processes>" parallel processes and "scenario" parallel scheme
+    Then I should see the JUnit XML failure body contains "crash with ]]> in its message"
+    Examples:
+      | parallel_processes |
+      | 1                  |
+      | 2                  |

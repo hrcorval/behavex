@@ -31,7 +31,7 @@
             {% set step_with_exception = scenario.error_step %}
             {%- if scenario_crashed and not is_muted -%}
                 <failure type="Exception" message={{scenario.error_msg|get_error_message|CIXC|quoteattr|safe }}>
-                    <![CDATA[ {{ scenario.error_msg }} ]]>
+                    <![CDATA[ {{ scenario.error_msg|escape_cdata }} ]]>
                 </failure>
             {%- elif step_with_exception and not is_muted -%}
                 <failure type="AssertionError" message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }}>
