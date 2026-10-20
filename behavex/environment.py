@@ -253,6 +253,7 @@ def before_all(context):
 
 # noinspection PyUnusedLocal
 def before_feature(context, feature):
+    _count_previous_feature_cleanup_errors(context)
     try:
         # Initialize critical context attributes first
         # Use object.__setattr__ to bypass context masking warnings
@@ -381,6 +382,8 @@ def after_scenario(context, scenario):
 
 # noinspection PyUnusedLocal
 def after_feature(context, feature):  # pyright: ignore[reportUnusedParameter]
+    # Feature cleanups run after this hook, so they are counted when the next feature or after_all starts
+    context._runner.cleanup_errors_before_feature_cleanups = context.cleanup_errors
     try:
         if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
             return
@@ -391,7 +394,8 @@ def after_feature(context, feature):  # pyright: ignore[reportUnusedParameter]
 
 
 def after_all(context):
-    # Root cleanups run after this hook; earlier cleanup errors already set their scenario or feature status
+    _count_previous_feature_cleanup_errors(context)
+    # Root cleanups run after this hook
     context.cleanup_errors_before_root_cleanups = context.cleanup_errors
     try:
         # noinspection PyProtectedMember
@@ -401,6 +405,13 @@ def after_all(context):
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
 
+
+def _count_previous_feature_cleanup_errors(context):
+    runner = context._runner
+    errors_before = getattr(runner, 'cleanup_errors_before_feature_cleanups', None)
+    if errors_before is not None:
+        runner.feature_cleanup_errors = getattr(runner, 'feature_cleanup_errors', 0) + context.cleanup_errors - errors_before
+        runner.cleanup_errors_before_feature_cleanups = None
 
 
 def _add_log_handler(log_path):
