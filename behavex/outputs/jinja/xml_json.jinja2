@@ -35,7 +35,7 @@
                 </failure>
             {%- elif step_with_exception and not is_muted -%}
                 <failure type="AssertionError" message={{step_with_exception.error_msg|get_error_message|CIXC|quoteattr|safe }}>
-                    <![CDATA[ Failing step: {{step_with_exception|print_step_json|escape_cdata}} Location:{{feature["filename"]}}
+                    <![CDATA[ Failing step: {{step_with_exception|print_step_json|escape_cdata}} Location:{{feature["filename"]|escape_cdata}}
                         {{step_with_exception|get_lines_exception|escape_cdata}}
                     ]]>
                 </failure>
