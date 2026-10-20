@@ -208,53 +208,33 @@ Feature: Crashing Tests
       | 2                  | feature         |
 
   @CRASHING @CRASHING_BEHAVE_HOOK
-  Scenario Outline: A crash in a root cleanup must fail the run even when the only failing scenario is muted, with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+  Scenario Outline: A crashing cleanup must set the exit code with "<behave_hook>" hook, "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
     Given I have installed behavex
-    When I run the behavex command with a muted failing test that crashes in "root_cleanup" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
-    Then I should see the following behavex console outputs and exit code "1"
-    | output_line  |
-    | Exit code: 1 |
+    When I run the behavex command with a test that crashes in "<behave_hook>" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "<exit_code>"
+    | output_line             |
+    | Exit code: <exit_code>  |
     Examples:
-      | parallel_processes | parallel_scheme |
-      | 1                  | scenario        |
-      | 2                  | scenario        |
-      | 2                  | feature         |
+      | behave_hook                         | exit_code | parallel_processes | parallel_scheme |
+      | scenario_cleanup                    | 1         | 1                  | scenario        |
+      | scenario_cleanup                    | 1         | 2                  | scenario        |
+      | scenario_cleanup                    | 1         | 2                  | feature         |
+      | root_cleanup,ignored_cleanup_errors | 0         | 1                  | scenario        |
+      | root_cleanup,ignored_cleanup_errors | 0         | 2                  | scenario        |
+      | root_cleanup,ignored_cleanup_errors | 0         | 2                  | feature         |
 
   @CRASHING @CRASHING_BEHAVE_HOOK
-  Scenario Outline: A crash in a scenario cleanup must fail the run with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+  Scenario Outline: A crashing cleanup must set the exit code of a muted failing scenario with "<behave_hook>" hook, "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
     Given I have installed behavex
-    When I run the behavex command with a test that crashes in "scenario_cleanup" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
-    Then I should see the following behavex console outputs and exit code "1"
-    | output_line  |
-    | Exit code: 1 |
+    When I run the behavex command with a muted failing test that crashes in "<behave_hook>" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "<exit_code>"
+    | output_line             |
+    | Exit code: <exit_code>  |
     Examples:
-      | parallel_processes | parallel_scheme |
-      | 1                  | scenario        |
-      | 2                  | scenario        |
-      | 2                  | feature         |
-
-  @CRASHING @CRASHING_BEHAVE_HOOK
-  Scenario Outline: A crash in the cleanup of a muted scenario must not fail the run with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
-    Given I have installed behavex
-    When I run the behavex command with a muted failing test that crashes in "scenario_cleanup" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
-    Then I should see the following behavex console outputs and exit code "0"
-    | output_line  |
-    | Exit code: 0 |
-    Examples:
-      | parallel_processes | parallel_scheme |
-      | 1                  | scenario        |
-      | 2                  | scenario        |
-      | 2                  | feature         |
-
-  @CRASHING @CRASHING_BEHAVE_HOOK
-  Scenario Outline: A crash in a root cleanup must not fail the run when cleanup errors are ignored, with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
-    Given I have installed behavex
-    When I run the behavex command with a test that crashes in "root_cleanup,ignored_cleanup_errors" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
-    Then I should see the following behavex console outputs and exit code "0"
-    | output_line  |
-    | Exit code: 0 |
-    Examples:
-      | parallel_processes | parallel_scheme |
-      | 1                  | scenario        |
-      | 2                  | scenario        |
-      | 2                  | feature         |
+      | behave_hook                         | exit_code | parallel_processes | parallel_scheme |
+      | root_cleanup                        | 1         | 1                  | scenario        |
+      | root_cleanup                        | 1         | 2                  | scenario        |
+      | root_cleanup                        | 1         | 2                  | feature         |
+      | scenario_cleanup                    | 0         | 1                  | scenario        |
+      | scenario_cleanup                    | 0         | 2                  | scenario        |
+      | scenario_cleanup                    | 0         | 2                  | feature         |
