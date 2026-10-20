@@ -17,6 +17,10 @@ def before_feature(context, feature):
     if 'feature_cleanup' in context.behave_hook:
         context.add_cleanup(crash_in_cleanup)
 
+def before_rule(context, rule):
+    if 'rule_cleanup' in context.behave_hook:
+        context.add_cleanup(crash_in_cleanup)
+
 def before_scenario(context, scenario):
     logging.info('before_scenario')
     crash_hook_if_specified(context, 'before_scenario', scenario.effective_tags)

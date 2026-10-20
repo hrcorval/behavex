@@ -999,11 +999,9 @@ def _calculate_execution_code_from_runner(runner):
         if hasattr(runner, 'context') and runner.context:
             # A failing cleanup leaves context.failed unset; a root or feature one fails no scenario, so it cannot be muted
             if getattr(runner.context, 'fail_on_cleanup_errors', True):
-                cleanup_errors = getattr(runner.context, 'cleanup_errors', 0)
-                if (cleanup_errors > getattr(runner.context, 'cleanup_errors_before_root_cleanups', 0)
-                        or getattr(runner, 'feature_cleanup_errors', 0) > 0):
+                if getattr(runner.context, '_unmutable_cleanup_failed', False):
                     return 2
-                if cleanup_errors > 0:
+                if getattr(runner.context, 'cleanup_errors', 0) > 0:
                     return 1  # Scenario cleanup failures
             if hasattr(runner.context, 'failed'):
                 if runner.context.failed:

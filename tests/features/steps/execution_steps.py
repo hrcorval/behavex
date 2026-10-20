@@ -139,6 +139,14 @@ def when_run_muted_failing_crashing_hook_test(context, behave_hook, parallel_pro
                                 feature_filename='muted_failing_tests.feature')
 
 
+@when('I run the behavex command with a muted rule test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_run_muted_rule_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme):
+    if not _require_behave_for_rule(context):
+        return
+    when_run_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme,
+                                feature_filename='muted_rule_tests.feature')
+
+
 @when('I run the behavex command with a skipped test')
 def when_run_skipped_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
@@ -1164,6 +1172,10 @@ def _get_all_xml_testcases(context):
     return [testcase for testcases in _get_xml_testcases_by_report(context).values() for testcase in testcases]
 
 
+def _get_all_xml_failures(context):
+    return [failure for testcase in _get_all_xml_testcases(context) for failure in testcase.findall('failure')]
+
+
 @then('I should see "{count}" scenarios with status "{status}" in the JUnit XML report')
 def then_junit_xml_scenarios_with_status(context, count, status):
     testcases = _get_all_xml_testcases(context)
@@ -1183,18 +1195,14 @@ def then_junit_xml_scenario_name(context, name):
 
 @then('I should see the JUnit XML failure message contains "{text}"')
 def then_junit_xml_failure_message_contains(context, text):
-    messages = [failure.get('message', '') + (failure.text or '')
-                for testcase in _get_all_xml_testcases(context)
-                for failure in testcase.findall('failure')]
+    messages = [failure.get('message', '') + (failure.text or '') for failure in _get_all_xml_failures(context)]
     assert any(text in message for message in messages), \
         f"No JUnit failure message contains '{text}'. Found: {messages}"
 
 
 @then('I should see the JUnit XML failure body contains "{text}"')
 def then_junit_xml_failure_body_contains(context, text):
-    failure_bodies = [failure.text or ''
-                      for testcase in _get_all_xml_testcases(context)
-                      for failure in testcase.findall('failure')]
+    failure_bodies = [failure.text or '' for failure in _get_all_xml_failures(context)]
     assert any(text in failure_body for failure_body in failure_bodies), \
         f"No JUnit failure body contains '{text}'. Found: {failure_bodies}"
 

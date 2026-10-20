@@ -183,6 +183,7 @@ def extend_behave_hooks():
     if not hooks_already_set:
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
+        Context._do_cleanups = _track_unmutable_cleanup_errors(Context._do_cleanups)
 
         # BEHAVE 1.2.7+ COMPATIBILITY: Also override run_hook_with_capture
         # since all hooks are called via run_hook_with_capture in modern versions
@@ -204,6 +205,20 @@ def extend_behave_hooks():
                     return run_hook(self, hook_name, hook_target, *remaining_args)
 
             ModelRunner.run_hook_with_capture = run_hook_with_capture
+
+
+def _track_unmutable_cleanup_errors(behave_do_cleanups):
+    @functools.wraps(behave_do_cleanups)
+    def do_cleanups(self):
+        layer = self._stack[0].get('@layer')
+        errors_before = self._root['cleanup_errors']
+        try:
+            return behave_do_cleanups(self)
+        finally:
+            # Only a scenario cleanup error lands in a scenario status, where @MUTE applies
+            if layer != 'scenario' and self._root['cleanup_errors'] > errors_before:
+                self._unmutable_cleanup_failed = True
+    return do_cleanups
 
 
 def _inject_shared_context(context) -> None:
@@ -253,7 +268,6 @@ def before_all(context):
 
 # noinspection PyUnusedLocal
 def before_feature(context, feature):
-    _count_previous_feature_cleanup_errors(context)
     try:
         # Initialize critical context attributes first
         # Use object.__setattr__ to bypass context masking warnings
@@ -382,8 +396,6 @@ def after_scenario(context, scenario):
 
 # noinspection PyUnusedLocal
 def after_feature(context, feature):  # pyright: ignore[reportUnusedParameter]
-    # Feature cleanups run after this hook, so they are counted when the next feature or after_all starts
-    context._runner.cleanup_errors_before_feature_cleanups = context.cleanup_errors
     try:
         if get_env('multiprocessing') and get_param('parallel_scheme') == 'scenario':
             return
@@ -394,9 +406,6 @@ def after_feature(context, feature):  # pyright: ignore[reportUnusedParameter]
 
 
 def after_all(context):
-    _count_previous_feature_cleanup_errors(context)
-    # Root cleanups run after this hook
-    context.cleanup_errors_before_root_cleanups = context.cleanup_errors
     try:
         # noinspection PyProtectedMember
         feature_list = report_json.generate_execution_info(context._runner.features)
@@ -404,14 +413,6 @@ def after_all(context):
             report_json.generate_json_report(feature_list)
     except Exception as exception:
         _log_exception_and_continue('after_all (json_report)', exception)
-
-
-def _count_previous_feature_cleanup_errors(context):
-    runner = context._runner
-    errors_before = getattr(runner, 'cleanup_errors_before_feature_cleanups', None)
-    if errors_before is not None:
-        runner.feature_cleanup_errors = getattr(runner, 'feature_cleanup_errors', 0) + context.cleanup_errors - errors_before
-        runner.cleanup_errors_before_feature_cleanups = None
 
 
 def _add_log_handler(log_path):

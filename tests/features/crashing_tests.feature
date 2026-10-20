@@ -246,6 +246,19 @@ Feature: Crashing Tests
       | feature_cleanup                     | 1         | 2                  | feature         |
 
   @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crashing rule cleanup must fail the run even when its only scenario is muted, with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Given I have installed behavex
+    When I run the behavex command with a muted rule test that crashes in "rule_cleanup" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 2                  | scenario        |
+      | 2                  | feature         |
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A hook crash message with a CDATA terminator must be kept in the JUnit XML report with "<parallel_processes>" parallel processes
     Given I have installed behavex
     When I run the behavex command with a test that crashes in "before_scenario,cdata_terminator" hook with "<parallel_processes>" parallel processes and "scenario" parallel scheme
