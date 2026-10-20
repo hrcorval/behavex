@@ -16,6 +16,8 @@ def before_feature(context, feature):
 def before_scenario(context, scenario):
     logging.info('before_scenario')
     crash_hook_if_specified(context, 'before_scenario', scenario.effective_tags)
+    if 'scenario_cleanup' in context.behave_hook:
+        context.add_cleanup(crash_in_scenario_cleanup)
 
 def before_step(context, step):
     logging.info('before_step')
@@ -51,4 +53,9 @@ def crash_hook_if_specified(context, hook, tags=None):
 
 def crash_in_root_cleanup():
     print('Making the test crash in a root cleanup')
+    0/0
+
+
+def crash_in_scenario_cleanup():
+    print('Making the test crash in a scenario cleanup')
     0/0

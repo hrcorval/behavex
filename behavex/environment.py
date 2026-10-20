@@ -391,6 +391,8 @@ def after_feature(context, feature):  # pyright: ignore[reportUnusedParameter]
 
 
 def after_all(context):
+    # Root cleanups run after this hook; earlier cleanup errors already failed their scenario or feature
+    context.cleanup_errors_before_root_cleanups = context.cleanup_errors
     try:
         # noinspection PyProtectedMember
         feature_list = report_json.generate_execution_info(context._runner.features)

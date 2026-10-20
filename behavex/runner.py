@@ -997,11 +997,12 @@ def _calculate_execution_code_from_runner(runner):
 
         # Use context.failed boolean to determine if any tests failed
         if hasattr(runner, 'context') and runner.context:
-            # A failing cleanup fails behave's run without failing any scenario
-            if getattr(runner.context, 'cleanup_errors', 0) > 0:
+            # A failing cleanup leaves context.failed unset; a root one fails no scenario, so it cannot be muted
+            cleanup_errors = getattr(runner.context, 'cleanup_errors', 0)
+            if cleanup_errors > getattr(runner.context, 'cleanup_errors_before_root_cleanups', 0):
                 return 2
             if hasattr(runner.context, 'failed'):
-                if runner.context.failed:
+                if runner.context.failed or cleanup_errors > 0:
                     return 1  # Test failures
                 else:
                     return 0  # Success - all tests passed

@@ -219,3 +219,29 @@ Feature: Crashing Tests
       | 1                  | scenario        |
       | 2                  | scenario        |
       | 2                  | feature         |
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in a scenario cleanup must fail the run with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "scenario_cleanup" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "1"
+    | output_line  |
+    | Exit code: 1 |
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 2                  | scenario        |
+      | 2                  | feature         |
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in the cleanup of a muted scenario must not fail the run with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Given I have installed behavex
+    When I run the behavex command with a muted failing test that crashes in "scenario_cleanup" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line  |
+    | Exit code: 0 |
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 2                  | scenario        |
+      | 2                  | feature         |
