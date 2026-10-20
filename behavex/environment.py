@@ -183,7 +183,7 @@ def extend_behave_hooks():
     if not hooks_already_set:
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
-        Context._do_cleanups = _flag_unmutable_cleanup_errors(Context._do_cleanups)
+        Context._do_cleanups = _flag_failing_cleanup_errors(Context._do_cleanups)
 
         # BEHAVE 1.2.7+ COMPATIBILITY: Also override run_hook_with_capture
         # since all hooks are called via run_hook_with_capture in modern versions
@@ -207,7 +207,7 @@ def extend_behave_hooks():
             ModelRunner.run_hook_with_capture = run_hook_with_capture
 
 
-def _flag_unmutable_cleanup_errors(behave_do_cleanups):
+def _flag_failing_cleanup_errors(behave_do_cleanups):
     @functools.wraps(behave_do_cleanups)
     def do_cleanups(self):
         context_layer = self._stack[0].get('@layer')
@@ -215,9 +215,13 @@ def _flag_unmutable_cleanup_errors(behave_do_cleanups):
         try:
             return behave_do_cleanups(self)
         finally:
-            # These layers fail no scenario, so @MUTE cannot apply to their cleanup errors
-            if context_layer in ('testrun', 'feature', 'rule') and self._root['cleanup_errors'] > cleanup_errors_before:
-                self._unmutable_cleanup_failed = True
+            # Behave reads fail_on_cleanup_errors from the layer being cleaned up
+            if self.fail_on_cleanup_errors and self._root['cleanup_errors'] > cleanup_errors_before:
+                # These layers fail no scenario, so @MUTE cannot apply to their cleanup errors
+                if context_layer in ('testrun', 'feature', 'rule'):
+                    self._unmutable_cleanup_failed = True
+                else:
+                    self._scenario_cleanup_failed = True
     return do_cleanups
 
 

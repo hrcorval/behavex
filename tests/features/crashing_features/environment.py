@@ -14,6 +14,8 @@ def before_all(context):
 def before_feature(context, feature):
     logging.info('before_feature')
     crash_hook_if_specified(context, 'before_feature', feature.tags)
+    if 'ignored_feature_cleanup_errors' in context.behave_hook:
+        context.fail_on_cleanup_errors = False
     if 'feature_cleanup' in context.behave_hook:
         context.add_cleanup(crash_in_cleanup)
 

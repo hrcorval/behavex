@@ -215,16 +215,19 @@ Feature: Crashing Tests
     | output_line             |
     | Exit code: <exit_code>  |
     Examples:
-      | behave_hook                         | exit_code | parallel_processes | parallel_scheme |
-      | scenario_cleanup                    | 1         | 1                  | scenario        |
-      | scenario_cleanup                    | 1         | 2                  | scenario        |
-      | scenario_cleanup                    | 1         | 2                  | feature         |
-      | root_cleanup,ignored_cleanup_errors | 0         | 1                  | scenario        |
-      | root_cleanup,ignored_cleanup_errors | 0         | 2                  | scenario        |
-      | root_cleanup,ignored_cleanup_errors | 0         | 2                  | feature         |
-      | feature_cleanup                     | 1         | 1                  | scenario        |
-      | feature_cleanup                     | 1         | 2                  | scenario        |
-      | feature_cleanup                     | 1         | 2                  | feature         |
+      | behave_hook                                    | exit_code | parallel_processes | parallel_scheme |
+      | scenario_cleanup                               | 1         | 1                  | scenario        |
+      | scenario_cleanup                               | 1         | 2                  | scenario        |
+      | scenario_cleanup                               | 1         | 2                  | feature         |
+      | root_cleanup,ignored_cleanup_errors            | 0         | 1                  | scenario        |
+      | root_cleanup,ignored_cleanup_errors            | 0         | 2                  | scenario        |
+      | root_cleanup,ignored_cleanup_errors            | 0         | 2                  | feature         |
+      | feature_cleanup,ignored_feature_cleanup_errors | 0         | 1                  | scenario        |
+      | feature_cleanup,ignored_feature_cleanup_errors | 0         | 2                  | scenario        |
+      | feature_cleanup,ignored_feature_cleanup_errors | 0         | 2                  | feature         |
+      | feature_cleanup                                | 1         | 1                  | scenario        |
+      | feature_cleanup                                | 1         | 2                  | scenario        |
+      | feature_cleanup                                | 1         | 2                  | feature         |
 
   @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A crashing cleanup must set the exit code of a muted failing scenario with "<behave_hook>" hook, "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
@@ -234,16 +237,16 @@ Feature: Crashing Tests
     | output_line             |
     | Exit code: <exit_code>  |
     Examples:
-      | behave_hook                         | exit_code | parallel_processes | parallel_scheme |
-      | root_cleanup                        | 1         | 1                  | scenario        |
-      | root_cleanup                        | 1         | 2                  | scenario        |
-      | root_cleanup                        | 1         | 2                  | feature         |
-      | scenario_cleanup                    | 0         | 1                  | scenario        |
-      | scenario_cleanup                    | 0         | 2                  | scenario        |
-      | scenario_cleanup                    | 0         | 2                  | feature         |
-      | feature_cleanup                     | 1         | 1                  | scenario        |
-      | feature_cleanup                     | 1         | 2                  | scenario        |
-      | feature_cleanup                     | 1         | 2                  | feature         |
+      | behave_hook                                    | exit_code | parallel_processes | parallel_scheme |
+      | root_cleanup                                   | 1         | 1                  | scenario        |
+      | root_cleanup                                   | 1         | 2                  | scenario        |
+      | root_cleanup                                   | 1         | 2                  | feature         |
+      | scenario_cleanup                               | 0         | 1                  | scenario        |
+      | scenario_cleanup                               | 0         | 2                  | scenario        |
+      | scenario_cleanup                               | 0         | 2                  | feature         |
+      | feature_cleanup                                | 1         | 1                  | scenario        |
+      | feature_cleanup                                | 1         | 2                  | scenario        |
+      | feature_cleanup                                | 1         | 2                  | feature         |
 
   @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A crashing rule cleanup must fail the run even when its only scenario is muted, with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
