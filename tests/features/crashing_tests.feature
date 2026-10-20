@@ -245,3 +245,16 @@ Feature: Crashing Tests
       | 1                  | scenario        |
       | 2                  | scenario        |
       | 2                  | feature         |
+
+  @CRASHING @CRASHING_BEHAVE_HOOK
+  Scenario Outline: A crash in a root cleanup must not fail the run when cleanup errors are ignored, with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Given I have installed behavex
+    When I run the behavex command with a test that crashes in "root_cleanup,ignored_cleanup_errors" hook with "<parallel_processes>" parallel processes and "<parallel_scheme>" parallel scheme
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line  |
+    | Exit code: 0 |
+    Examples:
+      | parallel_processes | parallel_scheme |
+      | 1                  | scenario        |
+      | 2                  | scenario        |
+      | 2                  | feature         |

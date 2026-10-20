@@ -6,6 +6,8 @@ def before_all(context):
     logging.info('before_all')
     context.behave_hook = context.config.userdata.get('crashing_behave_hook', '')
     crash_hook_if_specified(context, 'before_all')
+    if 'ignored_cleanup_errors' in context.behave_hook:
+        context.fail_on_cleanup_errors = False
     if 'root_cleanup' in context.behave_hook:
         context.add_cleanup(crash_in_cleanup)
 
