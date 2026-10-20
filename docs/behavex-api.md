@@ -42,7 +42,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 |---|---|---|
 | `paths` | `list[str]` | Feature file or directory paths to run |
 | `tags` | `list[str]` | Tag filters — each entry maps to one `--tags` argument |
-| `output_folder` | `str` | Output directory for HTML/JSON/XML reports |
+| `output_folder` | `str` | Output directory for HTML/JSON/XML reports. It is emptied before each run, so it cannot contain the project or its features. |
 | `parallel_processes` | `int` | Number of parallel Behave worker processes |
 | `parallel_scheme` | `str` | `'scenario'` or `'feature'` |
 | `parallel_delay` | `int` | Delay in milliseconds between parallel process launches |
@@ -71,7 +71,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 
 Executes the test run synchronously and returns a `RunResult`. Each call generates a new `run_id`.
 
-An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a run BehaveX refuses to start (such as duplicated scenarios), also raises `ValueError`; BehaveX prints the reason first. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
+An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a run BehaveX refuses to start (such as duplicated scenarios), also raises `ValueError`; BehaveX prints the reason first. An `output_folder` that is, or contains, the current directory or one of the `paths` raises `ValueError` before anything is deleted. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
 
 Run one `BehaveXRunner` at a time per process: the run state is module-level, so concurrent `.run()` calls in the same process are not supported.
 
