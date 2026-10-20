@@ -997,7 +997,7 @@ def _calculate_execution_code_from_runner(runner):
 
         # Use context.failed boolean to determine if any tests failed
         if hasattr(runner, 'context') and runner.context:
-            # A failing cleanup leaves context.failed unset; a root or feature one fails no scenario, so it cannot be muted
+            # A failing cleanup leaves context.failed unset; outside a scenario it fails none, so it cannot be muted
             if getattr(runner.context, 'fail_on_cleanup_errors', True):
                 if getattr(runner.context, '_unmutable_cleanup_failed', False):
                     return 2
