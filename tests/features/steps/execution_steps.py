@@ -86,6 +86,19 @@ def when_run_failing_tests_file(context):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command on passing tests rerunning the failures of a "{failures_file_state}" file')
+def when_rerun_failures_from_file_listing_no_failures(context, failures_file_state):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    failures_path = os.path.join('output', 'failures_{}.txt'.format(get_random_number(6)))
+    if failures_file_state in ('empty', 'blank'):
+        os.makedirs('output', exist_ok=True)
+        with open(failures_path, 'w') as failures_file:
+            failures_file.write('\n' if failures_file_state == 'blank' else '')
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+                      '-rf', failures_path, '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
 @when('I run the behavex command that renames scenarios and features')
 def when_run_renaming_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
@@ -121,15 +134,30 @@ def when_run_no_tests(context, parallel_processes="1", parallel_scheme='scenario
 
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook')
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
-def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario'):
+def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario',
+                                feature_filename='crashing_environment_tests.feature'):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     execution_args = ['behavex',
-                os.path.join(tests_features_path, os.path.join(tests_features_path, 'crashing_features', 'crashing_environment_tests.feature')),
+                os.path.join(tests_features_path, 'crashing_features', feature_filename),
                 '-o', context.output_path,
                 '--parallel-processes', parallel_processes,
                 '--parallel-scheme', parallel_scheme,
                 '-D', 'crashing_behave_hook=' + behave_hook]
     execute_command(context, execution_args)
+
+
+@when('I run the behavex command with a muted failing test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_run_muted_failing_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme):
+    when_run_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme,
+                                feature_filename='muted_failing_tests.feature')
+
+
+@when('I run the behavex command with a muted rule test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
+def when_run_muted_rule_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme):
+    if not _require_behave_for_rule(context):
+        return
+    when_run_crashing_hook_test(context, behave_hook, parallel_processes, parallel_scheme,
+                                feature_filename='muted_rule_tests.feature')
 
 
 @when('I run the behavex command with a skipped test')
@@ -704,7 +732,7 @@ def step_verify_images_in_allure_output(context):
         raise FileNotFoundError(f"Allure results directory not found: {allure_results_path}")
 
 
-def execute_command(context, execution_args, print_output=True, env=None):
+def execute_command(context, execution_args, print_output=True, env=None, cwd=None):
     if "progress_bar" in context and context.progress_bar:
         execution_args.insert(2, '--show-progress-bar')
     if hasattr(context, 'parallel_processes'):
@@ -712,7 +740,7 @@ def execute_command(context, execution_args, print_output=True, env=None):
     if hasattr(context, 'parallel_scheme'):
         execution_args += ['--parallel-scheme', context.parallel_scheme]
     logging.info("Executing command: {}".format(" ".join(execution_args)))
-    context.result = subprocess.run(execution_args, capture_output=True, text=True, env=env)
+    context.result = subprocess.run(execution_args, capture_output=True, text=True, env=env, cwd=cwd)
     if print_output:
         logging.info(context.result.stdout)
 
@@ -1147,14 +1175,18 @@ def then_junit_xml_report_generated(context):
     assert len(xml_files) > 0, f"No JUnit XML files found in: {junit_folder}"
 
 
-def _get_all_xml_testcases(context):
+def _get_xml_testcases_by_report(context):
     junit_folder = os.path.abspath(os.path.join(context.output_path, 'behave'))
-    testcases = []
-    for fname in sorted(os.listdir(junit_folder)):
-        if fname.endswith('.xml'):
-            root = ET.parse(os.path.join(junit_folder, fname)).getroot()
-            testcases.extend(root.findall('testcase'))
-    return testcases
+    return {xml_report_filename: ET.parse(os.path.join(junit_folder, xml_report_filename)).getroot().findall('testcase')
+            for xml_report_filename in sorted(os.listdir(junit_folder)) if xml_report_filename.endswith('.xml')}
+
+
+def _get_all_xml_testcases(context):
+    return [testcase for testcases in _get_xml_testcases_by_report(context).values() for testcase in testcases]
+
+
+def _get_all_xml_failures(context):
+    return [failure for testcase in _get_all_xml_testcases(context) for failure in testcase.findall('failure')]
 
 
 @then('I should see "{count}" scenarios with status "{status}" in the JUnit XML report')
@@ -1176,11 +1208,34 @@ def then_junit_xml_scenario_name(context, name):
 
 @then('I should see the JUnit XML failure message contains "{text}"')
 def then_junit_xml_failure_message_contains(context, text):
-    messages = [failure.get('message', '') + (failure.text or '')
-                for testcase in _get_all_xml_testcases(context)
-                for failure in testcase.findall('failure')]
+    messages = [failure.get('message', '') + (failure.text or '') for failure in _get_all_xml_failures(context)]
     assert any(text in message for message in messages), \
         f"No JUnit failure message contains '{text}'. Found: {messages}"
+
+
+@then('I should see the JUnit XML failure body contains "{text}"')
+def then_junit_xml_failure_body_contains(context, text):
+    failure_bodies = [failure.text or '' for failure in _get_all_xml_failures(context)]
+    assert any(text in failure_body for failure_body in failure_bodies), \
+        f"No JUnit failure body contains '{text}'. Found: {failure_bodies}"
+
+
+@then('I should see the JUnit XML system output contains "{text}"')
+def then_junit_xml_system_out_contains(context, text):
+    outputs = [system_out.text or ''
+               for testcase in _get_all_xml_testcases(context)
+               for system_out in testcase.findall('system-out')]
+    assert any(text in output for output in outputs), \
+        f"No JUnit system output contains '{text}'. Found: {outputs}"
+
+
+@then('I should see a JUnit XML report with exactly the testcases "{testcase_names}"')
+def then_junit_xml_report_with_exactly_testcases(context, testcase_names):
+    expected_names = sorted(name.strip() for name in testcase_names.split(','))
+    testcase_names_by_report = {xml_report_filename: sorted(testcase.get('name') for testcase in testcases)
+                                for xml_report_filename, testcases in _get_xml_testcases_by_report(context).items()}
+    assert expected_names in testcase_names_by_report.values(), \
+        f"No JUnit XML report holds exactly {expected_names}. Found: {testcase_names_by_report}"
 
 
 @then('I should see error messages for failed scenarios in the JUnit XML report')

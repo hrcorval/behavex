@@ -19,3 +19,17 @@ Feature: Rerun Scenarios
 
       # TODO: Uncomment this when enable performing rerun of failing scenarios using parallel scheme set as feature
       # | feature         | 2                  |
+
+  @RERUN_SCENARIOS
+  Scenario Outline: A rerun with a <failures_file_state> failures file stops without running any test
+    Given I have installed behavex
+    When I run the behavex command on passing tests rerunning the failures of a "<failures_file_state>" file
+    Then I should see the following behavex console outputs and exit code "1"
+      | output_line   |
+      | <output_line> |
+    And I should not see "scenarios passed" in the console output
+    Examples:
+      | failures_file_state | output_line                                            |
+      | missing             | The specified failing scenarios filename was not found |
+      | empty               | There are no failing test scenarios to run             |
+      | blank               | There are no failing test scenarios to run             |

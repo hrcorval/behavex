@@ -284,9 +284,23 @@ def copy_bootstrap_html_generator():
     )
 
 
+def _is_path_equal_to_or_inside_folder(path, folder):
+    folder = os.path.realpath(folder)
+    try:
+        return os.path.commonpath([folder, os.path.realpath(path)]) == folder
+    except ValueError:  # paths on different Windows drives
+        return False
+
+
 def cleanup_folders():
     # output folder
     output_folder = get_env('output')
+    features_path_env_value = os.environ.get('FEATURES_PATH', '')
+    feature_paths = [get_feature_and_scenario_line(path.strip())[0] for path in features_path_env_value.split(',') if path.strip()]
+    for protected_path in [os.getcwd()] + feature_paths:
+        if _is_path_equal_to_or_inside_folder(protected_path, output_folder):
+            raise ValueError("The output folder '{}' contains '{}' and BehaveX deletes it before each run; "
+                             "use a dedicated output folder".format(output_folder, protected_path))
 
     def execution():
         return shutil.rmtree(output_folder, ignore_errors=True)

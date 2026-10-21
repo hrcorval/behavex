@@ -114,7 +114,8 @@ def parse_arguments(args):
         default='',
         help='Specifies the output folder path where the test report will be stored. '
              'The path can be specified as a relative path. The value of this argument '
-             'can be accessed in testing implementations using the "OUTPUT" environment variable',
+             'can be accessed in testing implementations using the "OUTPUT" environment variable. '
+             'The folder is emptied before each run, so it cannot hold the project or its features',
         required=False,
     )
     parser.add_argument(

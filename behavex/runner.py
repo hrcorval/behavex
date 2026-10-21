@@ -56,6 +56,7 @@ from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
 from behavex.outputs.report_json import (generate_execution_info,
                                          get_environment_details)
 from behavex.outputs.report_utils import (get_overall_status,
+                                          get_string_hash,
                                           match_for_execution,
                                           pretty_print_time,
                                           retry_file_operation, text)
@@ -134,12 +135,12 @@ def run(args):
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
     execution_code, rerun_list = setup_running_failures(args_parsed)
+    if execution_code == EXIT_ERROR:
+        return EXIT_ERROR
     if rerun_list:
         paths = ",".join(rerun_list).replace('\n', '')
         os.environ['FEATURES_PATH'] = paths
         global_vars.rerun_failures = True
-        if execution_code == EXIT_ERROR:
-            return EXIT_ERROR
     else:
         # Handle paths parameter
         if len(get_param('paths')) > 0:
@@ -188,7 +189,7 @@ def setup_running_failures(args_parsed):
             set_env_variable('RERUN_FAILURES', args_parsed.rerun_failures)
             with open(failures_path, 'r') as failures_file:
                 content = failures_file.read()
-                if not content:
+                if not content.strip():
                     print('\nThere are no failing test scenarios to run.')
                     return EXIT_ERROR, None
                 return EXIT_OK, content.split(",")
@@ -996,6 +997,11 @@ def _calculate_execution_code_from_runner(runner):
 
         # Use context.failed boolean to determine if any tests failed
         if hasattr(runner, 'context') and runner.context:
+            # A failing cleanup leaves context.failed unset; outside a scenario it fails none, so it cannot be muted
+            if vars(runner.context).get('_unmutable_cleanup_failed'):
+                return 2
+            if vars(runner.context).get('_scenario_cleanup_failed'):
+                return 1  # Scenario cleanup failures
             if hasattr(runner.context, 'failed'):
                 if runner.context.failed:
                     return 1  # Test failures
@@ -1211,13 +1217,17 @@ def remove_temporary_files(parallel_processes, json_reports):
         json_reports = [json_reports]
     for json_report in json_reports:
         if 'features' in json_report and json_report['features']:
-            feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
-            feature_name = os.path.join(feature_tmp_dir, u'{}.tmp'.format(json_report['features'][0]['name']))
-            if os.path.exists(feature_name):
+            feature_tmp_file_path = _get_feature_results_tmp_file_path(json_report['features'][0]['filename'])
+            if os.path.exists(feature_tmp_file_path):
                 try:
-                    os.remove(feature_name)
+                    os.remove(feature_tmp_file_path)
                 except Exception as remove_ex:
                     print(remove_ex)
+
+
+def _get_feature_results_tmp_file_path(feature_filename):
+    feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
+    return os.path.join(feature_tmp_dir, u'{}.tmp'.format(get_string_hash(os.path.abspath(feature_filename))))
 
 
 def processing_xml_feature(json_output, scenario_line, feature_filename,
@@ -1253,27 +1263,24 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                 if reported_scenario['line'] == scenario_line:
                     executed_scenarios.append(reported_scenario)
             json_output['features'][0]['scenarios'] = executed_scenarios
-            feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
-            feature_name = os.path.join(
-                feature_tmp_dir, u'{}.tmp'.format(os.path.basename(feature_filename))
-            )
+            feature_tmp_file_path = _get_feature_results_tmp_file_path(feature_filename)
             processed_feature_data = json_output['features'][0]
             processed_feature_data['scenarios'] = executed_scenarios
-            if os.path.exists(feature_name):
+            if os.path.exists(feature_tmp_file_path):
                 for _ in range(0, 10):
                     try:
-                        processed_feature_data = json.load(open(feature_name, 'r'))
-                        with open(feature_name, 'w') as feature_file:
+                        processed_feature_data = json.load(open(feature_tmp_file_path, 'r'))
+                        with open(feature_tmp_file_path, 'w') as feature_file:
                             for executed_scenario in executed_scenarios:
                                 processed_feature_data['scenarios'].append(executed_scenario)
                             json.dump(processed_feature_data, feature_file)
                         break
                     except Exception as ex:
                         logging.debug(ex)
-                        logging.debug('Retrying reading from {}'.format(feature_name))
+                        logging.debug('Retrying reading from {}'.format(feature_tmp_file_path))
                         time.sleep(1)
             else:
-                with codecs.open(feature_name, 'w', 'utf8') as feature_file:
+                with codecs.open(feature_tmp_file_path, 'w', 'utf8') as feature_file:
                     json.dump(processed_feature_data, feature_file)
             # calculate the total number of scenarios that should be executed
             removed_scenarios = 0
@@ -1290,8 +1297,7 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                     traceback.print_exc()
                     print(ex)
                 finally:
-                    path_tmp = u'{}.tmp'.format(feature_name[:-4])
-                    os.remove(path_tmp)
+                    os.remove(feature_tmp_file_path)
     except Exception as ex:
         raise ex
     finally:
