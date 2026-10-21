@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [4.6.8] - Unreleased
+## [4.6.8] - 2026-10-21
 
 ### Fixed
 - **JUnit XML report was not well-formed when report text contained `]]>`** ([#251](https://github.com/hrcorval/behavex/pull/251)) — A step, scenario name, file path, traceback or hook error message containing `]]>` ended the CDATA section early, so CI tools could not read the `TESTS-*.xml` file for that feature. The text is now kept intact in both single-process and parallel runs.
