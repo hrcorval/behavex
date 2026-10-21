@@ -163,8 +163,7 @@ order_tests        = True
 order_tests_strict = False
 order_tag_prefix   = PRIORITY
 
-# Rerun failures
-rerun_failures     = output/failing_scenarios.txt
+# Paths
 include_paths      = tests/smoke, tests/regression
 
 # Behave pass-through
