@@ -36,6 +36,12 @@ behavex -rf=./output/failing_scenarios.txt
 behavex --rerun-failures=./output/failing_scenarios.txt
 ```
 
+BehaveX writes this file only when a scenario fails. If the file is missing or empty, the rerun exits with code 1 without running any test, so run it only when the first run fails:
+
+```bash
+behavex || behavex -rf=./output/failing_scenarios.txt -o=output_rerun
+```
+
 Specify a different output folder to avoid overwriting the previous report:
 
 ```bash

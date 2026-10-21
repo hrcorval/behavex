@@ -86,6 +86,19 @@ def when_run_failing_tests_file(context):
     execute_command(context, execution_args)
 
 
+@when('I run the behavex command on passing tests rerunning the failures of a "{failures_file_state}" file')
+def when_rerun_failures_from_file_listing_no_failures(context, failures_file_state):
+    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    failures_path = os.path.join('output', 'failures_{}.txt'.format(get_random_number(6)))
+    if failures_file_state in ('empty', 'blank'):
+        os.makedirs('output', exist_ok=True)
+        with open(failures_path, 'w') as failures_file:
+            failures_file.write('\n' if failures_file_state == 'blank' else '')
+    execution_args = ['behavex', os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+                      '-rf', failures_path, '-o', context.output_path]
+    execute_command(context, execution_args)
+
+
 @when('I run the behavex command that renames scenarios and features')
 def when_run_renaming_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))

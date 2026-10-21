@@ -135,12 +135,12 @@ def run(args):
     set_environ_config(args_parsed)
     ConfigRun().set_args(args_parsed)
     execution_code, rerun_list = setup_running_failures(args_parsed)
+    if execution_code == EXIT_ERROR:
+        return EXIT_ERROR
     if rerun_list:
         paths = ",".join(rerun_list).replace('\n', '')
         os.environ['FEATURES_PATH'] = paths
         global_vars.rerun_failures = True
-        if execution_code == EXIT_ERROR:
-            return EXIT_ERROR
     else:
         # Handle paths parameter
         if len(get_param('paths')) > 0:
@@ -189,7 +189,7 @@ def setup_running_failures(args_parsed):
             set_env_variable('RERUN_FAILURES', args_parsed.rerun_failures)
             with open(failures_path, 'r') as failures_file:
                 content = failures_file.read()
-                if not content:
+                if not content.strip():
                     print('\nThere are no failing test scenarios to run.')
                     return EXIT_ERROR, None
                 return EXIT_OK, content.split(",")
