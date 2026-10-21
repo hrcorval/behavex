@@ -87,7 +87,7 @@ def when_run_failing_tests_file(context):
 
 
 @when('I run the behavex command on passing tests rerunning the failures of a "{failures_file_state}" file')
-def when_rerun_failures_from_file_listing_no_failures(context, failures_file_state):
+def when_rerun_failures_from_missing_or_empty_failures_file(context, failures_file_state):
     context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
     failures_path = os.path.join('output', 'failures_{}.txt'.format(get_random_number(6)))
     if failures_file_state in ('empty', 'blank'):
