@@ -90,6 +90,7 @@ match_include = None
 
 _progress_callback: Optional[Callable] = None
 _completed_count: int = 0
+_progress_total: Optional[int] = None
 _is_parallel_run: bool = False
 _active_executor: Optional[ProcessPoolExecutor] = None
 _last_run_results: list = []
@@ -114,6 +115,7 @@ def _fire_progress(scenario_name: str, feature_name: str, status: str, duration:
             status=status,
             duration=duration,
             completed_count=_completed_count,
+            total=_progress_total,
         ))
     except Exception:
         pass
@@ -160,10 +162,8 @@ def main():
         exit_code = run(args)
     except SystemExit as e:
         # Handle cases where scenarios call exit() directly
-        if hasattr(e, 'code') and e.code is not None:
-            exit_code = e.code
-        else:
-            exit_code = 1
+        # A str code is a reason already printed, as utils.expand_paths does
+        exit_code = e.code if isinstance(e.code, int) else 1
         # Ensure we print the exit code even when scenarios crash
         print('Exit code: {}'.format(exit_code))
     except Exception as e:
@@ -187,6 +187,39 @@ def run(args):
     Returns:
         int: Exit code indicating success or failure.
     """
+    args_parsed = _prepare_run(args)
+    if args_parsed is None:
+        return EXIT_ERROR
+    set_system_paths()
+    if get_param('no_report'):
+        os.makedirs(get_env('TEMP'), exist_ok=True)
+    else:
+        cleanup_folders()
+        copy_bootstrap_html_generator()
+    configure_logging(args_parsed)
+    return launch_behavex()
+
+
+def discover(args):
+    """Return the scenarios run(args) would execute, without running anything or writing files.
+
+    Returns None when run(args) would stop on its rerun_failures file.
+    """
+    if _prepare_run(args) is None:
+        return None
+    set_behave_tags(write_tags_file=False)
+    features = _explore_scenarios(os.environ['FEATURES_PATH'])
+    # BehaveX leaves --exclude to behave, which skips those feature files
+    exclude = get_param('exclude')
+    return [scenario for _, scenario, _ in _select_scenarios(features)
+            if not (exclude and re.search(exclude, scenario.filename))]
+
+
+def _prepare_run(args):
+    """Set the run's process state (config, env vars, filters) without touching the filesystem.
+
+    Returns the parsed arguments, or None when the rerun_failures file is missing or empty.
+    """
     global match_include
     global include_path_match
     global include_name_match
@@ -207,7 +240,7 @@ def run(args):
     ConfigRun().set_args(args_parsed)
     execution_code, rerun_list = setup_running_failures(args_parsed)
     if execution_code == EXIT_ERROR:
-        return EXIT_ERROR
+        return None
     if rerun_list:
         paths = ",".join(rerun_list).replace('\n', '')
         os.environ['FEATURES_PATH'] = paths
@@ -230,16 +263,10 @@ def run(args):
     if features_path == '' or features_path is None:
         os.environ['FEATURES_PATH'] = 'features'
     _set_env_variables(args_parsed)
-    set_system_paths()
-    if not get_param('no_report'):
-        cleanup_folders()
-        copy_bootstrap_html_generator()
-    configure_logging(args_parsed)
     match_include = MatchInclude()
     include_path_match = IncludePathsMatch()
     include_name_match = IncludeNameMatch()
-
-    return launch_behavex()
+    return args_parsed
 
 
 def setup_running_failures(args_parsed):
@@ -337,10 +364,7 @@ def launch_behavex():
         os.environ['BHX_SHARED_CONTEXT'] = json.dumps(shared_data)
     scenario = False
     notify_missing_features(features_path)
-    features_list = {}
-    for path in features_path.split(','):
-        features_list[path] = explore_features(path)
-    updated_features_list = create_scenario_line_references(features_list)
+    updated_features_list = _explore_scenarios(features_path)
     parallel_scheme = '' if not _is_parallel_run else parallel_scheme
     manager = multiprocessing.Manager()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
@@ -592,6 +616,13 @@ def notify_missing_features(features_path):
                 print_parallel('path.not_found', os.path.realpath(include_path))
 
 
+def _explore_scenarios(features_path):
+    features_list = {}
+    for path in features_path.split(','):
+        features_list[path] = explore_features(path)
+    return create_scenario_line_references(features_list)
+
+
 def create_scenario_line_references(features):
     """Create references for scenario lines in the features.
 
@@ -810,6 +841,16 @@ def launch_by_feature(features,
     return execution_codes, json_reports
 
 
+def _select_scenarios(features):
+    """Yield (features_path, scenario, scenario_tags) for each scenario the run executes."""
+    for features_path, scenarios in features.items():
+        for scenario in get_scenarios_instances(scenarios):
+            if include_path_match(scenario.filename, scenario.line) and include_name_match(scenario.name):
+                scenario_tags = get_scenario_tags(scenario)
+                if match_for_execution(scenario_tags):
+                    yield features_path, scenario, scenario_tags
+
+
 def launch_by_scenario(features,
                        process_pool,
                        lock,
@@ -842,38 +883,33 @@ def launch_by_scenario(features,
     # If order_tests_strict is enabled, automatically enable order_tests
     order_tests_enabled = order_tests_enabled or order_tests_strict
     order_tag_prefix = get_param('order_tag_prefix') if order_tests_enabled else None
-    for features_path, scenarios in features.items():
-        scenarios_instances = get_scenarios_instances(scenarios)
+    for features_path, scenario, scenario_tags in _select_scenarios(features):
+        if scenario.name == "":
+            features_with_no_scen_desc.append(scenario.filename)
+        feature_json_skeleton = _get_feature_json_skeleton(scenario)
+        feature_filename = scenario.feature.filename
+        scenario_information = {"features_path": features_path,
+                                "feature_filename": feature_filename,
+                                "feature_json_skeleton": feature_json_skeleton,
+                                "scenario_line": scenario.line}
 
-        for scenario in scenarios_instances:
-            if include_path_match(scenario.filename, scenario.line) \
-                    and include_name_match(scenario.name):
-                scenario_tags = get_scenario_tags(scenario)
-                if match_for_execution(scenario_tags):
-                    if scenario.name == "":
-                        features_with_no_scen_desc.append(scenario.filename)
-                    feature_json_skeleton = _get_feature_json_skeleton(scenario)
-                    feature_filename = scenario.feature.filename
-                    scenario_information = {"features_path": features_path,
-                                            "feature_filename": feature_filename,
-                                            "feature_json_skeleton": feature_json_skeleton,
-                                            "scenario_line": scenario.line}
-
-                    # Only calculate scenario order if ordering is enabled
-                    if order_tests_enabled:
-                        scenario_information["scenario_order"] = get_scenario_order(scenario, order_tag_prefix)
-                    total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
-                    if 'SERIAL' in scenario_tags:
-                        if scenario_information in serial_scenarios:
-                            duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
-                        serial_scenarios.append(scenario_information)
-                    else:
-                        if scenario_information in parallel_scenarios:
-                            duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
-                        parallel_scenarios.append(scenario_information)
+        # Only calculate scenario order if ordering is enabled
+        if order_tests_enabled:
+            scenario_information["scenario_order"] = get_scenario_order(scenario, order_tag_prefix)
+        total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1
+        if 'SERIAL' in scenario_tags:
+            if scenario_information in serial_scenarios:
+                duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
+            serial_scenarios.append(scenario_information)
+        else:
+            if scenario_information in parallel_scenarios:
+                duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
+            parallel_scenarios.append(scenario_information)
+    global _progress_total
+    _progress_total = sum(total_scenarios_to_run.values())
     if show_progress_bar:
         global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
-                                                                       total_elements=sum(total_scenarios_to_run.values()))
+                                                                       total_elements=_progress_total)
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
     if duplicated_scenarios:
@@ -1169,7 +1205,7 @@ def _launch_behave(behave_args):
 
             # Ensure line-buffered stdout so formatter output appears in real time on all
             # platforms (Linux/Windows block-buffer stdout when not a TTY by default)
-            if 'null' not in (config.format or []):
+            if 'null' not in (config.format or []) and hasattr(sys.stdout, 'reconfigure'):
                 sys.stdout.reconfigure(line_buffering=True)
 
             runner.run()
@@ -1517,7 +1553,6 @@ def _set_env_variables(args):
         set_env_variable('NO_REPORT', True)
         set_env_variable('LOGS', os.path.join(gettempdir(), 'bhx_logs'))
         set_env_variable('TEMP', os.path.join(gettempdir(), 'bhx_temp'))
-        os.makedirs(get_env('TEMP'), exist_ok=True)
     set_env_variable('LOGGING_LEVEL', get_logging_level())
     if platform.system() == 'Windows':
         set_env_variable('HOME', os.path.abspath('.\\'))

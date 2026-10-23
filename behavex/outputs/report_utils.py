@@ -280,7 +280,7 @@ def retry_file_operation(dest_path, execution, return_value=False):
 def get_test_execution_tags():
     if get_param('no_report'):
         return get_env('behave_tags') or ''
-    if not get_env('behave_tags'):
+    if get_env('behave_tags') is None:
         behave_tags_path = os.path.join(
             os.path.abspath(get_env('OUTPUT')), global_vars.behave_tags_file
         )

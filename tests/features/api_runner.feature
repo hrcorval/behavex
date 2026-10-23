@@ -385,8 +385,8 @@ Feature: BehaveXRunner Python API
 
   @API_RUNNER_052
   Scenario: a path that does not exist raises ValueError instead of exiting
-    When I run BehaveXRunner on a feature path that does not exist
-    Then run() raised a ValueError mentioning "BehaveX stopped before running the tests"
+    When I call run() with a path that does not exist
+    Then run() raised a ValueError mentioning "BehaveX stopped before running the tests: Specified path was not found"
 
   @API_RUNNER_053
   Scenario Outline: a relative <argument> entry starting with "-" runs its scenarios instead of being parsed as an option
@@ -410,3 +410,90 @@ Feature: BehaveXRunner Python API
       | processes | untested |
       | 1         | 2        |
       | 2         | 0        |
+
+  @API_RUNNER_056
+  Scenario: RunResult.model_dump() and its serialization schema include passed, summary and failed_scenarios
+    When I run BehaveXRunner with failing tests and serialize the RunResult with model_dump
+    Then the dumped RunResult holds passed False, a summary total of 1 and 1 failed scenario
+
+  @API_RUNNER_057
+  Scenario: a run started while another run is active raises RuntimeError
+    When I run BehaveXRunner with passing tests and call run() from its on_progress callback
+    Then the second run raised a RuntimeError mentioning "Another BehaveXRunner.run() is active"
+    And the RunResult exit_code should be "0"
+    And the RunResult summary total is "5"
+
+  @API_RUNNER_058
+  Scenario: a glob that matches no file raises a ValueError naming the pattern
+    When I call run() with a glob that matches no file
+    Then run() raised a ValueError mentioning "BehaveX stopped before running the tests: No files found matching pattern"
+
+  @API_RUNNER_059
+  Scenario: the behavex CLI prints why a missing path stops the run and exits with code 1
+    When I run the behavex CLI on a feature path that does not exist
+    Then the CLI printed "Specified path was not found", then "Exit code: 1", and exited with code 1
+
+  @API_RUNNER_060
+  Scenario: a run returns its results when sys.stdout cannot be reconfigured
+    When I run BehaveXRunner with passing tests while sys.stdout is an io.StringIO
+    Then the RunResult exit_code should be "0"
+    And the RunResult summary total is "5"
+
+  @API_RUNNER_061
+  Scenario: repeated runs in one process do not grow PATH
+    When I run BehaveXRunner twice in one process on passing tests and record PATH
+    Then PATH is the same after both runs
+
+  @API_RUNNER_062
+  Scenario: on_progress events of a parallel scenario run carry the number of scenarios as total
+    When I run BehaveXRunner with passing tests using "2" parallel processes, "scenario" scheme, and an on_progress callback
+    Then the on_progress callback was called once per scenario in the RunResult summary
+    And each on_progress event has the summary total as its total
+
+  @API_RUNNER_063
+  Scenario Outline: discover() lists the scenarios a single-process run reports, filtered by <filter>
+    When I call discover() and then run() single-process on the discovery features filtered by <filter>
+    Then discover() listed the scenarios the run reported, with their features and tags
+    Examples:
+      | filter                      |
+      | nothing                     |
+      | an included tag             |
+      | an excluded tag             |
+      | name                        |
+      | an include_paths file line  |
+      | a Scenario Outline example  |
+      | the config tags_to_skip     |
+      | a rerun_failures file       |
+      | exclude                     |
+
+  @API_RUNNER_064
+  Scenario Outline: discover() writes nothing to stdout and leaves <folder> untouched
+    When I call discover() on the discovery features with <folder> as the output folder
+    Then discover() listed "7" scenarios and printed nothing to stdout
+    And the output folder is as it was before discover()
+    Examples:
+      | folder                                 |
+      | an existing folder holding a marker    |
+      | a folder that does not exist           |
+
+  @API_RUNNER_065
+  Scenario Outline: discover() raises a ValueError naming why <input> stops it, and a later run still runs
+    When I call discover() with <input>, then run() on passing tests in the same process
+    Then discover() raised a ValueError mentioning "<reason>"
+    And the RunResult exit_code should be "0"
+    And the RunResult summary total is "5"
+    Examples:
+      | input                         | reason                                                                                    |
+      | a path that does not exist    | BehaveX stopped before discovering the tests: Specified path was not found                |
+      | a glob that matches no file   | BehaveX stopped before discovering the tests: No files found matching pattern             |
+      | a missing rerun_failures file | BehaveX stopped before discovering the tests: the rerun_failures file is missing or empty |
+
+  @API_RUNNER_066
+  Scenario: discover() during an active run raises RuntimeError
+    When I run BehaveXRunner with passing tests and call discover() from its on_progress callback
+    Then discover() raised a RuntimeError mentioning "Another BehaveXRunner.run() is active"
+
+  @API_RUNNER_067
+  Scenario: a run started while discover() is exploring the features raises RuntimeError
+    When I call discover() on the discovery features and start a run while it explores them
+    Then the run started during discover() raised a RuntimeError mentioning "Another BehaveXRunner.run() is active"

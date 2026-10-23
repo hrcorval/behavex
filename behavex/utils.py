@@ -484,17 +484,17 @@ def len_scenarios(feature_file):
 
 
 
-def set_behave_tags():
+def set_behave_tags(write_tags_file=True):
     """
     Create behave.tags file for tag filtering.
 
     Uses the legacy tag processing implementation which is compatible with all Behave versions.
     """
     # Use the legacy implementation directly since we no longer use external libraries
-    set_behave_tags_legacy()
+    set_behave_tags_legacy(write_tags_file)
 
 
-def set_behave_tags_legacy():
+def set_behave_tags_legacy(write_tags_file=True):
     """
     Legacy tag processing implementation.
     Uses the original complex string manipulation approach.
@@ -523,7 +523,7 @@ def set_behave_tags_legacy():
     tags_line = tags_line.replace(',', ' or ')
     # Cache in env var so get_test_execution_tags() can skip the file read
     set_env('behave_tags', tags_line)
-    if not get_param('no_report'):
+    if write_tags_file and not get_param('no_report'):
         behave_tags_path = os.path.join(get_env('OUTPUT'), 'behave', 'behave.tags')
         retry_file_operation(
             behave_tags_path, execution=get_save_function(behave_tags_path, tags_line)
@@ -577,8 +577,9 @@ def get_scenarios_instances(scenarios):
 
 
 def set_system_paths():
-    input_path = os.pathsep + get_env('temp')
-    os.environ['PATH'] += input_path
+    temp_path = get_env('temp')
+    if temp_path not in os.environ['PATH'].split(os.pathsep):
+        os.environ['PATH'] += os.pathsep + temp_path
 
 
 def generate_reports(json_output):
@@ -745,15 +746,17 @@ def expand_paths(paths):
         if any(char in path for char in ['*', '?', '[']):
             globbed = glob.glob(path)
             if not globbed:
-                print('\nNo files found matching pattern: {}'.format(path))
-                exit()
+                message = 'No files found matching pattern: {}'.format(path)
+                print('\n' + message)
+                sys.exit(message)
             expanded.extend(globbed)
         else:
             pure_feature_path, scenario_line = get_feature_and_scenario_line(path)
             normalized_features_path = os.path.normpath(pure_feature_path)
             if not os.path.exists(pure_feature_path):
-                print('\nSpecified path was not found: {}'.format(pure_feature_path))
-                exit()
+                message = 'Specified path was not found: {}'.format(pure_feature_path)
+                print('\n' + message)
+                sys.exit(message)
             expanded.append(path)
     return expanded
 

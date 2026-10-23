@@ -12,13 +12,20 @@ from typing import Callable, List, Optional
 from behavex import runner
 from behavex.arguments import parse_arguments
 from behavex.conf_mgr import get_env
+from behavex.outputs.report_utils import text
 
 try:
-    from behavex.models import FeatureResult, ProgressEvent, RunResult  # noqa: F401
+    from behavex.models import DiscoveredScenario, FeatureResult, ProgressEvent, RunResult  # noqa: F401
 except ImportError:
     raise ImportError(
         "BehaveXRunner requires pydantic. Install it with: pip install 'behavex[api]'"
     )
+
+
+def _ensure_no_active_run() -> None:
+    if runner._run_active:
+        raise RuntimeError('Another BehaveXRunner.run() is active in this process; '
+                           'BehaveX keeps its run state in module globals, so runs cannot overlap')
 
 
 def _validate_args(args: List[str]) -> None:
@@ -104,11 +111,13 @@ class BehaveXRunner:
         self.on_progress = on_progress
 
     def run(self) -> RunResult:
+        _ensure_no_active_run()
         run_id = str(uuid.uuid4())
         args = self._build_args()
         _validate_args(args)
         runner._progress_callback = self.on_progress
         runner._completed_count = 0
+        runner._progress_total = None
         runner._last_run_results = []
         runner._progress_reported = set()
         runner._stop_requested = False
@@ -117,7 +126,9 @@ class BehaveXRunner:
         try:
             exit_code = runner.run(args)
         except SystemExit as exit_signal:
-            # BehaveX exits on a missing path or duplicated scenarios after printing why
+            if isinstance(exit_signal.code, str):
+                raise ValueError('BehaveX stopped before running the tests: {}'.format(exit_signal.code)) from None
+            # BehaveX exits on duplicated or unnamed scenarios after printing why
             raise ValueError('BehaveX stopped before running the tests (exit code {}); '
                              'its output explains why'.format(exit_signal.code)) from None
         finally:
@@ -126,6 +137,31 @@ class BehaveXRunner:
         features = self._load_features()
         return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
                          features=features, stopped=runner._stopped)
+
+    def discover(self) -> List[DiscoveredScenario]:
+        """List the scenarios run() would execute, without executing anything or writing any file.
+
+        Step definitions are not loaded, so undefined steps go unnoticed.
+        """
+        _ensure_no_active_run()
+        args = self._build_args()
+        _validate_args(args)
+        runner._run_active = True
+        try:
+            # an MCP stdio server owns sys.stdout
+            with contextlib.redirect_stdout(io.StringIO()):
+                scenarios = runner.discover(args)
+        except SystemExit as exit_signal:
+            raise ValueError('BehaveX stopped before discovering the tests: {}'.format(exit_signal.code)) from None
+        finally:
+            runner._run_active = False
+        if scenarios is None:
+            raise ValueError('BehaveX stopped before discovering the tests: '
+                             'the rerun_failures file is missing or empty')
+        return [DiscoveredScenario(feature=scenario.feature.name, name=scenario.name,
+                                   filename=text(scenario.filename), line=scenario.line,
+                                   tags=list(scenario.effective_tags))
+                for scenario in scenarios]
 
     def stop(self) -> None:
         """Stop a parallel run from submitting more scenarios and cancel the queued ones.

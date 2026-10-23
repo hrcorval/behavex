@@ -9,7 +9,7 @@ from typing import List, Optional
 
 import behave
 from behave import given, then, when
-from config_file_steps import _clean_child_env
+from config_file_steps import _clean_child_env, _make_config_dir, _write_config_file
 from execution_steps import get_random_number
 from packaging.version import Version
 
@@ -49,6 +49,14 @@ _data = {
 print("__RESULT__:" + json.dumps(_data))
 """
 
+_CAPTURE_RAISED = """
+def _capture_raised(call):
+    try:
+        call()
+    except BaseException as error:
+        return {"type": type(error).__name__, "message": str(error)}
+"""
+
 
 def _run_script(script: str) -> subprocess.CompletedProcess:
     return subprocess.run(
@@ -69,6 +77,10 @@ def _parse_result(proc: subprocess.CompletedProcess) -> dict:
         f'BehaveXRunner subprocess did not emit a result.\n'
         f'STDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
     )
+
+
+def _non_result_lines(proc: subprocess.CompletedProcess) -> List[str]:
+    return [line for line in proc.stdout.splitlines() if not line.startswith('__RESULT__:')]
 
 
 def _store_result(context, proc: subprocess.CompletedProcess) -> None:
@@ -570,6 +582,7 @@ def _on_progress(event):
         "feature_name": event.feature_name,
         "status": event.status,
         "completed_count": event.completed_count,
+        "total": event.total,
     })
 """
 
@@ -1303,34 +1316,38 @@ def when_api_run_with_argument_value(context, argument, value):
 import json, sys
 sys.path.insert(0, {repr(root_project_path)})
 from behavex import BehaveXRunner
-try:
-    BehaveXRunner(paths=[{repr(feature_path)}], no_report=True, {argument}={repr(value)}).run()
-    raised = None
-except BaseException as error:
-    raised = {{"type": type(error).__name__, "message": str(error)}}
+{_CAPTURE_RAISED}
+raised = _capture_raised(lambda: BehaveXRunner(paths=[{repr(feature_path)}], no_report=True, {argument}={repr(value)}).run())
 print("__RESULT__:" + json.dumps({{"raised": raised}}))
 """
     _store_result(context, _run_script(script))
 
 
-@when('I run BehaveXRunner on a feature path that does not exist')
-def when_api_run_missing_path(context):
-    missing_path = os.path.join(secondary_features_path, 'missing_{}.feature'.format(get_random_number(6)))
+def _refused_input_kwargs(input_name):
+    missing = os.path.join(secondary_features_path, 'missing_{}'.format(get_random_number(6)))
+    return {
+        'a path that does not exist': {'paths': [missing + '.feature']},
+        'a glob that matches no file': {'paths': [missing + '_*.feature']},
+        'a missing rerun_failures file': {'rerun_failures': missing + '.txt'},
+    }[input_name]
+
+
+@when('I call run() with {input_name}')
+def when_api_run_refused_input(context, input_name):
+    kwargs = _refused_input_kwargs(input_name)
     script = f"""
 import json, sys
 sys.path.insert(0, {repr(root_project_path)})
 from behavex import BehaveXRunner
-try:
-    BehaveXRunner(paths=[{repr(missing_path)}], no_report=True).run()
-    raised = None
-except BaseException as error:
-    raised = {{"type": type(error).__name__, "message": str(error)}}
+{_CAPTURE_RAISED}
+raised = _capture_raised(lambda: BehaveXRunner(no_report=True, **{kwargs!r}).run())
 print("__RESULT__:" + json.dumps({{"raised": raised}}))
 """
     _store_result(context, _run_script(script))
 
 
 @then('run() raised a ValueError mentioning "{text}"')
+@then('discover() raised a ValueError mentioning "{text}"')
 def then_run_raised_value_error(context, text):
     raised = context.api_run_result['raised']
     assert raised and raised['type'] == 'ValueError' and text in raised['message'], (
@@ -1358,3 +1375,279 @@ result = BehaveXRunner({argument}=['-suite/passing_tests.feature'], parallel_pro
 def given_python_can_cancel_queued_futures(context):
     if sys.version_info < (3, 9):
         context.scenario.skip(reason='Executor.shutdown(cancel_futures=True) requires Python 3.9')
+
+
+@then('each on_progress event has the summary total as its total')
+def then_progress_events_have_summary_total(context):
+    result = context.api_run_result
+    totals = [event['total'] for event in result['events']]
+    assert totals and all(total == result['summary_total'] for total in totals), (
+        f'Expected every event total to be {result["summary_total"]}, got {totals}.\n'
+        f'BehaveXRunner output:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner with failing tests and serialize the RunResult with model_dump')
+def when_api_run_model_dump(context):
+    feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner, RunResult
+result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
+_data = {{
+    "dump": json.loads(result.model_dump_json()),
+    "schema_properties": sorted(RunResult.model_json_schema(mode='serialization')['properties']),
+}}
+print("__RESULT__:" + json.dumps(_data))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the dumped RunResult holds passed False, a summary total of 1 and 1 failed scenario')
+def then_dumped_run_result_holds_computed_fields(context):
+    result = context.api_run_result
+    dump = result['dump']
+    assert (dump.get('passed') is False and dump.get('summary', {}).get('total') == 1
+            and len(dump.get('failed_scenarios', [])) == 1), (
+        f'Unexpected model_dump: {dump}.\nOutput:\n{context.api_run_output}'
+    )
+    missing = {'passed', 'summary', 'failed_scenarios'} - set(result['schema_properties'])
+    assert not missing, f'The serialization schema lacks {missing}: {result["schema_properties"]}'
+
+
+@when('I run BehaveXRunner with passing tests and call {method}() from its on_progress callback')
+def when_api_run_calling_from_progress(context, method):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+_raised = []
+
+def _on_progress(event):
+    if not _raised:
+        _raised.append(_capture_raised(lambda: BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).{method}()))
+
+result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True, on_progress=_on_progress).run()
+print("__RESULT__:" + json.dumps({{"raised": _raised[0] if _raised else None,
+                                  "exit_code": result.exit_code, "summary": result.summary.model_dump()}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the second run raised a RuntimeError mentioning "{text}"')
+@then('discover() raised a RuntimeError mentioning "{text}"')
+@then('the run started during discover() raised a RuntimeError mentioning "{text}"')
+def then_second_run_raised_runtime_error(context, text):
+    raised = context.api_run_result['raised']
+    assert raised and raised['type'] == 'RuntimeError' and text in raised['message'], (
+        f'Expected a RuntimeError mentioning {text!r}, got {raised}.\nOutput:\n{context.api_run_output}'
+    )
+
+
+@when('I run the behavex CLI on a feature path that does not exist')
+def when_cli_run_missing_path(context):
+    missing_path = os.path.join(secondary_features_path, 'missing_{}.feature'.format(get_random_number(6)))
+    script = f"""
+import sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex.runner import main
+sys.argv = ['behavex', {repr(missing_path)}, '--no-report']
+main()
+"""
+    context.cli_proc = _run_script(script)
+
+
+@then('the CLI printed "{text}", then "Exit code: 1", and exited with code 1')
+def then_cli_printed_reason_and_exit_code(context, text):
+    proc = context.cli_proc
+    lines = proc.stdout.splitlines()
+    assert proc.returncode == 1 and lines[-2:-1] and lines[-2].startswith(text) and lines[-1] == 'Exit code: 1', (
+        f'Exit code {proc.returncode}.\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
+    )
+
+
+@when('I run BehaveXRunner with passing tests while sys.stdout is an io.StringIO')
+def when_api_run_with_string_io_stdout(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import io, json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+sys.stdout = io.StringIO()
+result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
+captured, sys.stdout = sys.stdout.getvalue(), sys.__stdout__
+print(captured)
+""" + _SERIALIZE_RESULT
+    _store_result(context, _run_script(script))
+
+
+@when('I run BehaveXRunner twice in one process on passing tests and record PATH')
+def when_api_run_twice_recording_path(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, os, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+paths = []
+for _ in range(2):
+    BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
+    paths.append(os.environ['PATH'])
+print("__RESULT__:" + json.dumps({{"paths": paths}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('PATH is the same after both runs')
+def then_path_same_after_both_runs(context):
+    first, second = context.api_run_result['paths']
+    assert first == second, f'PATH changed between runs:\n{first}\n{second}'
+
+
+discovery_features_path = os.path.join(api_runner_features_path, 'discovery')
+discovery_feature = os.path.relpath(os.path.join(discovery_features_path, 'discovery.feature'), root_project_path)
+
+
+def _discovery_filter_kwargs(context, filter_name):
+    if filter_name == 'an include_paths file line':
+        return {'include_paths': [discovery_feature + ':7']}
+    if filter_name == 'a Scenario Outline example':
+        return {'paths': [discovery_feature + ':23']}
+    if filter_name == 'a rerun_failures file':
+        failures_file = os.path.join(tempfile.mkdtemp(), 'failing_scenarios.txt')
+        context.add_cleanup(shutil.rmtree, os.path.dirname(failures_file), ignore_errors=True)
+        with open(failures_file, 'w') as failures:
+            failures.write('{0}:3,{0}:22'.format(discovery_feature))
+        return {'rerun_failures': failures_file}
+    kwargs = {'paths': [discovery_features_path]}
+    if filter_name == 'the config tags_to_skip':
+        kwargs['config'] = _write_config_file(_make_config_dir(context), 'behavex.cfg',
+                                              '[test_run]\ntags_to_skip=SKIP\n')
+    else:
+        kwargs.update({
+            'nothing': {},
+            'an included tag': {'tags': ['@SMOKE']},
+            'an excluded tag': {'tags': ['~@SMOKE']},
+            'name': {'name': 'Outline'},
+            'exclude': {'exclude': 'other'},
+        }[filter_name])
+    return kwargs
+
+
+@when('I call discover() and then run() single-process on the discovery features filtered by {filter_name}')
+def when_discover_then_run(context, filter_name):
+    kwargs = _discovery_filter_kwargs(context, filter_name)
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+def key(filename, line, name, feature, tags):
+    return [filename, line, name, feature, sorted(tags)]
+
+if __name__ == '__main__':
+    discovered = BehaveXRunner(no_report=True, **{kwargs!r}).discover()
+    result = BehaveXRunner(no_report=True, parallel_processes=1, **{kwargs!r}).run()
+    print("__RESULT__:" + json.dumps({{
+        "discovered": sorted(key(s.filename, s.line, s.name, s.feature, s.tags) for s in discovered),
+        "reported": sorted(key(s.filename, s.line, s.name, s.feature, s.tags)
+                           for f in result.features for s in f.scenarios),
+    }}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('discover() listed the scenarios the run reported, with their features and tags')
+def then_discovered_matches_reported(context):
+    result = context.api_run_result
+    assert result['reported'] and result['discovered'] == result['reported'], (
+        f'discover() listed {result["discovered"]}\nbut the run reported {result["reported"]}.\n'
+        f'Output:\n{context.api_run_output}'
+    )
+
+
+@when('I call discover() on the discovery features with {folder} as the output folder')
+def when_discover_with_output_folder(context, folder):
+    base = tempfile.mkdtemp()
+    context.add_cleanup(shutil.rmtree, base, ignore_errors=True)
+    output_folder = os.path.join(base, 'output')
+    if folder == 'an existing folder holding a marker':
+        os.makedirs(output_folder)
+        with open(os.path.join(output_folder, 'marker.txt'), 'w') as marker:
+            marker.write('marker')
+    context.output_folder_before = _folder_snapshot(output_folder)
+    context.discovery_output_folder = output_folder
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+scenarios = BehaveXRunner(paths=[{repr(discovery_features_path)}], output_folder={repr(output_folder)}).discover()
+print("__RESULT__:" + json.dumps({{"count": len(scenarios)}}))
+"""
+    context.discovery_proc = _run_script(script)
+    _store_result(context, context.discovery_proc)
+
+
+def _folder_snapshot(folder):
+    if not os.path.exists(folder):
+        return None
+    return sorted((os.path.relpath(os.path.join(root, name), folder), os.path.getmtime(os.path.join(root, name)))
+                  for root, dirs, files in os.walk(folder) for name in dirs + files)
+
+
+@then('discover() listed "{count}" scenarios and printed nothing to stdout')
+def then_discover_printed_nothing(context, count):
+    proc = context.discovery_proc
+    assert context.api_run_result['count'] == int(count) and not _non_result_lines(proc), (
+        f'STDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}'
+    )
+
+
+@then('the output folder is as it was before discover()')
+def then_output_folder_untouched(context):
+    after = _folder_snapshot(context.discovery_output_folder)
+    assert after == context.output_folder_before, f'Before: {context.output_folder_before}\nAfter: {after}'
+
+
+@when('I call discover() with {input_name}, then run() on passing tests in the same process')
+def when_discover_refused_input_then_run(context, input_name):
+    kwargs = _refused_input_kwargs(input_name)
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+if __name__ == '__main__':
+    raised = _capture_raised(lambda: BehaveXRunner(no_report=True, **{kwargs!r}).discover())
+    result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
+    print("__RESULT__:" + json.dumps({{"raised": raised, "exit_code": result.exit_code,
+                                      "summary": result.summary.model_dump()}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@when('I call discover() on the discovery features and start a run while it explores them')
+def when_run_during_discover(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner, runner
+{_CAPTURE_RAISED}
+_raised = []
+_explore_features = runner.explore_features
+
+def _explore_starting_a_run(*args, **kwargs):
+    runner.explore_features = _explore_features
+    _raised.append(_capture_raised(lambda: BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()))
+    return _explore_features(*args, **kwargs)
+
+if __name__ == '__main__':
+    runner.explore_features = _explore_starting_a_run
+    BehaveXRunner(paths=[{repr(discovery_features_path)}], no_report=True).discover()
+    print("__RESULT__:" + json.dumps({{"raised": _raised[0] if _raised else None}}))
+"""
+    _store_result(context, _run_script(script))

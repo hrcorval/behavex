@@ -71,15 +71,29 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 
 Executes the test run synchronously and returns a `RunResult`. Each call generates a new `run_id`.
 
-An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a run BehaveX refuses to start (such as duplicated scenarios), also raises `ValueError`; BehaveX prints the reason first. An `output_folder` that is, or contains, the current directory or one of the `paths` raises `ValueError` before anything is deleted. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
+An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a glob that matches no file, raises `ValueError` whose message names it. A run BehaveX refuses to start for another reason (such as duplicated scenarios) also raises `ValueError`; BehaveX prints the reason first. An `output_folder` that is, or contains, the current directory or one of the `paths` raises `ValueError` before anything is deleted. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
 
-Run one `BehaveXRunner` at a time per process: the run state is module-level, so concurrent `.run()` calls in the same process are not supported.
+Run one `BehaveXRunner` at a time per process: the run state is module-level, so a `.run()` called while another one is active in the same process (from another thread or from `on_progress`) raises `RuntimeError`.
 
 ```python
 runner = BehaveXRunner(paths=["tests/features"], no_report=True)
 
 result1 = runner.run()  # run_id: "a1b2c3d4-..."
 result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
+```
+
+### `.discover()` → `list[DiscoveredScenario]`
+
+Lists the scenarios a `.run()` with the same constructor arguments would report, applying the same paths, `include_paths`, tags (including the config's `tags_to_skip`), `name`, `include`, `exclude` and `rerun_failures` filters. Scenario Outline examples are listed one by one, as a run reports them. `@MANUAL` and `@WIP` scenarios are listed too: a run reports them as manual without executing them.
+
+Nothing is executed and nothing is written: no hooks run, the output folder is neither created nor cleaned, and nothing is printed to `sys.stdout`, so it is safe to call from a process whose stdout carries a protocol (such as an MCP stdio server). Step definitions are not loaded, so a scenario with undefined steps is still listed.
+
+Refused inputs raise as they do for `.run()`: an invalid argument, a path that does not exist, a glob that matches no file, or a missing or empty `rerun_failures` file raises `ValueError` naming the reason. Calling it while a `.run()` is active in the same process raises `RuntimeError`, and a `.run()` started during it does too.
+
+```python
+scenarios = BehaveXRunner(paths=["tests/features"], tags=["@smoke"]).discover()
+for scenario in scenarios:
+    print(f"{scenario.filename}:{scenario.line} {scenario.name}")
 ```
 
 ### `.stop()`
@@ -123,6 +137,7 @@ Delivered to the `on_progress` callback once for every scenario in `RunResult.fe
 | `status` | `str` | The scenario's status string (`'passed'`, `'failed'`, `'skipped'`, `'untested'`); hook errors are reported as `'error'` |
 | `duration` | `float` | Scenario execution time in seconds |
 | `completed_count` | `int` | How many scenarios have completed so far in this run (monotonically increasing) |
+| `total` | `Optional[int]` | How many events the run will deliver, set with `parallel_processes > 1` and `parallel_scheme="scenario"`, else `None`; a run that `.stop()` cuts short delivers fewer |
 
 ### `RunResult`
 
@@ -138,6 +153,8 @@ Top-level result returned by `BehaveXRunner.run()`.
 | `.passed` | `bool` | `True` when `exit_code == 0` and the run was not stopped |
 | `.summary` | `RunSummary` | Aggregated scenario counts |
 | `.failed_scenarios` | `list[ScenarioResult]` | Scenarios with status `failed` or `error` across all features, including muted ones |
+
+`.passed`, `.summary` and `.failed_scenarios` are computed fields, so `model_dump()`, `model_dump_json()` and the serialization JSON schema include them.
 
 ### `RunSummary`
 
@@ -190,6 +207,18 @@ Returned by `RunResult.summary`. The counts don't overlap and add up to `total`:
 | `.skipped` | `bool` | `True` when `status == 'skipped'` and not `is_manual` |
 | `.untested` | `bool` | `True` when `status == 'untested'` and not `is_manual` |
 | `.manual` | `bool` | Same as `is_manual` |
+
+### `DiscoveredScenario`
+
+Returned by `BehaveXRunner.discover()`. Its fields hold the same values as the `ScenarioResult` a run reports for that scenario.
+
+| Field | Type | Description |
+|---|---|---|
+| `feature` | `str` | Feature name |
+| `name` | `str` | Scenario name |
+| `filename` | `str` | Feature file path |
+| `line` | `int` | Line number in the feature file |
+| `tags` | `list[str]` | Scenario tags, including the feature's and the Examples' |
 
 ### `StepResult`
 

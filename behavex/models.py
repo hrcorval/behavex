@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from behavex.outputs.report_utils import FAILED_STATUSES
 
@@ -16,6 +16,18 @@ class ProgressEvent(BaseModel):
     status: str
     duration: float
     completed_count: int
+    total: Optional[int] = None
+
+
+class DiscoveredScenario(BaseModel):
+    """A scenario run() would execute; fields match its ScenarioResult."""
+    model_config = ConfigDict(extra='ignore')
+
+    feature: str
+    name: str
+    filename: str
+    line: int
+    tags: List[str] = Field(default_factory=list)
 
 
 class StepResult(BaseModel):
@@ -146,10 +158,12 @@ class RunResult(BaseModel):
     features: List[FeatureResult] = Field(default_factory=list)
     stopped: bool = False
 
+    @computed_field
     @property
     def passed(self) -> bool:
         return self.exit_code == 0 and not self.stopped
 
+    @computed_field
     @property
     def summary(self) -> RunSummary:
         """Non-overlapping counts: passed + failed + error + skipped + untested + manual == total."""
@@ -164,6 +178,7 @@ class RunResult(BaseModel):
             manual=sum(1 for s in scenarios if s.manual),
         )
 
+    @computed_field
     @property
     def failed_scenarios(self) -> List[ScenarioResult]:
         """All scenarios that broke (failed or error), including muted ones."""
