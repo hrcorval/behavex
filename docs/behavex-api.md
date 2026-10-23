@@ -88,7 +88,7 @@ Lists the scenarios a `.run()` with the same constructor arguments would report,
 
 Nothing is executed and nothing is written: no hooks run, the output folder is neither created nor cleaned, and nothing is printed to `sys.stdout`, so it is safe to call from a process whose stdout carries a protocol (such as an MCP stdio server). Step definitions are not loaded, so a scenario with undefined steps is still listed.
 
-Refused inputs raise as they do for `.run()`: an invalid argument, a path that does not exist, a glob that matches no file, or a missing or empty `rerun_failures` file raises `ValueError` naming the reason. Calling it while a `.run()` is active in the same process raises `RuntimeError`, and a `.run()` started during it does too.
+An invalid argument, a path that does not exist (including the default `features` folder when no `paths` are given), a glob that matches no file, or a missing or empty `rerun_failures` file raises `ValueError` naming the reason. For a missing or empty `rerun_failures` file, `.run()` instead returns a `RunResult` with `exit_code` 1 and no scenarios. Calling it while a `.run()` is active in the same process raises `RuntimeError`, and a `.run()` started during it does too.
 
 ```python
 scenarios = BehaveXRunner(paths=["tests/features"], tags=["@smoke"]).discover()

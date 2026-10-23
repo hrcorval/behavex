@@ -1345,6 +1345,7 @@ def _refused_input_kwargs(input_name):
         'a path that does not exist': {'paths': [missing + '.feature']},
         'a glob that matches no file': {'paths': [missing + '_*.feature']},
         'a missing rerun_failures file': {'rerun_failures': missing + '.txt'},
+        'no paths and no features folder': {},
     }[input_name]
 
 

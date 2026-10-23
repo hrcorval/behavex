@@ -500,6 +500,7 @@ Feature: BehaveXRunner Python API
       | a path that does not exist    | BehaveX stopped before discovering the tests: Specified path was not found                |
       | a glob that matches no file   | BehaveX stopped before discovering the tests: No files found matching pattern             |
       | a missing rerun_failures file | BehaveX stopped before discovering the tests: the rerun_failures file is missing or empty |
+      | no paths and no features folder | BehaveX stopped before discovering the tests: Specified path was not found: features    |
 
   @API_RUNNER_066
   Scenario: discover() during an active run raises RuntimeError

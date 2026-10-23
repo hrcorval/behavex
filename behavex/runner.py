@@ -140,7 +140,7 @@ def _fire_report_progress(json_report, already_reported=frozenset()) -> None:
         pass
 
 
-def _skip_serial_unit_if_stopped() -> bool:
+def _mark_run_stopped_if_requested() -> bool:
     global _stopped
     if _stop_requested:
         _stopped = True
@@ -207,6 +207,10 @@ def discover(args):
     """
     if _prepare_run(args) is None:
         return None
+    for features_path in os.environ['FEATURES_PATH'].split(','):
+        pure_feature_path = get_feature_and_scenario_line(features_path)[0]
+        if not os.path.exists(pure_feature_path):
+            sys.exit('Specified path was not found: {}'.format(pure_feature_path))
     set_behave_tags(write_tags_file=False)
     features = _explore_scenarios(os.environ['FEATURES_PATH'])
     # BehaveX leaves --exclude to behave, which skips those feature files
@@ -772,7 +776,7 @@ def launch_by_feature(features,
     if serial_features:
         print_parallel('feature.serial_execution')
         for serial_feature in serial_features:
-            if _skip_serial_unit_if_stopped():
+            if _mark_run_stopped_if_requested():
                 break
             execution_code, map_json = execute_tests(features_path=None,
                                                      feature_filename=serial_feature["feature_filename"],
@@ -928,7 +932,7 @@ def launch_by_scenario(features,
     if serial_scenarios:
         print_parallel('scenario.serial_execution')
         for scen_info in serial_scenarios:
-            if _skip_serial_unit_if_stopped():
+            if _mark_run_stopped_if_requested():
                 break
             scenarios_to_run_in_feature = total_scenarios_to_run[scen_info["feature_filename"]]
             execution_code, json_report = execute_tests(features_path=scen_info["features_path"],
