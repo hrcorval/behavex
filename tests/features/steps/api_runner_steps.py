@@ -611,6 +611,7 @@ def _run_with_progress_callback(
     serialize_snippet: str = _SERIALIZE_PROGRESS,
     stop_on_failure: bool = False,
     tags: Optional[List[str]] = None,
+    name: Optional[str] = None,
 ) -> None:
     script = f"""
 import json, sys
@@ -624,6 +625,7 @@ result = BehaveXRunner(
     parallel_processes={parallel_processes},
     parallel_scheme={repr(parallel_scheme)},
     stop_on_failure={stop_on_failure},
+    name={name!r},
     on_progress=_on_progress,
 ).run()
 """ + serialize_snippet
@@ -1041,6 +1043,13 @@ def when_api_run_filtered_autoretry_with_progress_callback(context, tags):
     )
 
 
+@when('I run BehaveXRunner with name "{name}" on an @AUTORETRY Scenario Outline with an on_progress callback')
+def when_api_run_name_filtered_autoretry_outline_with_progress_callback(context, name):
+    _run_with_progress_callback(
+        context, os.path.join(api_runner_features_path, 'autoretry_outline_by_name.feature'), name=name
+    )
+
+
 @then('no on_progress event is for the scenario "{scenario_name}"')
 def then_no_progress_event_for_scenario(context, scenario_name):
     events = context.api_run_result['events']
@@ -1205,6 +1214,13 @@ def when_api_run_failing_teardown_with_progress_callback(context):
     )
 
 
+@when('I run BehaveXRunner on passing scenarios, one with a failing cleanup and one with a failing after_tag hook, with an on_progress callback')
+def when_api_run_late_teardown_errors_with_progress_callback(context):
+    _run_with_progress_callback(
+        context, os.path.join(api_runner_features_path, 'teardown_error', 'late_teardown_errors.feature')
+    )
+
+
 @then("each on_progress event status matches the scenario's final status in the RunResult")
 def then_progress_status_matches_final_status(context):
     final_statuses = context.api_run_result['final_statuses']
@@ -1348,7 +1364,7 @@ print("__RESULT__:" + json.dumps({{"raised": raised}}))
 
 @then('run() raised a ValueError mentioning "{text}"')
 @then('discover() raised a ValueError mentioning "{text}"')
-def then_run_raised_value_error(context, text):
+def then_call_raised_value_error(context, text):
     raised = context.api_run_result['raised']
     assert raised and raised['type'] == 'ValueError' and text in raised['message'], (
         f'Expected a ValueError mentioning {text!r}, got {raised}.\nOutput:\n{context.api_run_output}'
@@ -1440,10 +1456,56 @@ print("__RESULT__:" + json.dumps({{"raised": _raised[0] if _raised else None,
 @then('the second run raised a RuntimeError mentioning "{text}"')
 @then('discover() raised a RuntimeError mentioning "{text}"')
 @then('the run started during discover() raised a RuntimeError mentioning "{text}"')
-def then_second_run_raised_runtime_error(context, text):
+def then_overlapping_call_raised_runtime_error(context, text):
     raised = context.api_run_result['raised']
     assert raised and raised['type'] == 'RuntimeError' and text in raised['message'], (
         f'Expected a RuntimeError mentioning {text!r}, got {raised}.\nOutput:\n{context.api_run_output}'
+    )
+
+
+@when('two threads call run() on passing tests at once, the second while the first validates its arguments')
+def when_two_threads_run_at_once(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import json, sys, threading
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner, api
+{_CAPTURE_RAISED}
+_outcomes = {{}}
+_first_validating = threading.Event()
+_release_first = threading.Event()
+_validate_args = api._validate_args
+
+def _validate_args_holding_the_first(args):
+    if not _first_validating.is_set():
+        _first_validating.set()
+        _release_first.wait(60)
+    _validate_args(args)
+
+def _run(name):
+    _outcomes[name] = _capture_raised(lambda: BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run())
+
+api._validate_args = _validate_args_holding_the_first
+first = threading.Thread(target=_run, args=('first',))
+first.start()
+_first_validating.wait(60)
+second = threading.Thread(target=_run, args=('second',))
+second.start()
+second.join(120)
+_release_first.set()
+first.join(120)
+print("__RESULT__:" + json.dumps({{"raised": [r for r in _outcomes.values() if r], "outcome_count": len(_outcomes)}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('exactly one of the two runs raised a RuntimeError mentioning "{text}"')
+def then_exactly_one_run_raised_runtime_error(context, text):
+    result = context.api_run_result
+    raised = result['raised']
+    assert (result['outcome_count'] == 2 and len(raised) == 1 and raised[0]['type'] == 'RuntimeError'
+            and text in raised[0]['message']), (
+        f'Expected exactly one RuntimeError mentioning {text!r}, got {result}.\nOutput:\n{context.api_run_output}'
     )
 
 
@@ -1544,15 +1606,15 @@ import json, sys
 sys.path.insert(0, {repr(root_project_path)})
 from behavex import BehaveXRunner
 
-def key(filename, line, name, feature, tags):
+def scenario_key(filename, line, name, feature, tags):
     return [filename, line, name, feature, sorted(tags)]
 
 if __name__ == '__main__':
     discovered = BehaveXRunner(no_report=True, **{kwargs!r}).discover()
     result = BehaveXRunner(no_report=True, parallel_processes=1, **{kwargs!r}).run()
     print("__RESULT__:" + json.dumps({{
-        "discovered": sorted(key(s.filename, s.line, s.name, s.feature, s.tags) for s in discovered),
-        "reported": sorted(key(s.filename, s.line, s.name, s.feature, s.tags)
+        "discovered": sorted(scenario_key(s.filename, s.line, s.name, s.feature, s.tags) for s in discovered),
+        "reported": sorted(scenario_key(s.filename, s.line, s.name, s.feature, s.tags)
                            for f in result.features for s in f.scenarios),
     }}))
 """

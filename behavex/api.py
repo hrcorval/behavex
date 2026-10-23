@@ -6,6 +6,7 @@ import contextlib
 import io
 import os
 import sys
+import threading
 import uuid
 from typing import Callable, List, Optional
 
@@ -22,10 +23,18 @@ except ImportError:
     )
 
 
-def _ensure_no_active_run() -> None:
-    if runner._run_active:
-        raise RuntimeError('Another BehaveXRunner.run() is active in this process; '
+_run_lock = threading.Lock()
+
+
+@contextlib.contextmanager
+def _exclusive_run():
+    if not _run_lock.acquire(blocking=False):
+        raise RuntimeError('Another BehaveXRunner.run() or discover() is active in this process; '
                            'BehaveX keeps its run state in module globals, so runs cannot overlap')
+    try:
+        yield
+    finally:
+        _run_lock.release()
 
 
 def _validate_args(args: List[str]) -> None:
@@ -110,8 +119,8 @@ class BehaveXRunner:
         self.define = define or []
         self.on_progress = on_progress
 
+    @_exclusive_run()
     def run(self) -> RunResult:
-        _ensure_no_active_run()
         run_id = str(uuid.uuid4())
         args = self._build_args()
         _validate_args(args)
@@ -138,12 +147,12 @@ class BehaveXRunner:
         return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
                          features=features, stopped=runner._stopped)
 
+    @_exclusive_run()
     def discover(self) -> List[DiscoveredScenario]:
         """List the scenarios run() would execute, without executing anything or writing any file.
 
         Step definitions are not loaded, so undefined steps go unnoticed.
         """
-        _ensure_no_active_run()
         args = self._build_args()
         _validate_args(args)
         runner._run_active = True

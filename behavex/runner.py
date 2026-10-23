@@ -216,7 +216,7 @@ def discover(args):
 
 
 def _prepare_run(args):
-    """Set the run's process state (config, env vars, filters) without touching the filesystem.
+    """Set the run's process state (config, env vars, filters) without writing to the filesystem.
 
     Returns the parsed arguments, or None when the rerun_failures file is missing or empty.
     """
@@ -893,7 +893,6 @@ def launch_by_scenario(features,
                                 "feature_json_skeleton": feature_json_skeleton,
                                 "scenario_line": scenario.line}
 
-        # Only calculate scenario order if ordering is enabled
         if order_tests_enabled:
             scenario_information["scenario_order"] = get_scenario_order(scenario, order_tag_prefix)
         total_scenarios_to_run[feature_filename] = total_scenarios_to_run.setdefault(feature_filename, 0) + 1

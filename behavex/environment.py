@@ -17,7 +17,7 @@ from types import SimpleNamespace
 # Third-party imports
 import behave
 from behave.log_capture import capture
-from behave.model import ScenarioOutline
+from behave.model import Scenario, ScenarioOutline
 from behave.runner import Context, ModelRunner
 
 # Local imports
@@ -172,10 +172,8 @@ def extend_behave_hooks():
                     except Exception as hook_error:
                         # Log but don't fail - some hooks might not be implemented in all versions
                         _log_exception_and_continue(f'behave_run_hook({name}) - after', hook_error)
-                # an autoretry wrapper reports its scenario once no retry follows
-                if name == 'after_scenario' and actual_context is not None \
-                        and not getattr(hook_target, 'bhx_autoretry', False):
-                    behavex_env._fire_scenario_progress(hook_target)
+                if name == 'after_scenario' and actual_context is not None:
+                    hook_target.bhx_hooks_ran = True
 
         except Exception as exception:
             # Log hook errors but don't break execution
@@ -191,6 +189,7 @@ def extend_behave_hooks():
         hooks_already_set = True
         ModelRunner.run_hook = run_hook
         Context._do_cleanups = _flag_failing_cleanup_errors(Context._do_cleanups)
+        Scenario.run = _fire_progress_after_scenario_run(Scenario.run)
 
         # BEHAVE 1.2.7+ COMPATIBILITY: Also override run_hook_with_capture
         # since all hooks are called via run_hook_with_capture in modern versions
@@ -230,6 +229,18 @@ def _flag_failing_cleanup_errors(behave_do_cleanups):
                 else:
                     self._scenario_cleanup_failed = True
     return do_cleanups
+
+
+def _fire_progress_after_scenario_run(behave_scenario_run):
+    @functools.wraps(behave_scenario_run)
+    def run(self, runner):
+        self.bhx_hooks_ran = False
+        failed = behave_scenario_run(self, runner)
+        # an autoretry wrapper reports its scenario once no retry follows
+        if not getattr(self, 'bhx_autoretry', False):
+            _fire_scenario_progress(self)
+        return failed
+    return run
 
 
 def _inject_shared_context(context) -> None:
@@ -390,18 +401,14 @@ def _fire_scenario_progress(scenario):
         from behavex import runner as _runner
         if _runner._progress_callback is None or _runner._is_parallel_run:
             return
-        # the report drops a tag-excluded scenario that behave still runs as skipped
-        if not match_for_execution(get_scenario_tags(scenario)):
+        # behave runs no hook for a scenario it skips, which the report drops when a filter excludes it
+        if not getattr(scenario, 'bhx_hooks_ran', False) or not match_for_execution(get_scenario_tags(scenario)):
             return
-        status = scenario.status.name
-        if getattr(scenario, 'hook_failed', False):
-            # behave sets this status itself only after the user's after_scenario returns
-            status = 'failed' if global_vars.behave_version < (1, 2, 7) else 'error'
         _runner._progress_reported.add((scenario.feature.filename, scenario.line))
         _runner._fire_progress(
             scenario_name=scenario.name,
             feature_name=scenario.feature.name,
-            status=status_with_hook_errors_as_error(status),
+            status=status_with_hook_errors_as_error(scenario.status.name),
             duration=scenario.duration or 0.0,
         )
     except Exception:

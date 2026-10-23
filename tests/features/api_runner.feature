@@ -296,6 +296,12 @@ Feature: BehaveXRunner Python API
     And the on_progress callback was called once per scenario in the RunResult summary
     And no on_progress event is for the scenario "Autoretry scenario excluded by the tag filter"
 
+  @API_RUNNER_070
+  Scenario: on_progress skips an @AUTORETRY Scenario Outline example that the name filter excludes
+    When I run BehaveXRunner with name "row selected" on an @AUTORETRY Scenario Outline with an on_progress callback
+    Then the RunResult summary total is "1"
+    And the on_progress callback was called once per scenario in the RunResult summary
+
   @API_RUNNER_046
   Scenario: on_progress fires once per @AUTORETRY scenario that ends in error, after its final attempt
     When I run BehaveXRunner on @AUTORETRY scenarios whose step raises an error or whose teardown fails on every attempt with an on_progress callback
@@ -349,6 +355,13 @@ Feature: BehaveXRunner Python API
   @API_RUNNER_041
   Scenario: on_progress reports the final status of a scenario whose after_scenario hook fails
     When I run BehaveXRunner on passing scenarios, one with a failing after_scenario hook, with an on_progress callback
+    Then the on_progress callback was called once per scenario in the RunResult summary
+    And each on_progress event status matches the scenario's final status in the RunResult
+    And at least one on_progress event has behave's error status
+
+  @API_RUNNER_069
+  Scenario: on_progress reports the final status of a scenario whose cleanup or after_tag hook fails
+    When I run BehaveXRunner on passing scenarios, one with a failing cleanup and one with a failing after_tag hook, with an on_progress callback
     Then the on_progress callback was called once per scenario in the RunResult summary
     And each on_progress event status matches the scenario's final status in the RunResult
     And at least one on_progress event has behave's error status
@@ -419,7 +432,7 @@ Feature: BehaveXRunner Python API
   @API_RUNNER_057
   Scenario: a run started while another run is active raises RuntimeError
     When I run BehaveXRunner with passing tests and call run() from its on_progress callback
-    Then the second run raised a RuntimeError mentioning "Another BehaveXRunner.run() is active"
+    Then the second run raised a RuntimeError mentioning "Another BehaveXRunner.run() or discover() is active"
     And the RunResult exit_code should be "0"
     And the RunResult summary total is "5"
 
@@ -491,9 +504,14 @@ Feature: BehaveXRunner Python API
   @API_RUNNER_066
   Scenario: discover() during an active run raises RuntimeError
     When I run BehaveXRunner with passing tests and call discover() from its on_progress callback
-    Then discover() raised a RuntimeError mentioning "Another BehaveXRunner.run() is active"
+    Then discover() raised a RuntimeError mentioning "Another BehaveXRunner.run() or discover() is active"
 
   @API_RUNNER_067
   Scenario: a run started while discover() is exploring the features raises RuntimeError
     When I call discover() on the discovery features and start a run while it explores them
-    Then the run started during discover() raised a RuntimeError mentioning "Another BehaveXRunner.run() is active"
+    Then the run started during discover() raised a RuntimeError mentioning "Another BehaveXRunner.run() or discover() is active"
+
+  @API_RUNNER_068
+  Scenario: of two threads calling run() at once, exactly one raises RuntimeError
+    When two threads call run() on passing tests at once, the second while the first validates its arguments
+    Then exactly one of the two runs raised a RuntimeError mentioning "Another BehaveXRunner.run() or discover() is active"
