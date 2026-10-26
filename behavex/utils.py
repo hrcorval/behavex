@@ -412,6 +412,8 @@ def print_parallel(msg, *args, **kwargs):
         console_log = logging.StreamHandler(sys.stdout)
         console_log.setLevel(get_logging_level())
         logger.addHandler(console_log)
+    # Its own level, since a BehaveXRunner host's root logger may stay at WARNING
+    logger.setLevel(get_logging_level())
     # Always prevent propagation to root logger to avoid duplicate messages
     logger.propagate = False
     if 'no_chain' in kwargs:
