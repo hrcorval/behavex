@@ -2159,6 +2159,43 @@ if __name__ == '__main__':
     _store_result(context, proc)
 
 
+@when('I run BehaveXRunner in parallel on slow scenarios, call stop() and send Ctrl+C to the host process once the first one finishes')
+def when_run_in_parallel_stop_and_send_ctrl_c(context):
+    script = f"""
+import json, multiprocessing, os, signal, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+pressed = []
+
+def _stop_and_press_ctrl_c_on_first_event(event):
+    if not pressed:
+        pressed.append(True)
+        runner.stop()
+        os.kill(os.getpid(), signal.SIGINT)
+
+if __name__ == '__main__':
+    # Python leaves Ctrl+C ignored when its parent ignored it, as the suite's runner may
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+    runner = BehaveXRunner(paths=[{os.path.join(api_runner_features_path, 'slow_scenarios')!r}], no_report=True,
+                           parallel_processes=2, parallel_scheme='scenario',
+                           on_progress=_stop_and_press_ctrl_c_on_first_event)
+    raised = _capture_raised(runner.run)
+    print("__RESULT__:" + json.dumps({{"raised": raised, "live_children": len(multiprocessing.active_children())}}))
+"""
+    proc = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, cwd=root_project_path,
+                          env=_clean_child_env(), timeout=120, start_new_session=True)
+    _store_result(context, proc)
+
+
+@then('the run raised no exception and none of its processes is still running')
+def then_no_exception_and_no_live_children(context):
+    result = context.api_run_result
+    assert result['raised'] is None and result['live_children'] == 0, (
+        f'Got {result}.\nOutput:\n{context.api_run_output}'
+    )
+
+
 @then('the run raised no exception and the first scenario passed while the others did not run')
 def then_partial_results_after_ctrl_c(context):
     result = context.api_run_result

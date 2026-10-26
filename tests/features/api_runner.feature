@@ -666,3 +666,7 @@ Feature: BehaveXRunner Python API
     Then the RunResult exit_code should be "0"
     And the RunResult summary total is "1"
 
+  @API_RUNNER_087
+  Scenario: a Ctrl+C after stop() still terminates the workers of a parallel run
+    When I run BehaveXRunner in parallel on slow scenarios, call stop() and send Ctrl+C to the host process once the first one finishes
+    Then the run raised no exception and none of its processes is still running

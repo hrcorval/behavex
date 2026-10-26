@@ -97,6 +97,8 @@ _completed_count: int = 0
 _progress_total: Optional[int] = None
 _is_parallel_run: bool = False
 _active_executor: Optional[ProcessPoolExecutor] = None
+# The executor's own process dict, which its shutdown() drops while the workers still run
+_active_executor_processes_by_pid: dict = {}
 _last_run_results: list = []
 _progress_reported: set = set()
 _run_active: bool = False
@@ -475,6 +477,8 @@ def launch_behavex():
     _active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
                                            initializer=init_multiprocessing,
                                            initargs=(idQueue, parallel_delay))
+    global _active_executor_processes_by_pid
+    _active_executor_processes_by_pid = _active_executor._processes
     global_vars.execution_start_time = time.time()
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
@@ -1169,8 +1173,8 @@ def _interrupt_worker_processes():
 
 def _live_run_worker_processes():
     # active_children() also lists a BehaveXRunner host application's own processes
-    run_workers = (_active_executor._processes or {}) if _active_executor is not None else {}
-    return [worker_process for worker_process in list(run_workers.values()) if worker_process.is_alive()]
+    return [worker_process for worker_process in list(_active_executor_processes_by_pid.values())
+            if worker_process.is_alive()]
 
 
 def _stop_behave_on_first_ctrl_c(signum, frame):
