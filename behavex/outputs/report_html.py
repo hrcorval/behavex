@@ -25,12 +25,11 @@ from behavex.outputs.report_utils import (FAILED_STATUSES,
 
 def generate_report(output, joined=None, report=None):
     environment_details = get_environment_details()
-    features = output['features']
+    features = sorted(output['features'], key=lambda feature: feature['name'])
     steps_definition = output['steps_definition']
 
 
     all_scenarios = sum((feature['scenarios'] for feature in features), [])
-    features.sort(key=lambda feature: feature['name'])
     metrics_variables = get_metrics_variables(all_scenarios)
     html = export_result_to_html(
         environment_details, features, metrics_variables, steps_definition, joined, report
