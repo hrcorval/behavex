@@ -397,9 +397,13 @@ Feature: BehaveXRunner Python API
     Then the RunResult stopped should be "False"
 
   @API_RUNNER_052
-  Scenario: a path that does not exist raises ValueError instead of exiting
-    When I call run() with a path that does not exist
+  Scenario Outline: <input> raises ValueError instead of exiting or passing with no scenarios
+    When I call run() with <input>
     Then run() raised a ValueError mentioning "BehaveX stopped before running the tests: Specified path was not found"
+    Examples:
+      | input                           |
+      | a path that does not exist      |
+      | no paths and no features folder |
 
   @API_RUNNER_053
   Scenario Outline: a relative <argument> entry starting with "-" runs its scenarios instead of being parsed as an option
@@ -442,9 +446,13 @@ Feature: BehaveXRunner Python API
     Then run() raised a ValueError mentioning "BehaveX stopped before running the tests: No files found matching pattern"
 
   @API_RUNNER_059
-  Scenario: the behavex CLI prints why a missing path stops the run and exits with code 1
-    When I run the behavex CLI on a feature path that does not exist
+  Scenario Outline: the behavex CLI prints why <input> stops the run and exits with code 1
+    When I run the behavex CLI with <input>
     Then the CLI printed "Specified path was not found", then "Exit code: 1", and exited with code 1
+    Examples:
+      | input                           |
+      | a path that does not exist      |
+      | no paths and no features folder |
 
   @API_RUNNER_060
   Scenario: a run returns its results when sys.stdout cannot be reconfigured

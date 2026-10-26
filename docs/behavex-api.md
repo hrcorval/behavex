@@ -74,7 +74,7 @@ All parameters are optional. Defaults match the BehaveX CLI defaults.
 
 Executes the test run synchronously and returns a `RunResult`. Each call generates a new `run_id`.
 
-An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a glob that matches no file, raises `ValueError` whose message names it. A run BehaveX refuses to start for another reason (such as duplicated scenarios) also raises `ValueError`; BehaveX prints the reason first. An `output_folder` that is, or contains, the current directory or one of the `paths` raises `ValueError` before anything is deleted. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
+An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist (including the default `features` folder when no `paths` are given), or a glob that matches no file, raises `ValueError` whose message names it. A run BehaveX refuses to start for another reason (such as duplicated scenarios) also raises `ValueError`; BehaveX prints the reason first. An `output_folder` that is, or contains, the current directory or one of the `paths` raises `ValueError` before anything is deleted. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
 
 Run one `BehaveXRunner` at a time per process: the run state is module-level, so a `.run()` called while another one is active in the same process (from another thread or from `on_progress`) raises `RuntimeError`.
 

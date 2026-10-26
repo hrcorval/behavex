@@ -223,10 +223,6 @@ def discover(args, check_steps=False):
     """
     if _prepare_run(args) is None:
         return None
-    for features_path in os.environ['FEATURES_PATH'].split(','):
-        pure_feature_path = get_feature_and_scenario_line(features_path)[0]
-        if not os.path.exists(pure_feature_path):
-            sys.exit('Specified path was not found: {}'.format(pure_feature_path))
     set_behave_tags(write_tags_file=False)
     features = _explore_scenarios(os.environ['FEATURES_PATH'])
     # BehaveX leaves --exclude to behave, which skips those feature files
@@ -355,6 +351,12 @@ def _prepare_run(args):
     features_path = os.environ.get('FEATURES_PATH')
     if features_path == '' or features_path is None:
         os.environ['FEATURES_PATH'] = 'features'
+    for features_path_entry in os.environ['FEATURES_PATH'].split(','):
+        pure_feature_path = get_feature_and_scenario_line(features_path_entry)[0]
+        if not os.path.exists(pure_feature_path):
+            message = 'Specified path was not found: {}'.format(pure_feature_path)
+            print('\n' + message)
+            sys.exit(message)
     _set_env_variables(args_parsed)
     match_include = MatchInclude()
     include_path_match = IncludePathsMatch()

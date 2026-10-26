@@ -1516,14 +1516,14 @@ def then_exactly_one_run_raised_runtime_error(context, text):
     )
 
 
-@when('I run the behavex CLI on a feature path that does not exist')
-def when_cli_run_missing_path(context):
-    missing_path = os.path.join(secondary_features_path, 'missing_{}.feature'.format(get_random_number(6)))
+@when('I run the behavex CLI with {input_name}')
+def when_cli_run_refused_input(context, input_name):
+    paths = _refused_input_kwargs(input_name).get('paths', [])
     script = f"""
 import sys
 sys.path.insert(0, {repr(root_project_path)})
 from behavex.runner import main
-sys.argv = ['behavex', {repr(missing_path)}, '--no-report']
+sys.argv = ['behavex', *{paths!r}, '--no-report']
 main()
 """
     context.cli_proc = _run_script(script)
