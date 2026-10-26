@@ -688,3 +688,12 @@ Feature: BehaveXRunner Python API
     Then the RunResult exit_code should be "0"
     And the RunResult stopped should be "False"
     And the RunResult summary total is "12"
+
+  @API_RUNNER_090
+  Scenario Outline: a run <mode> from a host that forks processes does not see the host's step definitions
+    When I run BehaveXRunner <mode> on slow scenarios from a host that forks processes and registered the same step itself
+    Then the run raised no exception and its RunResult exit_code is "0"
+    Examples:
+      | mode                    |
+      | in a single process     |
+      | in parallel by scenario |

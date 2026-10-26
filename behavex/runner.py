@@ -478,7 +478,9 @@ def launch_behavex():
         idQueue.put(i)
     parallel_delay = get_param('parallel_delay')
     global _active_executor
+    # A forked worker would inherit a BehaveXRunner host's memory, behave's step registry included
     _active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
+                                           mp_context=multiprocessing.get_context('spawn') if _run_active else None,
                                            initializer=init_multiprocessing,
                                            initargs=(idQueue, parallel_delay))
     global _active_executor_processes_by_pid

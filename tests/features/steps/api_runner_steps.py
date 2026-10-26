@@ -2284,3 +2284,36 @@ def then_host_logging_untouched(context):
     assert result['raised'] is None and result['root_handlers_kept'] and 'logged after the run' in result['host_log'], (
         f'Got {result}.\nOutput:\n{context.api_run_output}'
     )
+
+
+@when('I run BehaveXRunner {mode} on slow scenarios from a host that forks processes and registered the same step itself')
+def when_run_from_forking_host_with_its_own_step(context, mode):
+    script = f"""
+import json, multiprocessing, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behave import given
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+
+@given('a step that takes half a second')
+def host_step(context):
+    pass
+
+if __name__ == '__main__':
+    multiprocessing.set_start_method('fork')
+    results = []
+    raised = _capture_raised(lambda: results.append(BehaveXRunner(
+        paths=[{os.path.join(api_runner_features_path, 'slow_scenarios')!r}], no_report=True,
+        **{_RUN_MODES[mode]!r}).run()))
+    print("__RESULT__:" + json.dumps({{"raised": raised, "exit_code": results[0].exit_code if results else None}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the run raised no exception and its RunResult exit_code is "{exit_code}"')
+def then_no_exception_and_exit_code(context, exit_code):
+    result = context.api_run_result
+    assert result['raised'] is None and result['exit_code'] == int(exit_code), (
+        f'Got {result}.\nOutput:\n{context.api_run_output}'
+    )
+
