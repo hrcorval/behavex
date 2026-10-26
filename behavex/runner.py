@@ -582,10 +582,13 @@ def launch_behavex():
     except KeyboardInterrupt as ex:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
-            while active_children():
-                for process in active_children():  # Terminate all active child processes
+            list_processes_to_terminate = _live_run_worker_processes if _run_active else active_children
+            while list_processes_to_terminate():
+                for process in list_processes_to_terminate():
                     process.terminate()  # Forcefully terminate each process
                 time.sleep(1)
+            if _run_active:
+                manager.shutdown()
             if _active_executor is not None:
                 _active_executor.shutdown(wait=False)
         except Exception as e:
@@ -1160,9 +1163,14 @@ def _interrupt_worker_processes():
     if os.name != 'posix':
         # os.kill would terminate the worker on Windows, where a console Ctrl+C reaches it anyway
         return
-    # The executor's own processes: active_children() also lists the host application's
-    for worker_process in list(_active_executor._processes.values()):
+    for worker_process in _live_run_worker_processes():
         os.kill(worker_process.pid, signal.SIGINT)
+
+
+def _live_run_worker_processes():
+    # active_children() also lists a BehaveXRunner host application's own processes
+    run_workers = (_active_executor._processes or {}) if _active_executor is not None else {}
+    return [worker_process for worker_process in list(run_workers.values()) if worker_process.is_alive()]
 
 
 def _stop_behave_on_first_ctrl_c(signum, frame):

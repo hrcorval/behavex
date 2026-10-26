@@ -2120,8 +2120,13 @@ _CTRL_C_TARGETS = {
 }
 
 
-@when('I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to {target} once the first one finishes')
-def when_run_and_send_ctrl_c(context, target):
+_CTRL_C_PRESS_GAPS = {'once': [], 'twice': ['time.sleep(0.1)']}
+
+
+@when('I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C {presses} to {target} once the first one finishes')
+def when_run_and_send_ctrl_c(context, presses, target):
+    ctrl_c_presses_code = '; '.join([_CTRL_C_TARGETS[target]] + [
+        f'{gap}; {_CTRL_C_TARGETS[target]}' for gap in _CTRL_C_PRESS_GAPS[presses]])
     script = f"""
 import json, multiprocessing, os, signal, sys, time
 sys.path.insert(0, {repr(root_project_path)})
@@ -2129,10 +2134,10 @@ from behavex import BehaveXRunner
 {_CAPTURE_RAISED}
 pressed = []
 
-def _press_ctrl_c_once(event):
+def _press_ctrl_c_on_first_event(event):
     if not pressed:
         pressed.append(True)
-        {_CTRL_C_TARGETS[target]}
+        {ctrl_c_presses_code}
 
 if __name__ == '__main__':
     # Python leaves Ctrl+C ignored when its parent ignored it, as the suite's runner may
@@ -2142,7 +2147,7 @@ if __name__ == '__main__':
     results = []
     raised = _capture_raised(lambda: results.append(BehaveXRunner(
         paths=[{os.path.join(api_runner_features_path, 'slow_scenarios')!r}], no_report=True,
-        on_progress=_press_ctrl_c_once).run()))
+        on_progress=_press_ctrl_c_on_first_event).run()))
     host_child_alive = host_child.is_alive()
     host_child.terminate()
     statuses = {{s.name: s.status for f in results[0].features for s in f.scenarios}} if results else {{}}
@@ -2162,9 +2167,10 @@ def then_partial_results_after_ctrl_c(context):
         'Slow scenario 03') not in (None, 'passed'), f'Got {result}.\nOutput:\n{context.api_run_output}'
 
 
-@then('a multiprocessing child the host started itself is still running')
-def then_host_child_still_running(context):
-    assert context.api_run_result['host_child_alive'] is True, (
+@then('the run raised no exception and a multiprocessing child the host started itself is still running')
+def then_no_exception_and_host_child_still_running(context):
+    result = context.api_run_result
+    assert result['raised'] is None and result['host_child_alive'] is True, (
         f'Got {context.api_run_result}.\nOutput:\n{context.api_run_output}'
     )
 

@@ -634,7 +634,7 @@ Feature: BehaveXRunner Python API
 
   @API_RUNNER_083
   Scenario Outline: a Ctrl+C sent to <target> during a single-process run returns the scenarios that ran before it
-    When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to <target> once the first one finishes
+    When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C once to <target> once the first one finishes
     Then the run raised no exception and the first scenario passed while the others did not run
     Examples:
       | target                                      |
@@ -652,7 +652,10 @@ Feature: BehaveXRunner Python API
       | in parallel by scenario |
 
   @API_RUNNER_085
-  Scenario: a Ctrl+C sent to the host process alone interrupts only the run's own worker
-    When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to the host process alone, as Jupyter does once the first one finishes
-    Then the run raised no exception and the first scenario passed while the others did not run
-    And a multiprocessing child the host started itself is still running
+  Scenario Outline: a Ctrl+C sent <presses> to the host process alone stops only the run's own processes
+    When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C <presses> to the host process alone, as Jupyter does once the first one finishes
+    Then the run raised no exception and a multiprocessing child the host started itself is still running
+    Examples:
+      | presses |
+      | once    |
+      | twice   |
