@@ -152,10 +152,10 @@ class BehaveXRunner:
                          features=_to_feature_results(runner._last_run_results), stopped=runner._stopped)
 
     @_exclusive_run()
-    def discover(self) -> List[DiscoveredScenario]:
+    def discover(self, check_steps: bool = False) -> List[DiscoveredScenario]:
         """List the scenarios run() would execute, without executing anything or writing any file.
 
-        Step definitions are not loaded, so undefined steps go unnoticed.
+        check_steps imports the step definitions in a separate process to fill undefined_steps.
         """
         args = self._build_args()
         _validate_args(args)
@@ -163,7 +163,7 @@ class BehaveXRunner:
         try:
             # an MCP stdio server owns sys.stdout
             with contextlib.redirect_stdout(io.StringIO()):
-                scenarios = runner.discover(args)
+                scenarios = runner.discover(args, check_steps)
         except SystemExit as exit_signal:
             raise ValueError('BehaveX stopped before discovering the tests: {}'.format(exit_signal.code)) from None
         finally:
@@ -173,8 +173,8 @@ class BehaveXRunner:
                              'the rerun_failures file is missing or empty')
         return [DiscoveredScenario(feature=scenario.feature.name, name=scenario.name,
                                    filename=text(scenario.filename), line=scenario.line,
-                                   tags=list(scenario.effective_tags))
-                for scenario in scenarios]
+                                   tags=list(scenario.effective_tags), undefined_steps=undefined_steps)
+                for scenario, undefined_steps in scenarios]
 
     def stop(self) -> None:
         """Stop a parallel run from submitting more scenarios and cancel the queued ones.

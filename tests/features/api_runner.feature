@@ -480,14 +480,17 @@ Feature: BehaveXRunner Python API
       | exclude                     |
 
   @API_RUNNER_064
-  Scenario Outline: discover() writes nothing to stdout and leaves <folder> untouched
-    When I call discover() on the discovery features with <folder> as the output folder
-    Then discover() listed "7" scenarios and printed nothing to stdout
+  Scenario Outline: <call> writes nothing to stdout and leaves <folder> untouched
+    When I call <call> on <features> with <folder> as the output folder
+    Then discover() listed "<count>" scenarios and printed nothing to stdout
+    And "<undefined>" of the listed scenarios have undefined steps
     And the output folder is as it was before discover()
     Examples:
-      | folder                                 |
-      | an existing folder holding a marker    |
-      | a folder that does not exist           |
+      | call                       | features                     | folder                              | count | undefined |
+      | discover()                 | the discovery features       | an existing folder holding a marker | 7     | 0         |
+      | discover()                 | the discovery features       | a folder that does not exist        | 7     | 0         |
+      | discover()                 | the undefined steps features | a folder that does not exist        | 5     | 0         |
+      | discover(check_steps=True) | the undefined steps features | an existing folder holding a marker | 5     | 3         |
 
   @API_RUNNER_065
   Scenario Outline: discover() raises a ValueError naming why <input> stops it, and a later run still runs
@@ -548,3 +551,30 @@ Feature: BehaveXRunner Python API
   Scenario: load_results() reads a run started from the CLI
     When I run behavex from the CLI on the secondary features, then call load_results() on its output folder
     Then the loaded RunResult has the CLI's exit code, a run_id and "54" scenarios
+
+  @API_RUNNER_074
+  Scenario Outline: discover(check_steps=True) lists the steps a run <mode> finds undefined, on <features>
+    When I call discover(check_steps=True), then run BehaveXRunner <mode>, on <features>
+    Then discover() listed the undefined steps the run reported, "<count>" of them
+    Examples:
+      | mode                    | features                                              | count |
+      | in a single process     | the undefined steps features                          | 3     |
+      | as a dry run            | the undefined steps features                          | 3     |
+      | in parallel by feature  | the undefined steps features                          | 3     |
+      | in parallel by scenario | the undefined steps features                          | 3     |
+      | in a single process     | a top feature and a feature with its own steps folder | 2     |
+      | in parallel by feature  | a top feature and a feature with its own steps folder | 1     |
+
+  @API_RUNNER_076
+  Scenario: discover(check_steps=True) ignores the step definitions an earlier run in the same process loaded
+    When I run BehaveXRunner on the undefined steps features, then call discover(check_steps=True) on the top feature, in the same process
+    Then discover() listed "1" undefined steps for the scenario "Uses a step only the undefined steps features define"
+
+  @API_RUNNER_075
+  Scenario Outline: discover(check_steps=True) raises a ValueError when <problem>
+    When I call discover(check_steps=True) on features whose <problem>
+    Then discover() raised a ValueError mentioning "<reason>"
+    Examples:
+      | problem                     | reason                                                  |
+      | step module fails to import | No module named 'a_module_that_does_not_exist'          |
+      | folder has no steps folder  | Could not find the step definitions: No steps directory |

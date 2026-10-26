@@ -82,11 +82,13 @@ result1 = runner.run()  # run_id: "a1b2c3d4-..."
 result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
 ```
 
-### `.discover()` → `list[DiscoveredScenario]`
+### `.discover(check_steps=False)` → `list[DiscoveredScenario]`
 
 Lists the scenarios a `.run()` with the same constructor arguments would report, applying the same paths, `include_paths`, tags (including the config's `tags_to_skip`), `name`, `include`, `exclude` and `rerun_failures` filters. Scenario Outline examples are listed one by one, as a run reports them. `@MANUAL` and `@WIP` scenarios are listed too: a run reports them as manual without executing them. A parallel run with `parallel_scheme="scenario"` also reports the scenarios that `exclude` skips, as untested; `.discover()` leaves them out.
 
-Nothing is executed and nothing is written: no hooks run, the output folder is neither created nor cleaned, and nothing is printed to `sys.stdout`, so it is safe to call from a process whose stdout carries a protocol (such as an MCP stdio server). Step definitions are not loaded, so a scenario with undefined steps is still listed.
+Nothing is executed and nothing is written: no hooks run, the output folder is neither created nor cleaned, and nothing is printed to `sys.stdout`, so it is safe to call from a process whose stdout carries a protocol (such as an MCP stdio server). Step definitions are not loaded unless `check_steps=True`.
+
+With `check_steps=True`, each `DiscoveredScenario` lists in `undefined_steps` the steps no step definition matches, as behave's `--dry-run` would mark them. It loads `environment.py` (without running its hooks) and the step modules, as behave does, so a `use_step_matcher()` or a custom type registered there applies. It loads them in a new spawned process, one per steps folder, so the calling process is left as it was and the step definitions it already loaded, from an earlier `.run()` for example, are not taken into account; because the process is spawned on every platform, a script that calls it needs an `if __name__ == "__main__":` guard. It uses the steps folder the matching `.run()` would: a single-process run (including a dry run) takes it from the first feature for every feature, while a parallel run takes it from each feature's own folder, so with nested steps folders the two can differ. Steps that a step or hook adds at run time, such as with `context.execute_steps()`, are not checked, as in behave's dry run. A step module that fails to import, or a feature with no steps folder above it, raises `ValueError` naming the error.
 
 An invalid argument, a path that does not exist (including the default `features` folder when no `paths` are given), a glob that matches no file, or a missing or empty `rerun_failures` file raises `ValueError` naming the reason. For a missing or empty `rerun_failures` file, `.run()` instead returns a `RunResult` with `exit_code` 1 and no scenarios. Calling it while a `.run()` is active in the same process raises `RuntimeError`, and a `.run()` started during it does too.
 
@@ -94,6 +96,11 @@ An invalid argument, a path that does not exist (including the default `features
 scenarios = BehaveXRunner(paths=["tests/features"], tags=["@smoke"]).discover()
 for scenario in scenarios:
     print(f"{scenario.filename}:{scenario.line} {scenario.name}")
+
+# Find the steps without a definition before running anything
+for scenario in BehaveXRunner(paths=["tests/features"]).discover(check_steps=True):
+    for step in scenario.undefined_steps:
+        print(f"{scenario.filename}:{scenario.line} undefined: {step}")
 ```
 
 ### `.stop()`
@@ -223,7 +230,7 @@ Returned by `RunResult.summary`. The counts don't overlap and add up to `total`:
 
 ### `DiscoveredScenario`
 
-Returned by `BehaveXRunner.discover()`. Its fields hold the same values as the `ScenarioResult` a run reports for that scenario.
+Returned by `BehaveXRunner.discover()`. Its fields other than `undefined_steps` hold the same values as the `ScenarioResult` a run reports for that scenario.
 
 | Field | Type | Description |
 |---|---|---|
@@ -232,6 +239,7 @@ Returned by `BehaveXRunner.discover()`. Its fields hold the same values as the `
 | `filename` | `str` | Feature file path |
 | `line` | `int` | Line number in the feature file |
 | `tags` | `list[str]` | Scenario tags, including the feature's and the Examples' |
+| `undefined_steps` | `list[str]` | With `check_steps=True`, the scenario's steps (Background included) that no step definition matches, as `"<keyword> <text>"`, e.g. `"When I log in"`; empty otherwise |
 
 ### `StepResult`
 

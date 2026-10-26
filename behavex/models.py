@@ -20,7 +20,7 @@ class ProgressEvent(BaseModel):
 
 
 class DiscoveredScenario(BaseModel):
-    """A scenario run() would execute; fields match its ScenarioResult."""
+    """A scenario run() would execute; its fields other than undefined_steps match its ScenarioResult."""
     model_config = ConfigDict(extra='ignore')
 
     feature: str
@@ -28,6 +28,7 @@ class DiscoveredScenario(BaseModel):
     filename: str
     line: int
     tags: List[str] = Field(default_factory=list)
+    undefined_steps: List[str] = Field(default_factory=list)
 
 
 class StepResult(BaseModel):

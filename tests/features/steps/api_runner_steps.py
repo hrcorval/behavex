@@ -1636,8 +1636,18 @@ def then_discovered_matches_reported(context):
     )
 
 
-@when('I call discover() on the discovery features with {folder} as the output folder')
-def when_discover_with_output_folder(context, folder):
+undefined_steps_features_path = os.path.join(api_runner_features_path, 'undefined_steps')
+nested_steps_folders_path = os.path.join(api_runner_features_path, 'nested_steps_folders')
+_DISCOVER_FEATURES_PATHS = {
+    'the discovery features': [discovery_features_path],
+    'the undefined steps features': [undefined_steps_features_path],
+    'a top feature and a feature with its own steps folder': [
+        os.path.join(nested_steps_folders_path, 'top.feature'),
+        os.path.join(nested_steps_folders_path, 'nested', 'nested.feature')],
+}
+
+@when('I call {call} on {features} with {folder} as the output folder')
+def when_discover_with_output_folder(context, call, features, folder):
     base = tempfile.mkdtemp()
     context.add_cleanup(shutil.rmtree, base, ignore_errors=True)
     output_folder = os.path.join(base, 'output')
@@ -1651,8 +1661,10 @@ def when_discover_with_output_folder(context, folder):
 import json, sys
 sys.path.insert(0, {repr(root_project_path)})
 from behavex import BehaveXRunner
-scenarios = BehaveXRunner(paths=[{repr(discovery_features_path)}], output_folder={repr(output_folder)}).discover()
-print("__RESULT__:" + json.dumps({{"count": len(scenarios)}}))
+scenarios = BehaveXRunner(paths={_DISCOVER_FEATURES_PATHS[features]!r},
+                          output_folder={repr(output_folder)}).{call}
+print("__RESULT__:" + json.dumps({{"count": len(scenarios),
+                                  "with_undefined_steps": sum(1 for s in scenarios if s.undefined_steps)}}))
 """
     context.discovery_proc = _run_script(script)
     _store_result(context, context.discovery_proc)
@@ -1721,13 +1733,22 @@ if __name__ == '__main__':
     _store_result(context, _run_script(script))
 
 
+_RUN_MODES = {
+    'in a single process': {},
+    'as a dry run': {'dry_run': True},
+    'in parallel by feature': {'parallel_processes': 2, 'parallel_scheme': 'feature'},
+    'in parallel by scenario': {'parallel_processes': 2, 'parallel_scheme': 'scenario'},
+}
+
+
 _LOAD_RESULTS_CASES = {
-    'on the secondary features in a single process': {'paths': [secondary_features_path]},
+    'on the secondary features in a single process': {
+        'paths': [secondary_features_path], **_RUN_MODES['in a single process']},
     'on the secondary features in parallel by feature': {
-        'paths': [secondary_features_path], 'parallel_processes': 2, 'parallel_scheme': 'feature'},
+        'paths': [secondary_features_path], **_RUN_MODES['in parallel by feature']},
     'on the secondary features in parallel by scenario': {
-        'paths': [secondary_features_path], 'parallel_processes': 2, 'parallel_scheme': 'scenario'},
-    'on the secondary features as a dry run': {'paths': [secondary_features_path], 'dry_run': True},
+        'paths': [secondary_features_path], **_RUN_MODES['in parallel by scenario']},
+    'on the secondary features as a dry run': {'paths': [secondary_features_path], **_RUN_MODES['as a dry run']},
     'on the secondary features with the Allure formatter': {
         'paths': [secondary_features_path],
         'formatter': 'behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'},
@@ -1840,4 +1861,93 @@ def then_loaded_cli_run_result(context, total):
     assert loaded['exit_code'] == context.cli_exit_code and loaded['run_id'] and loaded['total'] == int(total), (
         f'Expected exit_code {context.cli_exit_code}, a run_id and {total} scenarios, got {loaded}.\n'
         f'Output:\n{context.api_run_output}'
+    )
+
+
+@when('I call discover(check_steps=True), then run BehaveXRunner {mode}, on {features}')
+def when_discover_check_steps_then_run(context, mode, features):
+    kwargs = dict(_RUN_MODES[mode], paths=_DISCOVER_FEATURES_PATHS[features])
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+if __name__ == '__main__':
+    discovered = BehaveXRunner(**{kwargs!r}).discover(check_steps=True)
+    result = BehaveXRunner(no_report=True, **{kwargs!r}).run()
+    # discover() lists 'Keyword name'; the run reports each step's name and status
+    print("__RESULT__:" + json.dumps({{
+        "discovered": {{scenario.name: sorted(text.split(' ', 1)[1] for text in scenario.undefined_steps)
+                        for scenario in discovered}},
+        "reported": {{scenario.name: sorted(step.name for step in scenario.background.steps + scenario.steps
+                                            if step.status in ('undefined', 'untested_undefined'))
+                      for feature in result.features for scenario in feature.scenarios}},
+    }}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('discover() listed the undefined steps the run reported, "{count}" of them')
+def then_discover_listed_reported_undefined_steps(context, count):
+    discovered = context.api_run_result['discovered']
+    reported = context.api_run_result['reported']
+    discovered_count = sum(len(steps) for steps in discovered.values())
+    assert discovered == reported and discovered_count == int(count), (
+        f'Expected {count} undefined steps, as the run reported.\nDiscovered: {discovered}\n'
+        f'Reported: {reported}\nOutput:\n{context.api_run_output}'
+    )
+
+
+@then('"{count}" of the listed scenarios have undefined steps')
+def then_listed_scenarios_with_undefined_steps(context, count):
+    with_undefined_steps = context.api_run_result['with_undefined_steps']
+    assert with_undefined_steps == int(count), (
+        f'Expected {count} scenarios with undefined steps, got {with_undefined_steps}'
+    )
+
+
+@when('I call discover(check_steps=True) on features whose {problem}')
+def when_discover_check_steps_on_broken_features(context, problem):
+    if problem == 'step module fails to import':
+        features_path = os.path.join(api_runner_features_path, 'broken_step_module')
+    else:
+        # No folder above a temporary one holds a steps folder
+        features_path = tempfile.mkdtemp()
+        context.add_cleanup(shutil.rmtree, features_path, ignore_errors=True)
+        with open(os.path.join(features_path, 'no_steps.feature'), 'w') as feature_file:
+            feature_file.write('Feature: No Steps\n\n  Scenario: Has no steps folder\n    Given a passing step\n')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+if __name__ == '__main__':
+    raised = _capture_raised(lambda: BehaveXRunner(paths=[{features_path!r}]).discover(check_steps=True))
+    print("__RESULT__:" + json.dumps({{"raised": raised}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@when('I run BehaveXRunner on the undefined steps features, then call discover(check_steps=True) on the top feature, '
+      'in the same process')
+def when_run_then_discover_check_steps(context):
+    top_feature_path = os.path.join(nested_steps_folders_path, 'top.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+if __name__ == '__main__':
+    BehaveXRunner(paths=[{undefined_steps_features_path!r}], no_report=True).run()
+    discovered = BehaveXRunner(paths=[{top_feature_path!r}]).discover(check_steps=True)
+    print("__RESULT__:" + json.dumps({{"undefined_steps": {{s.name: s.undefined_steps for s in discovered}}}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('discover() listed "{count}" undefined steps for the scenario "{name}"')
+def then_discover_listed_undefined_steps_for_scenario(context, count, name):
+    undefined_steps = context.api_run_result['undefined_steps']
+    assert len(undefined_steps[name]) == int(count), (
+        f'Expected {count} undefined steps for "{name}", got {undefined_steps}'
     )
