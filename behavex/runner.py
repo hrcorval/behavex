@@ -1994,11 +1994,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
                 value_arg = [value_arg]
             if value_arg:
                 for key_value in value_arg:
-                    arguments.append('--define')
-                    arguments.append(key_value)
+                    arguments.append('--define={}'.format(key_value))
         if arg == 'name':
             for name in get_name_filters():
-                arguments.extend(['--name', name])
+                arguments.append('--name={}'.format(name))
             continue
         if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
             arguments.append('--{}'.format(arg.replace('_', '-')))

@@ -659,3 +659,10 @@ Feature: BehaveXRunner Python API
       | presses |
       | once    |
       | twice   |
+
+  @API_RUNNER_086
+  Scenario: a name filter starting with "-" is passed to behave instead of being parsed as an option
+    When I run BehaveXRunner with passing tests filtered by name "-x|another"
+    Then the RunResult exit_code should be "0"
+    And the RunResult summary total is "1"
+
