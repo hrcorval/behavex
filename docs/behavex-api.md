@@ -122,6 +122,19 @@ if result.stopped:
     print(f"Timed out after {result.summary.total} scenarios")
 ```
 
+### `BehaveXRunner.load_results(output_folder)` → `RunResult`
+
+Rebuilds the `RunResult` of a run that has finished, from the `report.json` and `overall_status.json` it wrote to `output_folder`, so another process (or a later session) can read it without running anything. It returns the same `RunResult`, `run_id` included, as the `.run()` that wrote the folder, and works for runs started from the CLI too. It is a static method: call it on the class, with the folder path.
+
+A folder without `overall_status.json` raises `ValueError`; that includes a folder that does not exist and the output folder of a `no_report` run, which writes neither file. So does an `overall_status.json` written by BehaveX 4.6 or earlier, which does not record the exit code. A folder whose run exited 0 but has no `report.json` raises too, and so does a `report.json` without `features`. A run that fails before writing its report (a failing `before_all_workers` hook or an interrupt) exits 1 and leaves no `report.json`; `load_results()` returns it with no features, as `.run()` did. A run that stops before cleaning its output folder (a missing or empty `rerun_failures` file) leaves the previous run's files there, so `load_results()` returns that previous run.
+
+```python
+from behavex import BehaveXRunner
+
+result = BehaveXRunner.load_results("output")
+print(result.run_id, result.exit_code, result.summary)
+```
+
 ## Result Models
 
 All models are Pydantic `BaseModel` instances with `extra='ignore'` — unknown keys in the result dicts are silently dropped for forward compatibility.
@@ -141,7 +154,7 @@ Delivered to the `on_progress` callback once for every scenario in `RunResult.fe
 
 ### `RunResult`
 
-Top-level result returned by `BehaveXRunner.run()`.
+Top-level result returned by `BehaveXRunner.run()` and `BehaveXRunner.load_results()`.
 
 | Field / Property | Type | Description |
 |---|---|---|

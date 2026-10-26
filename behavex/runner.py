@@ -28,6 +28,7 @@ import sys
 import threading
 import time
 import traceback
+import uuid
 from concurrent.futures import CancelledError, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
@@ -98,6 +99,7 @@ _progress_reported: set = set()
 _run_active: bool = False
 _stop_requested: bool = False
 _stopped: bool = False
+_run_id: Optional[str] = None
 _features_path_before_first_run: Optional[str] = None
 
 
@@ -187,6 +189,8 @@ def run(args):
     Returns:
         int: Exit code indicating success or failure.
     """
+    global _run_id
+    _run_id = str(uuid.uuid4())
     args_parsed = _prepare_run(args)
     if args_parsed is None:
         return EXIT_ERROR
@@ -360,7 +364,7 @@ def launch_behavex():
     run_worker_hooks = not get_param('dry_run')
     if run_worker_hooks and not _call_bhx_hook('before_all_workers', bhx_context):
         _call_bhx_hook('after_all_workers', bhx_context)
-        _write_overall_status('failed')
+        _write_overall_status('failed', EXIT_ERROR)
         print('Exit code: {}'.format(EXIT_ERROR))
         return EXIT_ERROR
     shared_data = bhx_context._to_dict()
@@ -506,7 +510,7 @@ def launch_behavex():
         _is_parallel_run = False
         if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
             exit_code = EXIT_ERROR
-    _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json))
+    _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json), exit_code)
     if print_summary:
         print_execution_summary(totals, failures, results)  # failures initialized above
     if results and results['features'] and not get_param('formatter') and not get_param('no_report'):
@@ -1459,12 +1463,13 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
             lock.release()
 
 
-def _write_overall_status(overall_status):
+def _write_overall_status(overall_status, exit_code):
     if get_param('no_report'):
         return
     status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
     with open(status_path, 'w') as status_file:
-        status_file.write(json.dumps({'status': overall_status}))
+        status_file.write(json.dumps({'status': overall_status, 'exit_code': exit_code,
+                                      'stopped': _stopped, 'run_id': _run_id}))
 
 
 def _find_user_environment_path() -> Optional[str]:

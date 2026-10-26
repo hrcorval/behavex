@@ -516,3 +516,35 @@ Feature: BehaveXRunner Python API
   Scenario: of two threads calling run() at once, exactly one raises RuntimeError
     When two threads call run() on passing tests at once, the second while the first validates its arguments
     Then exactly one of the two runs raised a RuntimeError mentioning "Another BehaveXRunner.run() or discover() is active"
+
+  @API_RUNNER_071
+  Scenario Outline: load_results() rebuilds the RunResult that run() returned <case>
+    When I run BehaveXRunner <case> with a configured output folder, then call load_results() on that folder
+    Then load_results() returned the same RunResult as run()
+    And the loaded RunResult has exit_code "<exit_code>", stopped "<stopped>" and "<total>" scenarios
+    Examples:
+      | case                                                | exit_code | stopped | total |
+      | on the secondary features in a single process       | 1         | False   | 54    |
+      | on the secondary features in parallel by feature    | 1         | False   | 54    |
+      | on the secondary features in parallel by scenario   | 1         | False   | 54    |
+      | on the secondary features as a dry run              | 0         | False   | 54    |
+      | on the secondary features with the Allure formatter | 1         | False   | 54    |
+      | on tests whose before_all_workers hook fails        | 1         | False   | 0     |
+      | stopped while before_all_workers runs               | 0         | True    | 0     |
+
+  @API_RUNNER_072
+  Scenario Outline: load_results() raises a ValueError naming why <folder> holds no results
+    When I call load_results() on <folder>
+    Then load_results() raised a ValueError mentioning "<reason>"
+    Examples:
+      | folder                                     | reason                                                   |
+      | the output folder of a no_report run       | has no overall_status.json (a no_report run writes none) |
+      | a folder that does not exist               | has no overall_status.json (a no_report run writes none) |
+      | a folder written by BehaveX 4.6            | was written by a BehaveX older than 4.7.0                |
+      | a passed run's folder without report.json  | has no report.json for a run that exited 0               |
+      | a folder whose report.json has no features | has no features                                          |
+
+  @API_RUNNER_073
+  Scenario: load_results() reads a run started from the CLI
+    When I run behavex from the CLI on the secondary features, then call load_results() on its output folder
+    Then the loaded RunResult has the CLI's exit code, a run_id and "54" scenarios

@@ -4,16 +4,18 @@ from __future__ import absolute_import
 
 import contextlib
 import io
+import json
 import os
 import sys
 import threading
-import uuid
 from typing import Callable, List, Optional
 
 from behavex import runner
 from behavex.arguments import parse_arguments
 from behavex.conf_mgr import get_env
+from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import text
+from behavex.utils import get_json_results
 
 try:
     from behavex.models import DiscoveredScenario, FeatureResult, ProgressEvent, RunResult  # noqa: F401
@@ -35,6 +37,10 @@ def _exclusive_run():
         yield
     finally:
         _run_lock.release()
+
+
+def _to_feature_results(feature_dicts: List[dict]) -> List[FeatureResult]:
+    return [FeatureResult.model_validate(feature_dict) for feature_dict in feature_dicts]
 
 
 def _validate_args(args: List[str]) -> None:
@@ -121,7 +127,6 @@ class BehaveXRunner:
 
     @_exclusive_run()
     def run(self) -> RunResult:
-        run_id = str(uuid.uuid4())
         args = self._build_args()
         _validate_args(args)
         runner._progress_callback = self.on_progress
@@ -143,9 +148,8 @@ class BehaveXRunner:
         finally:
             runner._progress_callback = None
             runner._run_active = False
-        features = self._load_features()
-        return RunResult(run_id=run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
-                         features=features, stopped=runner._stopped)
+        return RunResult(run_id=runner._run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
+                         features=_to_feature_results(runner._last_run_results), stopped=runner._stopped)
 
     @_exclusive_run()
     def discover(self) -> List[DiscoveredScenario]:
@@ -187,8 +191,36 @@ class BehaveXRunner:
         if sys.version_info >= (3, 9):
             executor.shutdown(wait=False, cancel_futures=True)
 
-    def _load_features(self) -> List[FeatureResult]:
-        return [FeatureResult.model_validate(f) for f in runner._last_run_results]
+    @staticmethod
+    def load_results(output_folder: str) -> RunResult:
+        """Return the RunResult that the run which last wrote output_folder returned."""
+        status_filename = global_vars.report_filenames['report_overall']
+        status_path = os.path.join(output_folder, status_filename)
+        try:
+            with open(status_path) as status_file:
+                overall_status = json.load(status_file)
+        except FileNotFoundError:
+            raise ValueError('No BehaveX run results in {}: it has no {} (a no_report run '
+                             'writes none)'.format(output_folder, status_filename)) from None
+        if 'exit_code' not in overall_status:
+            raise ValueError('{} was written by a BehaveX older than 4.7.0, which does not '
+                             'record the exit code'.format(status_path))
+        report_filename = global_vars.report_filenames['report_json']
+        try:
+            json_report = get_json_results(output_folder)
+        except FileNotFoundError:
+            # A run that fails before writing its report (a failing before_all_workers hook or an
+            # interrupt) exits 1, and its run() returned no features either
+            if overall_status['exit_code'] == 0:
+                raise ValueError('{} has no {} for a run that exited 0'.format(
+                    output_folder, report_filename)) from None
+            json_report = {'features': []}
+        if 'features' not in json_report:
+            raise ValueError('{} in {} has no features'.format(report_filename, output_folder))
+        feature_dicts = json_report['features']
+        return RunResult(run_id=overall_status['run_id'], exit_code=overall_status['exit_code'],
+                         output_folder=os.path.abspath(output_folder),
+                         features=_to_feature_results(feature_dicts), stopped=overall_status['stopped'])
 
     def _build_args(self) -> List[str]:
         args: List[str] = []

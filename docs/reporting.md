@@ -22,6 +22,14 @@ Base report used internally to generate the HTML report. Contains scenario detai
 <output_folder>/report.json
 ```
 
+### Overall Status
+
+The run's outcome, for CI pipelines and for `BehaveXRunner.load_results()`. `status` is `passed`, `failed` or `skipped`; `exit_code` is the code BehaveX exited with; `stopped` is `true` when `BehaveXRunner.stop()` cut the run short; `run_id` is a UUID4 unique to the run. `exit_code`, `stopped` and `run_id` are written since 4.7.0. A `--no-report` run writes no status file.
+
+```
+<output_folder>/overall_status.json
+```
+
 ### JUnit Report
 
 One XML file per feature, compatible with CI/CD systems. Supports muted test scenarios.

@@ -611,9 +611,9 @@ def create_custom_log_when_called(self, key):
         return object.__getattribute__(self, key)
 
 
-def get_json_results():
+def get_json_results(output_folder=None):
     path_json = os.path.join(
-        get_env('OUTPUT'), global_vars.report_filenames['report_json']
+        output_folder or get_env('OUTPUT'), global_vars.report_filenames['report_json']
     )
     with open(path_json, 'r') as json_file:
         json_results = json.load(json_file)

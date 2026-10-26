@@ -10,7 +10,7 @@ from typing import List, Optional
 import behave
 from behave import given, then, when
 from config_file_steps import _clean_child_env, _make_config_dir, _write_config_file
-from execution_steps import get_random_number
+from execution_steps import execute_command, get_random_number
 from packaging.version import Version
 
 # behave 1.2.6 reports hook errors and undefined background steps as failed
@@ -559,6 +559,17 @@ def when_api_run_with_logging_level(context, level):
 # on_progress callback steps
 # ─────────────────────────────────────────────────────────────────────────────
 
+# stop_before_workers/environment.py sets hook_entered, then waits for stop_called
+_STOP_WHILE_BEFORE_ALL_WORKERS_RUNS = """
+hook_entered = threading.Event()
+stop_called = threading.Event()
+
+def _stop_once_hook_entered(runner):
+    hook_entered.wait(timeout=60)
+    runner.stop()
+    stop_called.set()
+"""
+
 _SERIALIZE_PROGRESS = """
 _data = {
     "exit_code": result.exit_code,
@@ -901,21 +912,14 @@ import json, sys, threading
 sys.path.insert(0, {repr(root_project_path)})
 from behavex import BehaveXRunner
 
-hook_entered = threading.Event()
-stop_called = threading.Event()
+{_STOP_WHILE_BEFORE_ALL_WORKERS_RUNS}
 runner = BehaveXRunner(
     paths=[{repr(feature_path)}],
     no_report=True,
     parallel_processes={int(parallel_processes)},
     parallel_scheme={repr(parallel_scheme)},
 )
-
-def _stop_once_hook_entered():
-    hook_entered.wait(timeout=60)
-    runner.stop()
-    stop_called.set()
-
-threading.Thread(target=_stop_once_hook_entered, daemon=True).start()
+threading.Thread(target=_stop_once_hook_entered, args=(runner,), daemon=True).start()
 result = runner.run()
 _events = []
 """ + _SERIALIZE_PROGRESS
@@ -1365,6 +1369,7 @@ print("__RESULT__:" + json.dumps({{"raised": raised}}))
 
 @then('run() raised a ValueError mentioning "{text}"')
 @then('discover() raised a ValueError mentioning "{text}"')
+@then('load_results() raised a ValueError mentioning "{text}"')
 def then_call_raised_value_error(context, text):
     raised = context.api_run_result['raised']
     assert raised and raised['type'] == 'ValueError' and text in raised['message'], (
@@ -1714,3 +1719,125 @@ if __name__ == '__main__':
     print("__RESULT__:" + json.dumps({{"raised": _raised[0] if _raised else None}}))
 """
     _store_result(context, _run_script(script))
+
+
+_LOAD_RESULTS_CASES = {
+    'on the secondary features in a single process': {'paths': [secondary_features_path]},
+    'on the secondary features in parallel by feature': {
+        'paths': [secondary_features_path], 'parallel_processes': 2, 'parallel_scheme': 'feature'},
+    'on the secondary features in parallel by scenario': {
+        'paths': [secondary_features_path], 'parallel_processes': 2, 'parallel_scheme': 'scenario'},
+    'on the secondary features as a dry run': {'paths': [secondary_features_path], 'dry_run': True},
+    'on the secondary features with the Allure formatter': {
+        'paths': [secondary_features_path],
+        'formatter': 'behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'},
+    'on tests whose before_all_workers hook fails': {
+        'paths': [os.path.join(api_runner_features_path, 'failing_before_all_workers')], 'parallel_processes': 2},
+    'stopped while before_all_workers runs': {
+        'paths': [os.path.join(api_runner_features_path, 'stop_before_workers')], 'parallel_processes': 2,
+        'stop_while_before_all_workers_runs': True},
+}
+
+
+@when('I run BehaveXRunner {case} with a configured output folder, then call load_results() on that folder')
+def when_run_then_load_results(context, case):
+    output_folder = os.path.join('output', f'api_runner_load_{get_random_number(6)}')
+    context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
+    kwargs = dict(_LOAD_RESULTS_CASES[case], output_folder=output_folder)
+    stop_while_before_all_workers_runs = kwargs.pop('stop_while_before_all_workers_runs', False)
+    script = f"""
+import json, sys, threading
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_STOP_WHILE_BEFORE_ALL_WORKERS_RUNS}
+if __name__ == '__main__':
+    runner = BehaveXRunner(**{kwargs!r})
+    if {stop_while_before_all_workers_runs!r}:
+        threading.Thread(target=_stop_once_hook_entered, args=(runner,), daemon=True).start()
+    returned_by_run = runner.run().model_dump()
+    loaded_from_folder = BehaveXRunner.load_results({output_folder!r}).model_dump()
+    print("__RESULT__:" + json.dumps({{
+        "differing_fields": sorted(field for field in returned_by_run
+                                   if returned_by_run[field] != loaded_from_folder[field]),
+        "exit_code": loaded_from_folder["exit_code"], "stopped": loaded_from_folder["stopped"],
+        "total": loaded_from_folder["summary"]["total"],
+    }}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('load_results() returned the same RunResult as run()')
+def then_load_results_matches_run(context):
+    differing_fields = context.api_run_result['differing_fields']
+    assert not differing_fields, (
+        f'load_results() differs from run() in {differing_fields}.\nOutput:\n{context.api_run_output}'
+    )
+
+
+@then('the loaded RunResult has exit_code "{exit_code}", stopped "{stopped}" and "{total}" scenarios')
+def then_loaded_run_result_has_exit_code_stopped_and_total(context, exit_code, stopped, total):
+    loaded = context.api_run_result
+    expected = {'exit_code': int(exit_code), 'stopped': stopped == 'True', 'total': int(total)}
+    actual = {key: loaded[key] for key in expected}
+    assert actual == expected, f'Expected {expected}, got {actual}.\nOutput:\n{context.api_run_output}'
+
+
+@when('I call load_results() on {folder}')
+def when_load_results_on_folder(context, folder):
+    output_folder = os.path.join('output', f'api_runner_load_{get_random_number(6)}')
+    context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
+    folder_setup_code = {
+        'the output folder of a no_report run':
+            f'BehaveXRunner(paths=[{os.path.join(secondary_features_path, "passing_tests.feature")!r}], '
+            f'output_folder={output_folder!r}, no_report=True).run()',
+        'a folder that does not exist': 'pass',
+        'a folder written by BehaveX 4.6':
+            f'os.makedirs({output_folder!r})\n    '
+            f'json.dump({{"status": "passed"}}, open(os.path.join({output_folder!r}, "overall_status.json"), "w"))',
+        "a passed run's folder without report.json":
+            f'BehaveXRunner(paths=[{os.path.join(secondary_features_path, "passing_tests.feature")!r}], '
+            f'output_folder={output_folder!r}).run()\n    '
+            f'os.remove(os.path.join({output_folder!r}, "report.json"))',
+        'a folder whose report.json has no features':
+            f'BehaveXRunner(paths=[{os.path.join(secondary_features_path, "passing_tests.feature")!r}], '
+            f'output_folder={output_folder!r}).run()\n    '
+            f'json.dump({{}}, open(os.path.join({output_folder!r}, "report.json"), "w"))',
+    }[folder]
+    script = f"""
+import json, os, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+if __name__ == '__main__':
+    {folder_setup_code}
+    raised = _capture_raised(lambda: BehaveXRunner.load_results({output_folder!r}))
+    print("__RESULT__:" + json.dumps({{"raised": raised}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@when('I run behavex from the CLI on the secondary features, then call load_results() on its output folder')
+def when_cli_run_then_load_results(context):
+    output_folder = os.path.join('output', f'api_runner_load_cli_{get_random_number(6)}')
+    context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
+    execute_command(context, ['behavex', secondary_features_path, '-o', output_folder],
+                    env=_clean_child_env(), cwd=root_project_path)
+    context.cli_exit_code = context.result.returncode
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+loaded = BehaveXRunner.load_results({output_folder!r})
+print("__RESULT__:" + json.dumps({{"exit_code": loaded.exit_code, "run_id": loaded.run_id,
+                                  "total": loaded.summary.total}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the loaded RunResult has the CLI\'s exit code, a run_id and "{total}" scenarios')
+def then_loaded_cli_run_result(context, total):
+    loaded = context.api_run_result
+    assert loaded['exit_code'] == context.cli_exit_code and loaded['run_id'] and loaded['total'] == int(total), (
+        f'Expected exit_code {context.cli_exit_code}, a run_id and {total} scenarios, got {loaded}.\n'
+        f'Output:\n{context.api_run_output}'
+    )
