@@ -53,21 +53,7 @@ def _validate_args(args: List[str]) -> None:
 
 
 class BehaveXRunner:
-    """Programmatic interface for running BehaveX without the CLI.
-
-    Usage::
-
-        from behavex import BehaveXRunner
-
-        result = BehaveXRunner(
-            paths=["tests/features"],
-            tags=["@smoke"],
-            parallel_processes=4,
-            output_folder="output",
-        ).run()
-
-        assert result.passed
-    """
+    """Programmatic interface for running BehaveX without the CLI; docs/behavex-api.md shows its use."""
 
     def __init__(
         self,

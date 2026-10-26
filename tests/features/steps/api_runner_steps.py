@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 from typing import List, Optional
 
 import behave
@@ -1600,6 +1601,7 @@ def _discovery_filter_kwargs(context, filter_name):
             'an excluded tag': {'tags': ['~@SMOKE']},
             'name': {'name': 'Outline'},
             'exclude': {'exclude': 'other'},
+            'include': {'include': 'other'},
         }[filter_name])
     return kwargs
 
@@ -1950,4 +1952,234 @@ def then_discover_listed_undefined_steps_for_scenario(context, count, name):
     undefined_steps = context.api_run_result['undefined_steps']
     assert len(undefined_steps[name]) == int(count), (
         f'Expected {count} undefined steps for "{name}", got {undefined_steps}'
+    )
+
+
+@when('I run BehaveXRunner {mode} on the undefined steps features, then on the top feature, in the same process')
+def when_run_two_suites_in_one_process(context, mode):
+    top_feature_path = os.path.join(nested_steps_folders_path, 'top.feature')
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+if __name__ == '__main__':
+    BehaveXRunner(paths=[{undefined_steps_features_path!r}], no_report=True, **{_RUN_MODES[mode]!r}).run()
+    result = BehaveXRunner(paths=[{top_feature_path!r}], no_report=True, **{_RUN_MODES[mode]!r}).run()
+    print("__RESULT__:" + json.dumps({{"statuses": {{s.name: s.status for f in result.features
+                                                    for s in f.scenarios}}}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the scenario "{name}" ended with behave\'s error status in the second run')
+def then_scenario_ended_with_error_status(context, name):
+    statuses = context.api_run_result['statuses']
+    assert statuses.get(name) == BEHAVE_ERROR_STATUS, (
+        f'Expected "{name}" to end as {BEHAVE_ERROR_STATUS}, got {statuses}.\nOutput:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner in a single process on passing tests with sys.stdout redirected')
+def when_run_with_stdout_redirected(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import contextlib, io, json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+if __name__ == '__main__':
+    redirected = io.StringIO()
+    with contextlib.redirect_stdout(redirected):
+        BehaveXRunner(paths=[{feature_path!r}], no_report=True).run()
+    print("__RESULT__:" + json.dumps({{"redirected": redirected.getvalue()}}))
+"""
+    context.redirected_run_proc = _run_script(script)
+    _store_result(context, context.redirected_run_proc)
+
+
+@then('the redirected sys.stdout received behave\'s summary and the process stdout did not')
+def then_redirected_stdout_received_summary(context):
+    process_stdout = '\n'.join(_non_result_lines(context.redirected_run_proc))
+    assert 'scenarios passed' in context.api_run_result['redirected'] and 'scenarios passed' not in process_stdout, (
+        f'Redirected:\n{context.api_run_result["redirected"]}\nProcess stdout:\n{process_stdout}'
+    )
+
+
+@when('I run BehaveXRunner in a single process on passing tests, noting the output that had arrived at each '
+      'on_progress event')
+def when_run_noting_output_at_each_event(context):
+    feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
+    script = f"""
+import contextlib, io, json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+if __name__ == '__main__':
+    redirected = io.StringIO()
+    output_at_events = []
+    with contextlib.redirect_stdout(redirected):
+        BehaveXRunner(paths=[{feature_path!r}], no_report=True,
+                      on_progress=lambda event: output_at_events.append(redirected.getvalue())).run()
+    print("__RESULT__:" + json.dumps({{"output_at_events": output_at_events}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the first on_progress event arrived before behave printed its summary')
+def then_first_event_arrived_before_summary(context):
+    output_at_events = context.api_run_result['output_at_events']
+    # behave's summary line, printed once every scenario has run
+    assert output_at_events and 'scenarios passed' not in output_at_events[0], (
+        f'Expected the first event before behave\'s summary, got the output:\n{output_at_events[:1]}'
+    )
+
+
+serial_suites_path = os.path.join(api_runner_features_path, 'serial_suites')
+
+
+@when('I run BehaveXRunner in parallel by {scheme} on the first @SERIAL suite, then on the second, in the same process')
+def when_run_two_serial_suites_in_one_process(context, scheme):
+    run_mode = _RUN_MODES[f'in parallel by {scheme}']
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+
+if __name__ == '__main__':
+    BehaveXRunner(paths=[{os.path.join(serial_suites_path, 'first')!r}], no_report=True, **{run_mode!r}).run()
+    result = BehaveXRunner(paths=[{os.path.join(serial_suites_path, 'second')!r}], no_report=True,
+                           **{run_mode!r}).run()
+    print("__RESULT__:" + json.dumps({{"statuses": {{s.name: s.status for f in result.features
+                                                    for s in f.scenarios}}}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+_SERIAL_STOP_RACES = {
+    # stop() lands between the serial loop's stop check and its submission
+    'stop() comes right after the stop check': """
+_check_stop_requested = runner._mark_run_stopped_if_requested
+
+def _check_then_stop():
+    stop_was_requested = _check_stop_requested()
+    if not stop_was_requested:
+        behavex_runner.stop()
+    return stop_was_requested
+
+runner._mark_run_stopped_if_requested = _check_then_stop
+""",
+    # stop()'s cancel_futures cancels the queued work before a worker picks it up
+    'the submitted @SERIAL work is cancelled before it starts': """
+from concurrent.futures import Future
+
+def _submit_cancelled(*args, **kwargs):
+    cancelled_future = Future()
+    cancelled_future.cancel()
+    return cancelled_future
+
+runner._submit_unless_stopped = _submit_cancelled
+""",
+}
+
+
+@when('I run BehaveXRunner in parallel by {scheme} on the second @SERIAL suite, and {race}')
+def when_stop_races_serial_work(context, scheme, race):
+    run_mode = _RUN_MODES[f'in parallel by {scheme}']
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner, runner
+{_CAPTURE_RAISED}
+if __name__ == '__main__':
+    behavex_runner = BehaveXRunner(paths=[{os.path.join(serial_suites_path, 'second')!r}], no_report=True, **{run_mode!r})
+{textwrap.indent(_SERIAL_STOP_RACES[race], '    ')}
+    results = []
+    raised = _capture_raised(lambda: results.append(behavex_runner.run()))
+    print("__RESULT__:" + json.dumps({{"raised": raised, "stopped": results[0].stopped if results else None}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the run raised no exception and the RunResult stopped is "{stopped}"')
+def then_no_exception_and_stopped(context, stopped):
+    result = context.api_run_result
+    assert result['raised'] is None and result['stopped'] == (stopped == 'True'), (
+        f'Expected no exception and stopped={stopped}, got {result}.\nOutput:\n{context.api_run_output}'
+    )
+
+
+@when('I run BehaveXRunner in a single process on a step that runs a subprocess writing to sys.stdout')
+def when_run_step_writing_to_stdout_descriptor(context):
+    _run_via_api(context, os.path.join(api_runner_features_path, 'stdout_file_descriptor'))
+
+
+_CTRL_C_TARGETS = {
+    'the whole process group, as a terminal does': 'os.killpg(os.getpgid(0), signal.SIGINT)',
+    'the host process alone, as Jupyter does': 'os.kill(os.getpid(), signal.SIGINT)',
+}
+
+
+@when('I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to {target} once the first one finishes')
+def when_run_and_send_ctrl_c(context, target):
+    script = f"""
+import json, os, signal, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+pressed = []
+
+def _press_ctrl_c_once(event):
+    if not pressed:
+        pressed.append(True)
+        {_CTRL_C_TARGETS[target]}
+
+if __name__ == '__main__':
+    # Python leaves Ctrl+C ignored when its parent ignored it, as the suite's runner may
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+    results = []
+    raised = _capture_raised(lambda: results.append(BehaveXRunner(
+        paths=[{os.path.join(api_runner_features_path, 'slow_scenarios')!r}], no_report=True,
+        on_progress=_press_ctrl_c_once).run()))
+    statuses = {{s.name: s.status for f in results[0].features for s in f.scenarios}} if results else {{}}
+    print("__RESULT__:" + json.dumps({{"raised": raised, "statuses": statuses}}))
+"""
+    # A process group of its own, so the Ctrl+C reaches only this run
+    proc = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, cwd=root_project_path,
+                          env=_clean_child_env(), timeout=120, start_new_session=True)
+    _store_result(context, proc)
+
+
+@then('the run raised no exception and the first scenario passed while the others did not run')
+def then_partial_results_after_ctrl_c(context):
+    result = context.api_run_result
+    statuses = result['statuses']
+    assert result['raised'] is None and statuses.get('Slow scenario 01') == 'passed' and statuses.get(
+        'Slow scenario 03') not in (None, 'passed'), f'Got {result}.\nOutput:\n{context.api_run_output}'
+
+
+@when('I run BehaveXRunner {mode} on a @SERIAL scenario that kills its worker')
+def when_run_with_crashing_worker(context, mode):
+    script = f"""
+import json, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+if __name__ == '__main__':
+    results = []
+    raised = _capture_raised(lambda: results.append(BehaveXRunner(
+        paths=[{os.path.join(api_runner_features_path, 'crashing_worker')!r}], no_report=True,
+        **{_RUN_MODES[mode]!r}).run()))
+    print("__RESULT__:" + json.dumps({{"raised": raised, "exit_code": results[0].exit_code if results else None,
+                                      "stopped": results[0].stopped if results else None}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the run raised no exception, the RunResult exit_code is "{exit_code}" and it was not stopped')
+def then_no_exception_exit_code_not_stopped(context, exit_code):
+    result = context.api_run_result
+    assert result['raised'] is None and result['exit_code'] == int(exit_code) and result['stopped'] is False, (
+        f'Expected no exception, exit_code {exit_code} and not stopped, got {result}.\n'
+        f'Output:\n{context.api_run_output}'
     )

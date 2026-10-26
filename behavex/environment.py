@@ -399,13 +399,13 @@ def after_scenario(context, scenario):
 def _fire_scenario_progress(scenario):
     try:
         from behavex import runner as _runner
-        if _runner._progress_callback is None or _runner._is_parallel_run:
+        if (_runner._progress_callback is None and _runner._host_queue is None) or _runner._is_parallel_run:
             return
         # behave runs no hook for a scenario it skips, which the report drops when a filter excludes it
         if not getattr(scenario, 'bhx_hooks_ran', False) or not match_for_execution(get_scenario_tags(scenario)):
             return
-        _runner._progress_reported.add((scenario.feature.filename, scenario.line))
-        _runner._fire_progress(
+        _runner._report_scenario_progress(
+            (scenario.feature.filename, scenario.line),
             scenario_name=scenario.name,
             feature_name=scenario.feature.name,
             status=status_with_hook_errors_as_error(scenario.status.name),

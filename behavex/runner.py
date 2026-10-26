@@ -31,7 +31,7 @@ import threading
 import time
 import traceback
 import uuid
-from concurrent.futures import CancelledError, ProcessPoolExecutor
+from concurrent.futures import CancelledError, Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
@@ -103,6 +103,7 @@ _run_active: bool = False
 _stop_requested: bool = False
 _stopped: bool = False
 _run_id: Optional[str] = None
+_host_queue = None
 _features_path_before_first_run: Optional[str] = None
 
 
@@ -143,6 +144,15 @@ def _fire_report_progress(json_report, already_reported=frozenset()) -> None:
                 )
     except Exception:
         pass
+
+
+def _report_scenario_progress(scenario_key, **progress_fields) -> None:
+    """Fire on_progress for a finished scenario; a single-process worker hands it to the host process."""
+    if _host_queue is not None:
+        _host_queue.put(('progress', (scenario_key, progress_fields)))
+        return
+    _progress_reported.add(scenario_key)
+    _fire_progress(**progress_fields)
 
 
 def _mark_run_stopped_if_requested() -> bool:
@@ -478,15 +488,21 @@ def launch_behavex():
             if get_param('dry_run'):
                 print('Obtaining information about the reporting scope...')
             if len(all_paths) > 0:
-                execution_codes, json_reports = execute_tests(features_path=all_paths,
-                                                                feature_filename=None,
-                                                                feature_json_skeleton=None,
-                                                                scenarios_to_run_in_feature=None,
-                                                                scenario_line=None,
-                                                                multiprocess=False,
-                                                                config=config,
-                                                                lock=None,
-                                                                shared_removed_scenarios=None)
+                execute_tests_kwargs = dict(features_path=all_paths,
+                                            feature_filename=None,
+                                            feature_json_skeleton=None,
+                                            scenarios_to_run_in_feature=None,
+                                            scenario_line=None,
+                                            multiprocess=False,
+                                            config=config,
+                                            lock=None,
+                                            shared_removed_scenarios=None)
+                if _run_active:
+                    # behave keeps step definitions in a process-wide registry, so a BehaveXRunner
+                    # host's next run would see this run's steps if behave ran in the host process
+                    execution_codes, json_reports = _execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager)
+                else:
+                    execution_codes, json_reports = execute_tests(**execute_tests_kwargs)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
                 print_summary = not get_param('dry_run')
@@ -787,8 +803,11 @@ def _submit_unless_stopped(process_pool, fn, **kwargs):
         return None
     try:
         return process_pool.submit(fn, **kwargs)
-    except BrokenProcessPool:
-        raise
+    except BrokenProcessPool as error:
+        # A worker died: the work fails as a running future does when its worker dies
+        failed_future = Future()
+        failed_future.set_exception(error)
+        return failed_future
     except RuntimeError:
         _stopped = True
         return None
@@ -854,7 +873,7 @@ def launch_by_feature(features,
         for serial_feature in serial_features:
             if _mark_run_stopped_if_requested():
                 break
-            execution_code, map_json = execute_tests(features_path=None,
+            serial_result = _execute_serial_tests(features_path=None,
                                                      feature_filename=serial_feature["feature_filename"],
                                                      feature_json_skeleton=serial_feature["feature_json_skeleton"],
                                                      scenarios_to_run_in_feature=None,
@@ -863,6 +882,9 @@ def launch_by_feature(features,
                                                      config=ConfigRun(),
                                                      lock=None,
                                                      shared_removed_scenarios=None)
+            if serial_result is None:
+                break
+            execution_code, map_json = serial_result
             json_reports += [map_json]
             execution_codes.append(execution_code)
             _fire_report_progress(map_json)
@@ -1011,7 +1033,7 @@ def launch_by_scenario(features,
             if _mark_run_stopped_if_requested():
                 break
             scenarios_to_run_in_feature = total_scenarios_to_run[scen_info["feature_filename"]]
-            execution_code, json_report = execute_tests(features_path=scen_info["features_path"],
+            serial_result = _execute_serial_tests(features_path=scen_info["features_path"],
                                                         feature_filename=scen_info["feature_filename"],
                                                         feature_json_skeleton=scen_info["feature_json_skeleton"],
                                                         scenarios_to_run_in_feature=scenarios_to_run_in_feature,
@@ -1020,6 +1042,9 @@ def launch_by_scenario(features,
                                                         config=ConfigRun(),
                                                         lock=None,
                                                         shared_removed_scenarios=shared_removed_scenarios)
+            if serial_result is None:
+                break
+            execution_code, json_report = serial_result
             execution_codes.append(execution_code)
             json_reports.append(json_report)
             _fire_report_progress(json_report)
@@ -1082,6 +1107,108 @@ def launch_by_scenario(features,
     return execution_codes, json_reports
 
 
+def _execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager):
+    """Run execute_tests in the run's worker; its output and on_progress events reach this process live."""
+    host_queue = manager.Queue()
+    worker_messages_forwarder = threading.Thread(target=_forward_worker_messages, args=(host_queue,), daemon=True)
+    worker_messages_forwarder.start()
+    try:
+        worker_future = _active_executor.submit(execute_tests, host_queue=host_queue, **execute_tests_kwargs)
+        try:
+            return worker_future.result()
+        except KeyboardInterrupt:
+            # behave stops with the scenarios that ran once the worker gets it; a second Ctrl+C aborts
+            _interrupt_worker_processes()
+            return worker_future.result()
+    except BrokenProcessPool as error:
+        return _crashed_worker_result(error)
+    finally:
+        host_queue.put(None)
+        worker_messages_forwarder.join()
+
+
+def _execute_serial_tests(**execute_tests_kwargs):
+    """Run in the run's worker when a BehaveXRunner host started the run, keeping behave's steps out of the host.
+
+    Returns None when BehaveXRunner.stop() kept the work from starting.
+    """
+    global _stopped
+    if not _run_active:
+        return execute_tests(**execute_tests_kwargs)
+    try:
+        future = _submit_unless_stopped(_active_executor, execute_tests, **execute_tests_kwargs)
+        if future is None:
+            return None
+        return future.result()
+    except CancelledError:
+        _stopped = True
+        return None
+    except BrokenProcessPool as error:
+        return _crashed_worker_result(error)
+
+
+def _crashed_worker_result(error):
+    """The execution code and empty report a parallel run records for a worker that died."""
+    print_parallel('process.pool.broken.main', str(error))
+    return 2, {'environment': [], 'features': [], 'steps_definition': []}
+
+
+def _interrupt_worker_processes():
+    """Send SIGINT to the run's workers, which an interrupt of this process alone (as Jupyter's) misses."""
+    if os.name != 'posix':
+        # os.kill would terminate the worker on Windows, where a console Ctrl+C reaches it anyway
+        return
+    for worker_process in active_children():
+        os.kill(worker_process.pid, signal.SIGINT)
+
+
+def _stop_behave_on_first_ctrl_c(signum, frame):
+    # A terminal's Ctrl+C reaches the worker twice: from the console and from the host
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    raise KeyboardInterrupt
+
+
+def _forward_worker_messages(host_queue):
+    for message_kind, payload in iter(host_queue.get, None):
+        if message_kind == 'output':
+            # The host may have redirected sys.stdout, as an MCP stdio server does
+            sys.stdout.write(payload)
+            sys.stdout.flush()
+        elif message_kind == 'progress':
+            scenario_key, progress_fields = payload
+            _report_scenario_progress(scenario_key, **progress_fields)
+
+
+class _StdoutToHostQueue(io.TextIOBase):
+    """Sends each complete line written to it to the host process through host_queue."""
+    encoding = 'utf-8'
+
+    def __init__(self, host_queue, original_stdout):
+        super().__init__()
+        self._host_queue = host_queue
+        self._original_stdout = original_stdout
+        self._pending_text = ''
+
+    def writable(self):
+        return True
+
+    def fileno(self):
+        # Output written to the descriptor, such as a subprocess's, bypasses the host as in parallel runs
+        return self._original_stdout.fileno()
+
+    def write(self, text):
+        self._pending_text += text
+        if '\n' in text:
+            complete_lines, _, self._pending_text = self._pending_text.rpartition('\n')
+            self._host_queue.put(('output', complete_lines + '\n'))
+        return len(text)
+
+    def flush(self):
+        if self._pending_text:
+            self._host_queue.put(('output', self._pending_text))
+            self._pending_text = ''
+
+
 def execute_tests(
         features_path,
         feature_filename,
@@ -1091,7 +1218,8 @@ def execute_tests(
         multiprocess,
         config,
         lock,
-        shared_removed_scenarios):
+        shared_removed_scenarios,
+        host_queue=None):
     """
     Execute tests for the given feature or scenario.
 
@@ -1111,7 +1239,14 @@ def execute_tests(
     """
     try:
         behave_args = None
-        if multiprocess:
+        global _host_queue
+        _host_queue = host_queue
+        stdout_before_host_queue = sys.stdout
+        if host_queue is not None:
+            sys.stdout = _StdoutToHostQueue(host_queue, stdout_before_host_queue)
+            # init_multiprocessing ignores Ctrl+C in workers; behave needs it to stop with the scenarios that ran
+            signal.signal(signal.SIGINT, _stop_behave_on_first_ctrl_c)
+        if multiprocess or host_queue is not None:
             ExecutionSingleton._instances[ConfigRun] = config
         extend_behave_hooks()
         try:
@@ -1173,6 +1308,10 @@ def execute_tests(
     except Exception as e:
         logging.error(f"Exception in execute_tests: {e}")
         raise
+    finally:
+        if host_queue is not None:
+            sys.stdout.flush()
+            sys.stdout = stdout_before_host_queue
 
 
 def filter_feature_executed(json_output, filename, scenario_line):

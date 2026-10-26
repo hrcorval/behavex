@@ -478,6 +478,7 @@ Feature: BehaveXRunner Python API
       | the config tags_to_skip     |
       | a rerun_failures file       |
       | exclude                     |
+      | include                     |
 
   @API_RUNNER_064
   Scenario Outline: <call> writes nothing to stdout and leaves <folder> untouched
@@ -578,3 +579,66 @@ Feature: BehaveXRunner Python API
       | problem                     | reason                                                  |
       | step module fails to import | No module named 'a_module_that_does_not_exist'          |
       | folder has no steps folder  | Could not find the step definitions: No steps directory |
+
+  @API_RUNNER_077
+  Scenario Outline: a run <mode> does not see the step definitions of an earlier run in the same process
+    When I run BehaveXRunner <mode> on the undefined steps features, then on the top feature, in the same process
+    Then the scenario "Uses a step only the undefined steps features define" ended with behave's error status in the second run
+    Examples:
+      | mode                   |
+      | in a single process    |
+      | in parallel by feature |
+
+  @API_RUNNER_078
+  Scenario: a single-process run writes behave's output through the host's sys.stdout
+    When I run BehaveXRunner in a single process on passing tests with sys.stdout redirected
+    Then the redirected sys.stdout received behave's summary and the process stdout did not
+
+  @API_RUNNER_079
+  Scenario: a single-process run delivers each on_progress event as its scenario finishes
+    When I run BehaveXRunner in a single process on passing tests, noting the output that had arrived at each on_progress event
+    Then the first on_progress event arrived before behave printed its summary
+
+  @API_RUNNER_080
+  Scenario Outline: a parallel run <scheme> runs @SERIAL work without the step definitions of an earlier @SERIAL run in the same process
+    When I run BehaveXRunner in parallel by <scheme> on the first @SERIAL suite, then on the second, in the same process
+    Then the scenario "Uses a step only the first serial suite defines" ended with behave's error status in the second run
+    Examples:
+      | scheme   |
+      | feature  |
+      | scenario |
+
+  @API_RUNNER_081
+  Scenario Outline: stop() racing the @SERIAL work of a parallel run by <scheme> returns the results gathered so far, when <race>
+    When I run BehaveXRunner in parallel by <scheme> on the second @SERIAL suite, and <race>
+    Then the run raised no exception and the RunResult stopped is "True"
+    Examples:
+      | scheme   | race                                                    |
+      | feature  | stop() comes right after the stop check                 |
+      | feature  | the submitted @SERIAL work is cancelled before it starts |
+      | scenario | stop() comes right after the stop check                 |
+      | scenario | the submitted @SERIAL work is cancelled before it starts |
+
+  @API_RUNNER_082
+  Scenario: a single-process run lets a step write to sys.stdout's file descriptor
+    When I run BehaveXRunner in a single process on a step that runs a subprocess writing to sys.stdout
+    Then the RunResult exit_code should be "0"
+
+  @API_RUNNER_083
+  Scenario Outline: a Ctrl+C sent to <target> during a single-process run returns the scenarios that ran before it
+    When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to <target> once the first one finishes
+    Then the run raised no exception and the first scenario passed while the others did not run
+    Examples:
+      | target                                      |
+      | the whole process group, as a terminal does |
+      | the host process alone, as Jupyter does     |
+
+  @API_RUNNER_084
+  Scenario Outline: a worker that dies <mode> ends the run with exit_code 1 instead of raising
+    When I run BehaveXRunner <mode> on a @SERIAL scenario that kills its worker
+    Then the run raised no exception, the RunResult exit_code is "1" and it was not stopped
+    Examples:
+      | mode                    |
+      | in a single process     |
+      | in parallel by feature  |
+      | in parallel by scenario |

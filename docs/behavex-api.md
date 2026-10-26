@@ -17,20 +17,23 @@ The base `pip install behavex` is unaffected — Pydantic is never installed unl
 ```python
 from behavex import BehaveXRunner
 
-result = BehaveXRunner(
-    paths=["tests/features"],
-    tags=["@smoke"],
-    parallel_processes=4,
-    output_folder="output",
-).run()
+if __name__ == "__main__":
+    result = BehaveXRunner(
+        paths=["tests/features"],
+        tags=["@smoke"],
+        parallel_processes=4,
+        output_folder="output",
+    ).run()
 
-if result.passed:
-    print(f"All tests passed ({result.summary.passed} scenarios)")
-else:
-    for scenario in result.failed_scenarios:
-        print(f"FAILED: {scenario.name}")
-        print(f"  Error: {scenario.error_msg}")
+    if result.passed:
+        print(f"All tests passed ({result.summary.passed} scenarios)")
+    else:
+        for scenario in result.failed_scenarios:
+            print(f"FAILED: {scenario.name}")
+            print(f"  Error: {scenario.error_msg}")
 ```
+
+`.run()` and `.discover(check_steps=True)` start worker processes, so a script that calls them needs the `if __name__ == "__main__":` guard: for `.run()` on platforms that spawn processes (Windows, macOS), for `.discover(check_steps=True)` on every platform. The snippets below leave it out.
 
 ## `BehaveXRunner`
 
@@ -74,6 +77,8 @@ Executes the test run synchronously and returns a `RunResult`. Each call generat
 An invalid argument, such as an unknown `parallel_scheme` or `logging_level`, raises `ValueError` with the argument parser's message instead of exiting the process. A path that does not exist, or a glob that matches no file, raises `ValueError` whose message names it. A run BehaveX refuses to start for another reason (such as duplicated scenarios) also raises `ValueError`; BehaveX prints the reason first. An `output_folder` that is, or contains, the current directory or one of the `paths` raises `ValueError` before anything is deleted. Values that start with `-`, such as a tag or one of the `paths`, are passed as values, not read as options.
 
 Run one `BehaveXRunner` at a time per process: the run state is module-level, so a `.run()` called while another one is active in the same process (from another thread or from `on_progress`) raises `RuntimeError`.
+
+behave itself always runs in a worker process, never in the calling one, also when `parallel_processes` is 1: behave keeps step definitions in a process-wide registry, so a later run of another suite in the same process would otherwise see this run's steps. Consecutive runs of different suites are therefore isolated. A single-process run's console output and its `on_progress` events reach the calling process live, the output through its `sys.stdout`, so a `contextlib.redirect_stdout()` captures it. Since the worker is a separate process, it does not see objects the caller set up in memory (environment variables do reach it), and on platforms that spawn processes (Windows, macOS) a script that calls `.run()` needs an `if __name__ == "__main__":` guard. A Ctrl+C during a single-process run stops behave as it would from the CLI, and `.run()` returns the scenarios that ran. A worker process that dies, for example in a step that calls `os._exit()`, ends the run with `exit_code` 1 instead of raising.
 
 ```python
 runner = BehaveXRunner(paths=["tests/features"], no_report=True)
