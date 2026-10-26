@@ -89,7 +89,7 @@ result2 = runner.run()  # run_id: "e5f6g7h8-..." (always unique)
 
 ### `.discover(check_steps=False)` → `list[DiscoveredScenario]`
 
-Lists the scenarios a `.run()` with the same constructor arguments would report, applying the same paths, `include_paths`, tags (including the config's `tags_to_skip`), `name`, `include`, `exclude` and `rerun_failures` filters. Scenario Outline examples are listed one by one, as a run reports them. `@MANUAL` and `@WIP` scenarios are listed too: a run reports them as manual without executing them. A parallel run with `parallel_scheme="scenario"` also reports the scenarios that `exclude` skips, as untested; `.discover()` leaves them out.
+Lists the scenarios a `.run()` with the same constructor arguments would report, applying the same paths, `include_paths`, tags (including the config's `tags_to_skip`), `name`, `include`, `exclude` and `rerun_failures` filters. Scenario Outline examples are listed one by one, as a run reports them. `@MANUAL` and `@WIP` scenarios are listed too: a run reports them as manual without executing them.
 
 Nothing is executed and nothing is written: no hooks run, the output folder is neither created nor cleaned, and nothing is printed to `sys.stdout`, so it is safe to call from a process whose stdout carries a protocol (such as an MCP stdio server). Step definitions are not loaded unless `check_steps=True`.
 

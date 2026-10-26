@@ -231,10 +231,7 @@ def discover(args, check_steps=False):
         return None
     set_behave_tags(write_tags_file=False)
     features = _explore_scenarios(os.environ['FEATURES_PATH'])
-    # BehaveX leaves --exclude to behave, which skips those feature files
-    exclude = get_param('exclude')
-    scenarios = [scenario for _, scenario, _ in _select_scenarios(features)
-                 if not (exclude and re.search(exclude, scenario.filename))]
+    scenarios = [scenario for _, scenario, _ in _select_scenarios(features)]
     if not check_steps:
         return [(scenario, []) for scenario in scenarios]
     return list(zip(scenarios, _find_undefined_step_texts(features, scenarios)))

@@ -51,3 +51,17 @@ Feature: Parallel executions
     | parallel_processes |
     | 2                  |
     | 3                  |
+
+
+  @PARALLEL
+  Scenario Outline: A feature that --exclude matches is not reported when running in parallel by <parallel_scheme>
+    When I run the behavex command on "secondary_features" with arguments "--include=(passing|untested)_tests --exclude=untested --parallel-processes 2 --parallel-scheme <parallel_scheme>"
+    Then I should see the following behavex console outputs and exit code "0"
+    | output_line                                 |
+    | 1 feature passed, 0 failed, 0 skipped       |
+    | 5 scenarios passed, 0 failed, 0 skipped     |
+    And I should not see "untested" in the console output
+    Examples:
+      | parallel_scheme |
+      | scenario        |
+      | feature         |

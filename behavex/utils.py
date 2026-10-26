@@ -241,6 +241,10 @@ def should_feature_be_run(path_feature):
                 tags_list.append(scenario_tags)
     match_tag = any(match_for_execution(tags) for tags in tags_list)
     filename = feature.filename
+    # As behave's --exclude: a regex searched in the feature file path
+    exclude = get_param('exclude')
+    if exclude and re.search(exclude, filename):
+        return False
     if match_tag and MatchInclude()(filename) and match_any_paths(feature) and match_any_name(feature):
         return feature
     else:

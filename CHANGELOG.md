@@ -27,6 +27,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **An `@AUTORETRY` scenario retried after an error was not marked as retried** — With behave 1.3.x, a scenario retried because a step raised a non-assertion exception or a hook failed is now marked as retried in the HTML and JSON reports. A scenario is marked only when it actually ran again.
 - **A `--name` pattern starting with `-` stopped the run** — A pattern such as `--name=-x|login` was passed on to behave as a separate argument, so behave read it as an option and exited with `argument -n/--name: expected one argument`. The pattern now reaches behave as given.
 - **`exclude` in the configuration file was ignored** — An `exclude` pattern set under `[params]` in the configuration file did not exclude any feature file; only the `--exclude` command-line option did. The configuration file value now applies when the option is not given.
+- **`--exclude` features were reported as untested with `--parallel-scheme scenario`** — A parallel run by scenario still queued the scenarios of a feature file that `--exclude` matched; behave skipped them, and the summary and reports counted them as untested. They are now left out of the run, as with `--parallel-scheme feature`.
 
 ---
 
