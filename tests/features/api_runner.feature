@@ -679,3 +679,10 @@ Feature: BehaveXRunner Python API
       | mode                    |
       | in a single process     |
       | in parallel by scenario |
+
+  @API_RUNNER_089
+  Scenario: stop() on a BehaveXRunner that is not running leaves another instance's run going
+    When I run BehaveXRunner on "twelve_scenarios.feature" with "2" parallel processes, "scenario" scheme, and call stop() on another, idle BehaveXRunner on progress event "1"
+    Then the RunResult exit_code should be "0"
+    And the RunResult stopped should be "False"
+    And the RunResult summary total is "12"

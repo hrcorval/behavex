@@ -26,6 +26,7 @@ except ImportError:
 
 
 _run_lock = threading.Lock()
+_running_instance: Optional["BehaveXRunner"] = None
 
 
 @contextlib.contextmanager
@@ -123,6 +124,8 @@ class BehaveXRunner:
         runner._stop_requested = False
         runner._stopped = False
         runner._run_active = True
+        global _running_instance
+        _running_instance = self
         try:
             exit_code = runner.run(args)
         except SystemExit as exit_signal:
@@ -134,6 +137,7 @@ class BehaveXRunner:
         finally:
             runner._progress_callback = None
             runner._run_active = False
+            _running_instance = None
         return RunResult(run_id=runner._run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
                          features=_to_feature_results(runner._last_run_results), stopped=runner._stopped)
 
@@ -163,11 +167,11 @@ class BehaveXRunner:
                 for scenario, undefined_steps in scenarios]
 
     def stop(self) -> None:
-        """Stop a parallel run from submitting more scenarios and cancel the queued ones.
+        """Stop this runner's parallel run from submitting more scenarios and cancel the queued ones.
 
         Running ones finish, and on Python 3.8 so do queued ones. No effect on single-process runs.
         """
-        if not runner._run_active:
+        if _running_instance is not self:
             return
         runner._stop_requested = True
         executor = runner._active_executor

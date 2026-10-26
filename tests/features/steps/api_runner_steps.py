@@ -880,6 +880,16 @@ def then_no_exception(context):
 
 @when('I run BehaveXRunner on "{fixture}" with "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and call stop() on progress event "{event_number}"')
 def when_run_parallel_stopping_on_event(context, fixture, parallel_processes, parallel_scheme, event_number):
+    _run_parallel_stopping_on_event(context, fixture, parallel_processes, parallel_scheme, event_number, 'runner')
+
+
+@when('I run BehaveXRunner on "{fixture}" with "{parallel_processes}" parallel processes, "{parallel_scheme}" scheme, and call stop() on another, idle BehaveXRunner on progress event "{event_number}"')
+def when_run_parallel_stopping_idle_runner_on_event(context, fixture, parallel_processes, parallel_scheme, event_number):
+    _run_parallel_stopping_on_event(context, fixture, parallel_processes, parallel_scheme, event_number, 'idle_runner')
+
+
+def _run_parallel_stopping_on_event(context, fixture, parallel_processes, parallel_scheme, event_number,
+                                    stopped_runner_name):
     feature_path = os.path.join(api_runner_features_path, fixture)
     script = f"""
 import json, sys
@@ -891,8 +901,9 @@ _record = _on_progress
 def _on_progress(event):
     _record(event)
     if len(_events) == {int(event_number)}:
-        runner.stop()
+        {stopped_runner_name}.stop()
 
+idle_runner = BehaveXRunner(paths=[{repr(feature_path)}])
 runner = BehaveXRunner(
     paths=[{repr(feature_path)}],
     no_report=True,
