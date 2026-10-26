@@ -1160,7 +1160,8 @@ def _interrupt_worker_processes():
     if os.name != 'posix':
         # os.kill would terminate the worker on Windows, where a console Ctrl+C reaches it anyway
         return
-    for worker_process in active_children():
+    # The executor's own processes: active_children() also lists the host application's
+    for worker_process in list(_active_executor._processes.values()):
         os.kill(worker_process.pid, signal.SIGINT)
 
 

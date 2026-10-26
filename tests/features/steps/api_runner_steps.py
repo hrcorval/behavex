@@ -2123,7 +2123,7 @@ _CTRL_C_TARGETS = {
 @when('I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to {target} once the first one finishes')
 def when_run_and_send_ctrl_c(context, target):
     script = f"""
-import json, os, signal, sys
+import json, multiprocessing, os, signal, sys, time
 sys.path.insert(0, {repr(root_project_path)})
 from behavex import BehaveXRunner
 {_CAPTURE_RAISED}
@@ -2137,12 +2137,16 @@ def _press_ctrl_c_once(event):
 if __name__ == '__main__':
     # Python leaves Ctrl+C ignored when its parent ignored it, as the suite's runner may
     signal.signal(signal.SIGINT, signal.default_int_handler)
+    host_child = multiprocessing.Process(target=time.sleep, args=(120,))
+    host_child.start()
     results = []
     raised = _capture_raised(lambda: results.append(BehaveXRunner(
         paths=[{os.path.join(api_runner_features_path, 'slow_scenarios')!r}], no_report=True,
         on_progress=_press_ctrl_c_once).run()))
+    host_child_alive = host_child.is_alive()
+    host_child.terminate()
     statuses = {{s.name: s.status for f in results[0].features for s in f.scenarios}} if results else {{}}
-    print("__RESULT__:" + json.dumps({{"raised": raised, "statuses": statuses}}))
+    print("__RESULT__:" + json.dumps({{"raised": raised, "statuses": statuses, "host_child_alive": host_child_alive}}))
 """
     # A process group of its own, so the Ctrl+C reaches only this run
     proc = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, cwd=root_project_path,
@@ -2156,6 +2160,13 @@ def then_partial_results_after_ctrl_c(context):
     statuses = result['statuses']
     assert result['raised'] is None and statuses.get('Slow scenario 01') == 'passed' and statuses.get(
         'Slow scenario 03') not in (None, 'passed'), f'Got {result}.\nOutput:\n{context.api_run_output}'
+
+
+@then('a multiprocessing child the host started itself is still running')
+def then_host_child_still_running(context):
+    assert context.api_run_result['host_child_alive'] is True, (
+        f'Got {context.api_run_result}.\nOutput:\n{context.api_run_output}'
+    )
 
 
 @when('I run BehaveXRunner {mode} on a @SERIAL scenario that kills its worker')

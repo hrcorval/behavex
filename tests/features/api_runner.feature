@@ -650,3 +650,9 @@ Feature: BehaveXRunner Python API
       | in a single process     |
       | in parallel by feature  |
       | in parallel by scenario |
+
+  @API_RUNNER_085
+  Scenario: a Ctrl+C sent to the host process alone interrupts only the run's own worker
+    When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C to the host process alone, as Jupyter does once the first one finishes
+    Then the run raised no exception and the first scenario passed while the others did not run
+    And a multiprocessing child the host started itself is still running
