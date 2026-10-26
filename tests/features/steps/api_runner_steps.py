@@ -1602,9 +1602,14 @@ def _discovery_filter_kwargs(context, filter_name):
             failures.write('{0}:3,{0}:22'.format(discovery_feature))
         return {'rerun_failures': failures_file}
     kwargs = {'paths': [discovery_features_path]}
-    if filter_name == 'the config tags_to_skip':
+    config_file_filters = {
+        'the config tags_to_skip': '[test_run]\ntags_to_skip=SKIP\n',
+        'the config exclude': '[params]\nexclude=other\n',
+        'the config include': '[params]\ninclude=other\n',
+    }
+    if filter_name in config_file_filters:
         kwargs['config'] = _write_config_file(_make_config_dir(context), 'behavex.cfg',
-                                              '[test_run]\ntags_to_skip=SKIP\n')
+                                              config_file_filters[filter_name])
     else:
         kwargs.update({
             'nothing': {},

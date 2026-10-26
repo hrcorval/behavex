@@ -2008,6 +2008,10 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
             for name in get_name_filters():
                 arguments.append('--name={}'.format(name))
             continue
+        if arg == 'exclude':
+            if get_param('exclude'):
+                arguments.append('--exclude={}'.format(get_param('exclude')))
+            continue
         if value_arg and arg not in BEHAVEX_ARGS and arg != 'define':
             arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):

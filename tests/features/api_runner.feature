@@ -487,6 +487,8 @@ Feature: BehaveXRunner Python API
       | a rerun_failures file       |
       | exclude                     |
       | include                     |
+      | the config exclude          |
+      | the config include          |
 
   @API_RUNNER_064
   Scenario Outline: <call> writes nothing to stdout and leaves <folder> untouched
