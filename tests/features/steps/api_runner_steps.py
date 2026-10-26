@@ -2237,3 +2237,34 @@ def then_no_exception_exit_code_not_stopped(context, exit_code):
         f'Expected no exception, exit_code {exit_code} and not stopped, got {result}.\n'
         f'Output:\n{context.api_run_output}'
     )
+
+
+@when('I run BehaveXRunner {mode} after the host application configured its own logging')
+def when_run_after_host_configured_logging(context, mode):
+    script = f"""
+import io, json, logging, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import BehaveXRunner
+{_CAPTURE_RAISED}
+if __name__ == '__main__':
+    host_log = io.StringIO()
+    host_handler = logging.StreamHandler(host_log)
+    logging.getLogger().addHandler(host_handler)
+    host_logger = logging.getLogger('host_application')
+    host_logger.setLevel(logging.INFO)
+    raised = _capture_raised(lambda: BehaveXRunner(
+        paths=[{os.path.join(secondary_features_path, 'passing_tests.feature')!r}], no_report=True,
+        **{_RUN_MODES[mode]!r}).run())
+    host_logger.info('logged after the run')
+    print("__RESULT__:" + json.dumps({{"raised": raised, "root_handlers_kept": logging.getLogger().handlers == [host_handler],
+                                      "host_log": host_log.getvalue()}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the run raised no exception and the host application\'s logging still works as it configured it')
+def then_host_logging_untouched(context):
+    result = context.api_run_result
+    assert result['raised'] is None and result['root_handlers_kept'] and 'logged after the run' in result['host_log'], (
+        f'Got {result}.\nOutput:\n{context.api_run_output}'
+    )

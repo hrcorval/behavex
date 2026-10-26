@@ -215,7 +215,11 @@ def run(args):
     else:
         cleanup_folders()
         copy_bootstrap_html_generator()
-    configure_logging(args_parsed)
+    if _run_active:
+        # A BehaveXRunner host keeps its logging configuration; the workers log per scenario
+        os.makedirs(get_env('logs'), exist_ok=True)
+    else:
+        configure_logging(args_parsed)
     return launch_behavex()
 
 
@@ -1585,16 +1589,17 @@ def remove_temporary_files(parallel_processes, json_reports):
         # Note: stdout file cleanup removed since we no longer generate these files
 
     # Note: stdout file cleanup removed since we no longer generate these files
-    logger = logging.getLogger()
-    logger.propagate = False
-    for handler in logging.root.handlers:
-        logger.removeHandler(handler)
-    for handler in logger.handlers:
-        logger.removeHandler(handler)
-    logging._handlers = []
-    console_log = logging.StreamHandler(sys.stdout)
-    console_log.setLevel(get_logging_level())
-    logger.addHandler(console_log)
+    if not _run_active:
+        logger = logging.getLogger()
+        logger.propagate = False
+        for handler in logging.root.handlers:
+            logger.removeHandler(handler)
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
+        logging._handlers = []
+        console_log = logging.StreamHandler(sys.stdout)
+        console_log.setLevel(get_logging_level())
+        logger.addHandler(console_log)
     # removing any pending temporary files
     if type(json_reports) is not list:
         json_reports = [json_reports]

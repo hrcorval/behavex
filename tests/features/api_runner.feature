@@ -670,3 +670,12 @@ Feature: BehaveXRunner Python API
   Scenario: a Ctrl+C after stop() still terminates the workers of a parallel run
     When I run BehaveXRunner in parallel on slow scenarios, call stop() and send Ctrl+C to the host process once the first one finishes
     Then the run raised no exception and none of its processes is still running
+
+  @API_RUNNER_088
+  Scenario Outline: a run <mode> leaves the host application's logging configuration as it was
+    When I run BehaveXRunner <mode> after the host application configured its own logging
+    Then the run raised no exception and the host application's logging still works as it configured it
+    Examples:
+      | mode                    |
+      | in a single process     |
+      | in parallel by scenario |
