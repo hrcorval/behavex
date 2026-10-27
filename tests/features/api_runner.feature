@@ -634,7 +634,7 @@ Feature: BehaveXRunner Python API
     When I run BehaveXRunner in a single process on a step that runs a subprocess writing to sys.stdout
     Then the RunResult exit_code should be "0"
 
-  @API_RUNNER_083
+  @API_RUNNER_083 @POSIX_SIGNALS
   Scenario Outline: a Ctrl+C sent to <target> during a single-process run returns the scenarios that ran before it
     When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C once to <target> once the first one finishes
     Then the run raised no exception and the first scenario passed while the others did not run
@@ -653,7 +653,7 @@ Feature: BehaveXRunner Python API
       | in parallel by feature  |
       | in parallel by scenario |
 
-  @API_RUNNER_085
+  @API_RUNNER_085 @POSIX_SIGNALS
   Scenario Outline: a Ctrl+C sent <presses> to the host process alone stops only the run's own processes
     When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C <presses> to the host process alone, as Jupyter does once the first one finishes
     Then the run raised no exception and a multiprocessing child the host started itself is still running
@@ -668,7 +668,7 @@ Feature: BehaveXRunner Python API
     Then the RunResult exit_code should be "0"
     And the RunResult summary total is "1"
 
-  @API_RUNNER_087
+  @API_RUNNER_087 @POSIX_SIGNALS
   Scenario: a Ctrl+C after stop() still terminates the workers of a parallel run
     When I run BehaveXRunner in parallel on slow scenarios, call stop() and send Ctrl+C to the host process once the first one finishes
     Then the run raised no exception and none of its processes is still running

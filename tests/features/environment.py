@@ -1,3 +1,5 @@
+import os
+
 
 def before_all(context):
     # Configure behavex-images to always attach images to reports
@@ -11,6 +13,9 @@ def before_all(context):
 
 def before_scenario(context, scenario):
     context.progress_bar = False
+    # os.kill(pid, SIGINT) terminates the process on Windows, so it cannot simulate a Ctrl+C there
+    if os.name == 'nt' and 'POSIX_SIGNALS' in scenario.effective_tags:
+        scenario.skip('Ctrl+C is simulated with POSIX signals')
 
 
 def after_feature(context, feature):
