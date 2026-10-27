@@ -12,6 +12,8 @@ pip install 'behavex[api]'
 
 The base `pip install behavex` is unaffected — Pydantic is never installed unless you explicitly request `[api]`.
 
+The package ships a `py.typed` marker, so mypy and pyright check calls to `BehaveXRunner` and the result models against their annotations.
+
 ## Quick Start
 
 ```python

@@ -6,6 +6,20 @@
 from __future__ import absolute_import
 
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from behavex.api import BehaveXRunner
+    from behavex.models import (
+        BackgroundResult,
+        DiscoveredScenario,
+        FeatureResult,
+        ProgressEvent,
+        RunResult,
+        RunSummary,
+        ScenarioResult,
+        StepResult,
+    )
 
 # Set the framework path
 os.environ['BEHAVEX_PATH'] = os.path.dirname(os.path.realpath(__file__))
