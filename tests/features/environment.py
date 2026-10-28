@@ -13,9 +13,9 @@ def before_all(context):
 
 def before_scenario(context, scenario):
     context.progress_bar = False
-    # os.kill(pid, SIGINT) terminates the process on Windows, so it cannot simulate a Ctrl+C there
-    if os.name == 'nt' and 'POSIX_SIGNALS' in scenario.effective_tags:
-        scenario.skip('Ctrl+C is simulated with POSIX signals')
+    # Windows has no fork start method, and os.kill(pid, SIGINT) terminates the process there
+    if os.name == 'nt' and 'POSIX_ONLY' in scenario.effective_tags:
+        scenario.skip('POSIX only')
 
 
 def after_feature(context, feature):
