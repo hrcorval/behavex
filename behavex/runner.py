@@ -35,7 +35,7 @@ from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 from types import SimpleNamespace
-from typing import Callable, Optional
+from typing import Optional
 
 # Third-party imports
 from behave.configuration import Configuration
@@ -64,6 +64,7 @@ from behavex.outputs.report_utils import (get_overall_status,
                                           pretty_print_time,
                                           text)
 from behavex.progress_bar import ProgressBar
+from behavex.run_state import state
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
@@ -86,78 +87,15 @@ ERROR_OR_UNDEFINED_STATUSES = ('error', 'undefined')
 os.environ.setdefault('EXECUTION_CODE', '1')
 match_include = None
 
-_progress_callback: Optional[Callable] = None
-_completed_count: int = 0
-_progress_total: Optional[int] = None
-_is_parallel_run: bool = False
-_active_executor: Optional[ProcessPoolExecutor] = None
-# The executor's own process dict, which its shutdown() drops while the workers still run
-_active_executor_processes_by_pid: dict = {}
-_last_run_results: list = []
-_progress_reported: set = set()
-_run_active: bool = False
-_stop_requested: bool = False
-_stopped: bool = False
-_run_id: Optional[str] = None
-_host_queue = None
 _main_thread_putting_to_host_queue = False
 _ctrl_c_deferred_until_put_ends = False
 _features_path_before_first_run: Optional[str] = None
 
 
-def _fire_progress(scenario_name: str, feature_name: str, status: str, duration: float) -> None:
-    """Never raises."""
-    global _completed_count
-    if _progress_callback is None:
-        return
-    try:
-        from behavex.models import ProgressEvent
-        _completed_count += 1
-        _progress_callback(ProgressEvent(
-            scenario_name=scenario_name,
-            feature_name=feature_name,
-            status=status,
-            duration=duration,
-            completed_count=_completed_count,
-            total=_progress_total,
-        ))
-    except Exception:
-        pass
-
-
-def _fire_report_progress(json_report, already_reported=frozenset()) -> None:
-    """Never raises. already_reported holds (feature filename, scenario line) keys to skip."""
-    if _progress_callback is None:
-        return
-    try:
-        for feature in json_report.get('features', []):
-            for scenario in feature.get('scenarios', []):
-                if (feature.get('filename'), scenario.get('line')) in already_reported:
-                    continue
-                _fire_progress(
-                    scenario_name=scenario.get('name', ''),
-                    feature_name=feature.get('name', ''),
-                    status=scenario.get('status', ''),
-                    duration=float(scenario.get('duration', 0.0)),
-                )
-    except Exception:
-        pass
-
-
-def _report_scenario_progress(scenario_key, **progress_fields) -> None:
-    """Fire on_progress for a finished scenario; a single-process worker hands it to the host process."""
-    if _host_queue is not None:
-        _host_queue.put(('progress', (scenario_key, progress_fields)))
-        return
-    _progress_reported.add(scenario_key)
-    _fire_progress(**progress_fields)
-
-
 def _mark_run_stopped_if_requested() -> bool:
-    global _stopped
-    if _stop_requested:
-        _stopped = True
-    return _stop_requested
+    if state.stop_requested:
+        state.stopped = True
+    return state.stop_requested
 
 
 include_path_match = None
@@ -200,8 +138,7 @@ def run(args):
     Returns:
         int: Exit code indicating success or failure.
     """
-    global _run_id
-    _run_id = str(uuid.uuid4())
+    state.run_id = str(uuid.uuid4())
     args_parsed = _prepare_run(args)
     if args_parsed is None:
         return EXIT_ERROR
@@ -211,7 +148,7 @@ def run(args):
     else:
         cleanup_folders()
         copy_bootstrap_html_generator()
-    if _run_active:
+    if state.run_active:
         # A BehaveXRunner host keeps its logging configuration; the workers log per scenario
         os.makedirs(get_env('logs'), exist_ok=True)
     else:
@@ -430,13 +367,12 @@ def launch_behavex():
         parallel_processes = get_param('parallel_processes')
         parallel_processes = 1 if parallel_processes <= 1 else parallel_processes
         show_progress_bar = get_param('show_progress_bar')
-    global _is_parallel_run
-    _is_parallel_run = (
+    state.is_parallel_run = (
         True
         if parallel_processes > 1 and not get_param('dry_run')
         else False
     )
-    if _is_parallel_run:
+    if state.is_parallel_run:
         _warn_parallel_incompatible_params()
     set_behave_tags()
     bhx_context = BehaveXContext()
@@ -458,7 +394,7 @@ def launch_behavex():
     scenario = False
     notify_missing_features(features_path)
     updated_features_list = _explore_scenarios(features_path)
-    parallel_scheme = '' if not _is_parallel_run else parallel_scheme
+    parallel_scheme = '' if not state.is_parallel_run else parallel_scheme
     manager = multiprocessing.Manager()
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
@@ -469,21 +405,19 @@ def launch_behavex():
     for i in range(parallel_processes):
         idQueue.put(i)
     parallel_delay = get_param('parallel_delay')
-    global _active_executor
     # A forked worker would inherit a BehaveXRunner host's memory, behave's step registry included
-    _active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
-                                           mp_context=multiprocessing.get_context('spawn') if _run_active else None,
-                                           initializer=init_multiprocessing,
-                                           initargs=(idQueue, parallel_delay))
-    global _active_executor_processes_by_pid
-    _active_executor_processes_by_pid = _active_executor._processes
+    state.active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
+                                                 mp_context=multiprocessing.get_context('spawn') if state.run_active else None,
+                                                 initializer=init_multiprocessing,
+                                                 initargs=(idQueue, parallel_delay))
+    state.active_executor_processes_by_pid = state.active_executor._processes
     global_vars.execution_start_time = time.time()
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
     failures = []  # Initialize before try block to ensure it's always defined
     merged_json = None
     # a single behave process prints its own summary, but none runs when nothing matched
-    print_summary = _is_parallel_run
+    print_summary = state.is_parallel_run
     try:
         config = ConfigRun()
         all_paths = _single_behave_run_paths(features_path, updated_features_list)
@@ -501,7 +435,7 @@ def launch_behavex():
                                             config=config,
                                             lock=None,
                                             shared_removed_scenarios=None)
-                if _run_active:
+                if state.run_active:
                     # behave keeps step definitions in a process-wide registry, so a BehaveXRunner
                     # host's next run would see this run's steps if behave ran in the host process
                     execution_codes, json_reports = _execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager)
@@ -512,17 +446,17 @@ def launch_behavex():
                 print_summary = not get_param('dry_run')
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(updated_features_list,
-                                                            _active_executor,
+                                                            state.active_executor,
                                                             lock,
                                                             shared_removed_scenarios,
                                                             show_progress_bar)
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(updated_features_list,
-                                                            _active_executor,
+                                                            state.active_executor,
                                                             lock,
                                                             show_progress_bar)
-        merged_json = wrap_up_process_pools(_active_executor, json_reports, scenario)
+        merged_json = wrap_up_process_pools(state.active_executor, json_reports, scenario)
 
         if get_param('dry_run'):
             print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
@@ -582,25 +516,24 @@ def launch_behavex():
     except KeyboardInterrupt:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
-            list_processes_to_terminate = _live_run_worker_processes if _run_active else active_children
+            list_processes_to_terminate = _live_run_worker_processes if state.run_active else active_children
             while list_processes_to_terminate():
                 for process in list_processes_to_terminate():
                     process.terminate()  # Forcefully terminate each process
                 time.sleep(1)
-            if _run_active:
+            if state.run_active:
                 manager.shutdown()
-            if _active_executor is not None:
-                _active_executor.shutdown(wait=False)
+            if state.active_executor is not None:
+                state.active_executor.shutdown(wait=False)
         except Exception as e:
             print(f"Error during shutdown: {e}")
         exit_code = EXIT_ERROR
     finally:
-        _active_executor = None
-        global _last_run_results
-        _last_run_results = merged_json.get('features', []) if isinstance(merged_json, dict) else []
-        if not _is_parallel_run:
-            _fire_report_progress({'features': _last_run_results}, _progress_reported)
-        _is_parallel_run = False
+        state.active_executor = None
+        state.last_run_results = merged_json.get('features', []) if isinstance(merged_json, dict) else []
+        if not state.is_parallel_run:
+            state.fire_report_progress({'features': state.last_run_results}, state.progress_reported)
+        state.is_parallel_run = False
         if run_worker_hooks and not _call_bhx_hook('after_all_workers', bhx_context):
             exit_code = EXIT_ERROR
     _write_overall_status('failed' if exit_code == EXIT_ERROR else get_overall_status(merged_json), exit_code)
@@ -767,10 +700,9 @@ def create_scenario_line_references(features):
 
 def _wait_for_futures(futures, execution_codes):
     """Helper function to wait for futures and handle exceptions"""
-    global _stopped
     for future in futures:
         if future.cancelled():
-            _stopped = True
+            state.stopped = True
             continue
         try:
             future.result()
@@ -778,7 +710,7 @@ def _wait_for_futures(futures, execution_codes):
             # Allow KeyboardInterrupt (Ctrl+C) and SystemExit to propagate to top level
             raise
         except CancelledError:
-            _stopped = True
+            state.stopped = True
             continue
         except:
             e = sys.exc_info()[1]
@@ -802,9 +734,8 @@ def _add_report_callback(future, execution_codes, json_reports):
 
 def _submit_unless_stopped(process_pool, fn, **kwargs):
     """Return None once BehaveXRunner.stop() was requested or the pool was shut down."""
-    global _stopped
-    if _stop_requested:
-        _stopped = True
+    if state.stop_requested:
+        state.stopped = True
         return None
     try:
         return process_pool.submit(fn, **kwargs)
@@ -814,7 +745,7 @@ def _submit_unless_stopped(process_pool, fn, **kwargs):
         failed_future.set_exception(error)
         return failed_future
     except RuntimeError:
-        _stopped = True
+        state.stopped = True
         return None
 
 
@@ -892,7 +823,7 @@ def launch_by_feature(features,
             execution_code, map_json = serial_result
             json_reports += [map_json]
             execution_codes.append(execution_code)
-            _fire_report_progress(map_json)
+            state.fire_report_progress(map_json)
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
@@ -1005,11 +936,10 @@ def launch_by_scenario(features,
             if scenario_information in parallel_scenarios:
                 duplicated_scenarios.setdefault(scenario.filename, []).append(scenario.name)
             parallel_scenarios.append(scenario_information)
-    global _progress_total
-    _progress_total = sum(total_scenarios_to_run.values())
+    state.progress_total = sum(total_scenarios_to_run.values())
     if show_progress_bar:
         global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
-                                                                       total_elements=_progress_total)
+                                                                       total_elements=state.progress_total)
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
     if duplicated_scenarios:
@@ -1046,7 +976,7 @@ def launch_by_scenario(features,
             execution_code, json_report = serial_result
             execution_codes.append(execution_code)
             json_reports.append(json_report)
-            _fire_report_progress(json_report)
+            state.fire_report_progress(json_report)
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     if parallel_scenarios:
@@ -1109,7 +1039,7 @@ def _execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager):
     worker_messages_forwarder = threading.Thread(target=_forward_worker_messages, args=(host_queue,), daemon=True)
     worker_messages_forwarder.start()
     try:
-        worker_future = _active_executor.submit(execute_tests, host_queue=host_queue, **execute_tests_kwargs)
+        worker_future = state.active_executor.submit(execute_tests, host_queue=host_queue, **execute_tests_kwargs)
         try:
             return worker_future.result()
         except KeyboardInterrupt:
@@ -1128,16 +1058,15 @@ def _execute_serial_tests(**execute_tests_kwargs):
 
     Returns None when BehaveXRunner.stop() kept the work from starting.
     """
-    global _stopped
-    if not _run_active:
+    if not state.run_active:
         return execute_tests(**execute_tests_kwargs)
     try:
-        future = _submit_unless_stopped(_active_executor, execute_tests, **execute_tests_kwargs)
+        future = _submit_unless_stopped(state.active_executor, execute_tests, **execute_tests_kwargs)
         if future is None:
             return None
         return future.result()
     except CancelledError:
-        _stopped = True
+        state.stopped = True
         return None
     except BrokenProcessPool as error:
         return _crashed_worker_result(error)
@@ -1160,7 +1089,7 @@ def _interrupt_worker_processes():
 
 def _live_run_worker_processes():
     # active_children() also lists a BehaveXRunner host application's own processes
-    return [worker_process for worker_process in list(_active_executor_processes_by_pid.values())
+    return [worker_process for worker_process in list(state.active_executor_processes_by_pid.values())
             if worker_process.is_alive()]
 
 
@@ -1204,7 +1133,7 @@ def _forward_worker_messages(host_queue):
             sys.stdout.flush()
         elif message_kind == 'progress':
             scenario_key, progress_fields = payload
-            _report_scenario_progress(scenario_key, **progress_fields)
+            state.report_scenario_progress(scenario_key, **progress_fields)
 
 
 class _StdoutToHostQueue(io.TextIOBase):
@@ -1267,10 +1196,9 @@ def execute_tests(
     """
     try:
         behave_args = None
-        global _host_queue
         if host_queue is not None:
             host_queue = _HostQueueDeferringCtrlC(host_queue)
-        _host_queue = host_queue
+        state.host_queue = host_queue
         stdout_before_host_queue = sys.stdout
         if host_queue is not None:
             sys.stdout = _StdoutToHostQueue(host_queue, stdout_before_host_queue)
@@ -1597,7 +1525,7 @@ def remove_temporary_files(parallel_processes, json_reports):
         # Note: stdout file cleanup removed since we no longer generate these files
 
     # Note: stdout file cleanup removed since we no longer generate these files
-    if not _run_active:
+    if not state.run_active:
         logger = logging.getLogger()
         logger.propagate = False
         for handler in logging.root.handlers:
@@ -1706,7 +1634,7 @@ def _write_overall_status(overall_status, exit_code):
     status_path = os.path.join(get_env('OUTPUT'), global_vars.report_filenames['report_overall'])
     with open(status_path, 'w') as status_file:
         status_file.write(json.dumps({'status': overall_status, 'exit_code': exit_code,
-                                      'stopped': _stopped, 'run_id': _run_id}))
+                                      'stopped': state.stopped, 'run_id': state.run_id}))
 
 
 def _find_user_environment_path() -> Optional[str]:

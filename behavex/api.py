@@ -15,6 +15,7 @@ from behavex.arguments import parse_arguments
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import text
+from behavex.run_state import state
 from behavex.utils import get_json_results
 
 try:
@@ -116,14 +117,14 @@ class BehaveXRunner:
     def run(self) -> RunResult:
         args = self._build_args()
         _validate_args(args)
-        runner._progress_callback = self.on_progress
-        runner._completed_count = 0
-        runner._progress_total = None
-        runner._last_run_results = []
-        runner._progress_reported = set()
-        runner._stop_requested = False
-        runner._stopped = False
-        runner._run_active = True
+        state.progress_callback = self.on_progress
+        state.completed_count = 0
+        state.progress_total = None
+        state.last_run_results = []
+        state.progress_reported = set()
+        state.stop_requested = False
+        state.stopped = False
+        state.run_active = True
         global _running_instance
         _running_instance = self
         try:
@@ -135,11 +136,11 @@ class BehaveXRunner:
             raise ValueError('BehaveX stopped before running the tests (exit code {}); '
                              'its output explains why'.format(exit_signal.code)) from None
         finally:
-            runner._progress_callback = None
-            runner._run_active = False
+            state.progress_callback = None
+            state.run_active = False
             _running_instance = None
-        return RunResult(run_id=runner._run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
-                         features=_to_feature_results(runner._last_run_results), stopped=runner._stopped)
+        return RunResult(run_id=state.run_id, exit_code=exit_code, output_folder=os.path.abspath(get_env('OUTPUT')),
+                         features=_to_feature_results(state.last_run_results), stopped=state.stopped)
 
     @_exclusive_run()
     def discover(self, check_steps: bool = False) -> List[DiscoveredScenario]:
@@ -149,7 +150,7 @@ class BehaveXRunner:
         """
         args = self._build_args()
         _validate_args(args)
-        runner._run_active = True
+        state.run_active = True
         try:
             # an MCP stdio server owns sys.stdout
             with contextlib.redirect_stdout(io.StringIO()):
@@ -157,7 +158,7 @@ class BehaveXRunner:
         except SystemExit as exit_signal:
             raise ValueError('BehaveX stopped before discovering the tests: {}'.format(exit_signal.code)) from None
         finally:
-            runner._run_active = False
+            state.run_active = False
         if scenarios is None:
             raise ValueError('BehaveX stopped before discovering the tests: '
                              'the rerun_failures file is missing or empty')
@@ -173,9 +174,9 @@ class BehaveXRunner:
         """
         if _running_instance is not self:
             return
-        runner._stop_requested = True
-        executor = runner._active_executor
-        if executor is None or not runner._is_parallel_run:
+        state.stop_requested = True
+        executor = state.active_executor
+        if executor is None or not state.is_parallel_run:
             return
         # Python 3.8 has no cancel_futures, and shutdown(wait=False) there can strand queued futures
         if sys.version_info >= (3, 9):

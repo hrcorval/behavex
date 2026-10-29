@@ -37,6 +37,7 @@ from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (get_save_function, get_string_hash,
                                           match_for_execution,
                                           retry_file_operation)
+from behavex.run_state import state
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
@@ -65,8 +66,7 @@ def handle_execution_complete_callback(codes,
         execution_code, map_json = tuple_values
         json_reports += [map_json]
         codes.append(execution_code)
-        from behavex import runner as _runner
-        _runner._fire_report_progress(map_json)
+        state.fire_report_progress(map_json)
     if progress_bar_instance:
         progress_bar_instance.update()
 
