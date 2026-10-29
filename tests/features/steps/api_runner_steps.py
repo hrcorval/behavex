@@ -1148,7 +1148,7 @@ def when_worker_ctrl_c_during_host_queue_put(context):
     script = f"""
 import json, os, signal, sys
 sys.path.insert(0, {repr(root_project_path)})
-from behavex import runner
+from behavex import host_messages
 
 class HostQueueInterruptedMidPut:
     put_completed = False
@@ -1157,10 +1157,10 @@ class HostQueueInterruptedMidPut:
         self.put_completed = True
 
 host_queue = HostQueueInterruptedMidPut()
-signal.signal(signal.SIGINT, runner._stop_behave_on_first_ctrl_c)
+signal.signal(signal.SIGINT, host_messages.stop_behave_on_first_ctrl_c)
 interrupt_raised_after_put = None
 try:
-    runner._HostQueueDeferringCtrlC(host_queue).put(('output', 'line'))
+    host_messages.HostQueueDeferringCtrlC(host_queue).put(('output', 'line'))
 except KeyboardInterrupt:
     interrupt_raised_after_put = host_queue.put_completed
 print("__RESULT__:" + json.dumps({{"interrupt_raised_after_put": interrupt_raised_after_put}}))
