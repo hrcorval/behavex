@@ -697,3 +697,8 @@ Feature: BehaveXRunner Python API
       | mode                    |
       | in a single process     |
       | in parallel by scenario |
+
+  @API_RUNNER_091 @POSIX_ONLY
+  Scenario: a Ctrl+C that reaches a worker while it sends output to the host stops behave once the send completes
+    When a worker gets a Ctrl+C while it puts a message on the host queue
+    Then the put completed before the KeyboardInterrupt was raised

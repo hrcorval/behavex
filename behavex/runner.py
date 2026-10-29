@@ -106,6 +106,8 @@ _stop_requested: bool = False
 _stopped: bool = False
 _run_id: Optional[str] = None
 _host_queue = None
+_main_thread_putting_to_host_queue = False
+_ctrl_c_deferred_until_put_ends = False
 _features_path_before_first_run: Optional[str] = None
 
 
@@ -1181,9 +1183,35 @@ def _live_run_worker_processes():
 
 
 def _stop_behave_on_first_ctrl_c(signum, frame):
+    global _ctrl_c_deferred_until_put_ends
     # A terminal's Ctrl+C reaches the worker twice: from the console and from the host
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    if _main_thread_putting_to_host_queue:
+        _ctrl_c_deferred_until_put_ends = True
+        return
     raise KeyboardInterrupt
+
+
+class _HostQueueDeferringCtrlC:
+    """Raises a Ctrl+C that reaches the worker mid-put only once the put completes."""
+
+    def __init__(self, host_queue):
+        self._host_queue = host_queue
+
+    def put(self, message):
+        # A KeyboardInterrupt raised mid-put leaves the manager connection out of sync, so the next put fails
+        global _main_thread_putting_to_host_queue, _ctrl_c_deferred_until_put_ends
+        if threading.current_thread() is not threading.main_thread():
+            self._host_queue.put(message)
+            return
+        _main_thread_putting_to_host_queue = True
+        try:
+            self._host_queue.put(message)
+        finally:
+            _main_thread_putting_to_host_queue = False
+            ctrl_c_deferred, _ctrl_c_deferred_until_put_ends = _ctrl_c_deferred_until_put_ends, False
+        if ctrl_c_deferred:
+            raise KeyboardInterrupt
 
 
 def _forward_worker_messages(host_queue):
@@ -1223,8 +1251,8 @@ class _StdoutToHostQueue(io.TextIOBase):
 
     def flush(self):
         if self._pending_text:
-            self._host_queue.put(('output', self._pending_text))
-            self._pending_text = ''
+            pending_text, self._pending_text = self._pending_text, ''
+            self._host_queue.put(('output', pending_text))
 
 
 def execute_tests(
@@ -1258,6 +1286,8 @@ def execute_tests(
     try:
         behave_args = None
         global _host_queue
+        if host_queue is not None:
+            host_queue = _HostQueueDeferringCtrlC(host_queue)
         _host_queue = host_queue
         stdout_before_host_queue = sys.stdout
         if host_queue is not None:

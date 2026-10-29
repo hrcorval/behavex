@@ -1143,6 +1143,36 @@ def then_no_execution_code_recorded(context):
     assert context.api_run_result['execution_codes'] == [], context.api_run_result
 
 
+@when('a worker gets a Ctrl+C while it puts a message on the host queue')
+def when_worker_ctrl_c_during_host_queue_put(context):
+    script = f"""
+import json, os, signal, sys
+sys.path.insert(0, {repr(root_project_path)})
+from behavex import runner
+
+class HostQueueInterruptedMidPut:
+    put_completed = False
+    def put(self, message):
+        os.kill(os.getpid(), signal.SIGINT)
+        self.put_completed = True
+
+host_queue = HostQueueInterruptedMidPut()
+signal.signal(signal.SIGINT, runner._stop_behave_on_first_ctrl_c)
+interrupt_raised_after_put = None
+try:
+    runner._HostQueueDeferringCtrlC(host_queue).put(('output', 'line'))
+except KeyboardInterrupt:
+    interrupt_raised_after_put = host_queue.put_completed
+print("__RESULT__:" + json.dumps({{"interrupt_raised_after_put": interrupt_raised_after_put}}))
+"""
+    _store_result(context, _run_script(script))
+
+
+@then('the put completed before the KeyboardInterrupt was raised')
+def then_put_completed_before_keyboard_interrupt(context):
+    assert context.api_run_result['interrupt_raised_after_put'] is True, context.api_run_result
+
+
 @when('I run BehaveXRunner in one process with a config file setting output folder "{folder_a}", then one setting "{folder_b}"')
 def when_api_run_with_two_config_files(context, folder_a, folder_b):
     base = os.path.join(root_project_path, 'output', f'api_runner_config_{get_random_number(6)}')
