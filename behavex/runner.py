@@ -14,12 +14,10 @@ from __future__ import absolute_import, print_function
 # Standard library imports
 import codecs
 import contextlib
-import concurrent  # pyright: ignore[reportUnusedImport]
 import copy
 import io
 import json
 import logging
-import logging.config  # pyright: ignore[reportUnusedImport]
 import multiprocessing
 import os
 import os.path
@@ -37,7 +35,7 @@ from multiprocessing import active_children
 from multiprocessing.managers import DictProxy
 from tempfile import gettempdir
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Optional
 
 # Third-party imports
 from behave.configuration import Configuration
@@ -64,7 +62,7 @@ from behavex.outputs.report_utils import (get_overall_status,
                                           get_string_hash,
                                           match_for_execution,
                                           pretty_print_time,
-                                          retry_file_operation, text)
+                                          text)
 from behavex.progress_bar import ProgressBar
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
@@ -84,10 +82,6 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
 EXIT_OK = 0
 EXIT_ERROR = 1
 ERROR_OR_UNDEFINED_STATUSES = ('error', 'undefined')
-EXECUTION_BLOCKED_MSG = (
-    'Some of the folders or files are being used by another '
-    'program. Please, close them and try again...'
-)
 
 os.environ.setdefault('EXECUTION_CODE', '1')
 match_include = None
@@ -427,7 +421,6 @@ def launch_behavex():
     json_reports = []
     execution_codes = []
     results = None
-    config = conf_mgr.get_config()
     features_path = os.environ.get('FEATURES_PATH', '')
     parallel_scheme = get_param('parallel_scheme')
     if get_param('dry_run'):
@@ -541,10 +534,8 @@ def launch_behavex():
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(scenario['id_feature']), 'behave.log')
         # behave_log_file = os.path.join(output_folder, 'behavex', 'logs', str(json_test_configuration['id']), 'behave.log')
         results = merged_json if get_param('no_report') else get_json_results()
-        processed_feature_filenames = []
         if results:
             for feature in results['features']:
-                processed_feature_filenames.append(feature['filename'])
                 filename = feature['filename']
                 if feature['status'] == 'failed':
                     totals['features']['failed'] += 1
@@ -588,7 +579,7 @@ def launch_behavex():
             and totals['scenarios']['error'] == 0
         )
         exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
-    except KeyboardInterrupt as ex:
+    except KeyboardInterrupt:
         print('Caught KeyboardInterrupt, terminating workers')
         try:
             list_processes_to_terminate = _live_run_worker_processes if _run_active else active_children
@@ -774,7 +765,7 @@ def create_scenario_line_references(features):
     return updated_features
 
 
-def _wait_for_futures(futures, execution_codes, json_reports):
+def _wait_for_futures(futures, execution_codes):
     """Helper function to wait for futures and handle exceptions"""
     global _stopped
     for future in futures:
@@ -905,8 +896,6 @@ def launch_by_feature(features,
             if global_vars.progress_bar_instance:
                 global_vars.progress_bar_instance.update()
     print_parallel('feature.running_parallels')
-    parallel_processes = []
-
 
     # Prepare features grouped by order
     if order_tests_strict:
@@ -946,14 +935,11 @@ def launch_by_feature(features,
                                             shared_removed_scenarios=None)
             if future is None:
                 break
-            parallel_processes.append(future)
             _add_report_callback(future, execution_codes, json_reports)
             group_futures.append(future)
 
         # Wait for completion of this order group before proceeding to the next
-        _wait_for_futures(group_futures, execution_codes, json_reports)
-
-    parallel_processes.clear()
+        _wait_for_futures(group_futures, execution_codes)
     return execution_codes, json_reports
 
 
@@ -991,7 +977,6 @@ def launch_by_scenario(features,
     duplicated_scenarios = {}
     total_scenarios_to_run = {}
     features_with_no_scen_desc = []
-    parallel_processes = []
 
     # Cache the order_tests parameter to avoid multiple get_param calls
     order_tests_enabled = get_param('order_tests')
@@ -1110,14 +1095,11 @@ def launch_by_scenario(features,
                                                 )
                 if future is None:
                     break
-                parallel_processes.append(future)
                 _add_report_callback(future, execution_codes, json_reports)
                 group_futures.append(future)
 
             # Wait for completion of this order group before proceeding to the next
-            _wait_for_futures(group_futures, execution_codes, json_reports)
-
-        parallel_processes.clear()
+            _wait_for_futures(group_futures, execution_codes)
     return execution_codes, json_reports
 
 
@@ -1550,9 +1532,6 @@ def _launch_behave(behave_args):
     except:
         execution_code = 2
         generate_report = True
-    finally:
-        # Cleanup is handled in the try/except blocks above
-        pass
 
     # Note: stdout file merging removed since we get execution results directly from runner
     return execution_code, generate_report, json_results_str
@@ -1716,8 +1695,6 @@ def processing_xml_feature(json_output, scenario_line, feature_filename,
                     print(ex)
                 finally:
                     os.remove(feature_tmp_file_path)
-    except Exception as ex:
-        raise ex
     finally:
         if lock:
             lock.release()
@@ -2045,10 +2022,7 @@ def _set_behave_arguments(features_path, multiprocess, execution_id=None, featur
             arguments.append('--{}'.format(arg.replace('_', '-')))
             if value_arg and not isinstance(value_arg, bool):
                 arguments.append(value_arg)
-                if arguments == 'logging_level':
-                    set_env_variable(arg, value_arg)
-                else:
-                    os.environ[arg] = str(value_arg)
+                os.environ[arg] = str(value_arg)
     return arguments
 
 

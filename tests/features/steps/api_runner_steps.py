@@ -1132,7 +1132,7 @@ from behavex import runner
 future = Future()
 threading.Timer(0.3, future.cancel).start()
 execution_codes = []
-runner._wait_for_futures([future], execution_codes, [])
+runner._wait_for_futures([future], execution_codes)
 print("__RESULT__:" + json.dumps({{"execution_codes": execution_codes}}))
 """
     _store_result(context, _run_script(script))

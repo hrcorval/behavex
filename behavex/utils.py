@@ -13,6 +13,7 @@ import glob
 import hashlib
 import json
 import logging
+import logging.config
 import multiprocessing
 import os
 import re
