@@ -88,9 +88,9 @@ def step_run_behavex_with_feature_path_and_parallel(context, feature_path, paral
     import os
 
     from tests.features.steps.execution_steps import (execute_command,
-                                                      get_random_number)
+                                                      get_unique_suffix)
 
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
 
     # Handle multiple feature paths separated by spaces
     feature_paths = feature_path.split()

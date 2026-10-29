@@ -11,7 +11,7 @@ from typing import List, Optional
 import behave
 from behave import given, then, when
 from config_file_steps import _clean_child_env, _make_config_dir, _write_config_file
-from execution_steps import execute_command, get_random_number
+from execution_steps import execute_command, get_unique_suffix
 from packaging.version import Version
 
 # behave 1.2.6 reports hook errors and undefined background steps as failed
@@ -140,7 +140,7 @@ def when_api_run_with_tag(context, tag):
 @when('I run BehaveXRunner with passing tests and a configured output folder')
 def when_api_run_with_output_folder(context):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    output_folder = os.path.join('output', f'api_runner_{get_random_number(6)}')
+    output_folder = os.path.join('output', f'api_runner_{get_unique_suffix()}')
     context.configured_output_folder = output_folder
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=False)
@@ -160,7 +160,7 @@ def when_api_run_parallel(context, parallel_processes, parallel_scheme):
 @when('I run BehaveXRunner with passing tests, no_report enabled, and a configured output folder')
 def when_api_run_no_report(context):
     feature_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    output_folder = os.path.join('output', f'api_runner_no_report_{get_random_number(6)}')
+    output_folder = os.path.join('output', f'api_runner_no_report_{get_unique_suffix()}')
     context.configured_output_folder = output_folder
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=True)
 
@@ -180,7 +180,7 @@ def when_api_run_dry_run(context):
 @when('I run BehaveXRunner with failing tests and a configured output folder')
 def when_api_run_failing_with_output_folder(context):
     feature_path = os.path.join(secondary_features_path, 'failing_tests.feature')
-    output_folder = os.path.join('output', f'api_runner_fail_{get_random_number(6)}')
+    output_folder = os.path.join('output', f'api_runner_fail_{get_unique_suffix()}')
     context.configured_output_folder = output_folder
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     _run_via_api(context, feature_path, output_folder=output_folder, no_report=False)
@@ -1175,7 +1175,7 @@ def then_put_completed_before_keyboard_interrupt(context):
 
 @when('I run BehaveXRunner in one process with a config file setting output folder "{folder_a}", then one setting "{folder_b}"')
 def when_api_run_with_two_config_files(context, folder_a, folder_b):
-    base = os.path.join(root_project_path, 'output', f'api_runner_config_{get_random_number(6)}')
+    base = os.path.join(root_project_path, 'output', f'api_runner_config_{get_unique_suffix()}')
     context.add_cleanup(shutil.rmtree, base, ignore_errors=True)
     os.makedirs(base)
     config_paths = []
@@ -1233,7 +1233,7 @@ print("__RESULT__:" + json.dumps({{"totals": totals}}))
 
 @when('I run BehaveXRunner in one process with rerun_failures on the failing test, then on passing tests with "{processes}" parallel processes')
 def when_api_run_rerun_failures_then_parallel(context, processes):
-    base = os.path.join(root_project_path, 'output', f'api_runner_rerun_{get_random_number(6)}')
+    base = os.path.join(root_project_path, 'output', f'api_runner_rerun_{get_unique_suffix()}')
     context.add_cleanup(shutil.rmtree, base, ignore_errors=True)
     os.makedirs(base)
     failures_file = os.path.join(base, 'failing_scenarios.txt')
@@ -1281,7 +1281,7 @@ def then_progress_status_matches_final_status(context):
 def when_api_run_worker_hooks_then_passing(context):
     worker_hooks_path = os.path.join(root_project_path, 'tests', 'features', 'worker_hooks_features')
     passing_path = os.path.join(secondary_features_path, 'passing_tests.feature')
-    suffix = get_random_number(6)
+    suffix = get_unique_suffix()
     output_folders = [os.path.join(root_project_path, 'output', f'api_runner_hooks_{suffix}_{run}') for run in (1, 2)]
     script = f"""
 import json, sys
@@ -1386,7 +1386,7 @@ print("__RESULT__:" + json.dumps({{"raised": raised}}))
 
 
 def _refused_input_kwargs(input_name):
-    missing = os.path.join(secondary_features_path, 'missing_{}'.format(get_random_number(6)))
+    missing = os.path.join(secondary_features_path, 'missing_{}'.format(get_unique_suffix()))
     return {
         'a path that does not exist': {'paths': [missing + '.feature']},
         'a glob that matches no file': {'paths': [missing + '_*.feature']},
@@ -1810,7 +1810,7 @@ _LOAD_RESULTS_CASES = {
 
 @when('I run BehaveXRunner {case} with a configured output folder, then call load_results() on that folder')
 def when_run_then_load_results(context, case):
-    output_folder = os.path.join('output', f'api_runner_load_{get_random_number(6)}')
+    output_folder = os.path.join('output', f'api_runner_load_{get_unique_suffix()}')
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     kwargs = dict(_LOAD_RESULTS_CASES[case], output_folder=output_folder)
     stop_while_before_all_workers_runs = kwargs.pop('stop_while_before_all_workers_runs', False)
@@ -1853,7 +1853,7 @@ def then_loaded_run_result_has_exit_code_stopped_and_total(context, exit_code, s
 
 @when('I call load_results() on {folder}')
 def when_load_results_on_folder(context, folder):
-    output_folder = os.path.join('output', f'api_runner_load_{get_random_number(6)}')
+    output_folder = os.path.join('output', f'api_runner_load_{get_unique_suffix()}')
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     folder_setup_code = {
         'the output folder of a no_report run':
@@ -1887,7 +1887,7 @@ if __name__ == '__main__':
 
 @when('I run behavex from the CLI on the secondary features, then call load_results() on its output folder')
 def when_cli_run_then_load_results(context):
-    output_folder = os.path.join('output', f'api_runner_load_cli_{get_random_number(6)}')
+    output_folder = os.path.join('output', f'api_runner_load_cli_{get_unique_suffix()}')
     context.add_cleanup(shutil.rmtree, output_folder, ignore_errors=True)
     execute_command(context, ['behavex', secondary_features_path, '-o', output_folder],
                     env=_clean_child_env(), cwd=root_project_path)

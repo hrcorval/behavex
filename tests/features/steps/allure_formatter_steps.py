@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 from behave import given, then, when
-from execution_steps import (execute_command, get_random_number,
+from execution_steps import (execute_command, get_unique_suffix,
                              root_project_path)
 
 tests_features_path = os.path.join(root_project_path, 'tests', 'features')
@@ -19,7 +19,7 @@ def get_output_path(context):
 
 @when('I run the behavex command with allure formatter and passing tests')
 def when_run_allure_passing_tests(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
@@ -31,7 +31,7 @@ def when_run_allure_passing_tests(context):
 
 @when('I run the behavex command with allure formatter and failing tests')
 def when_run_allure_failing_tests(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'failing_tests.feature'),
@@ -43,7 +43,7 @@ def when_run_allure_failing_tests(context):
 
 @when('I run the behavex command with allure formatter using custom output directory "{custom_dir}"')
 def when_run_allure_custom_dir(context, custom_dir):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     context.custom_allure_dir = custom_dir
     execution_args = [
         'behavex',
@@ -57,7 +57,7 @@ def when_run_allure_custom_dir(context, custom_dir):
 
 @when('I run the behavex command with allure formatter and mixed test results')
 def when_run_allure_mixed_results(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features'),
@@ -69,7 +69,7 @@ def when_run_allure_mixed_results(context):
 
 @when('I run the behavex command with allure formatter and tagged scenarios')
 def when_run_allure_tagged_scenarios(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'allure_tagged_tests.feature'),
@@ -81,7 +81,7 @@ def when_run_allure_tagged_scenarios(context):
 
 @when('I run the behavex command with allure formatter and scenario with table data')
 def when_run_allure_table_data(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
@@ -93,7 +93,7 @@ def when_run_allure_table_data(context):
 
 @when('I run the behavex command with allure formatter and scenario with multiline text')
 def when_run_allure_multiline_text(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
@@ -105,7 +105,7 @@ def when_run_allure_multiline_text(context):
 
 @when('I run the behavex command with allure formatter and no log attachments')
 def when_run_allure_no_logs(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
@@ -533,7 +533,7 @@ def then_no_log_attachments(context):
 # E2E Tag Validation Steps
 @when('I run the behavex command with allure formatter on malformed tags test file')
 def when_run_allure_malformed_tags(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
@@ -545,7 +545,7 @@ def when_run_allure_malformed_tags(context):
 
 @when('I run the behavex command with allure formatter on mixed tags scenarios')
 def when_run_allure_mixed_tags(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
@@ -557,7 +557,7 @@ def when_run_allure_mixed_tags(context):
 
 @when('I run the behavex command with allure formatter on valid tags test file')
 def when_run_allure_valid_tags(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'allure_valid_tags_test.feature'),
@@ -569,7 +569,7 @@ def when_run_allure_valid_tags(context):
 
 @when('I run the behavex command with allure formatter on edge case malformed tags')
 def when_run_allure_edge_case_tags(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
@@ -788,7 +788,7 @@ def then_only_wellformed_tags_appear(context):
 @when('I run the behavex command with allure formatter and assertion failure tests')
 def when_run_behavex_allure_assertion_failure_tests(context):
     """Run behavex with allure formatter targeting assertion failure tests"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
     execution_args = [
         'behavex',
@@ -805,7 +805,7 @@ def when_run_behavex_allure_assertion_failure_tests(context):
 @when('I run the behavex command with allure formatter and undefined step tests')
 def when_run_behavex_allure_undefined_step_tests(context):
     """Run behavex with allure formatter targeting undefined step tests"""
-    context.undefined_output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.undefined_output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
     execution_args = [
         'behavex',
@@ -822,7 +822,7 @@ def when_run_behavex_allure_undefined_step_tests(context):
 @when('I run the behavex command with allure formatter and error exception tests')
 def when_run_behavex_allure_error_exception_tests(context):
     """Run behavex with allure formatter targeting error exception tests"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     # For now, use autoretry tests which contain error scenarios
     allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
     execution_args = [
@@ -840,7 +840,7 @@ def when_run_behavex_allure_error_exception_tests(context):
 @when('I run the behavex command with allure formatter and comprehensive failure tests')
 def when_run_behavex_allure_comprehensive_failure_tests(context):
     """Run behavex with allure formatter targeting multiple failure types"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
     execution_args = [
         'behavex',
@@ -1006,7 +1006,7 @@ def then_see_test_defects_category(context):
 
 @when('I run the behavex command with allure formatter on "{feature_path}"')
 def when_run_allure_on_feature(context, feature_path):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, feature_path),

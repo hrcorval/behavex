@@ -6,8 +6,8 @@ Step definitions for autoretry mechanism testing
 import json
 import logging
 import os
-import random
 import re
+import uuid
 
 from behave import given, then, when
 from execution_steps import execute_command
@@ -21,9 +21,8 @@ def reset_attempt_counter(scenario_name):
     ATTEMPT_COUNTERS[scenario_name] = 0
 
 
-def get_random_number(length):
-    """Generate a random number with specified length"""
-    return ''.join([str(random.randint(0, 9)) for _ in range(length)])
+def get_unique_suffix():
+    return uuid.uuid4().hex[:8]
 
 
 def increment_attempt_counter(scenario_name):
@@ -171,7 +170,7 @@ def then_action_should_fail_consistently(context):
 @when('I run the behavex command with autoretry tests using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_behavex_with_autoretry_tests(context, parallel_processes, parallel_scheme):
     """Runs behavex with autoretry test scenarios"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
 
     context.parallel_processes = parallel_processes
@@ -190,7 +189,7 @@ def when_run_behavex_with_autoretry_tests(context, parallel_processes, parallel_
 @when('I run the behavex command with permanently failing autoretry tests using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_behavex_with_permanently_failing_autoretry_tests(context, parallel_processes, parallel_scheme):
     """Runs behavex with permanently failing autoretry test scenarios"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
 
     context.parallel_processes = parallel_processes
@@ -209,7 +208,7 @@ def when_run_behavex_with_permanently_failing_autoretry_tests(context, parallel_
 @when('I run the behavex command with default autoretry test scenarios')
 def when_run_behavex_with_default_autoretry_scenarios(context):
     """Runs behavex with default autoretry scenarios (@AUTORETRY tag)"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
 
     execution_args = [
@@ -230,7 +229,7 @@ def when_run_behavex_with_default_autoretry_scenarios(context):
 @when('I run the behavex command with custom autoretry count test scenarios')
 def when_run_behavex_with_custom_autoretry_count_scenarios(context):
     """Runs behavex with custom autoretry count scenarios (@AUTORETRY_N tags)"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
 
     execution_args = [
@@ -249,7 +248,7 @@ def when_run_behavex_with_custom_autoretry_count_scenarios(context):
 @when('I run the behavex command with mixed autoretry and regular test scenarios')
 def when_run_behavex_with_mixed_autoretry_scenarios(context):
     """Runs behavex with mixed autoretry and regular scenarios (some pass, some fail)"""
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     features_path = os.path.join('tests', 'features', 'secondary_features', 'autoretry_tests.feature')
 
     execution_args = [
@@ -411,7 +410,7 @@ def then_html_report_contains_retry_information(context):
 
 @when('I run the behavex command with an autoretry scenario whose step raises on its first attempt using "{parallel_processes}" parallel processes')
 def when_run_behavex_with_autoretry_error_scenario(context, parallel_processes):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_random_number(6)))
+    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
         os.path.join('tests', 'features', 'autoretry_raising_features'),
