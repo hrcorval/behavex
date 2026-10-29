@@ -22,6 +22,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`ProgressEvent` Pydantic model** — Structured payload delivered to `on_progress` callbacks. Available via `from behavex import ProgressEvent`.
 - **Type information for type checkers** — BehaveX ships a `py.typed` marker, so mypy and pyright check calls to `BehaveXRunner` and the result models against their annotations.
 
+### Changed
+- **Fewer install dependencies** — `minify-html` is no longer installed, since the HTML report has not been minified since August 2025, and `packaging` moved to the `dev` extra, since only the test suite uses it.
+
 ### Fixed
 - **A run with no feature paths and no `features` folder passed** — BehaveX exited with code 0 after running nothing when no paths were given and the default `features` folder did not exist, so CI saw a green run. It now prints `Specified path was not found: features` and exits with code 1, as it already did for a path given on the command line.
 - **`--no-report` parallel runs printed a JUnit file error** — A `--no-report` run with `--parallel-processes` above 1 no longer tries to write the JUnit XML file, so it no longer prints a `FileNotFoundError` traceback and an "Another program is using the files" prompt.

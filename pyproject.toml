@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -19,9 +19,7 @@ dependencies = [
     "allure-python-commons",
     "jinja2",
     "configobj",
-    "minify-html",
     "csscompressor",
-    "packaging",
 ]
 # Entry points are statically defined below
 
@@ -54,6 +52,7 @@ dev = [
     "pytest-cov",
     "flake8",
     "black",
+    "packaging",
     "beautifulsoup4>=4.14.3",
 ]
 

@@ -11,7 +11,6 @@ import time
 from collections import OrderedDict
 
 import csscompressor
-import minify_html
 
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
@@ -74,15 +73,6 @@ def _create_files_report(content_to_file):
         else:
             path_file = os.path.join(get_env('OUTPUT'), 'outputs', name_file)
             _create_manifest('', name_file)
-        try:
-            # DISABLED: HTML minification to prevent content corruption
-            # The aggressive minification was corrupting the HTML structure and removing scenarios
-            # TODO: Investigate safer minification options in the future
-            # content = minify_html.minify(content, ...)
-            pass  # Skip minification entirely to ensure content integrity
-        # pylint: disable= W0703
-        except Exception as ex:
-            print(ex)
         retry_file_operation(path_file, get_save_function(path_file, content))
 
 
