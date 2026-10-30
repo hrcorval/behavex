@@ -1127,12 +1127,12 @@ def when_waiting_on_future_cancelled_meanwhile(context):
 import json, sys, threading
 sys.path.insert(0, {repr(root_project_path)})
 from concurrent.futures import Future
-from behavex import runner
+from behavex import dispatch
 
 future = Future()
 threading.Timer(0.3, future.cancel).start()
 execution_codes = []
-runner._wait_for_futures([future], execution_codes)
+dispatch._wait_for_futures([future], execution_codes)
 print("__RESULT__:" + json.dumps({{"execution_codes": execution_codes}}))
 """
     _store_result(context, _run_script(script))
@@ -2105,7 +2105,7 @@ if __name__ == '__main__':
 _SERIAL_STOP_RACES = {
     # stop() lands between the serial loop's stop check and its submission
     'stop() comes right after the stop check': """
-_check_stop_requested = runner._mark_run_stopped_if_requested
+_check_stop_requested = dispatch._mark_run_stopped_if_requested
 
 def _check_then_stop():
     stop_was_requested = _check_stop_requested()
@@ -2113,7 +2113,7 @@ def _check_then_stop():
         behavex_runner.stop()
     return stop_was_requested
 
-runner._mark_run_stopped_if_requested = _check_then_stop
+mock.patch.object(dispatch, '_mark_run_stopped_if_requested', _check_then_stop).start()
 """,
     # stop()'s cancel_futures cancels the queued work before a worker picks it up
     'the submitted @SERIAL work is cancelled before it starts': """
@@ -2124,7 +2124,7 @@ def _submit_cancelled(*args, **kwargs):
     cancelled_future.cancel()
     return cancelled_future
 
-runner._submit_unless_stopped = _submit_cancelled
+mock.patch.object(dispatch, '_submit_unless_stopped', _submit_cancelled).start()
 """,
 }
 
@@ -2135,7 +2135,8 @@ def when_stop_races_serial_work(context, scheme, race):
     script = f"""
 import json, sys
 sys.path.insert(0, {repr(root_project_path)})
-from behavex import BehaveXRunner, runner
+from unittest import mock
+from behavex import BehaveXRunner, dispatch
 {_CAPTURE_RAISED}
 if __name__ == '__main__':
     behavex_runner = BehaveXRunner(paths=[{os.path.join(serial_suites_path, 'second')!r}], no_report=True, **{run_mode!r})
