@@ -1,23 +1,12 @@
 import os
 
 from behave import then, when
-from execution_steps import (
-    execute_command,
-    get_unique_suffix,
-    run_behavex_on_target,
-    tests_features_path,
-)
+from execution_steps import fixtures_path, run_behavex_on_target
 
 
 @when('I run the behavex command targeting the invalid worker hooks feature')
 def when_run_invalid_worker_hooks_feature(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = [
-        'behavex',
-        os.path.join(tests_features_path, 'fixtures', 'worker_hooks_invalid_features'),
-        '-o', context.output_path,
-    ]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(fixtures_path, 'worker_hooks_invalid_features'), '')
 
 
 @when('I run the behavex command on the "{target}" worker hooks fixture with arguments "{arguments}"')

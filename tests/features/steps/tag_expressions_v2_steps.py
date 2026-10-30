@@ -6,10 +6,11 @@ import sys
 import time
 
 from behave import given, then, when
-
-root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-tests_features_path = os.path.join(root_project_path, 'tests', 'features')
-secondary_features_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
+from execution_steps import (
+    get_unique_suffix,
+    root_project_path,
+    secondary_features_path,
+)
 
 
 @given('I have Behave 1.3.0 or newer installed')
@@ -30,11 +31,10 @@ def step_check_behave_version(context):
         context.scenario.skip(f"Could not determine Behave version: {e}")
 
 
-def _run_behavex(context, tag_expression, output_prefix, tag_args, description, log_scenarios=False):
-    context.tag_expression = tag_expression
-    output_key = tag_expression or str(time.time())
+def _run_behavex(context, output_prefix, tag_args, log_scenarios=False):
+    context.tag_expression = ' and '.join(tag_args)
     cmd = [sys.executable, '-m', 'behavex', secondary_features_path,
-           '-o', f'output/{output_prefix}_{hash(output_key) % 1000000}']
+           '-o', f'output/{output_prefix}_{get_unique_suffix()}']
     for tag_arg in tag_args:
         cmd += ['-t', tag_arg]
     cmd += ['--logging_level', 'INFO']
@@ -51,7 +51,7 @@ def _run_behavex(context, tag_expression, output_prefix, tag_args, description, 
     context.stderr = result.stderr
     context.returncode = result.returncode
 
-    logging.info(f"BehaveX executed with {description}, exit code: {result.returncode}, "
+    logging.info(f"BehaveX executed with tag arguments {tag_args}, exit code: {result.returncode}, "
                  f"time: {context.execution_time:.2f}s")
     if result.stdout:
         logging.info(f"Secondary test STDOUT:\n{result.stdout}")
@@ -63,56 +63,49 @@ def _run_behavex(context, tag_expression, output_prefix, tag_args, description, 
 
 @when('I run behavex with v2 tag expression "{tag_expression}"')
 def step_run_behavex_with_v2_expression(context, tag_expression):
-    _run_behavex(context, tag_expression, 'v2_test', [tag_expression],
-                 f"v2 expression '{tag_expression}'", log_scenarios=True)
+    _run_behavex(context, 'v2_test', [tag_expression], log_scenarios=True)
 
 
 @when('I run behavex with v1 tag expression "{tag_expression}"')
 def step_run_behavex_with_v1_expression(context, tag_expression):
-    _run_behavex(context, tag_expression, 'v1_test', [tag_expression], f"v1 expression '{tag_expression}'")
+    _run_behavex(context, 'v1_test', [tag_expression])
 
 
 @when('I run behavex with invalid v2 tag expression "{tag_expression}"')
 def step_run_behavex_with_invalid_v2_expression(context, tag_expression):
-    _run_behavex(context, tag_expression, 'v2_invalid_test', [tag_expression],
-                 f"invalid v2 expression '{tag_expression}'")
+    _run_behavex(context, 'v2_invalid_test', [tag_expression])
 
 
 @when('I run behavex with empty tag expression ""')
 def step_run_behavex_with_empty_expression_literal(context):
-    _run_behavex(context, "", 'empty_test', [], "empty expression")
+    _run_behavex(context, 'empty_test', [])
 
 
 @when('I run behavex with complex v2 tag expression "{tag_expression}"')
 def step_run_behavex_with_complex_v2_expression(context, tag_expression):
-    _run_behavex(context, tag_expression, 'v2_complex_test', [tag_expression],
-                 "complex v2 expression", log_scenarios=True)
+    _run_behavex(context, 'v2_complex_test', [tag_expression], log_scenarios=True)
 
 
 @when('I run behavex with multiple v2 tag arguments "{tag_arg1}" and "{tag_arg2}"')
 def step_run_behavex_with_multiple_v2_arguments(context, tag_arg1, tag_arg2):
     combined_expression = f"{tag_arg1} and {tag_arg2}"
-    _run_behavex(context, combined_expression, 'v2_multiple_test', [combined_expression],
-                 f"multiple v2 arguments '{tag_arg1}' and '{tag_arg2}'", log_scenarios=True)
+    _run_behavex(context, 'v2_multiple_test', [combined_expression], log_scenarios=True)
 
 
 @when('I run behavex with three v2 tag arguments "{tag_arg1}" and "{tag_arg2}" and "{tag_arg3}"')
 def step_run_behavex_with_three_v2_arguments(context, tag_arg1, tag_arg2, tag_arg3):
     combined_expression = f"{tag_arg1} and {tag_arg2} and {tag_arg3}"
-    _run_behavex(context, combined_expression, 'v2_three_test', [combined_expression],
-                 "three v2 arguments", log_scenarios=True)
+    _run_behavex(context, 'v2_three_test', [combined_expression], log_scenarios=True)
 
 
 @when('I run behavex with mixed tag arguments "{tag_arg1}" and "{tag_arg2}"')
 def step_run_behavex_with_mixed_arguments(context, tag_arg1, tag_arg2):
-    _run_behavex(context, f"{tag_arg1} and {tag_arg2}", 'mixed_test', [tag_arg1, tag_arg2],
-                 f"mixed arguments '{tag_arg1}' and '{tag_arg2}'")
+    _run_behavex(context, 'mixed_test', [tag_arg1, tag_arg2])
 
 
 @when('I run behavex with multiple v1 tag arguments "{tag_arg1}" and "{tag_arg2}"')
 def step_run_behavex_with_multiple_v1_arguments(context, tag_arg1, tag_arg2):
-    _run_behavex(context, f"{tag_arg1} and {tag_arg2}", 'v1_multiple_test', [tag_arg1, tag_arg2],
-                 f"multiple v1 arguments '{tag_arg1}' and '{tag_arg2}'")
+    _run_behavex(context, 'v1_multiple_test', [tag_arg1, tag_arg2])
 
 
 @then('I should see scenarios matching the v2 expression')

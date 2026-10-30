@@ -8,9 +8,9 @@ from api_runner_support import (
     _refused_input_kwargs,
     _run_script,
     _store_result,
-    secondary_features_path,
 )
 from behave import then, when
+from execution_steps import secondary_features_path
 
 
 @when('I run BehaveXRunner on passing tests with {argument} set to "{value}"')

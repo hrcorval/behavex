@@ -7,9 +7,9 @@ from api_runner_support import (
     _run_script,
     _store_result,
     api_runner_features_path,
-    secondary_features_path,
 )
 from behave import then, when
+from execution_steps import secondary_features_path
 
 _CTRL_C_TARGETS = {
     'the whole process group, as a terminal does': 'os.killpg(os.getpgid(0), signal.SIGINT)',

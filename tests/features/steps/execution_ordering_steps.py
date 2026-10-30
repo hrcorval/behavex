@@ -3,14 +3,14 @@ import logging
 import os
 
 from behave import then, when
-from execution_steps import execute_command, get_unique_suffix, tests_features_path
+from execution_steps import execute_command, new_output_path, secondary_features_path
 
 
 @when('I run the behavex command with execution ordering enabled using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_with_execution_ordering(context, parallel_processes, parallel_scheme):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = ['behavex',
-                      os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'ordered_tests.feature'),
+                      os.path.join(secondary_features_path, 'ordered_tests.feature'),
                       '-t', '@ORDERED_TEST',
                       '-o', context.output_path,
                       '--parallel-processes', parallel_processes,
@@ -21,9 +21,9 @@ def when_run_with_execution_ordering(context, parallel_processes, parallel_schem
 
 @when('I run the behavex command with execution ordering enabled using custom prefix "{prefix}" with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_with_custom_prefix_ordering(context, prefix, parallel_processes, parallel_scheme):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = ['behavex',
-                      os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'priority_ordered_tests.feature'),
+                      os.path.join(secondary_features_path, 'priority_ordered_tests.feature'),
                       '-t', '@PRIORITY_TEST',
                       '-o', context.output_path,
                       '--parallel-processes', parallel_processes,
@@ -35,9 +35,9 @@ def when_run_with_custom_prefix_ordering(context, prefix, parallel_processes, pa
 
 @when('I run the behavex command with execution ordering enabled for mixed scenarios using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_mixed_ordering(context, parallel_processes, parallel_scheme):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = ['behavex',
-                      os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'mixed_ordered_tests.feature'),
+                      os.path.join(secondary_features_path, 'mixed_ordered_tests.feature'),
                       '-t', '@MIXED_TEST',
                       '-o', context.output_path,
                       '--parallel-processes', parallel_processes,
@@ -48,9 +48,9 @@ def when_run_mixed_ordering(context, parallel_processes, parallel_scheme):
 
 @when('I run the behavex command with strict execution ordering enabled using "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_strict_ordering(context, parallel_processes, parallel_scheme):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = ['behavex',
-                      os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'ordered_tests.feature'),
+                      os.path.join(secondary_features_path, 'ordered_tests.feature'),
                       '-t', '@ORDERED_TEST',
                       '-o', context.output_path,
                       '--parallel-processes', parallel_processes,

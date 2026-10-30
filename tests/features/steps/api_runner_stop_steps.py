@@ -12,10 +12,10 @@ from api_runner_support import (
     _run_script,
     _store_result,
     api_runner_features_path,
-    secondary_features_path,
     serial_suites_path,
 )
 from behave import given, then, when
+from execution_steps import secondary_features_path
 
 _SERIAL_STOP_RACES = {
     # stop() lands between the serial loop's stop check and its submission

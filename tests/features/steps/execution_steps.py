@@ -9,6 +9,8 @@ from packaging.version import Version
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 tests_features_path = os.path.join(root_project_path, 'tests', 'features')
+fixtures_path = os.path.join(tests_features_path, 'fixtures')
+secondary_features_path = os.path.join(fixtures_path, 'secondary_features')
 
 
 @given('The progress bar is enabled')
@@ -19,9 +21,7 @@ def given_progress_bar_enabled(context):
 @when('I run the behavex command with a passing test')
 @when('I run the behavex command with passing tests')
 def when_run_passing_test(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'), '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(secondary_features_path, 'passing_tests.feature'), '')
 
 
 def _require_behave_for_rule(context):
@@ -37,74 +37,57 @@ def _require_behave_for_rule(context):
 def when_run_rule_test(context):
     if not _require_behave_for_rule(context):
         return
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'rule_features', 'rule_tests.feature'), '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(fixtures_path, 'rule_features', 'rule_tests.feature'), '')
 
 
 @when('I run the behavex command with a rule test using "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
 def when_run_rule_test_parallel(context, parallel_processes, parallel_scheme):
     if not _require_behave_for_rule(context):
         return
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = [
-        'behavex',
-        os.path.join(tests_features_path, 'fixtures', 'rule_features', 'rule_tests.feature'),
-        '-o', context.output_path,
-        '--parallel-processes', parallel_processes,
-        '--parallel-scheme', parallel_scheme,
-    ]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(fixtures_path, 'rule_features', 'rule_tests.feature'),
+                          f'--parallel-processes {parallel_processes} --parallel-scheme {parallel_scheme}')
 
 
 @when('I run the behavex command with a file of failing tests')
 def when_run_failing_tests_file(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', '-rf', os.path.join(tests_features_path, 'fixtures', 'failing_scenarios.txt'), '-o', context.output_path]
+    context.output_path = new_output_path()
+    execution_args = ['behavex', '-rf', os.path.join(fixtures_path, 'failing_scenarios.txt'), '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command on passing tests rerunning the failures of a "{failures_file_state}" file')
 def when_rerun_failures_from_missing_or_empty_failures_file(context, failures_file_state):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     failures_path = os.path.join('output', 'failures_{}.txt'.format(get_unique_suffix()))
     if failures_file_state in ('empty', 'blank'):
         os.makedirs('output', exist_ok=True)
         with open(failures_path, 'w') as failures_file:
             failures_file.write('\n' if failures_file_state == 'blank' else '')
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
+    execution_args = ['behavex', os.path.join(secondary_features_path, 'passing_tests.feature'),
                       '-rf', failures_path, '-o', context.output_path]
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command that renames scenarios and features')
 def when_run_renaming_test(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'rename_tests.feature'), '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(secondary_features_path, 'rename_tests.feature'), '')
 
 
 @when('I run the behavex command with a failing test')
 def when_run_failing_test(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'failing_tests.feature'), '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(secondary_features_path, 'failing_tests.feature'), '')
 
 
 @when('I run the behavex command with a crashing test')
 def when_run_crashing_test(context, parallel_processes="1", parallel_scheme='scenario'):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex',
-                os.path.join(tests_features_path, os.path.join(tests_features_path, 'fixtures', 'crashing_features', 'crashing_tests.feature')),
-                '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(fixtures_path, 'crashing_features', 'crashing_tests.feature'), '')
 
 
 @when('I run the behavex command with no tests')
 def when_run_no_tests(context, parallel_processes="1", parallel_scheme='scenario'):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = ['behavex',
-                os.path.join(tests_features_path, os.path.join(tests_features_path, 'fixtures', 'crashing_features', 'crashing_tests.feature')),
+                os.path.join(fixtures_path, 'crashing_features', 'crashing_tests.feature'),
                 '-t', 'NO_TESTS',
                 '-o', context.output_path]
     execute_command(context, execution_args)
@@ -114,14 +97,9 @@ def when_run_no_tests(context, parallel_processes="1", parallel_scheme='scenario
 @when('I run the behavex command with a test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
 def when_run_crashing_hook_test(context, behave_hook, parallel_processes="1", parallel_scheme='scenario',
                                 feature_filename='crashing_environment_tests.feature'):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex',
-                os.path.join(tests_features_path, 'fixtures', 'crashing_features', feature_filename),
-                '-o', context.output_path,
-                '--parallel-processes', parallel_processes,
-                '--parallel-scheme', parallel_scheme,
-                '-D', 'crashing_behave_hook=' + behave_hook]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(fixtures_path, 'crashing_features', feature_filename),
+                          f'--parallel-processes {parallel_processes} --parallel-scheme {parallel_scheme} '
+                          f'-D crashing_behave_hook={behave_hook}')
 
 
 @when('I run the behavex command with a muted failing test that crashes in "{behave_hook}" hook with "{parallel_processes}" parallel processes and "{parallel_scheme}" parallel scheme')
@@ -140,23 +118,18 @@ def when_run_muted_rule_crashing_hook_test(context, behave_hook, parallel_proces
 
 @when('I run the behavex command with a skipped test')
 def when_run_skipped_test(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'skipped_tests.feature'), '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(secondary_features_path, 'skipped_tests.feature'), '')
 
 
 @when('I run the behavex command with an untested test')
 def when_run_untested_test(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'untested_tests.feature'), '-o', context.output_path]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, os.path.join(secondary_features_path, 'untested_tests.feature'), '')
 
 
 @when('I run the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def when_run_with_parallel_config(context, parallel_processes, parallel_scheme):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features'), '-o', context.output_path, '--parallel-processes', parallel_processes, '--parallel-scheme', parallel_scheme]
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, secondary_features_path,
+                          f'--parallel-processes {parallel_processes} --parallel-scheme {parallel_scheme}')
 
 
 @when('I setup the behavex command with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
@@ -174,7 +147,7 @@ def run_command_with_scheme_processes_and_tags(context, scenario_name=None, argu
     scheme = context.table[0]['parallel_scheme']
     processes = context.table[0]['parallel_processes']
     tags = context.table[0]['tags']
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     tags_to_folder_name = get_tags_string(tags)
     if not tags:
         tags_array = []
@@ -183,12 +156,12 @@ def run_command_with_scheme_processes_and_tags(context, scenario_name=None, argu
     feature_path_2 = None
     if feature_name:
         if feature_name_2:
-            feature_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features', feature_name)
-            feature_path_2 = os.path.join(tests_features_path, 'fixtures', 'secondary_features', feature_name_2)
+            feature_path = os.path.join(secondary_features_path, feature_name)
+            feature_path_2 = os.path.join(secondary_features_path, feature_name_2)
         else:
-            feature_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features', feature_name)
+            feature_path = os.path.join(secondary_features_path, feature_name)
     else:
-        feature_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
+        feature_path = secondary_features_path
     if argument_separator == 'equal':
         execution_args = ['behavex', feature_path, '-o', context.output_path, '--parallel-processes=' + processes, '--parallel-scheme=' + scheme] + tags_array
     else:
@@ -207,17 +180,14 @@ def when_run_with_tags(context):
     tags = context.table[0]['tags']
     tags_to_folder_name = get_tags_string(tags)
     tags_array = get_tags_arguments(tags)
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features'), '-o', context.output_path] + tags_array
+    context.output_path = new_output_path()
+    execution_args = ['behavex', secondary_features_path, '-o', context.output_path] + tags_array
     execute_command(context, execution_args)
 
 
 @when('I run the behavex command by performing a dry run')
 def when_run_dry_run(context):
-    # generate a random number between 1 and 1000000 completing with zeroes to 6 digits
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    execution_args = ['behavex', os.path.join(tests_features_path, 'fixtures', 'secondary_features'), '-o', context.output_path, '--dry-run']
-    execute_command(context, execution_args)
+    run_behavex_on_target(context, secondary_features_path, '--dry-run')
 
 
 @then('I should see the following behavex console outputs')
@@ -299,7 +269,7 @@ def then_text_in_console(context, text):
 @when('I run the behavex command targeting the "{feature_path}" feature')
 @when('I run the behavex command targeting the "{feature_path}" feature with "{parallel_processes}" parallel processes')
 def when_run_with_feature_path(context, feature_path, parallel_processes='1'):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = ['behavex',
                       os.path.join(tests_features_path, feature_path),
                       '--parallel-processes', parallel_processes,
@@ -313,7 +283,7 @@ def when_run_behavex_on_target_with_arguments(context, target, arguments):
 
 
 def run_behavex_on_target(context, target, arguments, env=None):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = [
         'behavex',
         os.path.join(tests_features_path, target),
@@ -335,6 +305,10 @@ def get_tags_string(tags):
 
 def get_unique_suffix():
     return uuid.uuid4().hex[:8]
+
+
+def new_output_path():
+    return os.path.join('output', 'output_{}'.format(get_unique_suffix()))
 
 
 def execute_command(context, execution_args, print_output=True, env=None, cwd=None):

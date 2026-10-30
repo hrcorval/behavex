@@ -12,13 +12,16 @@ from api_runner_support import (
     _store_result,
     api_runner_features_path,
     nested_steps_folders_path,
-    root_project_path,
-    secondary_features_path,
     undefined_steps_features_path,
 )
 from behave import then, when
 from config_file_steps import _clean_child_env, _make_config_dir, _write_config_file
-from execution_steps import execute_command, get_unique_suffix
+from execution_steps import (
+    execute_command,
+    get_unique_suffix,
+    root_project_path,
+    secondary_features_path,
+)
 
 discovery_features_path = os.path.join(api_runner_features_path, 'discovery')
 discovery_feature = os.path.relpath(os.path.join(discovery_features_path, 'discovery.feature'), root_project_path)

@@ -8,9 +8,9 @@ from api_runner_support import (
     _run_script,
     _store_result,
     api_runner_features_path,
-    secondary_features_path,
 )
 from behave import then, when
+from execution_steps import secondary_features_path
 
 _RAISING_ON_FIRST_CALL_PROGRESS_CALLBACK = _PROGRESS_CALLBACK + """
     if len(_events) == 1:

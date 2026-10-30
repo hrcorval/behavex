@@ -10,11 +10,14 @@ from api_runner_support import (
     _run_via_api,
     _store_result,
     api_runner_features_path,
+)
+from behave import then, when
+from execution_steps import (
+    fixtures_path,
+    get_unique_suffix,
     root_project_path,
     secondary_features_path,
 )
-from behave import then, when
-from execution_steps import get_unique_suffix
 
 _BLOCK_PYDANTIC_SCRIPT = """
 import sys
@@ -457,7 +460,7 @@ def then_cli_loaded_neither(context, module_a, module_b):
 def when_api_run_undefined_background(context):
     _run_via_api(
         context,
-        os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'background_features', 'undefined_background_tests.feature'),
+        os.path.join(fixtures_path, 'background_features', 'undefined_background_tests.feature'),
     )
 
 
@@ -465,7 +468,7 @@ def when_api_run_undefined_background(context):
 def when_api_run_crashing_parallel(context, parallel_processes, parallel_scheme):
     _run_via_api(
         context,
-        os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'crashing_features', 'crashing_tests.feature'),
+        os.path.join(fixtures_path, 'crashing_features', 'crashing_tests.feature'),
         parallel_processes=int(parallel_processes),
         parallel_scheme=parallel_scheme,
     )

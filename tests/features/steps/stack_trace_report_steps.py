@@ -1,15 +1,15 @@
 import os
 
 from behave import then, when
-from execution_steps import execute_command, get_unique_suffix, tests_features_path
+from execution_steps import execute_command, fixtures_path, new_output_path
 
 
 @when('I run the behavex command with chained exception tests')
 def when_run_chained_exception_tests(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'fixtures', 'chained_exception_features', 'chained_exception_tests.feature'),
+        os.path.join(fixtures_path, 'chained_exception_features', 'chained_exception_tests.feature'),
         '-o', context.output_path,
     ]
     execute_command(context, execution_args)
@@ -17,10 +17,10 @@ def when_run_chained_exception_tests(context):
 
 @when('I run the behavex command with only passing chained exception test')
 def when_run_only_passing_chained_exception_test(context):
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'fixtures', 'chained_exception_features', 'chained_exception_tests.feature'),
+        os.path.join(fixtures_path, 'chained_exception_features', 'chained_exception_tests.feature'),
         '-t', '@PASSING_SCENARIO',
         '-o', context.output_path,
     ]

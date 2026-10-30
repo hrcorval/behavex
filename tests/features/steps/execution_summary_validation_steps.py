@@ -85,12 +85,10 @@ def step_summaries_should_be_identical(context):
 @when('I run the behavex command on "{feature_path}" with "{parallel_processes}" parallel processes and parallel scheme set as "{parallel_scheme}"')
 def step_run_behavex_with_feature_path_and_parallel(context, feature_path, parallel_processes, parallel_scheme):
     """Run BehaveX with specific feature path and parallel settings"""
-    import os
-
     from tests.features.steps.execution_steps import (execute_command,
-                                                      get_unique_suffix)
+                                                      new_output_path)
 
-    context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
+    context.output_path = new_output_path()
 
     # Handle multiple feature paths separated by spaces
     feature_paths = feature_path.split()

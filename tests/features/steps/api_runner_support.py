@@ -6,15 +6,18 @@ from typing import List, Optional
 
 import behave
 from config_file_steps import _clean_child_env
-from execution_steps import get_unique_suffix
+from execution_steps import (
+    fixtures_path,
+    get_unique_suffix,
+    root_project_path,
+    secondary_features_path,
+)
 from packaging.version import Version
 
 # behave 1.2.6 reports hook errors and undefined background steps as failed
 BEHAVE_ERROR_STATUS = 'error' if Version(behave.__version__) >= Version('1.2.7') else 'failed'
 
-root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'secondary_features')
-api_runner_features_path = os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'api_runner_features')
+api_runner_features_path = os.path.join(fixtures_path, 'api_runner_features')
 undefined_steps_features_path = os.path.join(api_runner_features_path, 'undefined_steps')
 nested_steps_folders_path = os.path.join(api_runner_features_path, 'nested_steps_folders')
 serial_suites_path = os.path.join(api_runner_features_path, 'serial_suites')
