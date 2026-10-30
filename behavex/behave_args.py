@@ -18,7 +18,7 @@ def as_non_option(path):
 
 
 def single_behave_run_paths(features_path, features):
-    """Return the paths one behave process runs, or None when each feature runs in its own worker."""
+    """Return the paths one behave process runs, or None for a parallel run."""
     if get_param('parallel_processes') > 1 and not get_param('dry_run'):
         return None
     return features_path.split(',') if global_vars.rerun_failures else list(features)

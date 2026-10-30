@@ -26,8 +26,8 @@ from behavex.utils import get_text, join_feature_reports
 def init_multiprocessing(idQueue, parallel_delay):
     try:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        # Spawned worker processes (macOS/Windows default) do not inherit sys.path.
-        # Re-add the project root so that local packages resolve inside workers.
+        # sys.path holds the launching script's folder, not the working directory,
+        # so add it for local packages to resolve inside workers.
         cwd = os.getcwd()
         if cwd not in sys.path:
             sys.path.insert(0, cwd)
