@@ -12,6 +12,7 @@ from typing import Callable, List, Optional
 
 from behavex import runner
 from behavex.arguments import parse_arguments
+from behavex.behave_args import as_non_option
 from behavex.conf_mgr import get_env
 from behavex.global_vars import global_vars
 from behavex.outputs.report_utils import text
@@ -232,7 +233,7 @@ class BehaveXRunner:
             args.append(f"--parallel-delay={self.parallel_delay}")
 
         if self.include_paths:
-            args += ["--include-paths"] + [runner._as_non_option(path) for path in self.include_paths]
+            args += ["--include-paths"] + [as_non_option(path) for path in self.include_paths]
 
         if self.dry_run:
             args.append("--dry-run")
