@@ -12,6 +12,7 @@ JSON test execution report.
 # Future added in order to maintain compatibility
 from __future__ import absolute_import
 
+import copy
 import json
 import multiprocessing
 import os
@@ -19,7 +20,7 @@ import random
 import traceback
 from tempfile import gettempdir
 
-from behave.model import ScenarioOutline
+from behave.model import Feature, Scenario, ScenarioOutline
 from behave.step_registry import registry
 
 from behavex.conf_mgr import get_env, get_param
@@ -312,3 +313,18 @@ def process_step_definition(step, step_info):
         step_info['hash'] = hash_step
     else:
         step_info['hash'] = 0
+
+
+def get_feature_json_skeleton(behave_element):
+    if type(behave_element) is Feature:
+        feature = behave_element
+    elif type(behave_element) is Scenario:
+        feature = copy.copy(behave_element.feature)
+        feature.scenarios = [behave_element]
+        # Clear rules so get_all_feature_scenarios returns only the single dispatched scenario
+        if hasattr(feature, 'rules'):
+            feature.rules = []
+    else:
+        raise Exception("No feature or scenario to process...")
+    execution_info = generate_execution_info([feature])
+    return json.dumps(execution_info[0]) if execution_info else {}

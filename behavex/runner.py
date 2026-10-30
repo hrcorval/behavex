@@ -13,7 +13,6 @@ from __future__ import absolute_import, print_function
 
 # Standard library imports
 import codecs
-import copy
 import json
 import logging
 import multiprocessing
@@ -35,7 +34,7 @@ from typing import Optional
 
 # Third-party imports
 from behave.configuration import Configuration
-from behave.model import Feature, Scenario, ScenarioOutline
+from behave.model import ScenarioOutline
 from behave.runner import ConfigError, Runner
 
 # Local imports
@@ -55,14 +54,14 @@ from behavex.global_vars import global_vars
 from behavex.outputs import report_xml
 from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
                                                FormatterManager)
-from behavex.outputs.report_json import (generate_execution_info,
+from behavex.outputs.report_json import (generate_execution_info, get_feature_json_skeleton,
                                          get_environment_details)
 from behavex.outputs.report_utils import (get_overall_status,
                                           get_string_hash,
                                           match_for_execution,
                                           pretty_print_time,
                                           text)
-from behavex.progress_bar import ProgressBar
+from behavex.progress_bar import create_progress_bar
 from behavex.run_state import state
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
@@ -709,7 +708,7 @@ def launch_by_feature(features,
         feature_filename = feature.filename if not scenario_line else "{}:{}".format(pure_feature_path, scenario_line)
 
         feature_info = {"feature_filename": feature_filename,
-                       "feature_json_skeleton": _get_feature_json_skeleton(feature)}
+                       "feature_json_skeleton": get_feature_json_skeleton(feature)}
 
         # Only calculate feature order if ordering is enabled
         if order_tests_enabled:
@@ -727,7 +726,7 @@ def launch_by_feature(features,
 
     if show_progress_bar:
         total_features = len(serial_features) + len(parallel_features)
-        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="feature",
+        global_vars.progress_bar_instance = create_progress_bar(parallel_scheme="feature",
                                                                        total_elements=total_features)
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
@@ -845,7 +844,7 @@ def launch_by_scenario(features,
     for features_path, scenario, scenario_tags in _select_scenarios(features):
         if scenario.name == "":
             features_with_no_scen_desc.append(scenario.filename)
-        feature_json_skeleton = _get_feature_json_skeleton(scenario)
+        feature_json_skeleton = get_feature_json_skeleton(scenario)
         feature_filename = scenario.feature.filename
         scenario_information = {"features_path": features_path,
                                 "feature_filename": feature_filename,
@@ -865,7 +864,7 @@ def launch_by_scenario(features,
             parallel_scenarios.append(scenario_information)
     state.progress_total = sum(total_scenarios_to_run.values())
     if show_progress_bar:
-        global_vars.progress_bar_instance = _get_progress_bar_instance(parallel_scheme="scenario",
+        global_vars.progress_bar_instance = create_progress_bar(parallel_scheme="scenario",
                                                                        total_elements=state.progress_total)
         if global_vars.progress_bar_instance:
             global_vars.progress_bar_instance.start()
@@ -1648,53 +1647,6 @@ def _warn_parallel_incompatible_params():
         if get_param(param):
             print(f"WARNING: Parameter '{param}' is not compatible with parallel execution: {reason}")
 
-
-def _get_feature_json_skeleton(behave_element):
-    """
-    Get the JSON skeleton for the given feature or scenario.
-
-    Args:
-        behave_element (Feature or Scenario): Behave element.
-
-    Returns:
-        str: JSON skeleton of the feature.
-    """
-    if type(behave_element) is Feature:
-        feature = behave_element
-    elif type(behave_element) is Scenario:
-        feature = copy.copy(behave_element.feature)
-        feature.scenarios = [behave_element]
-        # Clear rules so get_all_feature_scenarios returns only the single dispatched scenario
-        if hasattr(feature, 'rules'):
-            feature.rules = []
-    else:
-        raise Exception("No feature or scenario to process...")
-    execution_info = generate_execution_info([feature])
-    return json.dumps(execution_info[0]) if execution_info else {}
-
-
-def _get_progress_bar_instance(parallel_scheme, total_elements):
-    """
-    Get the progress bar instance.
-
-    Args:
-        parallel_scheme (str): Parallel scheme (feature or scenario).
-        total_elements (int): Total number of elements.
-
-    Returns:
-        ProgressBar: Progress bar instance.
-    """
-    try:
-        config = conf_mgr.get_config()
-        print_updates_in_new_lines = True if config['progress_bar']['print_updates_in_new_lines'] else False
-        progress_bar_prefix = "Executed {}s".format(parallel_scheme)
-        progress_bar_instance = ProgressBar(progress_bar_prefix,
-                                            total_elements,
-                                            print_updates_in_new_lines=print_updates_in_new_lines)
-    except Exception as ex:
-        print("There was an error creating the progress bar: {}".format(ex))
-        return None
-    return progress_bar_instance
 
 
 if __name__ == '__main__':

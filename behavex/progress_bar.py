@@ -2,6 +2,7 @@ import platform
 import sys
 import time
 
+from behavex import conf_mgr
 from behavex.global_vars import global_vars
 
 
@@ -60,3 +61,17 @@ class ProgressBar:
         else:
             sys.stdout.write(progress_bar_content)
             sys.stdout.flush()
+
+
+def create_progress_bar(parallel_scheme, total_elements):
+    try:
+        config = conf_mgr.get_config()
+        print_updates_in_new_lines = True if config['progress_bar']['print_updates_in_new_lines'] else False
+        progress_bar_prefix = "Executed {}s".format(parallel_scheme)
+        progress_bar_instance = ProgressBar(progress_bar_prefix,
+                                            total_elements,
+                                            print_updates_in_new_lines=print_updates_in_new_lines)
+    except Exception as ex:
+        print("There was an error creating the progress bar: {}".format(ex))
+        return None
+    return progress_bar_instance
