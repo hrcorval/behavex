@@ -3,6 +3,9 @@ import os
 import re
 from tempfile import gettempdir
 
+from behave.configuration import Configuration
+from behave.runner import Runner
+
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
@@ -12,6 +15,20 @@ from behavex.utils import get_name_filters
 def as_non_option(path):
     # behave reads a relative path starting with "-" (behave's own filenames included) as an option
     return os.path.abspath(path) if path.startswith('-') else path
+
+
+def single_behave_run_paths(features_path, features):
+    """Return the paths one behave process runs, or None when each feature runs in its own worker."""
+    if get_param('parallel_processes') > 1 and not get_param('dry_run'):
+        return None
+    return features_path.split(',') if global_vars.rerun_failures else list(features)
+
+
+def behave_runner_after_setup_paths(behave_args):
+    """Return a behave Runner whose base_dir holds its steps folder; raises ConfigError when there is none."""
+    behave_runner = Runner(Configuration(command_args=behave_args))
+    behave_runner.setup_paths()
+    return behave_runner
 
 
 def set_behave_arguments(features_path, multiprocess, execution_id=None, feature=None, scenario_line=None, config=None):

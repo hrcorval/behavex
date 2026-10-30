@@ -21,8 +21,6 @@ import platform
 import sys
 import time
 import uuid
-from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import active_children
 from tempfile import gettempdir
 from typing import Optional
 
@@ -36,21 +34,21 @@ import importlib.util
 
 from behavex import conf_mgr
 from behavex.arguments import BEHAVEX_ARGS, parse_arguments
-from behavex.behave_args import as_non_option
+from behavex.behave_args import as_non_option, behave_runner_after_setup_paths, single_behave_run_paths
 from behavex.conf_mgr import ConfigRun, get_env, get_param
 from behavex.context import BehaveXContext
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
-from behavex.dispatch import (execute_tests_in_worker_forwarding_to_host, launch_by_feature,
-                              launch_by_scenario, live_run_worker_processes)
+from behavex.dispatch import (create_worker_pool, launch_by_feature, launch_by_scenario,
+                              run_in_one_behave_process, terminate_worker_processes)
 from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
                                                FormatterManager)
 from behavex.outputs.report_utils import (get_overall_status,
                                           match_for_execution,
                                           pretty_print_time)
+from behavex.outputs.report_xml import get_feature_results_tmp_file_path
 from behavex.run_state import state
-from behavex.step_definition_lookup import (behave_runner_after_setup_paths, find_undefined_step_texts,
-                                            single_behave_run_paths)
+from behavex.step_definition_lookup import find_undefined_step_texts
 from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            cleanup_folders, configure_logging,
                            copy_bootstrap_html_generator,
@@ -62,8 +60,6 @@ from behavex.utils import (IncludeNameMatch, IncludePathsMatch, MatchInclude,
                            print_env_variables, print_parallel,
                            set_behave_tags, set_env_variable,
                            set_environ_config, set_system_paths)
-from behavex.worker import (execute_tests, get_feature_results_tmp_file_path,
-                            init_multiprocessing)
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -286,18 +282,7 @@ def launch_behavex():
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     lock = manager.Lock()
-    # Create a queue containing unique IDs from 0 to the number of parallel processes - 1
-    # These IDs will be attributed to the process when they will be initialized
-    idQueue = manager.Queue()
-    for i in range(parallel_processes):
-        idQueue.put(i)
-    parallel_delay = get_param('parallel_delay')
-    # A forked worker would inherit a BehaveXRunner host's memory, behave's step registry included
-    state.active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
-                                                 mp_context=multiprocessing.get_context('spawn') if state.run_active else None,
-                                                 initializer=init_multiprocessing,
-                                                 initargs=(idQueue, parallel_delay))
-    state.active_executor_processes_by_pid = state.active_executor._processes
+    create_worker_pool(manager, parallel_processes)
     global_vars.execution_start_time = time.time()
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
@@ -322,25 +307,18 @@ def launch_behavex():
                                             config=config,
                                             lock=None,
                                             shared_removed_scenarios=None)
-                if state.run_active:
-                    # behave keeps step definitions in a process-wide registry, so a BehaveXRunner
-                    # host's next run would see this run's steps if behave ran in the host process
-                    execution_codes, json_reports = execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager)
-                else:
-                    execution_codes, json_reports = execute_tests(**execute_tests_kwargs)
+                execution_codes, json_reports = run_in_one_behave_process(execute_tests_kwargs, manager)
             else:
                 execution_codes, json_reports = (0, [{'environment': [], 'features': [], 'steps_definition': []}])
                 print_summary = not get_param('dry_run')
         elif parallel_scheme == 'scenario':
             execution_codes, json_reports = launch_by_scenario(_select_scenarios(updated_features_list),
-                                                            state.active_executor,
                                                             lock,
                                                             shared_removed_scenarios,
                                                             show_progress_bar)
             scenario = True
         elif parallel_scheme == 'feature':
             execution_codes, json_reports = launch_by_feature(updated_features_list,
-                                                            state.active_executor,
                                                             lock,
                                                             show_progress_bar)
         merged_json = wrap_up_process_pools(state.active_executor, json_reports, scenario)
@@ -401,19 +379,7 @@ def launch_behavex():
         )
         exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
     except KeyboardInterrupt:
-        print('Caught KeyboardInterrupt, terminating workers')
-        try:
-            list_processes_to_terminate = live_run_worker_processes if state.run_active else active_children
-            while list_processes_to_terminate():
-                for process in list_processes_to_terminate():
-                    process.terminate()  # Forcefully terminate each process
-                time.sleep(1)
-            if state.run_active:
-                manager.shutdown()
-            if state.active_executor is not None:
-                state.active_executor.shutdown(wait=False)
-        except Exception as e:
-            print(f"Error during shutdown: {e}")
+        terminate_worker_processes(manager)
         exit_code = EXIT_ERROR
     finally:
         state.active_executor = None

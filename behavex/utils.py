@@ -8,7 +8,6 @@
 from __future__ import absolute_import, print_function
 
 import codecs
-import functools
 import glob
 import hashlib
 import json
@@ -37,7 +36,6 @@ from behavex.outputs.output_strings import TEXTS
 from behavex.outputs.report_utils import (get_save_function, get_string_hash,
                                           match_for_execution,
                                           retry_file_operation)
-from behavex.run_state import state
 
 LOGGING_CFG = ConfigObj(os.path.join(global_vars.execution_path, 'conf_logging.cfg'))
 LOGGING_LEVELS = {
@@ -48,35 +46,6 @@ LOGGING_LEVELS = {
     'critical': logging.CRITICAL,
 }
 ELAPSED_START_TIME = time.time()
-
-
-def handle_execution_complete_callback(codes,
-                                       json_reports,
-                                       progress_bar_instance,
-                                       future):
-    if future.cancelled():
-        return
-    tuple_values = None
-    try:
-        tuple_values = future.result()
-    except: # isort:skip
-        json_reports += []
-        codes.append(2)
-    if tuple_values:
-        execution_code, map_json = tuple_values
-        json_reports += [map_json]
-        codes.append(execution_code)
-        state.fire_report_progress(map_json)
-    if progress_bar_instance:
-        progress_bar_instance.update()
-
-
-def create_execution_complete_callback_function(codes,
-                                                json_reports,
-                                                progress_bar_instance):
-    append_output = functools.partial(handle_execution_complete_callback,
-                                      codes, json_reports, progress_bar_instance)
-    return append_output
 
 
 def get_logging_level():

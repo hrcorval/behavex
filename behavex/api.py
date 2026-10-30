@@ -118,14 +118,7 @@ class BehaveXRunner:
     def run(self) -> RunResult:
         args = self._build_args()
         _validate_args(args)
-        state.progress_callback = self.on_progress
-        state.completed_count = 0
-        state.progress_total = None
-        state.last_run_results = []
-        state.progress_reported = set()
-        state.stop_requested = False
-        state.stopped = False
-        state.run_active = True
+        state.reset_for_run(self.on_progress)
         global _running_instance
         _running_instance = self
         try:

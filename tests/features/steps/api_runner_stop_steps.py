@@ -221,10 +221,11 @@ def when_run_parallel_slow_callbacks_stopping_on_first_event(context):
     feature_path = os.path.join(api_runner_features_path, 'twelve_scenarios.feature')
     script = f"""
 import json, sys, time
-from behavex import utils
+from unittest import mock
+from behavex import dispatch
 {_PROGRESS_CALLBACK}
 _record = _on_progress
-_handle_result = utils.handle_execution_complete_callback
+_handle_result = dispatch.handle_execution_complete_callback
 _results_handled = []
 
 def _slow_handle_result(codes, json_reports, progress_bar, future):
@@ -234,7 +235,7 @@ def _slow_handle_result(codes, json_reports, progress_bar, future):
     _handle_result(codes, json_reports, progress_bar, future)
     _results_handled.append(future)
 
-utils.handle_execution_complete_callback = _slow_handle_result
+mock.patch.object(dispatch, 'handle_execution_complete_callback', _slow_handle_result).start()
 
 def _on_progress(event):
     _record(event)

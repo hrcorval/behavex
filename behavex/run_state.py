@@ -22,6 +22,11 @@ class RunState:
         self.run_id: Optional[str] = None
         self.host_queue = None
 
+    def reset_for_run(self, progress_callback) -> None:
+        self.__init__()
+        self.progress_callback = progress_callback
+        self.run_active = True
+
     def fire_progress(self, scenario_name: str, feature_name: str, status: str, duration: float) -> None:
         """Never raises."""
         if self.progress_callback is None:

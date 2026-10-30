@@ -6,19 +6,14 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 from types import SimpleNamespace
 
-from behave.configuration import Configuration
-from behave.runner import ConfigError, Runner
+from behave.runner import ConfigError
 
-from behavex.behave_args import set_behave_arguments
-from behavex.conf_mgr import ConfigRun, get_param
-from behavex.global_vars import global_vars
-
-
-def single_behave_run_paths(features_path, features):
-    """Return the paths one behave process runs, or None when each feature runs in its own worker."""
-    if get_param('parallel_processes') > 1 and not get_param('dry_run'):
-        return None
-    return features_path.split(',') if global_vars.rerun_failures else list(features)
+from behavex.behave_args import (
+    behave_runner_after_setup_paths,
+    set_behave_arguments,
+    single_behave_run_paths,
+)
+from behavex.conf_mgr import ConfigRun
 
 
 def find_undefined_step_texts(features, scenarios):
@@ -59,13 +54,6 @@ def find_undefined_step_texts(features, scenarios):
     return [['{} {}'.format(step.keyword.strip(), step.name) for step in scenario.all_steps
              if (step.step_type, step.name) in undefined_steps_by_steps_folder[steps_folder]]
             for scenario, steps_folder in zip(scenarios, steps_folder_per_scenario)]
-
-
-def behave_runner_after_setup_paths(behave_args):
-    """Return a behave Runner whose base_dir holds its steps folder; raises ConfigError when there is none."""
-    behave_runner = Runner(Configuration(command_args=behave_args))
-    behave_runner.setup_paths()
-    return behave_runner
 
 
 def _find_undefined_steps_in_fresh_process(behave_args, steps):

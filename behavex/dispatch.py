@@ -1,10 +1,14 @@
+import functools
 import json
+import multiprocessing
 import os
 import signal
 import sys
 import threading
-from concurrent.futures import CancelledError, Future
+import time
+from concurrent.futures import CancelledError, Future, ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
+from multiprocessing import active_children
 
 from behavex import host_messages
 from behavex.conf_mgr import ConfigRun, get_param
@@ -13,13 +17,72 @@ from behavex.outputs.report_json import get_feature_json_skeleton
 from behavex.progress_bar import create_progress_bar
 from behavex.run_state import state
 from behavex.utils import (
-    create_execution_complete_callback_function,
     get_feature_and_scenario_line,
     get_feature_order,
     get_scenario_order,
     print_parallel,
 )
-from behavex.worker import execute_tests
+from behavex.worker import execute_tests, init_multiprocessing
+
+
+def create_worker_pool(manager, parallel_processes):
+    # Create a queue containing unique IDs from 0 to the number of parallel processes - 1
+    # These IDs will be attributed to the process when they will be initialized
+    idQueue = manager.Queue()
+    for i in range(parallel_processes):
+        idQueue.put(i)
+    parallel_delay = get_param('parallel_delay')
+    # A forked worker would inherit a BehaveXRunner host's memory, behave's step registry included
+    state.active_executor = ProcessPoolExecutor(max_workers=parallel_processes,
+                                                 mp_context=multiprocessing.get_context('spawn') if state.run_active else None,
+                                                 initializer=init_multiprocessing,
+                                                 initargs=(idQueue, parallel_delay))
+    state.active_executor_processes_by_pid = state.active_executor._processes
+
+
+def terminate_worker_processes(manager):
+    print('Caught KeyboardInterrupt, terminating workers')
+    try:
+        list_processes_to_terminate = _live_run_worker_processes if state.run_active else active_children
+        while list_processes_to_terminate():
+            for process in list_processes_to_terminate():
+                process.terminate()  # Forcefully terminate each process
+            time.sleep(1)
+        if state.run_active:
+            manager.shutdown()
+        if state.active_executor is not None:
+            state.active_executor.shutdown(wait=False)
+    except Exception as e:
+        print(f"Error during shutdown: {e}")
+
+
+def handle_execution_complete_callback(codes,
+                                       json_reports,
+                                       progress_bar_instance,
+                                       future):
+    if future.cancelled():
+        return
+    tuple_values = None
+    try:
+        tuple_values = future.result()
+    except: # isort:skip
+        json_reports += []
+        codes.append(2)
+    if tuple_values:
+        execution_code, map_json = tuple_values
+        json_reports += [map_json]
+        codes.append(execution_code)
+        state.fire_report_progress(map_json)
+    if progress_bar_instance:
+        progress_bar_instance.update()
+
+
+def create_execution_complete_callback_function(codes,
+                                                json_reports,
+                                                progress_bar_instance):
+    append_output = functools.partial(handle_execution_complete_callback,
+                                      codes, json_reports, progress_bar_instance)
+    return append_output
 
 
 def _mark_run_stopped_if_requested() -> bool:
@@ -80,14 +143,12 @@ def _submit_unless_stopped(process_pool, fn, **kwargs):
 
 
 def launch_by_feature(features,
-                      process_pool,
                       lock,
                       show_progress_bar):
     """Launch tests by feature in parallel.
 
     Args:
         features (dict): Dictionary of features and their scenarios.
-        process_pool (ProcessPoolExecutor): Process pool executor.
         lock (Lock): Multiprocessing lock.
         show_progress_bar (bool): Whether to show the progress bar.
 
@@ -184,7 +245,7 @@ def launch_by_feature(features,
         for parallel_feature in feature_group:
             feature_filename = parallel_feature["feature_filename"]
             feature_json_skeleton = parallel_feature["feature_json_skeleton"]
-            future = _submit_unless_stopped(process_pool, execute_tests,
+            future = _submit_unless_stopped(state.active_executor, execute_tests,
                                             features_path=None,
                                             feature_filename=feature_filename,
                                             feature_json_skeleton=feature_json_skeleton,
@@ -205,7 +266,6 @@ def launch_by_feature(features,
 
 
 def launch_by_scenario(selected_scenarios,
-                       process_pool,
                        lock,
                        shared_removed_scenarios,
                        show_progress_bar):
@@ -213,7 +273,6 @@ def launch_by_scenario(selected_scenarios,
 
     Args:
         selected_scenarios (iterable): (features_path, scenario, scenario_tags) for each scenario to run.
-        process_pool (ProcessPoolExecutor): Process pool executor.
         lock (Lock): Multiprocessing lock.
         shared_removed_scenarios (dict): Shared dictionary of removed scenarios.
         show_progress_bar (bool): Whether to show the progress bar.
@@ -332,7 +391,7 @@ def launch_by_scenario(selected_scenarios,
                 feature_filename = scenario_information["feature_filename"]
                 feature_json_skeleton = scenario_information["feature_json_skeleton"]
                 scenario_line = scenario_information["scenario_line"]
-                future = _submit_unless_stopped(process_pool, execute_tests,
+                future = _submit_unless_stopped(state.active_executor, execute_tests,
                                                 features_path=features_path,
                                                 feature_filename=feature_filename,
                                                 feature_json_skeleton=feature_json_skeleton,
@@ -353,7 +412,15 @@ def launch_by_scenario(selected_scenarios,
     return execution_codes, json_reports
 
 
-def execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager):
+def run_in_one_behave_process(execute_tests_kwargs, manager):
+    if state.run_active:
+        # behave keeps step definitions in a process-wide registry, so a BehaveXRunner
+        # host's next run would see this run's steps if behave ran in the host process
+        return _execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager)
+    return execute_tests(**execute_tests_kwargs)
+
+
+def _execute_tests_in_worker_forwarding_to_host(execute_tests_kwargs, manager):
     """Run execute_tests in the run's worker; its output and on_progress events reach this process live."""
     host_queue = manager.Queue()
     worker_messages_forwarder = threading.Thread(target=host_messages.forward_worker_messages, args=(host_queue,), daemon=True)
@@ -403,11 +470,11 @@ def _interrupt_worker_processes():
     if os.name != 'posix':
         # os.kill would terminate the worker on Windows, where a console Ctrl+C reaches it anyway
         return
-    for worker_process in live_run_worker_processes():
+    for worker_process in _live_run_worker_processes():
         os.kill(worker_process.pid, signal.SIGINT)
 
 
-def live_run_worker_processes():
+def _live_run_worker_processes():
     # active_children() also lists a BehaveXRunner host application's own processes
     return [worker_process for worker_process in list(state.active_executor_processes_by_pid.values())
             if worker_process.is_alive()]

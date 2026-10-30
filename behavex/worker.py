@@ -1,4 +1,3 @@
-import codecs
 import json
 import logging
 import multiprocessing
@@ -7,22 +6,21 @@ import signal
 import sys
 import time
 import traceback
-from multiprocessing.managers import DictProxy
 
 from behave.configuration import Configuration
 from behave.runner import Runner
 
 from behavex import host_messages
 from behavex.behave_args import set_behave_arguments
-from behavex.conf_mgr import ConfigRun, get_env, get_param
+from behavex.conf_mgr import ConfigRun, get_param
 from behavex.environment import extend_behave_hooks
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
-from behavex.outputs import report_xml
 from behavex.outputs.report_json import generate_execution_info, get_environment_details
-from behavex.outputs.report_utils import get_string_hash, text
+from behavex.outputs.report_utils import text
+from behavex.outputs.report_xml import processing_xml_feature
 from behavex.run_state import state
-from behavex.utils import get_text, join_feature_reports, len_scenarios
+from behavex.utils import get_text, join_feature_reports
 
 
 def init_multiprocessing(idQueue, parallel_delay):
@@ -342,82 +340,3 @@ def _launch_behave(behave_args):
 
     # Note: stdout file merging removed since we get execution results directly from runner
     return execution_code, generate_report, json_results_str
-
-
-def get_feature_results_tmp_file_path(feature_filename):
-    feature_tmp_dir = get_env('TEMP') if get_param('no_report') else get_env('OUTPUT')
-    return os.path.join(feature_tmp_dir, u'{}.tmp'.format(get_string_hash(os.path.abspath(feature_filename))))
-
-
-def processing_xml_feature(json_output, scenario_line, feature_filename,
-                           scenarios_to_run_in_feature=None, lock=None,
-                           shared_removed_scenarios=None):
-    """
-    Process the XML feature and update the JSON output.
-
-    Args:
-        json_output (dict): JSON output of the test execution.
-        scenario (Scenario): Scenario object.
-        feature_filename (str): Name of the feature file.
-        scenarios_to_run_in_feature (int): Number of scenarios to run in the feature.
-        lock (Lock): Multiprocessing lock.
-        shared_removed_scenarios (dict): Shared dictionary of removed scenarios.
-    """
-    if lock:
-        lock.acquire()
-    try:
-        feature_contains_scenarios = True if (json_output['features'] and
-                                              'scenarios' in json_output['features'][0] and
-                                              json_output['features'][0]["scenarios"]) else False
-        if type(shared_removed_scenarios) == DictProxy and not feature_contains_scenarios:
-            # Assuming the scenario was removed from the execution (using scenarios.remove) as it is not in execution
-            if feature_filename not in shared_removed_scenarios:
-                shared_removed_scenarios[feature_filename] = 1
-            else:
-                shared_removed_scenarios[feature_filename] += 1
-        if feature_contains_scenarios:
-            reported_scenarios = json_output['features'][0]['scenarios']
-            executed_scenarios = []
-            for reported_scenario in reported_scenarios:
-                if reported_scenario['line'] == scenario_line:
-                    executed_scenarios.append(reported_scenario)
-            json_output['features'][0]['scenarios'] = executed_scenarios
-            feature_tmp_file_path = get_feature_results_tmp_file_path(feature_filename)
-            processed_feature_data = json_output['features'][0]
-            processed_feature_data['scenarios'] = executed_scenarios
-            if os.path.exists(feature_tmp_file_path):
-                for _ in range(0, 10):
-                    try:
-                        processed_feature_data = json.load(open(feature_tmp_file_path, 'r'))
-                        with open(feature_tmp_file_path, 'w') as feature_file:
-                            for executed_scenario in executed_scenarios:
-                                processed_feature_data['scenarios'].append(executed_scenario)
-                            json.dump(processed_feature_data, feature_file)
-                        break
-                    except Exception as ex:
-                        logging.debug(ex)
-                        logging.debug('Retrying reading from {}'.format(feature_tmp_file_path))
-                        time.sleep(1)
-            else:
-                with codecs.open(feature_tmp_file_path, 'w', 'utf8') as feature_file:
-                    json.dump(processed_feature_data, feature_file)
-            # calculate the total number of scenarios that should be executed
-            removed_scenarios = 0
-            if shared_removed_scenarios and feature_filename in shared_removed_scenarios:
-                removed_scenarios = shared_removed_scenarios[feature_filename]
-            if scenarios_to_run_in_feature is None:
-                total_scenarios = len_scenarios(feature_filename) - removed_scenarios
-            else:
-                total_scenarios = scenarios_to_run_in_feature - removed_scenarios
-            if len(processed_feature_data['scenarios']) == total_scenarios:
-                try:
-                    if not get_param('no_report'):
-                        report_xml.export_feature_to_xml(processed_feature_data, False)
-                except Exception as ex:
-                    traceback.print_exc()
-                    print(ex)
-                finally:
-                    os.remove(feature_tmp_file_path)
-    finally:
-        if lock:
-            lock.release()
