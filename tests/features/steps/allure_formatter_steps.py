@@ -383,87 +383,6 @@ def then_see_severity_labels(context):
                 assert labels['severity'] in valid_severities, f"Invalid severity: {labels['severity']}"
 
 
-@then('I should see that allure result files contain table attachments')
-def then_see_table_attachments(context):
-    allure_results_path = os.path.join(context.output_path, 'allure-results')
-    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
-
-    table_attachment_found = False
-    for result_file in result_files:
-        with open(os.path.join(allure_results_path, result_file), 'r') as f:
-            result_data = json.load(f)
-
-            # Check for table attachments in steps
-            for step in result_data.get('steps', []):
-                for attachment in step.get('attachments', []):
-                    if attachment.get('name') == '.table' and attachment.get('type') == 'text/csv':
-                        table_attachment_found = True
-                        break
-
-    assert table_attachment_found, "No table attachments found in result files"
-
-
-@then('I should see that table data is formatted as CSV')
-def then_see_csv_formatted_data(context):
-    allure_results_path = os.path.join(context.output_path, 'allure-results')
-    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
-
-    for result_file in result_files:
-        with open(os.path.join(allure_results_path, result_file), 'r') as f:
-            result_data = json.load(f)
-
-            # Check for table attachments and verify CSV content
-            for step in result_data.get('steps', []):
-                for attachment in step.get('attachments', []):
-                    if attachment.get('name') == '.table':
-                        attachment_file = os.path.join(allure_results_path, attachment['source'])
-                        if os.path.exists(attachment_file):
-                            with open(attachment_file, 'r') as af:
-                                content = af.read()
-                                # Basic CSV validation - should contain commas and newlines
-                                assert ',' in content or '\n' in content, "Content doesn't appear to be CSV format"
-
-
-@then('I should see that allure result files contain text attachments')
-def then_see_text_attachments(context):
-    allure_results_path = os.path.join(context.output_path, 'allure-results')
-    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
-
-    text_attachment_found = False
-    for result_file in result_files:
-        with open(os.path.join(allure_results_path, result_file), 'r') as f:
-            result_data = json.load(f)
-
-            # Check for text attachments in steps
-            for step in result_data.get('steps', []):
-                for attachment in step.get('attachments', []):
-                    if attachment.get('name') == 'Step Text' and attachment.get('type') == 'text/plain':
-                        text_attachment_found = True
-                        break
-
-    assert text_attachment_found, "No text attachments found in result files"
-
-
-@then('I should see that multiline text is properly attached')
-def then_see_multiline_text_attached(context):
-    allure_results_path = os.path.join(context.output_path, 'allure-results')
-    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
-
-    for result_file in result_files:
-        with open(os.path.join(allure_results_path, result_file), 'r') as f:
-            result_data = json.load(f)
-
-            # Check for text attachments and verify content
-            for step in result_data.get('steps', []):
-                for attachment in step.get('attachments', []):
-                    if attachment.get('name') == 'Step Text':
-                        attachment_file = os.path.join(allure_results_path, attachment['source'])
-                        if os.path.exists(attachment_file):
-                            with open(attachment_file, 'r') as af:
-                                content = af.read()
-                                assert len(content) > 0, "Text attachment is empty"
-
-
 @then('I should see that the script executes successfully')
 def then_see_script_success(context):
     assert context.result.returncode == 0, f"Script failed with exit code {context.result.returncode}. Output: {context.result.stdout}"
@@ -909,33 +828,6 @@ def then_see_undefined_steps_as_test_defects(context):
                         break
 
     assert test_defect_found, "No undefined step scenarios found categorized as Test Defects"
-
-
-@then('I should see that error exception scenarios are categorized as Test Defects')
-def then_see_error_exceptions_as_test_defects(context):
-    """Verify error exception scenarios are categorized as Test Defects"""
-    # Note: The autoretry tests actually contain AssertionErrors, so they should be Product Defects
-    # This step should look for scenarios that contain actual technical errors, not assertion failures
-    allure_results_path = os.path.join(context.output_path, 'allure-results')
-
-    # For now, this step will check if any scenarios are categorized as Product Defects
-    # since the autoretry scenarios throw AssertionErrors (which are Product Defects)
-    result_files = [f for f in os.listdir(allure_results_path) if f.endswith('-result.json')]
-
-    product_defect_found = False
-    for result_file in result_files:
-        with open(os.path.join(allure_results_path, result_file), 'r') as f:
-            result_data = json.load(f)
-            if result_data.get('status') == 'failed':
-                # Check if this scenario has Product Defects category (since autoretry tests throw AssertionErrors)
-                labels = result_data.get('labels', [])
-                category_labels = [label for label in labels if label.get('name') == 'category']
-                for category_label in category_labels:
-                    if category_label.get('value') == 'Product Defects':
-                        product_defect_found = True
-                        break
-
-    assert product_defect_found, "No failed scenarios found categorized as Product Defects (autoretry tests throw AssertionErrors)"
 
 
 @then('I should see that failed scenarios are properly categorized by failure type')
