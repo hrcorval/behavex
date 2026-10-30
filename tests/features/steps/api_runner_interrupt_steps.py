@@ -65,6 +65,39 @@ def then_put_completed_before_keyboard_interrupt(context):
     assert context.api_run_result['interrupt_raised_after_put'] is True, context.api_run_result
 
 
+@when('the worker pool fails to shut down while waiting for its workers')
+def when_worker_pool_shutdown_fails_while_waiting(context):
+    script = f"""
+import json
+from concurrent.futures import ProcessPoolExecutor
+from behavex import dispatch
+from behavex.run_state import state
+
+class ExecutorFailingToShutDownWhileWaiting(ProcessPoolExecutor):
+    def shutdown(self, wait=True, **kwargs):
+        if wait:
+            raise RuntimeError('worker pool failed to shut down')
+        super().shutdown(wait=wait, **kwargs)
+
+{_CAPTURE_RAISED}
+state.active_executor = ExecutorFailingToShutDownWhileWaiting(max_workers=1)
+raised = _capture_raised(dispatch.shut_down_worker_pool)
+try:
+    state.active_executor.submit(print)
+    accepts_new_work = True
+except RuntimeError:
+    accepts_new_work = False
+print("__RESULT__:" + json.dumps({{"raised": raised, "accepts_new_work": accepts_new_work}}))
+"""
+    _store_result(context, _run_script(script, import_runner=False))
+
+
+@then('the worker pool shut down without waiting and raised no exception')
+def then_worker_pool_shut_down_without_waiting(context):
+    result = context.api_run_result
+    assert result['raised'] is None and result['accepts_new_work'] is False, result
+
+
 @when('I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C {presses} to {target} once the first one finishes')
 def when_run_and_send_ctrl_c(context, presses, target):
     ctrl_c_presses_code = '; '.join([_CTRL_C_TARGETS[target]] + [

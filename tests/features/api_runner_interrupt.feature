@@ -6,6 +6,11 @@ Feature: BehaveXRunner Python API: Ctrl+C and dying workers
     When I run BehaveXRunner with passing tests while merging the results raises KeyboardInterrupt
     Then the RunResult exit_code should be "1"
 
+  @API_RUNNER_092
+  Scenario: a worker pool that fails to shut down while waiting is shut down without waiting
+    When the worker pool fails to shut down while waiting for its workers
+    Then the worker pool shut down without waiting and raised no exception
+
   @API_RUNNER_083 @POSIX_ONLY
   Scenario Outline: a Ctrl+C sent to <target> during a single-process run returns the scenarios that ran before it
     When I run BehaveXRunner in a single process on slow scenarios and send Ctrl+C once to <target> once the first one finishes

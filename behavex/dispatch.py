@@ -44,7 +44,10 @@ def shut_down_worker_pool():
     try:
         state.active_executor.shutdown(wait=True)
     except Exception:
-        state.active_executor.shutdown(wait=False, cancel_futures=True)
+        if sys.version_info >= (3, 9):
+            state.active_executor.shutdown(wait=False, cancel_futures=True)
+        else:
+            state.active_executor.shutdown(wait=False)
 
 
 def shut_down_worker_pool_after_ctrl_c(manager):
