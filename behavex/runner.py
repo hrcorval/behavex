@@ -39,8 +39,8 @@ from behavex.conf_mgr import ConfigRun, get_env, get_param
 from behavex.context import BehaveXContext
 from behavex.execution_singleton import ExecutionSingleton
 from behavex.global_vars import global_vars
-from behavex.dispatch import (create_worker_pool, launch_by_feature, launch_by_scenario,
-                              run_in_one_behave_process, terminate_worker_processes)
+from behavex.dispatch import (launch_by_feature, launch_by_scenario, run_in_one_behave_process,
+                              shut_down_worker_pool, shut_down_worker_pool_after_ctrl_c, start_worker_pool)
 from behavex.outputs.formatter_manager import (DEFAULT_FORMATTER_DIR,
                                                FormatterManager)
 from behavex.outputs.report_utils import (get_overall_status,
@@ -282,7 +282,7 @@ def launch_behavex():
     # shared variable to track scenarios that should be run but seems to be removed from execution (using scenarios.remove)
     shared_removed_scenarios = manager.dict()
     lock = manager.Lock()
-    create_worker_pool(manager, parallel_processes)
+    start_worker_pool(manager, parallel_processes)
     global_vars.execution_start_time = time.time()
     totals = {"features": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0},
               "scenarios": {"passed": 0, "failed": 0, "error": 0, "skipped": 0, "untested": 0}}
@@ -321,7 +321,7 @@ def launch_behavex():
             execution_codes, json_reports = launch_by_feature(updated_features_list,
                                                             lock,
                                                             show_progress_bar)
-        merged_json = wrap_up_process_pools(state.active_executor, json_reports, scenario)
+        merged_json = wrap_up_process_pools(json_reports, scenario)
 
         if get_param('dry_run'):
             print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
@@ -379,7 +379,7 @@ def launch_behavex():
         )
         exit_code = (EXIT_ERROR if (execution_failed and (failing_non_muted_tests or no_scenarios_ran)) or execution_interrupted_or_crashed else EXIT_OK)
     except KeyboardInterrupt:
-        terminate_worker_processes(manager)
+        shut_down_worker_pool_after_ctrl_c(manager)
         exit_code = EXIT_ERROR
     finally:
         state.active_executor = None
@@ -561,23 +561,18 @@ def _select_scenarios(features):
                     yield features_path, scenario, scenario_tags
 
 
-def wrap_up_process_pools(process_pool,
-                          json_reports,
+def wrap_up_process_pools(json_reports,
                           scenario=False):
     """
     Wrap up the process pools and generate the final report.
 
     Args:
-        process_pool (ProcessPoolExecutor): Process pool executor.
         json_reports (list): List of JSON reports.
         scenario (bool): Whether the execution was by scenario.
     """
     merged_json = None
     output = os.path.join(get_env('OUTPUT'))
-    try:
-        process_pool.shutdown(wait=True)
-    except Exception:
-        process_pool.shutdown(wait=False, cancel_futures=True)
+    shut_down_worker_pool()
     if type(json_reports) is list:
         if scenario:
             json_reports = join_scenario_reports(json_reports)

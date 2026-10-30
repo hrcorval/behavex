@@ -63,13 +63,5 @@ class RunState:
         except Exception:
             pass
 
-    def report_scenario_progress(self, scenario_key, **progress_fields) -> None:
-        """Fire on_progress for a finished scenario; a single-process worker hands it to the host process."""
-        if self.host_queue is not None:
-            self.host_queue.put(('progress', (scenario_key, progress_fields)))
-            return
-        self.progress_reported.add(scenario_key)
-        self.fire_progress(**progress_fields)
-
 
 state = RunState()

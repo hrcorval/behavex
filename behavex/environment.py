@@ -24,6 +24,7 @@ from behave.runner import Context, ModelRunner
 from behavex import conf_mgr
 from behavex.conf_mgr import get_env, get_param
 from behavex.global_vars import global_vars
+from behavex.host_messages import report_scenario_progress
 from behavex.outputs import report_json, report_xml
 from behavex.outputs.report_utils import (create_log_path, get_string_hash,
                                           match_for_execution,
@@ -404,7 +405,7 @@ def _fire_scenario_progress(scenario):
         # behave runs no hook for a scenario it skips, which the report drops when a filter excludes it
         if not getattr(scenario, 'bhx_hooks_ran', False) or not match_for_execution(get_scenario_tags(scenario)):
             return
-        state.report_scenario_progress(
+        report_scenario_progress(
             (scenario.feature.filename, scenario.line),
             scenario_name=scenario.name,
             feature_name=scenario.feature.name,

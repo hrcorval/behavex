@@ -25,7 +25,7 @@ from behavex.utils import (
 from behavex.worker import execute_tests, init_multiprocessing
 
 
-def create_worker_pool(manager, parallel_processes):
+def start_worker_pool(manager, parallel_processes):
     # Create a queue containing unique IDs from 0 to the number of parallel processes - 1
     # These IDs will be attributed to the process when they will be initialized
     idQueue = manager.Queue()
@@ -40,7 +40,14 @@ def create_worker_pool(manager, parallel_processes):
     state.active_executor_processes_by_pid = state.active_executor._processes
 
 
-def terminate_worker_processes(manager):
+def shut_down_worker_pool():
+    try:
+        state.active_executor.shutdown(wait=True)
+    except Exception:
+        state.active_executor.shutdown(wait=False, cancel_futures=True)
+
+
+def shut_down_worker_pool_after_ctrl_c(manager):
     print('Caught KeyboardInterrupt, terminating workers')
     try:
         list_processes_to_terminate = _live_run_worker_processes if state.run_active else active_children

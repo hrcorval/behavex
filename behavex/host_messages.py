@@ -51,7 +51,16 @@ def forward_worker_messages(host_queue):
             sys.stdout.flush()
         elif message_kind == 'progress':
             scenario_key, progress_fields = payload
-            state.report_scenario_progress(scenario_key, **progress_fields)
+            report_scenario_progress(scenario_key, **progress_fields)
+
+
+def report_scenario_progress(scenario_key, **progress_fields):
+    """Fire on_progress for a finished scenario; a single-process worker hands it to the host process."""
+    if state.host_queue is not None:
+        state.host_queue.put(('progress', (scenario_key, progress_fields)))
+        return
+    state.progress_reported.add(scenario_key)
+    state.fire_progress(**progress_fields)
 
 
 class StdoutToHostQueue(io.TextIOBase):
