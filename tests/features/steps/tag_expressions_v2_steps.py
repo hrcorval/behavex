@@ -141,7 +141,7 @@ def step_should_see_minimum_scenarios(context, min_count):
 @then('the execution should succeed')
 @then('the legacy tag matching should be used')
 def step_execution_should_succeed(context):
-    """Some secondary scenarios are designed to fail."""
+    """Exit 1 passes when scenarios ran: some secondary scenarios are designed to fail."""
     if context.returncode == 0:
         return
     passed_count, failed_count, skipped_count = _passed_failed_skipped_scenario_counts(context.stdout)

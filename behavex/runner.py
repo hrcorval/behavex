@@ -321,7 +321,8 @@ def launch_behavex():
             execution_codes, json_reports = launch_by_feature(updated_features_list,
                                                             lock,
                                                             show_progress_bar)
-        merged_json = wrap_up_process_pools(json_reports, scenario)
+        merged_json = shut_down_worker_pool_and_write_merged_report(
+            json_reports, scenario)
 
         if get_param('dry_run'):
             print_parallel('execution.dry_run.completed', get_env('OUTPUT'))
@@ -561,15 +562,7 @@ def _select_scenarios(features):
                     yield features_path, scenario, scenario_tags
 
 
-def wrap_up_process_pools(json_reports,
-                          scenario=False):
-    """
-    Wrap up the process pools and generate the final report.
-
-    Args:
-        json_reports (list): List of JSON reports.
-        scenario (bool): Whether the execution was by scenario.
-    """
+def shut_down_worker_pool_and_write_merged_report(json_reports, scenario=False):
     merged_json = None
     output = os.path.join(get_env('OUTPUT'))
     shut_down_worker_pool()

@@ -30,7 +30,7 @@ from behavex import runner
 def _interrupt(*args, **kwargs):
     raise KeyboardInterrupt
 
-runner.wrap_up_process_pools = _interrupt
+runner.shut_down_worker_pool_and_write_merged_report = _interrupt
 result = BehaveXRunner(paths=[{repr(feature_path)}], no_report=True).run()
 """ + _SERIALIZE_RESULT
     _store_result(context, _run_script(script))
