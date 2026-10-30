@@ -14,7 +14,7 @@ Feature: HTML Report Content Validation
     Then I should see the generated HTML report contains the "This step is designed to fail" string
 
   Scenario: HTML report contains all expected scenario statuses for a mixed run
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see the HTML report was generated and contains "5" scenarios
 
   Scenario: HTML report generated for passing tests contains no internal BehaveX variables

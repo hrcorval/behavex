@@ -130,7 +130,7 @@ print("__RESULT__:" + json.dumps({{"totals": totals}}))
 
 @when('I run BehaveXRunner in one process on worker hook tests, then on passing tests')
 def when_api_run_worker_hooks_then_passing(context):
-    worker_hooks_path = os.path.join(root_project_path, 'tests', 'features', 'worker_hooks_features')
+    worker_hooks_path = os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'worker_hooks_features')
     passing_path = os.path.join(secondary_features_path, 'passing_tests.feature')
     suffix = get_unique_suffix()
     output_folders = [os.path.join(root_project_path, 'output', f'api_runner_hooks_{suffix}_{run}') for run in (1, 2)]

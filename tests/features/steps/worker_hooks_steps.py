@@ -14,7 +14,7 @@ def when_run_invalid_worker_hooks_feature(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'worker_hooks_invalid_features'),
+        os.path.join(tests_features_path, 'fixtures', 'worker_hooks_invalid_features'),
         '-o', context.output_path,
     ]
     execute_command(context, execution_args)

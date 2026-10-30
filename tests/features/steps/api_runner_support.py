@@ -13,8 +13,8 @@ from packaging.version import Version
 BEHAVE_ERROR_STATUS = 'error' if Version(behave.__version__) >= Version('1.2.7') else 'failed'
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'secondary_features')
-api_runner_features_path = os.path.join(root_project_path, 'tests', 'features', 'api_runner_features')
+secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'secondary_features')
+api_runner_features_path = os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'api_runner_features')
 undefined_steps_features_path = os.path.join(api_runner_features_path, 'undefined_steps')
 nested_steps_folders_path = os.path.join(api_runner_features_path, 'nested_steps_folders')
 serial_suites_path = os.path.join(api_runner_features_path, 'serial_suites')

@@ -35,7 +35,7 @@ Feature: Crashing Tests
   @CRASHING
   Scenario: Exit code should be 1 when step loading fails due to an ImportError
     Given I have installed behavex
-    When I run the behavex command targeting the "import_error_features/import_error_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/import_error_features/import_error_tests.feature" feature
     Then I should see the following behavex console outputs and exit code "1"
       | output_line  |
       | Exit code: 1 |
@@ -44,7 +44,7 @@ Feature: Crashing Tests
   @CRASHING
   Scenario: XML report should be generated successfully when a step has no matching definition
     Given I have installed behavex
-    When I run the behavex command targeting the "xml_report_features/undefined_step_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/undefined_step_tests.feature" feature
     Then I should not see exception messages in the output
     And I should see the JUnit XML report was generated
 
@@ -103,27 +103,27 @@ Feature: Crashing Tests
     And I should see the overall status report shows "failed"
     And I should see the same feature and scenario statuses in the JSON report as the kept ones
     Examples:
-      | target                                               | behave_hook     | crashing_tag |
-      | crashing_features/crashing_environment_tests.feature | before_all      |              |
-      | crashing_features/crashing_environment_tests.feature | before_feature  |              |
-      | crashing_features/crashing_environment_tests.feature | after_feature   |              |
-      | crashing_features/crashing_environment_tests.feature | after_all       |              |
-      | crashing_features/hook_variants                      | before_all      | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | before_feature  | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | before_scenario | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | before_step     | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | before_tag      | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | after_all       | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | after_feature   | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | after_scenario  | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | after_step      | CRASH_HOOK   |
-      | crashing_features/hook_variants                      | after_tag       | CRASH_HOOK   |
+      | target                                                        | behave_hook     | crashing_tag |
+      | fixtures/crashing_features/crashing_environment_tests.feature | before_all      |              |
+      | fixtures/crashing_features/crashing_environment_tests.feature | before_feature  |              |
+      | fixtures/crashing_features/crashing_environment_tests.feature | after_feature   |              |
+      | fixtures/crashing_features/crashing_environment_tests.feature | after_all       |              |
+      | fixtures/crashing_features/hook_variants                      | before_all      | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | before_feature  | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | before_scenario | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | before_step     | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | before_tag      | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | after_all       | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | after_feature   | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | after_scenario  | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | after_step      | CRASH_HOOK   |
+      | fixtures/crashing_features/hook_variants                      | after_tag       | CRASH_HOOK   |
 
 
   @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario: An interrupted run after a hook failure must leave the feature it never reached untested
     Given I have installed behavex
-    When I run the behavex command on "interrupted_run_features" with arguments "--parallel-processes 1"
+    When I run the behavex command on "fixtures/interrupted_run_features" with arguments "--parallel-processes 1"
     Then I should see the following behavex console outputs and exit code "1"
     | output_line  |
     | Exit code: 1 |
@@ -133,7 +133,7 @@ Feature: Crashing Tests
   @CRASHING @CRASHING_BEHAVE_HOOK
   Scenario Outline: A crash in "<behave_hook>" hook must be reported with valid allure statuses with "<parallel_processes>" parallel processes
     Given I have installed behavex
-    When I run the behavex command on "crashing_features/crashing_environment_tests.feature" with arguments "--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --parallel-processes <parallel_processes> -D crashing_behave_hook=<behave_hook>"
+    When I run the behavex command on "fixtures/crashing_features/crashing_environment_tests.feature" with arguments "--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter --parallel-processes <parallel_processes> -D crashing_behave_hook=<behave_hook>"
     Then I should see that allure result files only contain valid allure statuses
     Examples:
       | behave_hook    | parallel_processes |

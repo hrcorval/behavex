@@ -22,7 +22,7 @@ def when_run_allure_passing_tests(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -34,7 +34,7 @@ def when_run_allure_failing_tests(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'failing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'failing_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -47,7 +47,7 @@ def when_run_allure_custom_dir(context, custom_dir):
     context.custom_allure_dir = custom_dir
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter',
         '--formatter-outdir=' + custom_dir
@@ -60,7 +60,7 @@ def when_run_allure_mixed_results(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -72,7 +72,7 @@ def when_run_allure_tagged_scenarios(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'allure_tagged_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'allure_tagged_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -84,7 +84,7 @@ def when_run_allure_table_data(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -96,7 +96,7 @@ def when_run_allure_multiline_text(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -108,7 +108,7 @@ def when_run_allure_no_logs(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter',
         '--no-formatter-attach-logs'
@@ -455,7 +455,7 @@ def when_run_allure_malformed_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'allure_malformed_tags_test.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -467,7 +467,7 @@ def when_run_allure_mixed_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'allure_malformed_tags_test.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -479,7 +479,7 @@ def when_run_allure_valid_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'allure_valid_tags_test.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'allure_valid_tags_test.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -491,7 +491,7 @@ def when_run_allure_edge_case_tags(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'allure_malformed_tags_test.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'allure_malformed_tags_test.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter'
     ]
@@ -708,7 +708,7 @@ def then_only_wellformed_tags_appear(context):
 def when_run_behavex_allure_assertion_failure_tests(context):
     """Run behavex with allure formatter targeting assertion failure tests"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
+    allure_tests_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
     execution_args = [
         'behavex',
         os.path.join(allure_tests_path, 'failing_tests.feature'),
@@ -725,7 +725,7 @@ def when_run_behavex_allure_assertion_failure_tests(context):
 def when_run_behavex_allure_undefined_step_tests(context):
     """Run behavex with allure formatter targeting undefined step tests"""
     context.undefined_output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
+    allure_tests_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
     execution_args = [
         'behavex',
         os.path.join(allure_tests_path, 'image_attachments_undefined_step.feature'),
@@ -743,7 +743,7 @@ def when_run_behavex_allure_error_exception_tests(context):
     """Run behavex with allure formatter targeting error exception tests"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     # For now, use autoretry tests which contain error scenarios
-    allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
+    allure_tests_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
     execution_args = [
         'behavex',
         os.path.join(allure_tests_path, 'autoretry_tests.feature'),
@@ -760,7 +760,7 @@ def when_run_behavex_allure_error_exception_tests(context):
 def when_run_behavex_allure_comprehensive_failure_tests(context):
     """Run behavex with allure formatter targeting multiple failure types"""
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
-    allure_tests_path = os.path.join(tests_features_path, 'secondary_features')
+    allure_tests_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
     execution_args = [
         'behavex',
         allure_tests_path,

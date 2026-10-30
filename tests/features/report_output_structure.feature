@@ -5,13 +5,13 @@ Feature: Report Output Structure Validation
   HTML, JSON, and JUnit XML.
 
   Scenario: All report files are generated after a mixed-status test run
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see the HTML report was generated
     And I should see the JSON report was generated
     And I should see the JUnit XML report was generated
 
   Scenario: All report files are generated after a passing-only test run
-    When I run the behavex command targeting the "background_features/background_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/background_features/background_tests.feature" feature
     Then I should see the HTML report was generated
     And I should see the JSON report was generated
     And I should see the JUnit XML report was generated

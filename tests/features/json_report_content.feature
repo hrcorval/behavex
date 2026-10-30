@@ -6,23 +6,23 @@ Feature: JSON Report Content Validation
   tools without any data loss or serialization artifacts.
 
   Scenario: JSON report has the correct top-level structure
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see the JSON report has the correct top-level structure
 
   Scenario: All scenario statuses in the JSON report are serialized as plain strings
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see all scenario statuses in the JSON report are valid strings
 
   Scenario: Failed scenarios include error message and failing step in the JSON report
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see the JSON report contains error information for failed scenarios
 
   Scenario: Feature name and filename are preserved in the JSON report
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see the JSON report has the correct top-level structure
     And I should see "5" scenarios in the JSON report
 
   Scenario: JSON report is consistent with JUnit XML on total scenario count
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I should see "5" scenarios in the JSON report
     And I should see the same number of scenarios in the reports

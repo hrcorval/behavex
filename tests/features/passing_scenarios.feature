@@ -41,7 +41,7 @@ Feature: Passing Scenarios
   @PASSING
   Scenario: Scenario output should not be visible in console when running with multiple processes
     Given I have installed behavex
-    When I run the behavex command targeting the "secondary_features/passing_tests.feature" feature with "2" parallel processes
+    When I run the behavex command targeting the "fixtures/secondary_features/passing_tests.feature" feature with "2" parallel processes
     Then I should see the following behavex console outputs and exit code "0"
       | output_line                        |
       | Exit code: 0                       |

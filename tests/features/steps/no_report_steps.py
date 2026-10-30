@@ -9,7 +9,7 @@ def when_run_with_no_report(context, parallel_processes):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'passing_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'passing_tests.feature'),
         '-o', context.output_path,
         '--no-report',
         '--parallel-processes', parallel_processes,
@@ -22,7 +22,7 @@ def when_run_with_no_report_and_evidence(context, parallel_processes):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'evidence_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'evidence_tests.feature'),
         '-t', '@EVIDENCE_ATTACHMENT',
         '-o', context.output_path,
         '--no-report',
@@ -36,7 +36,7 @@ def when_run_with_no_report_and_images(context, parallel_processes):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'evidence_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'evidence_tests.feature'),
         '-t', '@IMAGE_EVIDENCE_ATTACHMENT',
         '-o', context.output_path,
         '--no-report',

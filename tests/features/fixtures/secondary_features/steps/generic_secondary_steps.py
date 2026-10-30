@@ -4,7 +4,7 @@ import os
 from behave import given, then, when
 
 # Get paths
-root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..'))
 test_images_path = os.path.join(root_project_path, 'tests', 'test_images')
 
 # Import behavex-images functionality - fail if required

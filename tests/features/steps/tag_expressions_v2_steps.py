@@ -9,7 +9,7 @@ from behave import given, then, when
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 tests_features_path = os.path.join(root_project_path, 'tests', 'features')
-secondary_features_path = os.path.join(tests_features_path, 'secondary_features')
+secondary_features_path = os.path.join(tests_features_path, 'fixtures', 'secondary_features')
 
 
 @given('I have Behave 1.3.0 or newer installed')
@@ -225,7 +225,7 @@ def _scenario_counts(output):
 def _extract_executed_scenarios(output):
     """Parse scenario locations printed as '<feature path>:<line>  <scenario name>'."""
     scenarios = []
-    scenario_pattern = r'tests/features/secondary_features/([^:]+\.feature):(\d+)\s+(.+)'
+    scenario_pattern = r'tests/features/fixtures/secondary_features/([^:]+\.feature):(\d+)\s+(.+)'
 
     for match in re.finditer(scenario_pattern, output):
         scenario_name = match.group(3).strip()

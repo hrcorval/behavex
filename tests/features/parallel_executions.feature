@@ -42,9 +42,9 @@ Feature: Parallel executions
 
   @PARALLEL @PARALLEL_CONSISTENCY
   Scenario Outline: JSON report scenario count is consistent between single and parallel execution
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature
     Then I store the JSON report scenario count for later comparison
-    When I run the behavex command targeting the "xml_report_features/xml_validation_tests.feature" feature with "<parallel_processes>" parallel processes
+    When I run the behavex command targeting the "fixtures/xml_report_features/xml_validation_tests.feature" feature with "<parallel_processes>" parallel processes
     Then I should see the JSON report scenario count matches the stored count
     And I should see the same number of scenarios in the reports
   Examples:
@@ -55,7 +55,7 @@ Feature: Parallel executions
 
   @PARALLEL
   Scenario Outline: A feature that --exclude matches is not reported when running in parallel by <parallel_scheme>
-    When I run the behavex command on "secondary_features" with arguments "--include=(passing|untested)_tests --exclude=untested --parallel-processes 2 --parallel-scheme <parallel_scheme>"
+    When I run the behavex command on "fixtures/secondary_features" with arguments "--include=(passing|untested)_tests --exclude=untested --parallel-processes 2 --parallel-scheme <parallel_scheme>"
     Then I should see the following behavex console outputs and exit code "0"
     | output_line                                 |
     | 1 feature passed, 0 failed, 0 skipped       |

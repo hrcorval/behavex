@@ -7,7 +7,7 @@ import tempfile
 from behave import given, then, when
 
 root_project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'secondary_features')
+secondary_features_path = os.path.join(root_project_path, 'tests', 'features', 'fixtures', 'secondary_features')
 
 # Env vars that parent behavex injects into its own process.  The child
 # subprocess must NOT inherit them — they would override the child's own config

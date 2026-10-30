@@ -9,7 +9,7 @@ def when_run_chained_exception_tests(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'chained_exception_features', 'chained_exception_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'chained_exception_features', 'chained_exception_tests.feature'),
         '-o', context.output_path,
     ]
     execute_command(context, execution_args)
@@ -20,7 +20,7 @@ def when_run_only_passing_chained_exception_test(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'chained_exception_features', 'chained_exception_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'chained_exception_features', 'chained_exception_tests.feature'),
         '-t', '@PASSING_SCENARIO',
         '-o', context.output_path,
     ]

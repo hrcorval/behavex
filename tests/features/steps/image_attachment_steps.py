@@ -64,7 +64,7 @@ def step_run_behavex_with_image_attachments(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'simple_image_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'simple_image_tests.feature'),
         '-o', context.output_path,
         '-t', '@IMAGE_ATTACHMENT',
         '-t', '@HTML_REPORT'
@@ -78,7 +78,7 @@ def step_run_behavex_with_failed_scenario_and_image_attachments(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'image_attachments_failing_step.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'image_attachments_failing_step.feature'),
         '-o', context.output_path,
         '-t', '@IMAGE_ATTACHMENT',
         '-t', '@FAILED_SCENARIO'
@@ -93,7 +93,7 @@ def step_run_behavex_with_error_scenario_and_image_attachments(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'image_attachments_undefined_step.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'image_attachments_undefined_step.feature'),
         '-o', context.output_path,
         '-t', '@IMAGE_ATTACHMENT',
         '-t', '@ERROR_SCENARIO'
@@ -171,7 +171,7 @@ def step_run_behavex_with_allure_and_image_attachments(context):
     context.output_path = os.path.join('output', 'output_{}'.format(get_unique_suffix()))
     execution_args = [
         'behavex',
-        os.path.join(tests_features_path, 'secondary_features', 'simple_image_tests.feature'),
+        os.path.join(tests_features_path, 'fixtures', 'secondary_features', 'simple_image_tests.feature'),
         '-o', context.output_path,
         '--formatter=behavex.outputs.formatters.allure_behavex_formatter:AllureBehaveXFormatter',
         '-t', '@IMAGE_ATTACHMENT',

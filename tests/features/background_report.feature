@@ -5,23 +5,23 @@ Feature: Background Step Report Validation
   preserved in the JSON report structure for each scenario.
 
   Scenario: HTML report includes content from background steps
-    When I run the behavex command targeting the "background_features/background_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/background_features/background_tests.feature" feature
     Then I should see the generated HTML report contains the "a passing condition" string
 
   Scenario: JSON report includes background steps structure for each scenario
-    When I run the behavex command targeting the "background_features/background_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/background_features/background_tests.feature" feature
     Then I should see background steps in the JSON report for each scenario
 
   Scenario: Console step count includes background steps executed for each scenario
-    When I run the behavex command targeting the "background_features/background_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/background_features/background_tests.feature" feature
     Then I should see the following behavex console outputs
       | output_line    |
       | 6 steps passed |
 
   Scenario: HTML and JUnit XML reports agree on the total scenario count
-    When I run the behavex command targeting the "background_features/background_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/background_features/background_tests.feature" feature
     Then I should see the same number of scenarios in the reports
 
   Scenario: HTML report shows the error of an undefined background step as one line
-    When I run the behavex command targeting the "background_features/undefined_background_tests.feature" feature
+    When I run the behavex command targeting the "fixtures/background_features/undefined_background_tests.feature" feature
     Then I should see the generated HTML report contains the "step undefined<br>" string
