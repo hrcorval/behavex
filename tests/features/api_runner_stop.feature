@@ -1,5 +1,5 @@
 Feature: BehaveXRunner Python API: stop()
-  Verify that BehaveXRunner.stop() ends a run early and returns the results gathered so far.
+  Verify that BehaveXRunner.stop() ends a parallel run early and returns the results gathered so far.
 
   @API_RUNNER_022
   Scenario: stop() called outside an active run does not raise

@@ -31,7 +31,7 @@ def step_check_behave_version(context):
         context.scenario.skip(f"Could not determine Behave version: {e}")
 
 
-def _run_behavex(context, output_prefix, tag_args, log_scenarios=False):
+def _run_behavex_on_secondary_features_with_tags(context, output_prefix, tag_args, log_scenarios=False):
     context.tag_expression = ' and '.join(tag_args)
     cmd = [sys.executable, '-m', 'behavex', secondary_features_path,
            '-o', f'output/{output_prefix}_{get_unique_suffix()}']
@@ -63,54 +63,54 @@ def _run_behavex(context, output_prefix, tag_args, log_scenarios=False):
 
 @when('I run behavex with v2 tag expression "{tag_expression}"')
 def step_run_behavex_with_v2_expression(context, tag_expression):
-    _run_behavex(context, 'v2_test', [tag_expression], log_scenarios=True)
+    _run_behavex_on_secondary_features_with_tags(context, 'v2_test', [tag_expression], log_scenarios=True)
 
 
 @when('I run behavex with v1 tag expression "{tag_expression}"')
 def step_run_behavex_with_v1_expression(context, tag_expression):
-    _run_behavex(context, 'v1_test', [tag_expression])
+    _run_behavex_on_secondary_features_with_tags(context, 'v1_test', [tag_expression])
 
 
 @when('I run behavex with invalid v2 tag expression "{tag_expression}"')
 def step_run_behavex_with_invalid_v2_expression(context, tag_expression):
-    _run_behavex(context, 'v2_invalid_test', [tag_expression])
+    _run_behavex_on_secondary_features_with_tags(context, 'v2_invalid_test', [tag_expression])
 
 
 @when('I run behavex with empty tag expression ""')
 def step_run_behavex_with_empty_expression_literal(context):
-    _run_behavex(context, 'empty_test', [])
+    _run_behavex_on_secondary_features_with_tags(context, 'empty_test', [])
 
 
 @when('I run behavex with complex v2 tag expression "{tag_expression}"')
 def step_run_behavex_with_complex_v2_expression(context, tag_expression):
-    _run_behavex(context, 'v2_complex_test', [tag_expression], log_scenarios=True)
+    _run_behavex_on_secondary_features_with_tags(context, 'v2_complex_test', [tag_expression], log_scenarios=True)
 
 
 @when('I run behavex with multiple v2 tag arguments "{tag_arg1}" and "{tag_arg2}"')
 def step_run_behavex_with_multiple_v2_arguments(context, tag_arg1, tag_arg2):
     combined_expression = f"{tag_arg1} and {tag_arg2}"
-    _run_behavex(context, 'v2_multiple_test', [combined_expression], log_scenarios=True)
+    _run_behavex_on_secondary_features_with_tags(context, 'v2_multiple_test', [combined_expression], log_scenarios=True)
 
 
 @when('I run behavex with three v2 tag arguments "{tag_arg1}" and "{tag_arg2}" and "{tag_arg3}"')
 def step_run_behavex_with_three_v2_arguments(context, tag_arg1, tag_arg2, tag_arg3):
     combined_expression = f"{tag_arg1} and {tag_arg2} and {tag_arg3}"
-    _run_behavex(context, 'v2_three_test', [combined_expression], log_scenarios=True)
+    _run_behavex_on_secondary_features_with_tags(context, 'v2_three_test', [combined_expression], log_scenarios=True)
 
 
 @when('I run behavex with mixed tag arguments "{tag_arg1}" and "{tag_arg2}"')
 def step_run_behavex_with_mixed_arguments(context, tag_arg1, tag_arg2):
-    _run_behavex(context, 'mixed_test', [tag_arg1, tag_arg2])
+    _run_behavex_on_secondary_features_with_tags(context, 'mixed_test', [tag_arg1, tag_arg2])
 
 
 @when('I run behavex with multiple v1 tag arguments "{tag_arg1}" and "{tag_arg2}"')
 def step_run_behavex_with_multiple_v1_arguments(context, tag_arg1, tag_arg2):
-    _run_behavex(context, 'v1_multiple_test', [tag_arg1, tag_arg2])
+    _run_behavex_on_secondary_features_with_tags(context, 'v1_multiple_test', [tag_arg1, tag_arg2])
 
 
 @then('I should see scenarios matching the v2 expression')
 def step_should_see_scenarios_matching_v2(context):
-    passed_count, failed_count, _ = _scenario_counts(context.stdout)
+    passed_count, failed_count, _ = _passed_failed_skipped_scenario_counts(context.stdout)
     total_executed = passed_count + failed_count
 
     execution_successful = (context.returncode == 0 or
@@ -130,7 +130,7 @@ def step_should_see_scenarios_matching_v2(context):
 @then('I should see scenarios matching the expression with minimum count "{min_count}"')
 def step_should_see_minimum_scenarios(context, min_count):
     min_expected = int(min_count)
-    passed_count, failed_count, _ = _scenario_counts(context.stdout)
+    passed_count, failed_count, _ = _passed_failed_skipped_scenario_counts(context.stdout)
     total_executed = passed_count + failed_count
 
     assert total_executed >= min_expected, \
@@ -141,10 +141,10 @@ def step_should_see_minimum_scenarios(context, min_count):
 @then('the execution should succeed')
 @then('the legacy tag matching should be used')
 def step_execution_should_succeed(context):
-    """Exit code 1 is accepted when scenarios ran, since some secondary scenarios are designed to fail."""
+    """Some secondary scenarios are designed to fail."""
     if context.returncode == 0:
         return
-    passed_count, failed_count, skipped_count = _scenario_counts(context.stdout)
+    passed_count, failed_count, skipped_count = _passed_failed_skipped_scenario_counts(context.stdout)
     assert context.returncode == 1 and passed_count + failed_count + skipped_count > 0, \
         f"BehaveX execution failed with exit code {context.returncode}. " \
         f"Stdout: {context.stdout}\nStderr: {context.stderr}"
@@ -170,7 +170,7 @@ def step_error_message_should_mention_tag_expression_syntax(context):
 
 @then('I should see scenarios without the excluded tag executed')
 def step_should_see_without_excluded_tag_executed(context):
-    passed_count, failed_count, skipped_count = _scenario_counts(context.stdout)
+    passed_count, failed_count, skipped_count = _passed_failed_skipped_scenario_counts(context.stdout)
     assert passed_count + failed_count + skipped_count > 0, \
         f"No scenarios were processed at all. Output: {context.stdout}"
 
@@ -179,7 +179,7 @@ def step_should_see_without_excluded_tag_executed(context):
 def step_all_scenarios_should_be_executed(context):
     if context.returncode == 0:
         return
-    assert sum(_scenario_counts(context.stdout)) > 0, \
+    assert sum(_passed_failed_skipped_scenario_counts(context.stdout)) > 0, \
         f"Empty tag expression execution failed. Output: {context.stdout}"
 
 
@@ -211,12 +211,12 @@ def _extract_scenario_count(output, status):
     return int(match.group(1)) if match else 0
 
 
-def _scenario_counts(output):
+def _passed_failed_skipped_scenario_counts(output):
     return tuple(_extract_scenario_count(output, status) for status in ('passed', 'failed', 'skipped'))
 
 
 def _extract_executed_scenarios(output):
-    """Parse scenario locations printed as '<feature path>:<line>  <scenario name>'."""
+    """Parse scenario locations printed as '<secondary feature path>:<line>  <scenario name>'."""
     scenarios = []
     scenario_pattern = r'tests/features/fixtures/secondary_features/([^:]+\.feature):(\d+)\s+(.+)'
 

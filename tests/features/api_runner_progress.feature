@@ -1,5 +1,4 @@
 Feature: BehaveXRunner Python API: on_progress events
-  Verify that BehaveXRunner reports each finished scenario to its on_progress callback.
 
   @API_RUNNER_015
   Scenario: on_progress callback is invoked for each scenario in non-parallel mode
