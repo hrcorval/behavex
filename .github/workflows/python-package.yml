@@ -129,7 +129,7 @@ jobs:
 
       - name: Run BehaveXRunner API tests
         run: |
-          behavex tests/features/api_runner.feature
+          behavex "tests/features/api_runner_*.feature"
 
       - name: Set report.json to be available as an artifact
         uses: actions/upload-artifact@v7
