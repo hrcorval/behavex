@@ -47,6 +47,16 @@ def before_scenario(context, scenario):
     assert v == "local_pkg_loaded", f"local_pkg not importable: got {v!r}"
 '''
 
+# The package sits next to environment.py inside the features directory, not in
+# the project root, so only the environment.py directory makes it importable.
+_ENVIRONMENT_PY_FEATURES_DIR = '''\
+from features_pkg import SHARED_VALUE  # top-level import from the features directory
+
+
+def before_all(context):
+    context.pkg_val = SHARED_VALUE
+'''
+
 _TEST_FEATURE = '''\
 Feature: Local package import test
 
@@ -114,6 +124,35 @@ def given_project_with_plain_environment(context):
 @given('a project directory with a local package and an environment.py that imports from it')
 def given_project_with_local_package(context):
     _create_project(context, _ENVIRONMENT_PY)
+
+
+@given('a project whose environment.py imports a package from the features directory')
+def given_project_with_features_dir_package(context):
+    _create_project(context, _ENVIRONMENT_PY_FEATURES_DIR)
+    pkg_dir = os.path.join(context.project_dir, 'features', 'features_pkg')
+    os.makedirs(pkg_dir, exist_ok=True)
+    with open(os.path.join(pkg_dir, '__init__.py'), 'w', encoding='utf-8') as f:
+        f.write(_LOCAL_PKG_INIT)
+
+
+@when('I run behavex from another directory')
+def when_run_from_another_directory(context):
+    project_dir = context.project_dir
+    other_dir = os.path.join(project_dir, 'elsewhere')
+    os.makedirs(other_dir, exist_ok=True)
+    cmd = [
+        'behavex', os.path.join(project_dir, 'features', 'local_import.feature'),
+        '-o', os.path.join(project_dir, 'output'),
+        '--parallel-processes', '1',
+    ]
+    context.sys_path_result = subprocess.run(
+        cmd, capture_output=True, text=True, cwd=other_dir, env=_clean_child_env()
+    )
+    logging.info(
+        f"sys_path test (other cwd) rc={context.sys_path_result.returncode}\n"
+        f"STDOUT:\n{context.sys_path_result.stdout}\n"
+        f"STDERR:\n{context.sys_path_result.stderr}"
+    )
 
 
 @when('I run behavex from that project directory with "{n}" parallel process')

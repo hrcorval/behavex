@@ -6,6 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **`environment.py` could not import a module that sits next to it** ([#253](https://github.com/hrcorval/behavex/issues/253)) — BehaveX loads `environment.py` to look for its hooks, but did not add the directory of the file to `sys.path` as behave does, so a top-level import of a package kept in the features directory failed when BehaveX ran from another directory. The directory is now added to `sys.path` before the file is loaded.
+
 ## [4.6.8] - 2026-10-21
 
 ### Fixed

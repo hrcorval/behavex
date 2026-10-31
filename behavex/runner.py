@@ -1338,6 +1338,11 @@ def _call_bhx_hook(hook_name: str, *args) -> bool:
         env_path = _find_user_environment_path()
         if not env_path:
             return True
+        # Behave puts the base directory on sys.path while it loads environment.py, so the
+        # top-level imports of the packages next to it work whatever the current directory is.
+        env_dir = os.path.dirname(env_path)
+        if env_dir not in sys.path:
+            sys.path.insert(0, env_dir)
         spec = importlib.util.spec_from_file_location('bhx_user_environment', env_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
