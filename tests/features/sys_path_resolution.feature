@@ -37,3 +37,11 @@ Feature: Project root is in sys.path for environment.py imports and worker proce
     Given a project directory with a local package and an environment.py that imports from it
     When I run behavex from that project directory with "2" parallel processes
     Then behavex should exit with code 0 and no ImportError
+
+  # ── The environment.py directory is importable whatever the CWD is (Issue #253) ─
+
+  @SYS_PATH @SYS_PATH_COORDINATOR
+  Scenario: environment.py can import a package from its own directory when run from another directory
+    Given a project whose environment.py imports a package from the features directory
+    When I run behavex from another directory
+    Then behavex should exit with code 0 and no ImportError
