@@ -1481,3 +1481,11 @@ def then_output_folder_not_exist(context):
     assert not os.path.exists(output_path), \
         f"Output folder should not exist but was found at: {output_path}"
 
+
+
+@then('the order of a scenario tagged "{tag}" with order tag prefix "{prefix}" should be "{order}"')
+def then_order_from_tag_with_prefix(context, tag, prefix, order):
+    from behavex.utils import extract_order_from_tags
+    actual_order = extract_order_from_tags([tag], prefix)
+    assert actual_order == int(order), \
+        f"Expected order {order} for tag '{tag}' with prefix '{prefix}', got {actual_order}"
