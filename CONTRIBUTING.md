@@ -101,6 +101,8 @@ BehaveX has been shaped by many contributors over the years. Thank you to everyo
 | [@ido-ran](https://github.com/ido-ran) | Added support for `before_tag` hook |
 | [@warshaya](https://github.com/warshaya) | Environment variable handling improvement |
 | [@RemoYukoff](https://github.com/RemoYukoff) | Fixed invalid escape sequences |
+| [@taltal-beep](https://github.com/taltal-beep) | Fixed `before_scenario` hook failures under `--parallel-scheme feature`, hook-crash statuses reported as skipped/passed, and malformed JUnit XML when report text contains `]]>` |
+| [@adityaanikam](https://github.com/adityaanikam) | First fix for `environment.py` failing to import a package next to it when BehaveX runs from another directory |
 
 ### Bug Reporters
 
@@ -118,6 +120,8 @@ These contributors reported issues that led to concrete fixes in BehaveX:
 | [@athiradamodaran](https://github.com/athiradamodaran) | Scenario outline names not displayed correctly in reports | Fixed in v4.3.x |
 | [@AppeltansPieter](https://github.com/AppeltansPieter) | Zero exit code when parallel process fails | Fixed in v4.6.2 |
 | [@Mahul1992](https://github.com/Mahul1992) | Configuration params not read from `behavex.cfg` / `behavex.ini` | Fixed in v4.6.3 |
+| [@qriwty](https://github.com/qriwty) | `behave.ini` multi-line values not parsed; project root dropped from `sys.path` | Fixed in v4.6.5 |
+| [@mobile-dm-zhdanov](https://github.com/mobile-dm-zhdanov) | `environment.py` failed to import a local package when run outside its base directory | Fixed in v4.6.9 |
 
 ### Ideas and Inspiration
 
@@ -131,3 +135,5 @@ These contributors proposed features or opened PRs whose ideas directly shaped w
 | [@jbridger](https://github.com/jbridger) | Reported and investigated parallel execution issues |
 | [@lawnmowerlatte](https://github.com/lawnmowerlatte) | Proposed feature sorting for optimized parallel runtime |
 | [@zizzard](https://github.com/zizzard) | Proposed temporary file prefix configuration |
+| [@ngonzalez625](https://github.com/ngonzalez625) | Proposed a no-report execution mode |
+| [@sk3-25](https://github.com/sk3-25) | Discussion and design ideas behind `before_all_workers` / `after_all_workers` |
