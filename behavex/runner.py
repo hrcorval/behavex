@@ -40,9 +40,6 @@ from behave.model import Feature, Scenario, ScenarioOutline
 from behave.runner import ConfigError, Runner
 
 # Local imports
-# noinspection PyUnresolvedReferences
-import importlib.util
-
 from behavex import conf_mgr
 from behavex.arguments import BEHAVE_ARGS, BEHAVEX_ARGS, parse_arguments
 from behavex.conf_mgr import ConfigRun, get_env, get_param
@@ -248,8 +245,8 @@ def launch_behavex():
         _warn_parallel_incompatible_params()
     set_behave_tags()
     bhx_context = BehaveXContext()
-    # environment.py is loaded before Behave's PathManager is active, so CWD may
-    # not be in sys.path yet.  Add it early so local imports in environment.py work.
+    # sys.path holds the launching script's folder, not the working directory, so add it
+    # for project modules the main process imports, such as custom formatters.
     cwd = os.getcwd()
     if cwd not in sys.path:
         sys.path.insert(0, cwd)
@@ -1313,45 +1310,44 @@ def _write_overall_status(overall_status):
         status_file.write(json.dumps({'status': overall_status}))
 
 
-def _find_user_environment_path() -> Optional[str]:
-    """Return the environment.py behave loads for FEATURES_PATH, or None if there is none."""
+def _behave_runner_for_worker_hooks() -> Optional[Runner]:
+    """Return behave's Runner for FEATURES_PATH when its environment.py may define worker hooks, else None."""
     paths = [path.strip() for path in os.environ.get('FEATURES_PATH', '').split(',') if path.strip()]
-    config = Configuration(command_args=paths)
+    runner = Runner(Configuration(command_args=paths))
     try:
-        Runner(config).setup_paths()
+        runner.setup_paths()
     except ConfigError:
         return None
-    env_file = os.path.join(config.base_dir, config.environment_file)
-    return env_file if os.path.isfile(env_file) else None
+    env_file = os.path.join(runner.base_dir, runner.config.environment_file)
+    if not os.path.isfile(env_file):
+        return None
+    with open(env_file, 'rb') as environment_file:
+        source = environment_file.read()
+    return runner if re.search(rb'\b(before|after)_all_workers\b|\bimport[\s\\]+\*', source) else None
 
 
-_bhx_user_environment_module = None
+_bhx_worker_hooks_runner = None
+_bhx_worker_hooks_looked_up = False
 
 
 def _call_bhx_hook(hook_name: str, *args) -> bool:
-    """Load the user's environment.py (cached) and call hook_name if defined.
+    """Call hook_name from the user's environment.py if defined; False after a HOOK-ERROR.
 
-    Returns False when the hook raised, after reporting it the way behave reports a HOOK-ERROR.
+    An environment.py that names no worker hook and has no `import *` is not executed outside behave.
     """
-    global _bhx_user_environment_module
-    if _bhx_user_environment_module is None:
-        env_path = _find_user_environment_path()
-        if not env_path:
-            return True
-        # Behave puts the base directory on sys.path while it loads environment.py, so the
-        # top-level imports of the packages next to it work whatever the current directory is.
-        env_dir = os.path.dirname(env_path)
-        if env_dir not in sys.path:
-            sys.path.insert(0, env_dir)
-        spec = importlib.util.spec_from_file_location('bhx_user_environment', env_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        _bhx_user_environment_module = module
-    hook_fn = getattr(_bhx_user_environment_module, hook_name, None)
-    if not callable(hook_fn):
-        return True
+    global _bhx_worker_hooks_runner, _bhx_worker_hooks_looked_up
     try:
-        hook_fn(*args)
+        if not _bhx_worker_hooks_looked_up:
+            _bhx_worker_hooks_looked_up = True
+            runner = _behave_runner_for_worker_hooks()
+            if runner:
+                with runner.path_manager:
+                    runner.load_hooks()
+            _bhx_worker_hooks_runner = runner
+        hook_fn = _bhx_worker_hooks_runner.hooks.get(hook_name) if _bhx_worker_hooks_runner else None
+        if callable(hook_fn):
+            with _bhx_worker_hooks_runner.path_manager:
+                hook_fn(*args)
     except Exception as ex:
         print(f'HOOK-ERROR in {hook_name}: {type(ex).__name__}: {ex}')
         return False

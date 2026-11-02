@@ -4,6 +4,7 @@ import os
 import random
 import re
 import shlex
+import shutil
 import xml.etree.ElementTree as ET
 from packaging.version import Version
 import subprocess
@@ -1411,6 +1412,19 @@ def when_run_behavex_on_target_with_arguments(context, target, arguments, env=No
     execute_command(context, execution_args, env=env)
 
 
+@when('I run the behavex command on a copy of the "{target}" worker hooks fixture whose environment.py is encoded in Latin-1')
+def when_run_latin1_copy_of_worker_hooks_fixture(context, target):
+    fixture_copy_path = os.path.abspath(os.path.join('output', 'latin1_fixture_{}'.format(get_random_number(6))))
+    shutil.copytree(os.path.join(tests_features_path, target), fixture_copy_path)
+    environment_path = os.path.join(fixture_copy_path, 'environment.py')
+    with open(environment_path) as environment_file:
+        source = environment_file.read()
+    with open(environment_path, 'wb') as environment_file:
+        environment_file.write(('# -*- coding: latin-1 -*-\n# café\n' + source).encode('latin-1'))
+    when_run_behavex_on_target_with_arguments(
+        context, os.path.join(fixture_copy_path, 'features', 'sub'), '--parallel-processes 1')
+
+
 @when('I run the behavex command on the "{target}" worker hooks fixture with "{variable}" set to "{value}" and arguments "{arguments}"')
 def when_run_worker_hooks_fixture_with_env_variable(context, target, variable, value, arguments):
     env = os.environ.copy()
@@ -1428,6 +1442,29 @@ def then_worker_hook_called_times(context, hook_name, expected_calls):
     actual_calls = recorded_calls.count(hook_name)
     assert actual_calls == int(expected_calls), (
         f"Expected {hook_name} to be called {expected_calls} times, got {actual_calls}\n"
+        f"STDOUT:\n{context.result.stdout}"
+    )
+
+
+def _environment_importing_process_names(context):
+    with open(os.path.join(context.output_path, 'environment_imports.log')) as imports_file:
+        return imports_file.read().split()
+
+
+@then('environment.py was imported by worker processes but not by the BehaveX main process')
+def then_environment_imported_only_by_workers(context):
+    importing_process_names = _environment_importing_process_names(context)
+    assert importing_process_names and 'MainProcess' not in importing_process_names, (
+        f"Processes that imported environment.py: {importing_process_names}\n"
+        f"STDOUT:\n{context.result.stdout}"
+    )
+
+
+@then('environment.py was imported only once, by the BehaveX main process')
+def then_environment_imported_once_by_main_process(context):
+    importing_process_names = _environment_importing_process_names(context)
+    assert importing_process_names == ['MainProcess'], (
+        f"Processes that imported environment.py: {importing_process_names}\n"
         f"STDOUT:\n{context.result.stdout}"
     )
 
