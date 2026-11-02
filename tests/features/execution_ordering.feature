@@ -75,3 +75,13 @@ Feature: Test Execution Ordering
       | parallel_scheme | parallel_processes |
       | scenario        | 3                  |
       | feature         | 3                  |
+
+  @ORDER_TESTS @CUSTOM_PREFIX
+  Scenario Outline: Match order tags against the custom prefix regardless of case (<tag> with prefix <prefix>)
+    Then the order of a scenario tagged "<tag>" with order tag prefix "<prefix>" should be "<order>"
+    Examples:
+      | tag          | prefix   | order |
+      | PRIORITY_001 | PRIORITY | 1     |
+      | priority_002 | PRIORITY | 2     |
+      | priority_003 | priority | 3     |
+      | PRIORITY_004 | Priority | 4     |
