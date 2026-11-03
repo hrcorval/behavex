@@ -101,7 +101,7 @@ BehaveX has been shaped by many contributors over the years. Thank you to everyo
 | [@ido-ran](https://github.com/ido-ran) | Added support for `before_tag` hook |
 | [@warshaya](https://github.com/warshaya) | Environment variable handling improvement |
 | [@RemoYukoff](https://github.com/RemoYukoff) | Fixed invalid escape sequences |
-| [@taltal-beep](https://github.com/taltal-beep) | Fixed `before_scenario` hook failures under `--parallel-scheme feature`, hook-crash statuses reported as skipped/passed, and malformed JUnit XML when report text contains `]]>` |
+| [@taltal-beep](https://github.com/taltal-beep) | Fixed `before_scenario` hook failures under `--parallel-scheme feature`, hook-crash statuses reported as skipped/passed, malformed JUnit XML when report text contains `]]>`, and case-sensitive `--order-tag-prefix` matching |
 | [@adityaanikam](https://github.com/adityaanikam) | First fix for `environment.py` failing to import a package next to it when BehaveX runs from another directory |
 
 ### Bug Reporters

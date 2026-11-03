@@ -85,3 +85,5 @@ Feature: Test Execution Ordering
       | priority_002 | PRIORITY | 2     |
       | priority_003 | priority | 3     |
       | PRIORITY_004 | Priority | 4     |
+      | P.1_005      | P.1      | 5     |
+      | PA1_006      | P.1      | 9999  |
