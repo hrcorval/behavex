@@ -102,3 +102,59 @@ Feature: before_all_workers and after_all_workers hooks
       | parallel_processes |
       | 1                  |
       | 3                  |
+
+  @WORKER_HOOKS_VALIDATION
+  Scenario Outline: Worker hooks next to a package import from the base directory run once with <parallel_processes> parallel processes from another directory
+    Given I have installed behavex
+    When I run the behavex command on the "fixtures/worker_hooks_base_dir_features/features/sub" worker hooks fixture with arguments "--parallel-processes <parallel_processes>"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                            |
+      | 1 scenario passed, 0 failed, 0 skipped |
+      | Exit code: 0                           |
+    And I should not see error messages in the output
+    And I should see the worker hook "before_all_workers" was called "1" times
+    And I should see the worker hook "after_all_workers" was called "1" times
+
+    Examples:
+      | parallel_processes |
+      | 1                  |
+      | 3                  |
+
+  @WORKER_HOOKS_VALIDATION
+  Scenario: An environment.py without worker hooks that imports a package from its base directory runs from another directory
+    Given I have installed behavex
+    When I run the behavex command on the "fixtures/no_worker_hooks_base_dir_features/features/sub" worker hooks fixture with arguments "--parallel-processes 1"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                            |
+      | 1 scenario passed, 0 failed, 0 skipped |
+      | Exit code: 0                           |
+    And I should not see error messages in the output
+    And environment.py was imported only once, by the BehaveX main process
+
+  @WORKER_HOOKS_VALIDATION
+  Scenario: An environment.py without worker hooks is imported only by the worker processes of a parallel run
+    Given I have installed behavex
+    When I run the behavex command on the "fixtures/no_worker_hooks_base_dir_features/features/sub" worker hooks fixture with arguments "--parallel-processes 3"
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                            |
+      | 1 scenario passed, 0 failed, 0 skipped |
+      | Exit code: 0                           |
+    And environment.py was imported by worker processes but not by the BehaveX main process
+
+  @WORKER_HOOKS_VALIDATION
+  Scenario: An environment.py encoded in Latin-1 without worker hooks runs
+    Given I have installed behavex
+    When I run the behavex command on a copy of the "fixtures/no_worker_hooks_base_dir_features" worker hooks fixture whose environment.py is encoded in Latin-1
+    Then I should see the following behavex console outputs and exit code "0"
+      | output_line                            |
+      | 1 scenario passed, 0 failed, 0 skipped |
+      | Exit code: 0                           |
+
+  @WORKER_HOOKS_VALIDATION
+  Scenario: An environment.py with worker hooks that fails to import is reported as a hook error
+    Given I have installed behavex
+    When I run the behavex command on the "fixtures/worker_hooks_base_dir_features/features/sub" worker hooks fixture with "FAILING_ENVIRONMENT_IMPORT" set to "1" and arguments "--parallel-processes 3"
+    Then I should see the following behavex console outputs and exit code "1"
+      | output_line                                                                      |
+      | HOOK-ERROR in before_all_workers: RuntimeError: environment.py failed on purpose |
+      | Exit code: 1                                                                     |

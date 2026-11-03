@@ -36,6 +36,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.6.9] - Unreleased
+
+### Fixed
+- **A run started outside the suite's base directory failed when `environment.py` imported a local package** ([#253](https://github.com/hrcorval/behavex/issues/253)) — Since 4.6.4, BehaveX loads `environment.py` in the main process to look for `before_all_workers` and `after_all_workers` (since 4.6.6 also when the given path is a subfolder or a feature file), but without behave's base directory on `sys.path`, so a top-level import of a package next to `environment.py` stopped the run with `Unexpected error: No module named ...` and exit code 1, with or without parallel processes. BehaveX now loads `environment.py` in the main process only when it mentions `before_all_workers` or `after_all_workers` (or uses `import *`), so suites without worker hooks no longer run its imports outside behave. When it does load it, the base directory is on `sys.path`, and an error while loading it is reported as a `HOOK-ERROR`.
+- **The top-level code of `environment.py` ran once more in the main process** — Since 4.6.4, the main process loaded `environment.py` to look for worker hooks and behave then loaded it again, so code outside the hooks ran twice with `--parallel-processes 1`, and in the main process besides the workers in a parallel run. An `environment.py` without worker hooks now runs only where behave runs it; one that defines worker hooks still runs once more in the main process.
+- **`--order-tests` ignored the order tags when `--order-tag-prefix` was not upper case** ([PR #255](https://github.com/hrcorval/behavex/pull/255)) — Tags were upper-cased before matching but the prefix was not, so a prefix such as `priority` or `Priority` matched no tag and every scenario kept its original order. Tags now match the prefix in any case, and the prefix is matched literally, so one containing a regex character such as `.` or `+` no longer matches other tags or none.
+
+### Contributors
+- Thanks to [@mobile-dm-zhdanov](https://github.com/mobile-dm-zhdanov) for the detailed report and analysis ([#253](https://github.com/hrcorval/behavex/issues/253)).
+- Thanks to [@adityaanikam](https://github.com/adityaanikam) for the first fix and its regression test ([PR #254](https://github.com/hrcorval/behavex/pull/254)).
+- Thanks to [@taltal-beep](https://github.com/taltal-beep) for the order tag prefix fix and its regression test ([PR #255](https://github.com/hrcorval/behavex/pull/255)).
+
+---
+
 ## [4.6.8] - 2026-10-21
 
 ### Fixed

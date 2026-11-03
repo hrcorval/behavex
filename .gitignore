@@ -142,3 +142,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Playwright MCP
+.playwright-mcp/

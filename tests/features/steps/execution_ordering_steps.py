@@ -338,3 +338,11 @@ def then_see_strict_execution_order(context, parallel_scheme):
             f"Strict sequential execution violated: {current_scenario['name']} (ORDER_{current_scenario['order']:03d}) " \
             f"stopped at {current_scenario['stop_time']} but {next_scenario['name']} (ORDER_{next_scenario['order']:03d}) " \
             f"started at {next_scenario['start_time']}. With --order-tests-strict, scenarios must complete before the next starts!"
+
+
+@then('the order of a scenario tagged "{tag}" with order tag prefix "{prefix}" should be "{order}"')
+def then_order_from_tag_with_prefix(context, tag, prefix, order):
+    from behavex.utils import extract_order_from_tags
+    actual_order = extract_order_from_tags([tag], prefix)
+    assert actual_order == int(order), \
+        f"Expected order {order} for tag '{tag}' with prefix '{prefix}', got {actual_order}"
