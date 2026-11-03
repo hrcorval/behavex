@@ -783,7 +783,7 @@ def extract_order_from_tags(tags, order_tag_prefix='ORDER'):
     order_pattern = rf'^@?{order_tag_prefix}_(\d+)$'
 
     for tag in tags:
-        match = re.match(order_pattern, tag.upper())
+        match = re.match(order_pattern, tag, re.IGNORECASE)
         if match:
             return int(match.group(1))
 
