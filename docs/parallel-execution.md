@@ -60,6 +60,8 @@ def after_all_workers(context):
 
 > **Dry runs and failures:** Like behave's own hooks, neither hook runs on `--dry-run`. If `before_all_workers` raises, BehaveX prints a `HOOK-ERROR` line, starts no worker, still calls `after_all_workers` (as behave calls `after_all` after a failed `before_all`), and exits with code 1. A failing `after_all_workers` also makes the run exit with code 1.
 
+> **Where to define them:** BehaveX looks for these hooks only when `environment.py` names `before_all_workers` or `after_all_workers` (defined there or imported by name) or uses `import *`. It then also loads the file in the coordinator, so code outside the hooks runs there as well as in each worker; put anything that must run once in `before_all_workers`.
+
 ### Execution Metadata: `context.behavex`
 
 BehaveX injects a `context.behavex` namespace in every worker process, available from `before_all` onwards:
