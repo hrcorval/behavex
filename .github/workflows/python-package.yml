@@ -16,7 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # setup-python has no Python 3.8/3.9 builds for Ubuntu 26.04, which ubuntu-latest is moving to
+        os: [ubuntu-24.04, windows-latest, macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
         behave-version: ['1.2.6', '1.3.0', '1.3.1', '1.3.3', 'latest']
 
